@@ -94,7 +94,25 @@ const commands = [
             },
         ],
     },
+    {
+        name: 'joinchannel',
+        description: 'Join the voice channel the user is in',
+        options: [
+            {
+                name: 'channel',
+                description: 'The voice channel to join',
+                type: 7, // 7 corresponds to the CHANNEL type
+                required: true,
+            }
+        ]
+    },
+    {
+        name: 'leavechannel',
+        description: 'Leave the voice channel the user is in',
+    },
 ];
+
+
 
 const rest = new REST({ version: '9' }).setToken(settings.DISCORD_API_TOKEN);
 
@@ -129,11 +147,14 @@ export class DiscordClient extends EventEmitter {
                 GatewayIntentBits.DirectMessages,
                 GatewayIntentBits.GuildVoiceStates,
                 GatewayIntentBits.MessageContent,
-                GatewayIntentBits.GuildMessages
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.DirectMessageTyping,
+                GatewayIntentBits.GuildMessageTyping,
             ],
             partials: [
                 Partials.Channel,
-                Partials.Message
+                Partials.Message,
+                Partials.Message,
             ]
         });
 
@@ -350,6 +371,47 @@ export class DiscordClient extends EventEmitter {
                 }
                 return;
             }
+            else if (interaction.commandName === 'joinchannel') {
+                const channelId = interaction.options.get('channel')?.value as string;
+                const guild = interaction.guild;
+                if (!guild) {
+                    return;
+                }
+                const voiceChannel = interaction.guild.channels.cache.find(channel => channel.id === channelId && channel.type === ChannelType.GuildVoice);
+            
+                if (!voiceChannel) {
+                  await interaction.reply('Voice channel not found!');
+                  return;
+                }
+            
+                try {
+                  joinVoiceChannel({
+                    channelId: voiceChannel.id,
+                    guildId: interaction.guildId as any,
+                    adapterCreator: interaction.guild.voiceAdapterCreator,
+                  });
+                  await interaction.reply(`Joined voice channel: ${voiceChannel.name}`);
+                } catch (error) {
+                  console.error('Error joining voice channel:', error);
+                  await interaction.reply('Failed to join the voice channel.');
+                }
+            }
+            else if (interaction.commandName === 'leavechannel') {
+                const connection = getVoiceConnection(interaction.guildId as any);
+            
+                if (!connection) {
+                    await interaction.reply('Not currently in a voice channel.');
+                    return;
+                }
+            
+                try {
+                    connection.destroy();
+                    await interaction.reply('Left the voice channel.');
+                } catch (error) {
+                    console.error('Error leaving voice channel:', error);
+                    await interaction.reply('Failed to leave the voice channel.');
+                }
+            }
         });
     }
 
@@ -433,7 +495,7 @@ export class DiscordClient extends EventEmitter {
         }
 
         state = (await this.runtime.composeState(message)) as State
-
+                
         if (!shouldRespond && hasInterest) {
             console.log('Checking if agent should respond')
             const shouldRespondContext = composeContext({
@@ -451,10 +513,10 @@ export class DiscordClient extends EventEmitter {
             console.log('*** response is', response)
 
             // check if the response is true or false
-            if (response === 'true') {
+            if (response.toLowerCase().includes('true')) {
                 console.log("Responding to message");
                 shouldRespond = true;
-            } else if (response === 'false') {
+            } else if (response.toLowerCase().includes('false')) {
                 console.log("Not responding to message");
                 shouldRespond = false;
             } else {
@@ -750,7 +812,7 @@ export class DiscordClient extends EventEmitter {
             // if message content is less than 13 characters and contains any of the ignore words, do not respond
             if (message.content.length < 13 && loseInterestWords.some(word => message.content.toLowerCase().includes(word))) {
                 // delete the channel from the interest channels
-                delete interestChannels[message.channel.id];
+                delete interestChannels[message.channelId];
                 return true;
             }
 
@@ -761,7 +823,7 @@ export class DiscordClient extends EventEmitter {
             }
 
             // if the message is less than 7 characters and the agent is not already interested, return false
-            if (!interestChannels[message.channel.id] && message.content.length < 7) {
+            if (!interestChannels[message.channelId] && message.content.length < 7) {
                 return true;
             }
 
@@ -803,31 +865,38 @@ export class DiscordClient extends EventEmitter {
             // acknowledgedments that come after an agent message should be evaluated
             const acknowledgementWords = ['ok', 'sure', 'no', 'okay', 'yes', 'maybe', 'why not', 'yeah', 'yup', 'yep', 'ty']
             // check if last message was from the bot
-            if (interestChannels[message.channel.id] && interestChannels[message.channel.id].messages && interestChannels[message.channel.id].messages.length > 0 &&
+            if (interestChannels[message.channelId] && interestChannels[message.channelId].messages && interestChannels[message.channelId].messages.length > 0 &&
                 // last message came from the bot
-                interestChannels[message.channel.id].messages[interestChannels[message.channel.id].messages.length - 1].userId === discordClient.client.user?.id &&
+                interestChannels[message.channelId].messages[interestChannels[message.channelId].messages.length - 1].userId === discordClient.client.user?.id &&
                 // last message contains an acknowledgement word
-                acknowledgementWords.some(word => interestChannels[message.channel.id].messages[interestChannels[message.channel.id].messages.length - 1].content.content.toLowerCase().includes(word)) &&
+                acknowledgementWords.some(word => interestChannels[message.channelId].messages[interestChannels[message.channelId].messages.length - 1].content.content.toLowerCase().includes(word)) &&
                 // last message is less than 6 chars
-                interestChannels[message.channel.id].messages[interestChannels[message.channel.id].messages.length - 1].content.content.length < 6
+                interestChannels[message.channelId].messages[interestChannels[message.channelId].messages.length - 1].content.content.length < 6
             ) {
                 return true;
             }
             return false;
         }
         
-        console.log('message && interestChannels', message, interestChannels)
-
         // if interestChannels contains the channel id, considering responding
-        const hasInterest = (message && interestChannels) ? !!interestChannels[message.channel.id] : true;
         const shouldIgnore = (message && interestChannels) ? await _shouldIgnore(message, interestChannels) : false;
-        const shouldRespond = (message && interestChannels) ? await _shouldRespond(message, interestChannels) : true;
+        let hasInterest = (message && interestChannels) ? !!interestChannels[message.channelId] : true;
+        let shouldRespond = (message && interestChannels) ? await _shouldRespond(message, interestChannels) : true;
+
+        // if shouldIgnore, delete the channel from interestChannels
+        if (shouldIgnore) {
+            shouldRespond = false;
+            hasInterest = false
+            if(interestChannels && message && interestChannels[message?.channelId]){
+                delete interestChannels[message?.channelId];
+            }
+        }
 
         console.log('***** hasInterest', hasInterest)
         console.log('***** shouldIgnore', shouldIgnore)
         console.log('***** shouldRespond', shouldRespond)
 
-        if (interestChannels) {
+        if (!shouldIgnore && interestChannels) {
             // set interestChannels to include the <channelId>: <timestamp> pair
             interestChannels[channelId] = {
                 messages: [...(interestChannels[channelId]?.messages || []), {
@@ -856,6 +925,10 @@ export class DiscordClient extends EventEmitter {
         const callback = (response: string) => {
             // Send the response back to the same channel
             message?.channel.send(response);
+        }
+
+        if (input && input.startsWith("/")) {
+            return null;
         }
 
         const response = await this.handleMessage({
