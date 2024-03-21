@@ -5,14 +5,12 @@ dotenv.config();
 interface Settings {
     DISCORD_APPLICATION_ID: string;
     DISCORD_API_TOKEN: string;
-    DISCORD_IGNORED_CHANNEL_IDS: string[];
+
+    DB_PATH: string;
 
     OPENAI_API_KEY: string;
     OPENAI_MODEL: string;
     // OPENAI_WHISPER_PROMPT: string;
-
-    SUPABASE_URL: string;
-    SUPABASE_API_KEY: string;
 
     // https://elevenlabs.io/docs/api-reference/streaming
     ELEVENLABS_XI_API_KEY: string;
@@ -29,14 +27,12 @@ interface Settings {
 let settings: Settings = {
     DISCORD_APPLICATION_ID: process.env.DISCORD_APPLICATION_ID || '',
     DISCORD_API_TOKEN: process.env.DISCORD_API_TOKEN || '',
-    DISCORD_IGNORED_CHANNEL_IDS: (process.env.DISCORD_IGNORED_CHANNEL_IDS || '').split(','),
 
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
     OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-3.5-turbo-1106',
     // OPENAI_WHISPER_PROMPT: 'Hello, Ruby.',
 
-    SUPABASE_URL: process.env.SUPABASE_URL || '',
-    SUPABASE_API_KEY: process.env.SUPABASE_API_KEY || '',
+    DB_PATH: process.env.DB_PATH || ':memory:',
 
     ELEVENLABS_XI_API_KEY: process.env.ELEVENLABS_XI_API_KEY || '',
     ELEVENLABS_MODEL_ID: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
@@ -52,12 +48,8 @@ let settings: Settings = {
 // import from env
 for (const key in settings) {
     if (process.env[key]) {
-        if (key === 'DISCORD_IGNORED_CHANNEL_IDS') {
-            settings[key] = process.env[key]!.split(',');
-        } else {
             // @ts-expect-error - we know this key exists
             settings[key] = process.env[key]!;
-        }
     }
 }
 
