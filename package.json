@@ -17,7 +17,7 @@
     "@discordjs/opus": "github:discordjs/opus",
     "@discordjs/voice": "^0.17.0",
     "@types/fluent-ffmpeg": "^2.1.24",
-    "agent-twitter-client": "^0.0.4",
+    "agent-twitter-client": "^0.0.6",
     "better-sqlite3": "^11.1.2",
     "bgent": "^0.1.11",
     "discord.js": "^14.14.1",
@@ -32,7 +32,6 @@
     "sqlite-vss": "^0.1.2",
     "ts-node": "^10.9.2",
     "uuid-by-string": "^4.0.0",
-    "whisper-turbo": "^0.11.0",
     "ws": "^8.16.0"
   },
   "devDependencies": {
