@@ -5,14 +5,14 @@ import {
 } from "bgent";
 import { UUID } from "crypto";
 import { EventEmitter } from "events";
-import elaborate_discord from "./actions/elaborate.ts";
-import joinvoice from "./actions/joinvoice.ts";
-import leavevoice from "./actions/leavevoice.ts";
+import elaborate_discord from "../actions/elaborate.ts";
+import joinvoice from "../actions/joinvoice.ts";
+import leavevoice from "../actions/leavevoice.ts";
 import { adapter } from "./db.ts";
-import channelStateProvider from "./providers/channelState.ts";
-import flavorProvider from "./providers/flavor.ts";
-import timeProvider from "./providers/time.ts";
-import voiceStateProvider from "./providers/voicestate.ts";
+import channelStateProvider from "../providers/channelState.ts";
+import flavorProvider from "../providers/flavor.ts";
+import timeProvider from "../providers/time.ts";
+import voiceStateProvider from "../providers/voicestate.ts";
 import settings from "./settings.ts";
 
 export class Agent extends EventEmitter {
@@ -36,7 +36,7 @@ export class Agent extends EventEmitter {
           ...defaultActions.filter(
             (action: Action) => action.name !== "ELABORATE"
           ),
-          elaborate_discord,
+          // elaborate_discord,
           joinvoice,
           leavevoice,
         ],

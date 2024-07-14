@@ -10,7 +10,6 @@ const __filename = fileURLToPath(import.meta.url);
 // Get the directory name of the current module
 const __dirname = path.dirname(__filename);
 
-
 // TypeScript definitions
 export interface Database {
   loadExtension(file: string, entrypoint?: string | undefined): void;
@@ -50,25 +49,15 @@ function loadablePathResolver(name: string): string {
   let loadablePath = join(
     __dirname,
     "..",
+    "..",
     "node_modules",
     packageName,
     "lib",
     `${name}.${extensionSuffix(platform)}`,
   );
 
-  // if loadable path doesnt exist, check path2
-  if (!statSync(loadablePath, { throwIfNoEntry: false })) {
-    loadablePath = join(
-      __dirname,
-      "..",
-      "..",
-      "..",
-      packageName,
-      "lib",
-      `${name}.${extensionSuffix(platform)}`,
-    );
-  }
-
+  console.log("loadablePath")
+  console.log(loadablePath)
   if (!statSync(loadablePath, { throwIfNoEntry: false })) {
     throw new Error(
       `Loadable extension for sqlite-vss not found. Was the ${packageName} package installed? Avoid using the --no-optional flag, as the optional dependencies for sqlite-vss are required.`,

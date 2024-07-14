@@ -5,7 +5,7 @@ import {
 import { load } from "./sqlite_vss.ts";
 
 // SQLite adapter
-export const adapter = new SqliteDatabaseAdapter(new Database(":memory:"));
+export const adapter = new SqliteDatabaseAdapter(new Database("./db.sqlite"));
 
 // Load sqlite-vss
 load((adapter as SqliteDatabaseAdapter).db);
