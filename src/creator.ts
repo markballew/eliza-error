@@ -8,6 +8,8 @@ import { Agent } from './core/agent.ts';
 import fs from "fs";
 import yargs from "yargs";
 
+console.log("Making it thi far")
+
 interface Arguments {
     character?: string;
     twitter?: boolean;
@@ -55,13 +57,10 @@ function startDiscord() {
     const discordClient = new DiscordClient(agent, character.bio);
 }
 
-// check if character has a 'model' field, if so use that, otherwise use 'gpt-4o-mini'
-const model = character.model || 'gpt-4o-mini';
-
 function startTwitter() {
-    const twitterInteractionClient = new TwitterInteractionClient(agent, character, model);
-    const twitterSearchClient = new TwitterSearchClient(agent, character, model);
-    const twitterGenerationClient = new TwitterGenerationClient(agent, character, model);
+    const twitterInteractionClient = new TwitterInteractionClient(agent, character);
+    const twitterSearchClient = new TwitterSearchClient(agent, character);
+    const twitterGenerationClient = new TwitterGenerationClient(agent, character);
 }
 
 // if (argv.discord || (!argv.twitter && !argv.discord)) {
