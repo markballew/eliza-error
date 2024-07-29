@@ -42,6 +42,7 @@ import { textToSpeech } from "../elevenlabs/index.ts";
 import { AudioMonitor } from "./audioMonitor.ts";
 import { commands } from "./commands.ts";
 import { InterestChannels, ResponseType } from "./types.ts";
+import ImageRecognitionService from "../../services/imageRecognition.ts"
 
 export const messageHandlerTemplate =
 // `{{actionExamples}}
@@ -100,6 +101,7 @@ export class DiscordClient extends EventEmitter {
   private agent: Agent;
   private bio: string;
   private transcriber: any;
+  private imageRecognitionService: ImageRecognitionService;
 
   constructor(agent: Agent, bio: string) {
     super();
@@ -121,6 +123,9 @@ export class DiscordClient extends EventEmitter {
     this.agent = agent;
 
     this.initializeTranscriber();
+
+    this.imageRecognitionService = new ImageRecognitionService();
+    this.imageRecognitionService.initialize();
 
     this.client.once(Events.ClientReady, async (readyClient: { user: { tag: any; id: any } }) => {
       console.log(`Logged in as ${readyClient.user?.tag}`);
@@ -210,6 +215,12 @@ export class DiscordClient extends EventEmitter {
     const channelId = message.channel.id;
     const textContent = message.content;
 
+    // Check for image attachments
+    if (message.attachments.size > 0) {
+      await this.handleImageRecognition(message);
+      return;
+    }
+
     try {
       const responseStream = await this.respondToText({
         user_id,
@@ -295,6 +306,19 @@ export class DiscordClient extends EventEmitter {
     }
   }
 
+  private async handleImageRecognition(message: DiscordMessage) {
+    const attachment = message.attachments.first();
+    if (attachment && attachment.contentType?.startsWith('image/')) {
+      try {
+        const description = await this.imageRecognitionService.recognizeImage(attachment.url);
+        // Add the image description to the completion context
+        message.content += `\nImage description: ${description[0]}`;
+      } catch (error) {
+        console.error('Error recognizing image:', error);
+        await message.reply('Sorry, I encountered an error while processing the image.');
+      }
+    }
+  }
   
   private async ensureUserExists(agentId: UUID, userName: string, botToken: string | null = null) {
     if (!userName && botToken) {
