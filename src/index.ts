@@ -7,7 +7,8 @@ import { DiscordClient } from './clients/discord/index.ts';
 import { Agent } from './core/agent.ts';
 import fs from "fs";
 import yargs from "yargs";
-
+import { SpeechSynthesizer } from "./services/speechSynthesis.ts";
+import WavEncoderPkg from "wav-encoder";
 interface Arguments {
     character?: string;
     twitter?: boolean;
@@ -19,6 +20,45 @@ let argv: Arguments = {
     twitter: false,
     discord: false
 };
+
+// test llama
+// async function TestLlama() {
+//     const llamaService = new LlamaService();
+//     await llamaService.initialize();
+
+//     const answer = "What is the capital of France?";
+//     const temperature = 0.7;
+//     const completionResponse = await llamaService.getCompletionResponse(answer, temperature);
+//     console.log("Completion response:", completionResponse);
+
+//     const input = "This is a sample input.";
+//     const embeddingResponse = await llamaService.getEmbeddingResponse(input);
+//     console.log("Embedding response:", embeddingResponse);
+// }
+
+(async () => {
+
+    // Create the speech synthesizer instance
+    const speechSynthesizer = await SpeechSynthesizer.create("./model.onnx");
+    
+    console.log("Synthesizing speech...");
+    // Synthesize the speech to get a Float32Array of single channel 22050Hz audio data
+    const audio = await speechSynthesizer.synthesize("Four score and seven years ago.");
+    console.log("Speech synthesized");
+    // Encode the audio data into a WAV format
+    const { encode } = WavEncoderPkg;
+    const audioData = {
+        sampleRate: 22050,
+        channelData: [audio]
+    };
+    const wavArrayBuffer = encode.sync(audioData);
+    
+    // Convert the ArrayBuffer to a Buffer and save it to a file
+    fs.writeFileSync("test.wav", Buffer.from(wavArrayBuffer));
+})()
+
+console.log("Audio saved as test.wav");
+
 
 try {
     // Parse command line arguments
