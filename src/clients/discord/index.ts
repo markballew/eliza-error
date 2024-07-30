@@ -43,6 +43,7 @@ import { AudioMonitor } from "./audioMonitor.ts";
 import { commands } from "./commands.ts";
 import { InterestChannels, ResponseType } from "./types.ts";
 import ImageRecognitionService from "../../services/imageRecognition.ts"
+import { extractAnswer } from "../../core/util.ts"; 
 
 export const messageHandlerTemplate =
 // `{{actionExamples}}
@@ -213,13 +214,13 @@ export class DiscordClient extends EventEmitter {
     const user_id = message.author.id as UUID;
     const userName = message.author.username;
     const channelId = message.channel.id;
-    const textContent = message.content;
 
     // Check for image attachments
     if (message.attachments.size > 0) {
       await this.handleImageRecognition(message);
-      return;
     }
+
+    const textContent = message.content;
 
     try {
       const responseStream = await this.respondToText({
@@ -310,9 +311,10 @@ export class DiscordClient extends EventEmitter {
     const attachment = message.attachments.first();
     if (attachment && attachment.contentType?.startsWith('image/')) {
       try {
-        const description = await this.imageRecognitionService.recognizeImage(attachment.url);
+        const recognizedText = await this.imageRecognitionService.recognizeImage(attachment.url);
+        const description = extractAnswer(recognizedText[0]);
         // Add the image description to the completion context
-        message.content += `\nImage description: ${description[0]}`;
+        message.content += `\nImage description: ${description}`;
       } catch (error) {
         console.error('Error recognizing image:', error);
         await message.reply('Sorry, I encountered an error while processing the image.');
