@@ -16,6 +16,7 @@ import settings from "../../core/settings.ts";
 
 import { fileURLToPath } from 'url';
 import ImageRecognitionService from "../../services/imageRecognition.ts";
+import { extractAnswer } from "../../core/util.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -123,7 +124,9 @@ export class ClientBase extends EventEmitter {
 
   async describeImage(imageUrl: string): Promise<string> {
     try {
-      const description = await this.imageRecognitionService.recognizeImage(imageUrl);
+      const recognizedText = await this.imageRecognitionService.recognizeImage(imageUrl);
+      const description = extractAnswer(recognizedText);
+
       return description || 'Unable to describe the image.';
     } catch (error) {
       console.error('Error describing image:', error);

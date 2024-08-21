@@ -7,9 +7,14 @@ export function log_to_file(filename: string, message: string, logDirectory: str
     fs.mkdirSync(logDirectory, { recursive: true });
   }
 
-  const fullPath = path.join(logDirectory, filename);
+  let fullPath = path.join(logDirectory, filename);
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] ${message}\n`;
+
+  // if full path doesnt end in .log or .txt, append .log
+  if (!fullPath.endsWith('.log') && !fullPath.endsWith('.txt')) {
+    fullPath += '.log';
+  }
 
   // Append the log entry to the file
   fs.appendFileSync(fullPath, logEntry);

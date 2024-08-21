@@ -36,16 +36,18 @@ import { EventEmitter } from "events";
 import prism from "prism-media";
 import { Readable, pipeline } from "stream";
 import { default as getUuid, default as uuid } from "uuid-by-string";
+import WavEncoder from "wav-encoder";
 import { Agent } from '../../core/agent.ts';
 import { adapter } from "../../core/db.ts";
+import { log_to_file } from "../../core/logger.ts";
 import settings from "../../core/settings.ts";
+import { extractAnswer } from "../../core/util.ts";
+import ImageRecognitionService from "../../services/imageRecognition.ts";
+import { SpeechSynthesizer } from "../../services/speechSynthesis.ts";
 import { AudioMonitor } from "./audioMonitor.ts";
 import { commands } from "./commands.ts";
 import { InterestChannels, ResponseType } from "./types.ts";
-import { SpeechSynthesizer } from "../../services/speechSynthesis.ts";
-import WavEncoder from "wav-encoder";
-import { log_to_file } from "../../core/logger.ts";
-import ImageRecognitionService from "../../services/imageRecognition.ts";
+import fs from "fs";
 
 export const messageHandlerTemplate =
 // `{{actionExamples}}
@@ -104,8 +106,8 @@ export class DiscordClient extends EventEmitter {
   private agent: Agent;
   private character: any;
   private transcriber: any;
+  private imageRecognitionService: ImageRecognitionService;
   speechSynthesizer: SpeechSynthesizer;
-  imageRecognitionService: ImageRecognitionService;
 
   constructor(agent: Agent, character: any) {
     super();
@@ -128,6 +130,8 @@ export class DiscordClient extends EventEmitter {
 
     this.initializeTranscriber();
 
+    this.imageRecognitionService = new ImageRecognitionService(this.agent);
+
     this.client.once(Events.ClientReady, async (readyClient: { user: { tag: any; id: any } }) => {
       console.log(`Logged in as ${readyClient.user?.tag}`);
       console.log("Use this URL to add the bot to your server:");
@@ -144,11 +148,6 @@ export class DiscordClient extends EventEmitter {
 
   private async initializeTranscriber() {
     this.transcriber = await transformersPipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
-  }
-
-  private async initializeImageRecognitionService() {
-    this.imageRecognitionService = new ImageRecognitionService(this.agent);
-    await this.imageRecognitionService.initialize();
   }
 
 
@@ -217,6 +216,12 @@ export class DiscordClient extends EventEmitter {
     const user_id = message.author.id as UUID;
     const userName = message.author.username;
     const channelId = message.channel.id;
+
+    // Check for image attachments
+    if (message.attachments.size > 0) {
+      await this.handleImageRecognition(message);
+    }
+
     const textContent = message.content;
 
     // Check for image attachments
@@ -272,14 +277,15 @@ export class DiscordClient extends EventEmitter {
   }
 
   async textToSpeech(text: string): Promise<Readable> {
-    if(!this.speechSynthesizer) {
+    if (!this.speechSynthesizer) {
       this.speechSynthesizer = await SpeechSynthesizer.create("./model.onnx");
     }
-
-        console.log("Synthesizing speech...");
+  
+    console.log("Synthesizing speech...");
     // Synthesize the speech to get a Float32Array of single channel 22050Hz audio data
-    const audio = await this.speechSynthesizer.synthesize("Four score and seven years ago.");
+    const audio = await this.speechSynthesizer.synthesize(text);
     console.log("Speech synthesized");
+  
     // Encode the audio data into a WAV format
     const { encode } = WavEncoder;
     const audioData = {
@@ -287,14 +293,23 @@ export class DiscordClient extends EventEmitter {
         channelData: [audio]
     };
     const wavArrayBuffer = encode.sync(audioData);
-    return wavArrayBuffer;
+    
+    // TODO: Move to a temp file
+    // Convert the ArrayBuffer to a Buffer and save it to a file
+    fs.writeFileSync("buffer.wav", Buffer.from(wavArrayBuffer));
+
+    // now read the file
+    const wavStream = fs.createReadStream("buffer.wav");
+    return wavStream;
   }
 
   async recognizeImage(imageUrl: string) {
+    console.log("recognizeImage", imageUrl);
     if (!this.imageRecognitionService) {
-      await this.initializeImageRecognitionService();
+      console.log("initializeImageRecognitionService");
+      this.imageRecognitionService = new ImageRecognitionService(this.agent);
     }
-    return this.imageRecognitionService.recognizeImage(imageUrl);
+    return await this.imageRecognitionService.recognizeImage(imageUrl);
   }
 
   async speechToText(audioBuffer: Buffer) {
@@ -336,6 +351,20 @@ export class DiscordClient extends EventEmitter {
     }
   }
 
+  private async handleImageRecognition(message: DiscordMessage) {
+    const attachment = message.attachments.first();
+    if (attachment && attachment.contentType?.startsWith('image/')) {
+      try {
+        const recognizedText = await this.imageRecognitionService.recognizeImage(attachment.url);
+        const description = extractAnswer(recognizedText[0]);
+        // Add the image description to the completion context
+        message.content += `\nImage description: ${description}`;
+      } catch (error) {
+        console.error('Error recognizing image:', error);
+        await message.reply('Sorry, I encountered an error while processing the image.');
+      }
+    }
+  }
   
   private async ensureUserExists(agentId: UUID, userName: string, botToken: string | null = null) {
     if (!userName && botToken) {
