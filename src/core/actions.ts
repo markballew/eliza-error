@@ -1,9 +1,9 @@
 import { names, uniqueNamesGenerator } from "unique-names-generator";
 import { Action, ActionExample } from "./types.ts";
 
-import elaborate from "./actions/elaborate.ts";
-import ignore from "./actions/ignore.ts";
-import wait from "./actions/wait.ts";
+import elaborate from "../actions/elaborate.ts";
+import ignore from "../actions/ignore.ts";
+import wait from "../actions/wait.ts";
 
 export const defaultActions: Action[] = [elaborate, wait, ignore];
 

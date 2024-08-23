@@ -1,10 +1,10 @@
 import { SearchMode } from "agent-twitter-client";
-import { Agent } from "../../agent.ts"
-import settings from "../../settings.ts"
+import { Agent } from "../../agent.ts";
+import settings from "../../core/settings.ts";
 import { ClientBase } from "./base.ts";
-import { log_to_file } from "../../logger.ts"
-import { composeContext } from "../../context.ts"
-import { State } from "../../types.ts"
+import { log_to_file } from "../../core/logger.ts";
+import { composeContext } from "../../core/context.ts";
+import { State } from "../../core/types.ts";
 
 const newTweetPrompt = `{{recentConversations}}
 
@@ -136,6 +136,7 @@ export class TwitterGenerationClient extends ClientBase {
           );
         } catch (error) {
           console.warn("Could not generate new tweet:", error);
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           console.log("Retrying...");
         }
       }

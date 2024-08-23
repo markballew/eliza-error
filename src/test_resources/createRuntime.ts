@@ -1,9 +1,9 @@
-import { SqliteDatabaseAdapter } from "../adapters/sqlite.ts"
-import { SupabaseDatabaseAdapter } from "../adapters/supabase.ts"
-import { zeroUuid } from "../constants.ts"
-import { DatabaseAdapter } from "../database.ts"
-import { AgentRuntime } from "../runtime.ts"
-import { Action, Evaluator, Provider } from "../types.ts"
+import { SqliteDatabaseAdapter } from "../adapters/sqlite.ts";
+import { SupabaseDatabaseAdapter } from "../adapters/supabase.ts";
+import { zeroUuid } from "../core/constants.ts";
+import { DatabaseAdapter } from "../core/database.ts";
+import { AgentRuntime } from "../core/runtime.ts";
+import { Action, Evaluator, Provider } from "../core/types.ts";
 import {
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
@@ -11,8 +11,8 @@ import {
   TEST_PASSWORD,
 } from "./constants.ts";
 import { User } from "./types.ts";
-import { load } from "../adapters/sqlite/sqlite_vss.ts"
-import { SqlJsDatabaseAdapter } from "../adapters/sqljs.ts"
+import { load } from "../adapters/sqlite/sqlite_vss.ts";
+import { SqlJsDatabaseAdapter } from "../adapters/sqljs.ts";
 
 export async function createRuntime({
   env,
@@ -128,7 +128,6 @@ export async function createRuntime({
   }
 
   const runtime = new AgentRuntime({
-    debugMode: false,
     serverUrl: "https://api.openai.com/v1",
     conversationLength,
     token: env!.OPENAI_API_KEY!,

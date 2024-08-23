@@ -12,7 +12,7 @@ export interface Content {
   content: string; // The main text content of the message.
   action?: string; // An optional action associated with the message, indicating a specific behavior or response required.
   source?: string; // The source of the content, if applicable, such as a reference or origin.
-  attachments?: Media[]
+  attachments?: Media[];
   [key: string]: unknown; // Allows for additional properties to be included dynamically.
 }
 
@@ -133,6 +133,7 @@ export type Handler = (
   message: Message,
   state?: State,
   options?: { [key: string]: unknown }, // additional options can be used for things like tests or state-passing on a chain
+  callback?: (response: Content) => void,
 ) => Promise<unknown>;
 
 /**
@@ -181,11 +182,7 @@ export interface Evaluator {
  * Represents a provider, which is used to retrieve information or perform actions on behalf of the agent, such as fetching data from an external API or service.
  */
 export interface Provider {
-  get: (
-    runtime: AgentRuntime,
-    message: Message,
-    state?: State,
-  ) => Promise<any>;
+  get: (runtime: AgentRuntime, message: Message, state?: State) => Promise<any>;
 }
 
 /**
@@ -228,7 +225,6 @@ export interface Room {
   participants: Participant[];
 }
 
-
 export type Media = {
   id: string;
   url: string;
@@ -236,4 +232,17 @@ export type Media = {
   source: string;
   description: string;
   text: string;
-}
+};
+
+export type Character = {
+  name: string;
+  bio: string;
+  people: string[];
+  topics: string[];
+  adjectives: string[];
+  style: {
+    all: string[];
+    chat: string[];
+    post: string[];
+  };
+};

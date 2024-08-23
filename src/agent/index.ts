@@ -1,18 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { UUID } from "crypto";
 import { EventEmitter } from "events";
-import joinvoice from "./actions/joinvoice.ts";
-import leavevoice from "./actions/leavevoice.ts";
-import channelStateProvider from "./providers/channelState.ts";
-import timeProvider from "./providers/time.ts";
-import voiceStateProvider from "./providers/voiceState.ts";
-import LlamaService from "./services/llama.ts";
-import settings from "./settings.ts";
+import joinvoice from "../actions/joinvoice.ts";
+import leavevoice from "../actions/leavevoice.ts";
+import channelStateProvider from "../providers/channelState.ts";
+import timeProvider from "../providers/time.ts";
+import voiceStateProvider from "../providers/voiceState.ts";
+import settings from "../core/settings.ts";
+import elaborate from "../actions/elaborate.ts";
+import askClaude from "../actions/ask_claude.ts";
 
-import { defaultActions } from "./actions.ts";
 import { adapter } from "./db.ts";
-import { Action } from "./types.ts";
-import { AgentRuntime } from "./runtime.ts";
+import { AgentRuntime } from "../core/runtime.ts";
 
 export class Agent extends EventEmitter {
   runtime: AgentRuntime;
@@ -32,63 +31,14 @@ export class Agent extends EventEmitter {
         // flavorProvider, // TODO: re-implement this
       ],
       actions: [
-        // elaborate_discord,
-        ...defaultActions.filter(
-          (action: Action) => action.name !== "ELABORATE",
-        ),
         // TODO: Handle elaborating on Discord but *not* on Twitter
+        // (maybe different agents)
+        elaborate,
         joinvoice,
         leavevoice,
+        askClaude,
       ],
     });
-
-    // if settings.OPENAI_API_KEY is set, don't use Llama
-    if (settings.OPENAI_API_KEY) return;
-
-    // Otherwise, initialize Llama
-
-    const llamaService = new LlamaService();
-    (async () => {
-      await llamaService.initialize();
-      // TODO: Only initialize Llama if no OpenAI key is provided
-      const completion = async ({
-        context,
-        stop,
-        model,
-        frequency_penalty,
-        presence_penalty,
-        temperature,
-      }: {
-        context?: string;
-        stop?: never[];
-        model?: string;
-        frequency_penalty?: number;
-        presence_penalty?: number;
-        temperature?: number;
-      }) => {
-        console.log("Running llama completion service");
-        console.log("Context: ", context);
-        const completionResponse = await llamaService.getCompletionResponse(
-          context,
-          temperature,
-          stop,
-          frequency_penalty,
-          presence_penalty,
-        );
-        console.log("Completion response: ", completionResponse);
-        // change the 'content' to 'content'
-        (completionResponse as any).content = completionResponse.content;
-        return JSON.stringify(completionResponse);
-      };
-      this.runtime.completion = completion;
-
-      const embed = async (input: string): Promise<number[]> => {
-        console.log("Running llama embed service");
-        console.log("Input: ", input);
-        return await llamaService.getEmbeddingResponse(input);
-      };
-      this.runtime.embed = embed;
-    })();
   }
 
   async ensureUserExists(user_id: UUID, userName: string | null) {
@@ -137,6 +87,7 @@ export class Agent extends EventEmitter {
   }
 
   async ensureParticipantInRoom(user_id: UUID, roomId: UUID) {
+    console.log(`Ensuring participant ${user_id} in room ${roomId}`);
     const data = adapter.db
       .prepare("SELECT * FROM participants WHERE user_id = ? AND room_id = ?")
       .get(user_id, roomId);

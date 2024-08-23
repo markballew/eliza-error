@@ -9,8 +9,8 @@ import {
   type UUID,
   Participant,
   Room,
-} from "../types.ts"
-import { DatabaseAdapter } from "../database.ts"
+} from "../core/types.ts";
+import { DatabaseAdapter } from "../core/database.ts";
 import { v4 as uuid } from "uuid";
 export class SupabaseDatabaseAdapter extends DatabaseAdapter {
   async getRoom(room_id: UUID): Promise<UUID | null> {

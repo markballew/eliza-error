@@ -1,5 +1,5 @@
-import { type AgentRuntime } from "../runtime.ts"
-import { type Action, type Message } from "../types.ts"
+import { type AgentRuntime } from "../core/runtime.ts";
+import { type Action, type Message } from "../core/types.ts";
 
 export const TEST_ACTION = {
   name: "TEST_ACTION",
@@ -16,9 +16,6 @@ export const TEST_ACTION = {
     runtime: AgentRuntime,
     message: Message,
   ): Promise<boolean> => {
-    if (runtime.debugMode) {
-      console.log("Ignored message: ", message.content);
-    }
     return true;
   },
   condition:
@@ -56,9 +53,6 @@ export const TEST_ACTION_FAIL = {
     runtime: AgentRuntime,
     message: Message,
   ): Promise<boolean> => {
-    if (runtime.debugMode) {
-      console.log("Ignored message: ", message.content);
-    }
     return false;
   },
   condition:

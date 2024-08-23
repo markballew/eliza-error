@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 
-import { DatabaseAdapter } from "../database.ts"
+import { DatabaseAdapter } from "../core/database.ts";
 import {
   Account,
   Actor,
@@ -10,7 +10,7 @@ import {
   type Relationship,
   type UUID,
   Participant,
-} from "../types.ts"
+} from "../core/types.ts";
 import { sqliteTables } from "./sqlite/sqliteTables.ts";
 import { Database } from "./sqljs/types.ts";
 

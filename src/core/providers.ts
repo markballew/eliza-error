@@ -1,4 +1,4 @@
-import time from "./providers/time.ts";
+import time from "../providers/time.ts";
 import { AgentRuntime } from "./runtime.ts";
 import { State, type Message, type Provider } from "./types.ts";
 

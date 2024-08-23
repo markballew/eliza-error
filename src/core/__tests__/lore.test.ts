@@ -1,13 +1,13 @@
 import dotenv from "dotenv";
-import { createRuntime } from "../test/createRuntime.ts"
-import { getOrCreateRelationship } from "../test/getOrCreateRelationship.ts"
-import { type User } from "../test/types.ts"
-import { zeroUuid } from "../constants.ts"
-import { composeContext } from "../context.ts"
-import { addLore, getLore } from "../lore.ts"
-import { AgentRuntime } from "../runtime.ts"
-import { messageHandlerTemplate } from "../templates.ts"
-import { Memory, type Content, type UUID } from "../types.ts"
+import { createRuntime } from "../../test_resources/createRuntime.ts";
+import { getOrCreateRelationship } from "../../test_resources/getOrCreateRelationship.ts";
+import { type User } from "../../test_resources/types.ts";
+import { zeroUuid } from "../constants.ts";
+import { composeContext } from "../context.ts";
+import { addLore, getLore } from "../lore.ts";
+import { AgentRuntime } from "../runtime.ts";
+import { Memory, type Content, type UUID } from "../types.ts";
+import { messageHandlerTemplate } from "../../test_resources/templates.ts";
 
 dotenv.config({ path: ".dev.vars" });
 describe("Lore", () => {

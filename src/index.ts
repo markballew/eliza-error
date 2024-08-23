@@ -1,12 +1,9 @@
 import fs from "fs";
-import WavEncoder from "wav-encoder";
 import yargs from "yargs";
-import { Agent } from "./agent.ts";
+import { Agent } from "./agent/index.ts";
 import { DiscordClient } from "./clients/discord/index.ts";
 // import { TwitterGenerationClient } from "./clients/twitter/generate.ts";
 // import { TwitterSearchClient } from "./clients/twitter/search.ts";
-import { SpeechSynthesizer } from "./services/speechSynthesis.ts";
-import { YouTubeService } from "./services/youtube.ts";
 import { exit } from "process";
 interface Arguments {
   character?: string;
@@ -15,33 +12,10 @@ interface Arguments {
 }
 
 let argv: Arguments = {
-  character: "./src/default_character.json",
+  character: "./src/agent/default_character.json",
   twitter: false,
   discord: false,
 };
-
-(async () => {  console.log("Creating speech synthesizer...");
-  // Create the speech synthesizer instance
-  const speechSynthesizer = await SpeechSynthesizer.create("./model.onnx");
-
-  console.log("Synthesizing speech...");
-  // Synthesize the speech to get a Float32Array of single channel 22050Hz audio data
-  const audio = await speechSynthesizer.synthesize(
-    "Four score and seven years ago.",
-  );
-  console.log("Speech synthesized");
-  // Encode the audio data into a WAV format
-  const { encode } = WavEncoder;
-  const audioData = {
-    sampleRate: 22050,
-    channelData: [audio],
-  };
-  const wavArrayBuffer = encode.sync(audioData);
-
-  // Convert the ArrayBuffer to a Buffer and save it to a file
-  fs.writeFileSync("test.wav", Buffer.from(wavArrayBuffer));
-  console.log("Audio saved as test.wav");
-})();
 
 try {
   // Parse command line arguments
@@ -65,14 +39,14 @@ try {
 }
 
 // Load character
-const characterPath = argv.character || "./src/default_character.json";
+const characterPath = argv.character || "./src/agent/default_character.json";
 let character = null;
 try {
-  character = JSON.parse(fs.readFileSync(characterPath, "utf8"))
-  console.log("Character is")
+  character = JSON.parse(fs.readFileSync(characterPath, "utf8"));
+  console.log("Character is");
 } catch (e) {
-  console.error("Unable to parse character")
-  exit(0)
+  console.error("Unable to parse character");
+  exit(0);
 }
 
 const agent = new Agent();

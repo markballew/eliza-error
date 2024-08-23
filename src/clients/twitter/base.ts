@@ -4,14 +4,14 @@ import { EventEmitter } from "events";
 import fs from "fs";
 import path from "path";
 import { default as getUuid } from "uuid-by-string";
-import { Agent } from "../../agent.ts"
-import { adapter } from "../../db.ts"
-import settings from "../../settings.ts"
+import { Agent } from "../../agent/index.ts";
+import { adapter } from "../../agent/db.ts";
+import settings from "../../core/settings.ts";
 
 import { fileURLToPath } from "url";
-import ImageRecognitionService from "../../services/imageRecognition.ts"
-import { Content, Message, State } from "../../types.ts"
-import { embeddingZeroVector } from "../../memory.ts"
+import ImageRecognitionService from "../../services/imageRecognition.ts";
+import { Character, Content, Message, State } from "../../core/types.ts";
+import { embeddingZeroVector } from "../../core/memory.ts";
 
 export function extractAnswer(text: string): string {
   const startIndex = text.indexOf("Answer: ") + 8;
@@ -21,19 +21,6 @@ export function extractAnswer(text: string): string {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-export type Character = {
-  name: string;
-  bio: string;
-  people: string[];
-  topics: string[];
-  adjectives: string[];
-  style: {
-    all: string[];
-    chat: string[];
-    post: string[];
-  };
-};
 
 export class ClientBase extends EventEmitter {
   twitterClient: Scraper;
@@ -144,9 +131,7 @@ export class ClientBase extends EventEmitter {
     try {
       const recognizedText =
         await this.imageRecognitionService.recognizeImage(imageUrl);
-      const description = extractAnswer(recognizedText);
-
-      return description || "Unable to describe the image";
+      return extractAnswer(recognizedText.description);
     } catch (error) {
       console.error("Error describing image:", error);
       return "Error occurred while describing the image";

@@ -1,16 +1,16 @@
 import { UUID } from "crypto";
 import dotenv from "dotenv";
-import { createRuntime } from "../test/createRuntime.ts"
-import { getOrCreateRelationship } from "../test/getOrCreateRelationship.ts"
-import { runAiTest } from "../test/runAiTest.ts"
-import { TEST_EVALUATOR, TEST_EVALUATOR_FAIL } from "../test/testEvaluator.ts"
-import { type User } from "../test/types.ts"
-import { zeroUuid } from "../constants.ts"
-import { composeContext } from "../context.ts"
-import { evaluationTemplate } from "../evaluators.ts"
-import fact from "../evaluators/fact.ts"
-import { AgentRuntime } from "../runtime.ts"
-import { Message } from "../types.ts"
+import { createRuntime } from "../test/createRuntime.ts";
+import { getOrCreateRelationship } from "../test/getOrCreateRelationship.ts";
+import { runAiTest } from "../test/runAiTest.ts";
+import { TEST_EVALUATOR, TEST_EVALUATOR_FAIL } from "../test/testEvaluator.ts";
+import { type User } from "../test/types.ts";
+import { zeroUuid } from "../core/constants.ts";
+import { composeContext } from "../core/context.ts";
+import { evaluationTemplate } from "../core/evaluators.ts";
+import fact from "../evaluators/fact.ts";
+import { AgentRuntime } from "../core/runtime.ts";
+import { Message } from "../core/types.ts";
 
 dotenv.config({ path: ".dev.vars" });
 

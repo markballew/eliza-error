@@ -49,18 +49,19 @@ export const formatMessages = ({
       let messageContent = (message.content as Content).content;
       const messageAction = (message.content as Content).action;
       const formattedName =
-        actors.find((actor: Actor) => actor.id === message.user_id)?.name || 
+        actors.find((actor: Actor) => actor.id === message.user_id)?.name ||
         "Unknown User";
 
       if (messageAction === "IGNORE") {
         messageContent = "*Ignored*";
       }
 
-      const attachments = (message.content as Content).attachments
+      const attachments = (message.content as Content).attachments;
 
-      const attachmentString = attachments && attachments.length > 0
-        ? ` (Attachments: ${attachments.map(media => `[${media.title}]`).join(", ")})`
-        : "";
+      const attachmentString =
+        attachments && attachments.length > 0
+          ? ` (Attachments: ${attachments.map((media) => `[${media.id} - ${media.title} (${media.url})]`).join(", ")})`
+          : "";
 
       return `${formattedName} (${message.user_id.slice(-5)}): ${messageContent}${attachmentString}${messageAction && messageAction !== "null" ? ` (${messageAction})` : ""}`;
     })

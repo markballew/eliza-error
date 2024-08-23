@@ -1,8 +1,13 @@
 import dotenv from "dotenv";
-import { createRuntime } from "../test/createRuntime.ts"
-import { AgentRuntime } from "../runtime.ts"
-import { type Message, type Provider, type State, type UUID } from "../types.ts"
-import { zeroUuid } from "../constants.ts"
+import { createRuntime } from "../test/createRuntime.ts";
+import { AgentRuntime } from "../core/runtime.ts";
+import {
+  type Message,
+  type Provider,
+  type State,
+  type UUID,
+} from "../core/types.ts";
+import { zeroUuid } from "../core/constants.ts";
 
 dotenv.config({ path: ".dev.vars" });
 

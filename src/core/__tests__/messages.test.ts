@@ -1,13 +1,22 @@
 import dotenv from "dotenv";
-import { createRuntime } from "../test/createRuntime.ts"
-import { getOrCreateRelationship } from "../test/getOrCreateRelationship.ts"
-import { type User } from "../test/types.ts"
-import { zeroUuid } from "../constants.ts"
-import { formatFacts } from "../evaluators/fact.ts"
-import { formatActors, formatMessages, getActorDetails } from "../messages.ts"
-import { createRelationship } from "../relationships.ts"
-import { type AgentRuntime } from "../runtime.ts"
-import { type Actor, type Content, type Memory, type UUID } from "../types.ts"
+import { createRuntime } from "../test/createRuntime.ts";
+import { getOrCreateRelationship } from "../test/getOrCreateRelationship.ts";
+import { type User } from "../test/types.ts";
+import { zeroUuid } from "../core/constants.ts";
+import { formatFacts } from "../evaluators/fact.ts";
+import {
+  formatActors,
+  formatMessages,
+  getActorDetails,
+} from "../core/messages.ts";
+import { createRelationship } from "../core/relationships.ts";
+import { type AgentRuntime } from "../core/runtime.ts";
+import {
+  type Actor,
+  type Content,
+  type Memory,
+  type UUID,
+} from "../core/types.ts";
 
 dotenv.config({ path: ".dev.vars" });
 

@@ -2,15 +2,15 @@ import { SearchMode, Tweet } from "agent-twitter-client";
 import { UUID } from "crypto";
 import fs from "fs";
 import { default as getUuid } from "uuid-by-string";
-import { Agent } from "../../agent.ts"
-import { adapter } from "../../db.ts"
-import settings from "../../settings.ts"
+import { Agent } from "../../agent/index.ts";
+import { adapter } from "../../agent/db.ts";
+import settings from "../../core/settings.ts";
 
 import { ClientBase } from "./base.ts";
-import { log_to_file } from "../../logger.ts"
-import { composeContext } from "../../context.ts"
-import { parseJSONObjectFromText } from "../../parsing.ts"
-import { Message, State, Content } from "../../types.ts"
+import { log_to_file } from "../../core/logger.ts";
+import { composeContext } from "../../core/context.ts";
+import { parseJSONObjectFromText } from "../../core/parsing.ts";
+import { Message, State, Content } from "../../core/types.ts";
 
 export const messageHandlerTemplate = `{{relevantFacts}}
 {{recentFacts}}
@@ -282,10 +282,6 @@ ${tweet.urls.length > 0 ? `URLs: ${tweet.urls.join(", ")}\n` : ""}${imageDescrip
       `${botTwitterUsername}_${datestr}_interactions_context`,
       context,
     );
-
-    if (this.agent.runtime.debugMode) {
-      console.log(context, "Response Context");
-    }
 
     let responseContent: Content | null = null;
     const { user_id, room_id } = message;

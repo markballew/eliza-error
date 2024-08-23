@@ -1,5 +1,5 @@
-import { type AgentRuntime } from "../runtime.ts"
-import { Evaluator, type Message, type State } from "../types.ts"
+import { type AgentRuntime } from "../core/runtime.ts";
+import { Evaluator, type Message, type State } from "../core/types.ts";
 
 async function handler(runtime: AgentRuntime, message: Message) {
   const state = (await runtime.composeState(message)) as State;

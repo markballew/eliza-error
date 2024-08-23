@@ -1,11 +1,11 @@
 import dotenv from "dotenv";
-import { getCachedEmbeddings, writeCachedEmbedding } from "../test/cache.ts"
-import { createRuntime } from "../test/createRuntime.ts"
-import { getOrCreateRelationship } from "../test/getOrCreateRelationship.ts"
-import { type User } from "../test/types.ts"
-import { zeroUuid } from "../constants.ts"
-import { AgentRuntime } from "../runtime.ts"
-import { type Message, type UUID } from "../types.ts"
+import { getCachedEmbeddings, writeCachedEmbedding } from "../test/cache.ts";
+import { createRuntime } from "../test/createRuntime.ts";
+import { getOrCreateRelationship } from "../test/getOrCreateRelationship.ts";
+import { type User } from "../test/types.ts";
+import { zeroUuid } from "../core/constants.ts";
+import { AgentRuntime } from "../core/runtime.ts";
+import { type Message, type UUID } from "../core/types.ts";
 
 dotenv.config({ path: ".dev.vars" });
 

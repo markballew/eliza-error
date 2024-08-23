@@ -2,14 +2,14 @@ import { SearchMode, Tweet } from "agent-twitter-client";
 import { UUID } from "crypto";
 import fs from "fs";
 import { default as getUuid } from "uuid-by-string";
-import { Agent } from "../../agent.ts"
-import settings from "../../settings.ts"
+import { Agent } from "../../agent/index.ts";
+import settings from "../../core/settings.ts";
 
 import { ClientBase } from "./base.ts";
-import { log_to_file } from "../../logger.ts"
-import { composeContext } from "../../context.ts"
-import { Message, State, Content } from "../../types.ts"
-import { parseJSONObjectFromText } from "../../parsing.ts"
+import { log_to_file } from "../../core/logger.ts";
+import { composeContext } from "../../core/context.ts";
+import { Message, State, Content } from "../../core/types.ts";
+import { parseJSONObjectFromText } from "../../core/parsing.ts";
 
 const messageHandlerTemplate = `{{relevantFacts}}
 {{recentFacts}}

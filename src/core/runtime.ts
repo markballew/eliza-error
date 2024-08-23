@@ -29,12 +29,15 @@ import {
 import { UUID } from "crypto";
 import { zeroUuid } from "./constants.ts";
 import { DatabaseAdapter } from "./database.ts";
-import { formatFacts } from "./evaluators/fact.ts";
+import { formatFacts } from "../evaluators/fact.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
 import { formatLore, getLore } from "./lore.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { defaultProviders, getProviders } from "./providers.ts";
 import { type Actor, type Memory } from "./types.ts";
+import settings from "./settings.ts";
+import LlamaService from "../services/llama.ts";
+import tiktoken, { TiktokenModel } from "tiktoken";
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -66,11 +69,6 @@ export class AgentRuntime {
   token: string | null;
 
   /**
-   * Indicates if debug messages should be logged.
-   */
-  debugMode: boolean;
-
-  /**
    * Custom actions that the agent can perform.
    */
   actions: Action[] = [];
@@ -94,6 +92,11 @@ export class AgentRuntime {
    * The model to use for embedding.
    */
   embeddingModel = "text-embedding-3-small";
+
+  /**
+   * Local Llama if no OpenAI key is present
+   */
+  llamaService: LlamaService | null = null;
 
   /**
    * Fetch function to use
@@ -138,7 +141,6 @@ export class AgentRuntime {
    * @param opts - The options for configuring the AgentRuntime.
    * @param opts.conversationLength - The number of messages to hold in the recent message cache.
    * @param opts.token - The JWT token, can be a JWT token if outside worker, or an OpenAI token if inside worker.
-   * @param opts.debugMode - If true, debug messages will be logged.
    * @param opts.serverUrl - The URL of the worker.
    * @param opts.actions - Optional custom actions.
    * @param opts.evaluators - Optional custom evaluators.
@@ -154,7 +156,6 @@ export class AgentRuntime {
     conversationLength?: number; // number of messages to hold in the recent message cache
     agentId?: UUID; // ID of the agent
     token: string; // JWT token, can be a JWT token if outside worker, or an OpenAI token if inside worker
-    debugMode?: boolean; // If true, will log debug messages
     serverUrl?: string; // The URL of the worker
     actions?: Action[]; // Optional custom actions
     evaluators?: Evaluator[]; // Optional custom evaluators
@@ -166,7 +167,6 @@ export class AgentRuntime {
   }) {
     this.#conversationLength =
       opts.conversationLength ?? this.#conversationLength;
-    this.debugMode = opts.debugMode ?? false;
     this.databaseAdapter = opts.databaseAdapter;
     this.agentId = opts.agentId ?? zeroUuid;
     this.fetch = (opts.fetch as typeof fetch) ?? this.fetch;
@@ -237,6 +237,7 @@ export class AgentRuntime {
    * @param opts.frequency_penalty The frequency penalty to apply to the completion.
    * @param opts.presence_penalty The presence penalty to apply to the completion.
    * @param opts.temperature The temperature to apply to the completion.
+   * @param opts.max_context_length The maximum length of the context to apply to the completion.
    * @returns The completed message.
    */
   async completion({
@@ -246,7 +247,36 @@ export class AgentRuntime {
     frequency_penalty = 0.0,
     presence_penalty = 0.0,
     temperature = 0.7,
+    max_context_length = settings.OPENAI_API_KEY ? "127999" : "8192",
   }) {
+    if (!settings.OPENAI_API_KEY) {
+      if (!this.llamaService) {
+        this.llamaService = new LlamaService();
+        await this.llamaService.initialize();
+      }
+      const completionResponse = await this.llamaService.getCompletionResponse(
+        context,
+        temperature,
+        stop,
+        frequency_penalty,
+        presence_penalty,
+      );
+      console.log("Completion response: ", completionResponse);
+      // change the 'content' to 'content'
+      (completionResponse as any).content = completionResponse.content;
+      return JSON.stringify(completionResponse);
+    }
+
+    // Count tokens and truncate context if necessary
+    const encoding = tiktoken.encoding_for_model(model as TiktokenModel);
+    let tokens = encoding.encode(context);
+    const maxTokens = parseInt(max_context_length);
+    const textDecoder = new TextDecoder();
+    if (tokens.length > maxTokens) {
+      tokens = tokens.slice(-maxTokens);
+      context = textDecoder.decode(encoding.decode(tokens))
+    }
+
     const requestOptions = {
       method: "POST",
       headers: {
@@ -303,6 +333,13 @@ export class AgentRuntime {
    * @returns The embedding of the input.
    */
   async embed(input: string) {
+    if (!settings.OPENAI_API_KEY) {
+      if (!this.llamaService) {
+        this.llamaService = new LlamaService();
+        await this.llamaService.initialize();
+      }
+      return await this.llamaService.getEmbeddingResponse(input);
+    }
     const embeddingModel = this.embeddingModel;
 
     // Check if we already have the embedding in the lore
@@ -323,6 +360,8 @@ export class AgentRuntime {
         length: 1536,
       }),
     };
+    console.log("Running embeddings");
+    console.log(requestOptions);
     try {
       const response = await fetch(
         `${this.serverUrl}/embeddings`,
@@ -362,7 +401,12 @@ export class AgentRuntime {
    * @param message The message to process.
    * @param content The content of the message to process actions from.
    */
-  async processActions(message: Message, content: Content, state?: State) {
+  async processActions(
+    message: Message,
+    content: Content,
+    state?: State,
+    callback?: (response: Content) => void,
+  ) {
     if (!content.action) {
       return;
     }
@@ -376,17 +420,10 @@ export class AgentRuntime {
     }
 
     if (!action.handler) {
-      if (this.debugMode) {
-        logger.log(
-          `No handler found for action ${action.name}, skipping`,
-          "",
-          "yellow",
-        );
-      }
       return;
     }
 
-    return await action.handler(this, message, state);
+    return await action.handler(this, message, state, {}, callback);
   }
 
   /**
@@ -519,31 +556,33 @@ export class AgentRuntime {
       recentMessagesData,
       recentFactsData,
       goalsData,
-      loreData,
-    ]: [Actor[], Memory[], Memory[], Goal[], Memory[]] = await Promise.all([
-      getActorDetails({ runtime: this, room_id }),
-      this.messageManager.getMemories({
-        room_id,
-        count: conversationLength,
-        unique: false,
-      }),
-      this.factManager.getMemories({
-        room_id,
-        count: recentFactsCount,
-      }),
-      getGoals({
-        runtime: this,
-        count: 10,
-        onlyInProgress: false,
-        room_id,
-      }),
-      getLore({
-        runtime: this,
-        message: (message.content as Content).content,
-        count: 5,
-        match_threshold: 0.5,
-      }),
-    ]);
+      // loreData,
+    ]: [Actor[], Memory[], Memory[], Goal[] /*, Memory[]*/] = await Promise.all(
+      [
+        getActorDetails({ runtime: this, room_id }),
+        this.messageManager.getMemories({
+          room_id,
+          count: conversationLength,
+          unique: false,
+        }),
+        this.factManager.getMemories({
+          room_id,
+          count: recentFactsCount,
+        }),
+        getGoals({
+          runtime: this,
+          count: 10,
+          onlyInProgress: false,
+          room_id,
+        }),
+        // getLore({
+        //   runtime: this,
+        //   message: (message.content as Content).content,
+        //   count: 5,
+        //   match_threshold: 0.5,
+        // }),
+      ],
+    );
 
     const goals = formatGoalsAsString({ goals: goalsData });
 
@@ -579,7 +618,7 @@ export class AgentRuntime {
     const recentFacts = formatFacts(recentFactsData);
     const relevantFacts = formatFacts(relevantFactsData);
 
-    const lore = formatLore(loreData);
+    // const lore = formatLore(loreData);
 
     const senderName = actorsData?.find(
       (actor: Actor) => actor.id === user_id,
@@ -587,6 +626,48 @@ export class AgentRuntime {
     const agentName = actorsData?.find(
       (actor: Actor) => actor.id === this.agentId,
     )?.name;
+
+    let allAttachments = message.content.attachments || [];
+
+    if (recentMessagesData && Array.isArray(recentMessagesData)) {
+      const lastMessageWithAttachment = recentMessagesData.find(
+        (msg) => msg.content.attachments && msg.content.attachments.length > 0,  
+      );
+      
+      if (lastMessageWithAttachment) {
+        const lastMessageTime = new Date(lastMessageWithAttachment.created_at).getTime();
+        const oneHourBeforeLastMessage = lastMessageTime - 60 * 60 * 1000; // 1 hour before last message
+      
+        allAttachments = recentMessagesData.reverse()
+          .map((msg) => {
+            const msgTime = new Date(msg.created_at).getTime();
+            const isWithinTime = msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime;
+            console.log("isWithinTime?", isWithinTime);
+            const attachments = msg.content.attachments || [];
+            // if the message is out of the time range, set the attachment 'text' to '[Hidden]'
+            if (!isWithinTime) {
+              attachments.forEach((attachment) => {
+                attachment.text = "[Hidden]";
+              });
+            }
+            return attachments;
+          })
+          .flat();
+      }
+    }        
+  
+    const formattedAttachments = allAttachments
+      .map(
+        (attachment) => 
+          `ID: ${attachment.id}
+Name: ${attachment.title} 
+URL: ${attachment.url}
+Type: ${attachment.source}
+Description: ${attachment.description}
+Text: ${attachment.text}
+  `,
+       )
+      .join("\n");
 
     const initialState = {
       agentId: this.agentId,
@@ -599,8 +680,8 @@ export class AgentRuntime {
         "### Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
         goals,
       ),
-      lore: addHeader("### Important Information", lore),
-      loreData,
+      // lore: addHeader("### Important Information", lore),
+      // loreData,
       goalsData,
       recentMessages: addHeader("### Conversation Messages", recentMessages),
       recentMessagesData,
@@ -608,8 +689,10 @@ export class AgentRuntime {
       recentFactsData,
       relevantFacts: addHeader("# Relevant Facts", relevantFacts),
       relevantFactsData,
+      attachments: formattedAttachments,
       ...additionalKeys,
     };
+    
 
     const actionPromises = this.actions.map(async (action: Action) => {
       const result = await action.validate(this, message, initialState);
@@ -670,7 +753,7 @@ export class AgentRuntime {
       count: conversationLength,
       unique: false,
     });
-  
+
     const recentMessages = formatMessages({
       actors: state.actorsData ?? [],
       messages: recentMessagesData.map((memory: Memory) => {
@@ -679,7 +762,7 @@ export class AgentRuntime {
         return newMemory;
       }),
     });
-  
+
     return {
       ...state,
       recentMessages: addHeader("### Conversation Messages", recentMessages),

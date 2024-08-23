@@ -1,6 +1,6 @@
 import { type User } from "./types.ts";
-import { type AgentRuntime } from "../runtime.ts"
-import { Content, type UUID } from "../types.ts"
+import { type AgentRuntime } from "../core/runtime.ts";
+import { Content, type UUID } from "../core/types.ts";
 import { getCachedEmbeddings, writeCachedEmbedding } from "./cache.ts";
 
 export async function populateMemories(
