@@ -15,6 +15,10 @@ import {
  */
 export abstract class DatabaseAdapter {
   /**
+   * The database instance.
+   */
+  db: any;
+  /**
    * Retrieves an account by its ID.
    * @param user_id The UUID of the user account to retrieve.
    * @returns A Promise that resolves to the Account object or null if not found.
@@ -279,6 +283,9 @@ export abstract class DatabaseAdapter {
    * @returns A Promise that resolves to an array of UUIDs representing the participants.
    */
   abstract getParticipantsForRoom(room_id: UUID): Promise<UUID[]>;
+
+  abstract getParticipantUserState(roomId: UUID, userId: UUID): Promise<'FOLLOWED' | 'MUTED' | null>;
+  abstract setParticipantUserState(roomId: UUID, userId: UUID, state: 'FOLLOWED' | 'MUTED' | null): Promise<void>;
 
   /**
    * Creates a new relationship between two users.

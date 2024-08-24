@@ -7,9 +7,10 @@ import {
   formatEvaluatorNames,
   formatEvaluators,
 } from "./evaluators.ts";
-import logger from "./logger.ts";
 import { MemoryManager } from "./memory.ts";
+import { parseJsonArrayFromText } from "./parsing.ts";
 import {
+  Character,
   Content,
   Goal,
   Provider,
@@ -18,26 +19,25 @@ import {
   type Evaluator,
   type Message,
 } from "./types.ts";
-import { parseJsonArrayFromText } from "./parsing.ts";
 
+import { UUID } from "crypto";
+import tiktoken, { TiktokenModel } from "tiktoken";
+import { formatFacts } from "../evaluators/fact.ts";
+import LlamaService from "../services/llama.ts";
 import {
   composeActionExamples,
   formatActionConditions,
   formatActionNames,
   formatActions,
 } from "./actions.ts";
-import { UUID } from "crypto";
 import { zeroUuid } from "./constants.ts";
 import { DatabaseAdapter } from "./database.ts";
-import { formatFacts } from "../evaluators/fact.ts";
+import defaultCharacter from "./defaultCharacter.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { formatLore, getLore } from "./lore.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { defaultProviders, getProviders } from "./providers.ts";
-import { type Actor, type Memory } from "./types.ts";
 import settings from "./settings.ts";
-import LlamaService from "../services/llama.ts";
-import tiktoken, { TiktokenModel } from "tiktoken";
+import { type Actor, type Memory } from "./types.ts";
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -105,6 +105,11 @@ export class AgentRuntime {
   fetch = fetch;
 
   /**
+   * The character to use for the agent
+   */
+  character: Character;
+
+  /**
    * Store messages that are sent and received by the agent.
    */
   messageManager: MemoryManager = new MemoryManager({
@@ -155,6 +160,7 @@ export class AgentRuntime {
   constructor(opts: {
     conversationLength?: number; // number of messages to hold in the recent message cache
     agentId?: UUID; // ID of the agent
+    character?: Character; // The character to use for the agent
     token: string; // JWT token, can be a JWT token if outside worker, or an OpenAI token if inside worker
     serverUrl?: string; // The URL of the worker
     actions?: Action[]; // Optional custom actions
@@ -170,7 +176,7 @@ export class AgentRuntime {
     this.databaseAdapter = opts.databaseAdapter;
     this.agentId = opts.agentId ?? zeroUuid;
     this.fetch = (opts.fetch as typeof fetch) ?? this.fetch;
-
+    this.character = opts.character || defaultCharacter;
     if (!opts.databaseAdapter) {
       throw new Error("No database adapter provided");
     }
@@ -194,6 +200,10 @@ export class AgentRuntime {
     (opts.providers ?? defaultProviders).forEach((provider) => {
       this.registerContextProvider(provider);
     });
+
+    if (!settings.OPENAI_API_KEY && !this.llamaService) {
+      this.llamaService = new LlamaService();
+    }
   }
 
   /**
@@ -229,7 +239,63 @@ export class AgentRuntime {
   }
 
   /**
-   * Send a message to the OpenAI API for completion.
+ * Send a message to the model for a text completion.
+ * @param opts - The options for the completion request.
+ * @param opts.context The context of the message to be completed.
+ * @param opts.stop A list of strings to stop the completion at.
+ * @param opts.model The model to use for completion.
+ * @param opts.frequency_penalty The frequency penalty to apply to the completion.
+ * @param opts.presence_penalty The presence penalty to apply to the completion.
+ * @param opts.temperature The temperature to apply to the completion.
+ * @param opts.max_context_length The maximum length of the context to apply to the completion.
+ * @returns The completed message.
+ */
+  async completion({
+    context = "",
+    stop = [],
+    model = this.model,
+    frequency_penalty = 0.0,
+    presence_penalty = 0.0,
+    temperature = 0.3,
+    max_context_length = settings.OPENAI_API_KEY ? 127000 : 8000,
+    max_response_length = settings.OPENAI_API_KEY ? 8192 : 4096
+  }) {
+    console.log('*** completion context', context)
+    if (!settings.OPENAI_API_KEY) {
+      context = await this.trimTokens("gpt-4o", context, max_context_length);
+      console.log('*** completion context after trim', context)
+      return await this.llamaService.queueTextCompletion(context, temperature, stop, frequency_penalty, presence_penalty, max_response_length);
+    } else {
+      // just use openai, no difference
+      return await this.messageCompletion({ context, stop, model, frequency_penalty, presence_penalty, temperature, max_context_length, max_response_length });
+    }
+  }
+
+  /**
+   * Truncate the context to the maximum length allowed by the model.
+   * @param model The model to use for completion.
+   * @param context The context of the message to be completed.
+   * @param max_context_length The maximum length of the context to apply to the completion.
+   * @returns 
+   */
+  async trimTokens(model, context, maxTokens) {
+    // Count tokens and truncate context if necessary
+    const encoding = tiktoken.encoding_for_model(model as TiktokenModel);
+    let tokens = encoding.encode(context);
+    const textDecoder = new TextDecoder();
+    if (tokens.length > maxTokens) {
+      console.log('***** SLICE')
+      console.log("BEFORE:", tokens.length)
+      console.log("max_context_length:", maxTokens)
+      tokens = tokens.reverse().slice(maxTokens).reverse();
+      console.log("AFTER:", tokens.length)
+      context = textDecoder.decode(encoding.decode(tokens));
+    }
+    return context;
+  }
+
+  /**
+   * Send a message to the model for completion.
    * @param opts - The options for the completion request.
    * @param opts.context The context of the message to be completed.
    * @param opts.stop A list of strings to stop the completion at.
@@ -240,41 +306,30 @@ export class AgentRuntime {
    * @param opts.max_context_length The maximum length of the context to apply to the completion.
    * @returns The completed message.
    */
-  async completion({
+  async messageCompletion({
     context = "",
     stop = [],
     model = this.model,
     frequency_penalty = 0.0,
     presence_penalty = 0.0,
-    temperature = 0.7,
-    max_context_length = settings.OPENAI_API_KEY ? "127999" : "8192",
+    temperature = 0.3,
+    max_context_length = settings.OPENAI_API_KEY ? 127000 : 8000,
+    max_response_length = settings.OPENAI_API_KEY ? 8192 : 4096
   }) {
+    context = await this.trimTokens("gpt-4o", context, max_context_length);
     if (!settings.OPENAI_API_KEY) {
-      if (!this.llamaService) {
-        this.llamaService = new LlamaService();
-        await this.llamaService.initialize();
-      }
-      const completionResponse = await this.llamaService.getCompletionResponse(
+      const completionResponse = await this.llamaService.queueMessageCompletion(
         context,
         temperature,
         stop,
         frequency_penalty,
         presence_penalty,
+        max_response_length
       );
       console.log("Completion response: ", completionResponse);
       // change the 'content' to 'content'
       (completionResponse as any).content = completionResponse.content;
       return JSON.stringify(completionResponse);
-    }
-
-    // Count tokens and truncate context if necessary
-    const encoding = tiktoken.encoding_for_model(model as TiktokenModel);
-    let tokens = encoding.encode(context);
-    const maxTokens = parseInt(max_context_length);
-    const textDecoder = new TextDecoder();
-    if (tokens.length > maxTokens) {
-      tokens = tokens.slice(-maxTokens);
-      context = textDecoder.decode(encoding.decode(tokens))
     }
 
     const requestOptions = {
@@ -289,6 +344,7 @@ export class AgentRuntime {
         frequency_penalty,
         presence_penalty,
         temperature,
+        max_tokens: max_response_length,
         messages: [
           {
             role: "user",
@@ -334,10 +390,6 @@ export class AgentRuntime {
    */
   async embed(input: string) {
     if (!settings.OPENAI_API_KEY) {
-      if (!this.llamaService) {
-        this.llamaService = new LlamaService();
-        await this.llamaService.initialize();
-      }
       return await this.llamaService.getEmbeddingResponse(input);
     }
     const embeddingModel = this.embeddingModel;
@@ -471,7 +523,7 @@ export class AgentRuntime {
       template: evaluationTemplate,
     });
 
-    const result = await this.completion({
+    const result = await this.messageCompletion({
       context,
     });
 
@@ -503,36 +555,48 @@ export class AgentRuntime {
   }
 
   /**
+   * Ensure the existence of a user in the database. If the user does not exist, they are added to the database.
+   * @param user_id - The user ID to ensure the existence of.
+   * @param userName - The user name to ensure the existence of.
+   * @returns 
+   */
+
+  async ensureUserExists(user_id: UUID, userName: string | null) {
+    const account = await this.databaseAdapter.getAccountById(user_id);
+    console.log("Account is")
+    console.log(account)
+    if (!account) {
+      await this.databaseAdapter.createAccount({
+        id: user_id,
+        name: userName || "Bot",
+        email: (userName || "Bot") + "@discord",
+        details: { "summary": "" },
+      });
+      console.log(`User ${userName} created successfully.`);
+    }
+  }
+
+  async ensureParticipantInRoom(user_id: UUID, roomId: UUID) {
+    console.log(`Ensuring participant ${user_id} in room ${roomId}`);
+    const participants = await this.databaseAdapter.getParticipantsForRoom(roomId);
+    if (!participants.includes(user_id)) {
+      await this.databaseAdapter.addParticipant(user_id, roomId);
+      console.log(`User ${user_id} linked to room ${roomId} successfully.`);
+    }
+  }
+
+  /**
    * Ensure the existence of a room between the agent and a user. If no room exists, a new room is created and the user
    * and agent are added as participants. The room ID is returned.
    * @param user_id - The user ID to create a room with.
    * @returns The room ID of the room between the agent and the user.
    * @throws An error if the room cannot be created.
    */
-  async ensureRoomExists(user_id: UUID, room_id?: UUID) {
-    if (room_id) {
-      // check if room exists
-      const created = await this.databaseAdapter.createRoom(room_id);
-      if (created) {
-        this.databaseAdapter.addParticipant(user_id, room_id);
-        this.databaseAdapter.addParticipant(this.agentId, room_id);
-      }
-      return room_id;
-    }
-    const rooms = await this.databaseAdapter.getRoomsForParticipants([
-      user_id,
-      this.agentId,
-    ]);
-
-    if (rooms.length === 0) {
-      const room_id = await this.databaseAdapter.createRoom();
-      this.databaseAdapter.addParticipant(user_id, room_id);
-      this.databaseAdapter.addParticipant(this.agentId, room_id);
-      return room_id;
-    }
-    // else return the first room
-    else {
-      return rooms[0];
+  async ensureRoomExists(roomId: UUID) {
+    const room = await this.databaseAdapter.getRoom(roomId);
+    if (!room) {
+      await this.databaseAdapter.createRoom(roomId);
+      console.log(`Room ${roomId} created successfully.`);
     }
   }
 
@@ -631,17 +695,21 @@ export class AgentRuntime {
 
     if (recentMessagesData && Array.isArray(recentMessagesData)) {
       const lastMessageWithAttachment = recentMessagesData.find(
-        (msg) => msg.content.attachments && msg.content.attachments.length > 0,  
+        (msg) => msg.content.attachments && msg.content.attachments.length > 0,
       );
-      
+
       if (lastMessageWithAttachment) {
-        const lastMessageTime = new Date(lastMessageWithAttachment.created_at).getTime();
+        const lastMessageTime = new Date(
+          lastMessageWithAttachment.created_at,
+        ).getTime();
         const oneHourBeforeLastMessage = lastMessageTime - 60 * 60 * 1000; // 1 hour before last message
-      
-        allAttachments = recentMessagesData.reverse()
+
+        allAttachments = recentMessagesData
+          .reverse()
           .map((msg) => {
             const msgTime = new Date(msg.created_at).getTime();
-            const isWithinTime = msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime;
+            const isWithinTime =
+              msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime;
             console.log("isWithinTime?", isWithinTime);
             const attachments = msg.content.attachments || [];
             // if the message is out of the time range, set the attachment 'text' to '[Hidden]'
@@ -654,11 +722,11 @@ export class AgentRuntime {
           })
           .flat();
       }
-    }        
-  
+    }
+
     const formattedAttachments = allAttachments
       .map(
-        (attachment) => 
+        (attachment) =>
           `ID: ${attachment.id}
 Name: ${attachment.title} 
 URL: ${attachment.url}
@@ -666,12 +734,24 @@ Type: ${attachment.source}
 Description: ${attachment.description}
 Text: ${attachment.text}
   `,
-       )
+      )
       .join("\n");
+
+    // randomly get 3 bits of lore and join them into a paragraph, divided by \n
+    let lore = ""
+    // Assuming this.lore is an array of lore bits
+    if (this.character.lore && this.character.lore.length > 0) {
+      const shuffledLore = [...this.character.lore].sort(() => Math.random() - 0.5);
+      const selectedLore = shuffledLore.slice(0, 3);
+      lore = selectedLore.join('\n');
+    }
 
     const initialState = {
       agentId: this.agentId,
       agentName,
+      bio: this.character.bio || "",
+      lore,
+      directions: (this.character?.style?.all?.join('\n') || "") + "\n" + (this.character?.style?.chat?.join('\n') || ""),
       senderName,
       actors: addHeader("# Actors", actors),
       actorsData,
@@ -680,7 +760,6 @@ Text: ${attachment.text}
         "### Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
         goals,
       ),
-      // lore: addHeader("### Important Information", lore),
       // loreData,
       goalsData,
       recentMessages: addHeader("### Conversation Messages", recentMessages),
@@ -692,7 +771,6 @@ Text: ${attachment.text}
       attachments: formattedAttachments,
       ...additionalKeys,
     };
-    
 
     const actionPromises = this.actions.map(async (action: Action) => {
       const result = await action.validate(this, message, initialState);

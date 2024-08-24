@@ -17,7 +17,7 @@ import { type AgentRuntime } from "../../core/runtime.ts";
 import { messageHandlerTemplate } from "../../test_resources/templates.ts";
 import { Content, State, type Message, type UUID } from "../../core/types.ts";
 import { parseJSONObjectFromText } from "../../core/parsing.ts";
-import action from "../IGNORE";
+import action from "../ignore.ts";
 
 async function handleMessage(
   runtime: AgentRuntime,
@@ -56,7 +56,7 @@ async function handleMessage(
   const { user_id, room_id } = message;
 
   for (let triesLeft = 3; triesLeft > 0; triesLeft--) {
-    const response = await runtime.completion({
+    const response = await runtime.messageCompletion({
       context,
       stop: [],
     });

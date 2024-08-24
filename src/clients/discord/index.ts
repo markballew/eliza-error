@@ -4,31 +4,33 @@ import {
   Events,
   GatewayIntentBits,
   Guild,
+  MessageReaction,
   Partials,
   Routes,
+  User,
 } from "discord.js";
 import { EventEmitter } from "events";
 import { default as getUuid } from "uuid-by-string";
-import { Agent } from "../../agent/index.ts";
-import { adapter } from "../../agent/db.ts";
 import settings from "../../core/settings.ts";
 import { commands } from "./commands.ts";
 
+import { UUID } from "crypto";
+import { embeddingZeroVector } from "../../core/memory.ts";
+import { AgentRuntime } from "../../core/runtime.ts";
 import { MessageManager } from "./messages.ts";
 import { VoiceManager } from "./voice.ts";
 
 export class DiscordClient extends EventEmitter {
   apiToken: string;
   private client: Client;
-  private agent: Agent;
+  private runtime: AgentRuntime;
   character: any;
   private messageManager: MessageManager;
   private voiceManager: VoiceManager;
 
-  constructor(agent: Agent, character: any) {
+  constructor(runtime: AgentRuntime) {
     super();
     this.apiToken = settings.DISCORD_API_TOKEN as string;
-    this.character = character;
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds,
@@ -38,22 +40,18 @@ export class DiscordClient extends EventEmitter {
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.DirectMessageTyping,
         GatewayIntentBits.GuildMessageTyping,
+        GatewayIntentBits.GuildMessageReactions,
       ],
-      partials: [Partials.Channel, Partials.Message],
+      partials: [Partials.Channel, Partials.Message, Partials.User, Partials.Reaction],
     });
 
-    this.agent = agent;
+    this.runtime = runtime;
+    this.voiceManager = new VoiceManager(
+      this,
+    );
     this.messageManager = new MessageManager(
       this,
-      this.client,
-      this.agent,
-      this.character,
-    );
-    this.voiceManager = new VoiceManager(
-      this.client,
-      agent,
-      this.messageManager,
-      this.character,
+      this.voiceManager,
     );
 
     this.client.once(Events.ClientReady, this.onClientReady.bind(this));
@@ -66,6 +64,9 @@ export class DiscordClient extends EventEmitter {
   private setupEventListeners() {
     // When joining to a new server
     this.client.on("guildCreate", this.handleGuildCreate.bind(this));
+
+    this.client.on(Events.MessageReactionAdd, this.handleReactionAdd.bind(this));
+    this.client.on(Events.MessageReactionRemove, this.handleReactionRemove.bind(this));
 
     // Handle voice events with the voice manager
     this.client.on(
@@ -108,9 +109,85 @@ export class DiscordClient extends EventEmitter {
     console.log(`Logged in as ${readyClient.user?.tag}`);
     console.log("Use this URL to add the bot to your server:");
     console.log(
-      `https://discord.com/oauth2/authorize?client_id=${readyClient.user?.id}&scope=bot`,
+      `https://discord.com/api/oauth2/authorize?client_id=${readyClient.user?.id}&permissions=0&scope=bot%20applications.commands`,
     );
     await this.onReady();
+  }
+
+  async handleReactionAdd(reaction: MessageReaction, user: User) {
+    console.log("Reaction added");
+    if (user.bot) return;
+
+    let emoji = reaction.emoji.name;
+    if (!emoji && reaction.emoji.id) {
+      emoji = `<:${reaction.emoji.name}:${reaction.emoji.id}>`;
+    }
+
+    // Fetch the full message if it's a partial
+    if (reaction.partial) {
+      try {
+        await reaction.fetch();
+      } catch (error) {
+        console.error('Something went wrong when fetching the message:', error);
+        return;
+      }
+    }
+
+    const messageContent = reaction.message.content;
+    const truncatedContent = messageContent.length > 50 
+      ? messageContent.substring(0, 50) + '...' 
+      : messageContent;
+
+    const reactionMessage = `*<${emoji} emoji>: "${truncatedContent}"*`;
+
+    const room_id = getUuid(reaction.message.channel.id) as UUID;
+    const userIdUUID = getUuid(user.id) as UUID;
+
+    // Save the reaction as a message
+    await this.runtime.messageManager.createMemory({
+      user_id: userIdUUID,
+      content: { content: reactionMessage, action: "WAIT", source: "Discord" },
+      room_id,
+      embedding: embeddingZeroVector,
+    });
+  }
+
+  async handleReactionRemove(reaction: MessageReaction, user: User) {
+    console.log("Reaction removed");
+    if (user.bot) return;
+
+    let emoji = reaction.emoji.name;
+    if (!emoji && reaction.emoji.id) {
+      emoji = `<:${reaction.emoji.name}:${reaction.emoji.id}>`;
+    }
+
+    // Fetch the full message if it's a partial
+    if (reaction.partial) {
+      try {
+        await reaction.fetch();
+      } catch (error) {
+        console.error('Something went wrong when fetching the message:', error);
+        return;
+      }
+    }
+
+    const messageContent = reaction.message.content;
+    const truncatedContent = messageContent.length > 50 
+      ? messageContent.substring(0, 50) + '...' 
+      : messageContent;
+
+    const reactionMessage = `*Removed <${emoji} emoji> from: "${truncatedContent}"*`;
+
+    const room_id = getUuid(reaction.message.channel.id) as UUID;
+    const userIdUUID = getUuid(user.id) as UUID;
+
+    // Save the reaction removal as a message
+    await this.runtime.messageManager.createMemory({
+      user_id: userIdUUID,
+      content: { content: reactionMessage, action: "WAIT", source: "Discord" },
+      room_id,
+      embedding: embeddingZeroVector,
+    });
   }
 
   private handleGuildCreate(guild: Guild) {
@@ -138,16 +215,6 @@ export class DiscordClient extends EventEmitter {
     for (const [, guild] of guilds) {
       const fullGuild = await guild.fetch();
       this.voiceManager.scanGuild(fullGuild);
-    }
-
-    // set the bio back to default
-    if (this.character?.bio) {
-      adapter.db
-        .prepare("UPDATE accounts SET details = ? WHERE id = ?")
-        .run(
-          JSON.stringify({ summary: this.character.bio }),
-          getUuid(this.client.user?.id as string),
-        );
     }
   }
 }

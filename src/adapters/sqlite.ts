@@ -1,4 +1,5 @@
 import { v4 } from "uuid";
+import { load } from "../adapters/sqlite/sqlite_vss.ts";
 
 import { DatabaseAdapter } from "../core/database.ts";
 import {
@@ -41,11 +42,21 @@ export class SqliteDatabaseAdapter extends DatabaseAdapter {
     return rows.map((row) => row.user_id as UUID);
   }
 
-  db: Database;
+  async getParticipantUserState(roomId: UUID, userId: UUID): Promise<'FOLLOWED' | 'MUTED' | null> {
+    const stmt = this.db.prepare('SELECT user_state FROM participants WHERE room_id = ? AND user_id = ?');
+    const res = stmt.get(roomId, userId) as { user_state: 'FOLLOWED' | 'MUTED' | null } | undefined;
+    return res?.user_state ?? null;
+  }
+
+  async setParticipantUserState(roomId: UUID, userId: UUID, state: 'FOLLOWED' | 'MUTED' | null): Promise<void> {
+    const stmt = this.db.prepare('UPDATE participants SET user_state = ? WHERE room_id = ? AND user_id = ?');
+    stmt.run(state, roomId, userId);
+  }
 
   constructor(db: Database) {
     super();
     this.db = db;
+    load(db);
 
     // Check if the 'accounts' table exists as a representative table
     const tableExists = this.db
@@ -61,15 +72,16 @@ export class SqliteDatabaseAdapter extends DatabaseAdapter {
   }
 
   async getAccountById(user_id: UUID): Promise<Account | null> {
+    console.log("getAccountById", user_id)
     const sql = "SELECT * FROM accounts WHERE id = ?";
-    const accounts = this.db.prepare(sql).get(user_id) as Account[];
-    const account = accounts && accounts[0];
+    const account = this.db.prepare(sql).get(user_id) as Account;
+    if (!account) return null;
     if (account) {
       if (typeof account.details === "string") {
         account.details = JSON.parse(account.details as unknown as string);
       }
     }
-    return account || null;
+    return account;
   }
 
   async createAccount(account: Account): Promise<boolean> {
