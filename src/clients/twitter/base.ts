@@ -4,7 +4,7 @@ import { EventEmitter } from "events";
 import fs from "fs";
 import path from "path";
 import { default as getUuid } from "uuid-by-string";
-import { AgentRuntime } from "../../core/runtime.ts"
+import { AgentRuntime } from "../../core/runtime.ts";
 // import { adapter } from "../../db.ts";
 import settings from "../../core/settings.ts";
 
@@ -188,7 +188,9 @@ export class ClientBase extends EventEmitter {
         },
         false,
       );
-      await this.runtime.evaluate(message, { ...state, responseContent });
+      state = await this.runtime.updateRecentMessageState(state);
+
+      await this.runtime.evaluate(message, state);
     } else {
       console.warn("Empty response, skipping");
     }
@@ -198,7 +200,9 @@ export class ClientBase extends EventEmitter {
     const { content: senderContent } = message;
 
     if ((senderContent as Content).content) {
-      console.warn("Code has been commented out, messages are not saved until refactor complete")
+      console.warn(
+        "Code has been commented out, messages are not saved until refactor complete",
+      );
       // TODO: Refactor to use runtime and memory manager APIs, don't directly call the db
       // const data2 = adapter.db
       //   .prepare(

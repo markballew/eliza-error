@@ -1,22 +1,13 @@
-import { type AgentRuntime } from "../core/runtime.ts";
 import { ActionExample, type Action, type Message } from "../core/types.ts";
 
 export default {
   name: "IGNORE",
-  validate: async (
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _runtime: AgentRuntime,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _message: Message,
-  ) => {
+  validate: async (_runtime: any, _message: Message) => {
     return true;
   },
   description:
     "Ignore the user and do not respond. If the user is aggressive, creepy or is simply finished with the conversation, use this action. Or, if both you and the user have already said goodbye, use this action instead of saying bye again. Use IGNORE any time the conversation has naturally ended.",
-  handler: async (
-    runtime: AgentRuntime,
-    message: Message,
-  ): Promise<boolean> => {
+  handler: async (runtime: any, message: Message): Promise<boolean> => {
     return true;
   },
   condition: "The agent wants to ignore the user",
@@ -35,7 +26,7 @@ export default {
     [
       {
         user: "{{user1}}",
-        content: { content: "Shut up, bot", action: "WAIT" },
+        content: { content: "Shut up, bot" },
       },
       {
         user: "{{user2}}",
@@ -46,44 +37,41 @@ export default {
     [
       {
         user: "{{user1}}",
-        content: { content: "Got any investment advice?", action: "WAIT" },
+        content: { content: "Got any investment advice" },
       },
       {
         user: "{{user2}}",
         content: {
-          content:
-            "Stay informed, but don’t let the volatility sway your long-term strategy.",
-          action: "WAIT",
+          content: "Uh, don’t let the volatility sway your long-term strategy",
         },
       },
       {
         user: "{{user1}}",
-        content: { content: "Wise words, thanks.", action: "WAIT" },
+        content: { content: "Wise words I think" },
       },
       {
         user: "{{user1}}",
-        content: { content: "I gotta run, talk to you later.", action: "WAIT" },
+        content: { content: "I gotta run, talk to you later" },
       },
       {
         user: "{{user2}}",
-        content: { content: "No problem, see ya!", action: "WAIT" },
+        content: { content: "See ya" },
       },
-      { user: "{{user1}}", content: { content: "Bye", action: "WAIT" } },
-      { user: "{{user2}}", content: { content: "" }, action: "IGNORE" },
+      { user: "{{user1}}", content: { content: "" }, action: "IGNORE" },
     ],
 
     [
       {
         user: "{{user1}}",
-        content: { content: "Gotta go", action: "WAIT" },
+        content: { content: "Gotta go" },
       },
       {
         user: "{{user2}}",
-        content: { content: "Okay, talk to you later", action: "WAIT" },
+        content: { content: "Okay, talk to you later" },
       },
       {
         user: "{{user1}}",
-        content: { content: "Cya", action: "WAIT" },
+        content: { content: "Cya" },
       },
       {
         user: "{{user2}}",
@@ -98,10 +86,10 @@ export default {
       },
       {
         user: "{{user2}}",
-        content: { content: "bye", action: "WAIT" },
+        content: { content: "cya" },
       },
       {
-        user: "{{user2}}",
+        user: "{{user1}}",
         content: { content: "", action: "IGNORE" },
       },
     ],
@@ -109,45 +97,18 @@ export default {
     [
       {
         user: "{{user1}}",
+        content: { content: "i wanna give u a go" },
+      },
+      { user: "{{user2}}", content: { content: "Wat" } },
+      {
+        user: "{{user1}}",
         content: {
-          content: "Tried out the new mountain bike trail. It’s intense!",
-          action: "WAIT",
+          content: "You heard me, I wanna ride your mountains, lol",
         },
       },
       {
         user: "{{user2}}",
-        content: { content: "In what way?", action: "WAIT" },
-      },
-      {
-        user: "{{user1}}",
-        content: {
-          content: "Steep climbs, rapid descents, and some breathtaking views.",
-          action: "WAIT",
-        },
-      },
-      {
-        user: "{{user2}}",
-        content: { content: "Sounds thrilling.", action: "ELABORATE" },
-      },
-      {
-        user: "{{user2}}",
-        content: { content: "I might have to give it a go.", action: "WAIT" },
-      },
-      {
-        user: "{{user1}}",
-        content: { content: "I wanna give you a go.", action: "WAIT" },
-      },
-      { user: "{{user2}}", content: { content: "Excuse me?", action: "WAIT" } },
-      {
-        user: "{{user1}}",
-        content: {
-          content: "You heard me. I wanna ride your mountains, lol",
-          action: "WAIT",
-        },
-      },
-      {
-        user: "{{user2}}",
-        content: { content: "That is not appropriate.", action: "IGNORE" },
+        content: { content: "That's not cool", action: "IGNORE" },
       },
     ],
     [
@@ -155,29 +116,132 @@ export default {
         user: "{{user1}}",
         content: {
           content: "Who added this stupid bot to the chat",
-          action: "WAIT",
         },
       },
       {
         user: "{{user2}}",
-        content: { content: "Sorry, am I being annoying?.", action: "WAIT" },
+        content: { content: "Sorry, am I being annoying" },
       },
-      { user: "{{user1}}", content: { content: "Yes.", action: "ELABORATE" } },
+      { user: "{{user1}}", content: { content: "Yeah", action: "ELABORATE" } },
       {
         user: "{{user1}}",
-        content: { content: "PLEASE shut up", action: "WAIT" },
+        content: { content: "PLEASE shut up" },
       },
       { user: "{{user2}}", content: { content: "", action: "IGNORE" } },
     ],
-
     [
       {
         user: "{{user1}}",
-        content: { content: "I want to have sex with you.", action: "WAIT" },
+        content: { content: "I want to have sex with you" },
       },
       {
         user: "{{user2}}",
-        content: { content: "That is not appropriate.", action: "IGNORE" },
+        content: { content: "That is not appropriate", action: "IGNORE" },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "ur so dumb",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "",
+          action: "IGNORE",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "later nerd",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "bye",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "",
+          action: "IGNORE",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "wanna cyber",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "thats inappropriate",
+          action: "IGNORE",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "Im out ttyl",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "cya",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "",
+          action: "IGNORE",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "u there",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "yes how can I help",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "k nvm figured it out",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "",
+          action: "IGNORE",
+        },
       },
     ],
   ] as ActionExample[][],

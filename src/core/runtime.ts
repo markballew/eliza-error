@@ -13,6 +13,7 @@ import {
   Character,
   Content,
   Goal,
+  Media,
   Provider,
   State,
   type Action,
@@ -38,6 +39,9 @@ import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { defaultProviders, getProviders } from "./providers.ts";
 import settings from "./settings.ts";
 import { type Actor, type Memory } from "./types.ts";
+import TikToken from "tiktoken";
+import { wordsToPunish } from "../services/wordsToPunish.ts";
+import { names, uniqueNamesGenerator } from "unique-names-generator";
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -239,17 +243,17 @@ export class AgentRuntime {
   }
 
   /**
- * Send a message to the model for a text completion.
- * @param opts - The options for the completion request.
- * @param opts.context The context of the message to be completed.
- * @param opts.stop A list of strings to stop the completion at.
- * @param opts.model The model to use for completion.
- * @param opts.frequency_penalty The frequency penalty to apply to the completion.
- * @param opts.presence_penalty The presence penalty to apply to the completion.
- * @param opts.temperature The temperature to apply to the completion.
- * @param opts.max_context_length The maximum length of the context to apply to the completion.
- * @returns The completed message.
- */
+   * Send a message to the model for a text completion.
+   * @param opts - The options for the completion request.
+   * @param opts.context The context of the message to be completed.
+   * @param opts.stop A list of strings to stop the completion at.
+   * @param opts.model The model to use for completion.
+   * @param opts.frequency_penalty The frequency penalty to apply to the completion.
+   * @param opts.presence_penalty The presence penalty to apply to the completion.
+   * @param opts.temperature The temperature to apply to the completion.
+   * @param opts.max_context_length The maximum length of the context to apply to the completion.
+   * @returns The completed message.
+   */
   async completion({
     context = "",
     stop = [],
@@ -258,16 +262,35 @@ export class AgentRuntime {
     presence_penalty = 0.0,
     temperature = 0.3,
     max_context_length = settings.OPENAI_API_KEY ? 127000 : 8000,
-    max_response_length = settings.OPENAI_API_KEY ? 8192 : 4096
+    max_response_length = settings.OPENAI_API_KEY ? 8192 : 4096,
   }) {
-    console.log('*** completion context', context)
     if (!settings.OPENAI_API_KEY) {
-      context = await this.trimTokens("gpt-4o", context, max_context_length);
-      console.log('*** completion context after trim', context)
-      return await this.llamaService.queueTextCompletion(context, temperature, stop, frequency_penalty, presence_penalty, max_response_length);
+      context = await this.trimTokens(
+        "gpt-4o-mini",
+        context,
+        max_context_length,
+      );
+
+      return await this.llamaService.queueTextCompletion(
+        context,
+        temperature,
+        stop,
+        frequency_penalty,
+        presence_penalty,
+        max_response_length,
+      );
     } else {
       // just use openai, no difference
-      return await this.messageCompletion({ context, stop, model, frequency_penalty, presence_penalty, temperature, max_context_length, max_response_length });
+      return await this.messageCompletion({
+        context,
+        stop,
+        model,
+        frequency_penalty,
+        presence_penalty,
+        temperature,
+        max_context_length,
+        max_response_length,
+      });
     }
   }
 
@@ -276,7 +299,7 @@ export class AgentRuntime {
    * @param model The model to use for completion.
    * @param context The context of the message to be completed.
    * @param max_context_length The maximum length of the context to apply to the completion.
-   * @returns 
+   * @returns
    */
   async trimTokens(model, context, maxTokens) {
     // Count tokens and truncate context if necessary
@@ -284,11 +307,8 @@ export class AgentRuntime {
     let tokens = encoding.encode(context);
     const textDecoder = new TextDecoder();
     if (tokens.length > maxTokens) {
-      console.log('***** SLICE')
-      console.log("BEFORE:", tokens.length)
-      console.log("max_context_length:", maxTokens)
       tokens = tokens.reverse().slice(maxTokens).reverse();
-      console.log("AFTER:", tokens.length)
+
       context = textDecoder.decode(encoding.decode(tokens));
     }
     return context;
@@ -314,9 +334,9 @@ export class AgentRuntime {
     presence_penalty = 0.0,
     temperature = 0.3,
     max_context_length = settings.OPENAI_API_KEY ? 127000 : 8000,
-    max_response_length = settings.OPENAI_API_KEY ? 8192 : 4096
+    max_response_length = settings.OPENAI_API_KEY ? 8192 : 4096,
   }) {
-    context = await this.trimTokens("gpt-4o", context, max_context_length);
+    context = await this.trimTokens("gpt-4o-mini", context, max_context_length);
     if (!settings.OPENAI_API_KEY) {
       const completionResponse = await this.llamaService.queueMessageCompletion(
         context,
@@ -324,13 +344,28 @@ export class AgentRuntime {
         stop,
         frequency_penalty,
         presence_penalty,
-        max_response_length
+        max_response_length,
       );
-      console.log("Completion response: ", completionResponse);
       // change the 'content' to 'content'
       (completionResponse as any).content = completionResponse.content;
       return JSON.stringify(completionResponse);
     }
+
+    const biasValue = -30.0;
+    const encoding = TikToken.encoding_for_model("gpt-4o-mini");
+
+    const tokenIds = [
+      ...new Set(
+        await Promise.all(
+          wordsToPunish.map((word) => encoding.encode(word)[0]),
+        ),
+      ),
+    ];
+
+    const logit_bias = tokenIds.reduce((acc, tokenId) => {
+      acc[tokenId] = biasValue;
+      return acc;
+    }, {});
 
     const requestOptions = {
       method: "POST",
@@ -345,6 +380,7 @@ export class AgentRuntime {
         presence_penalty,
         temperature,
         max_tokens: max_response_length,
+        logit_bias,
         messages: [
           {
             role: "user",
@@ -412,8 +448,6 @@ export class AgentRuntime {
         length: 1536,
       }),
     };
-    console.log("Running embeddings");
-    console.log(requestOptions);
     try {
       const response = await fetch(
         `${this.serverUrl}/embeddings`,
@@ -490,7 +524,6 @@ export class AgentRuntime {
         if (!evaluator.handler) {
           return null;
         }
-
         const result = await evaluator.validate(this, message, state);
         if (result) {
           return evaluator;
@@ -558,27 +591,25 @@ export class AgentRuntime {
    * Ensure the existence of a user in the database. If the user does not exist, they are added to the database.
    * @param user_id - The user ID to ensure the existence of.
    * @param userName - The user name to ensure the existence of.
-   * @returns 
+   * @returns
    */
 
   async ensureUserExists(user_id: UUID, userName: string | null) {
     const account = await this.databaseAdapter.getAccountById(user_id);
-    console.log("Account is")
-    console.log(account)
     if (!account) {
       await this.databaseAdapter.createAccount({
         id: user_id,
         name: userName || "Bot",
         email: (userName || "Bot") + "@discord",
-        details: { "summary": "" },
+        details: { summary: "" },
       });
       console.log(`User ${userName} created successfully.`);
     }
   }
 
   async ensureParticipantInRoom(user_id: UUID, roomId: UUID) {
-    console.log(`Ensuring participant ${user_id} in room ${roomId}`);
-    const participants = await this.databaseAdapter.getParticipantsForRoom(roomId);
+    const participants =
+      await this.databaseAdapter.getParticipantsForRoom(roomId);
     if (!participants.includes(user_id)) {
       await this.databaseAdapter.addParticipant(user_id, roomId);
       console.log(`User ${user_id} linked to room ${roomId} successfully.`);
@@ -710,7 +741,6 @@ export class AgentRuntime {
             const msgTime = new Date(msg.created_at).getTime();
             const isWithinTime =
               msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime;
-            console.log("isWithinTime?", isWithinTime);
             const attachments = msg.content.attachments || [];
             // if the message is out of the time range, set the attachment 'text' to '[Hidden]'
             if (!isWithinTime) {
@@ -738,20 +768,45 @@ Text: ${attachment.text}
       .join("\n");
 
     // randomly get 3 bits of lore and join them into a paragraph, divided by \n
-    let lore = ""
+    let lore = "";
     // Assuming this.lore is an array of lore bits
     if (this.character.lore && this.character.lore.length > 0) {
-      const shuffledLore = [...this.character.lore].sort(() => Math.random() - 0.5);
+      const shuffledLore = [...this.character.lore].sort(
+        () => Math.random() - 0.5,
+      );
       const selectedLore = shuffledLore.slice(0, 3);
-      lore = selectedLore.join('\n');
+      lore = selectedLore.join("\n");
     }
+
+    const formattedCharacterMessageExamples = this.character.messageExamples
+      .map((example) => {
+        const exampleNames = Array.from({ length: 5 }, () =>
+          uniqueNamesGenerator({ dictionaries: [names] }),
+        );
+
+        return example
+          .map((message) => {
+            let messageString = `${message.user}: ${message.content.content}`;
+            exampleNames.forEach((name, index) => {
+              const placeholder = `{{user${index + 1}}}`;
+              messageString = messageString.replaceAll(placeholder, name);
+            });
+            return messageString;
+          })
+          .join("\n");
+      })
+      .join("\n\n");
 
     const initialState = {
       agentId: this.agentId,
       agentName,
       bio: this.character.bio || "",
       lore,
-      directions: (this.character?.style?.all?.join('\n') || "") + "\n" + (this.character?.style?.chat?.join('\n') || ""),
+      characterMessageExamples: formattedCharacterMessageExamples,
+      directions:
+        (this.character?.style?.all?.join("\n") || "") +
+        "\n" +
+        (this.character?.style?.chat?.join("\n") || ""),
       senderName,
       actors: addHeader("# Actors", actors),
       actorsData,
@@ -841,10 +896,48 @@ Text: ${attachment.text}
       }),
     });
 
+    let allAttachments = state.attachments || [];
+
+    if (recentMessagesData && Array.isArray(recentMessagesData)) {
+      const lastMessageWithAttachment = recentMessagesData.find(
+        (msg) => msg.content.attachments && msg.content.attachments.length > 0,
+      );
+
+      if (lastMessageWithAttachment) {
+        const lastMessageTime = new Date(
+          lastMessageWithAttachment.created_at,
+        ).getTime();
+        const oneHourBeforeLastMessage = lastMessageTime - 60 * 60 * 1000; // 1 hour before last message
+
+        allAttachments = recentMessagesData
+          .filter((msg) => {
+            const msgTime = new Date(msg.created_at).getTime();
+            return (
+              msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime
+            );
+          })
+          .flatMap((msg) => msg.content.attachments || []);
+      }
+    }
+
+    const formattedAttachments = (allAttachments as Media[])
+      .map(
+        (attachment) =>
+          `ID: ${attachment.id}
+Name: ${attachment.title}
+URL: ${attachment.url} 
+Type: ${attachment.source}
+Description: ${attachment.description}
+Text: ${attachment.text}
+    `,
+      )
+      .join("\n");
+
     return {
       ...state,
       recentMessages: addHeader("### Conversation Messages", recentMessages),
       recentMessagesData,
+      attachments: formattedAttachments,
     };
   }
 }

@@ -1,7 +1,6 @@
 import { composeContext } from "../core/context.ts";
 import { log_to_file } from "../core/logger.ts";
 import { embeddingZeroVector } from "../core/memory.ts";
-import { AgentRuntime } from "../core/runtime.ts";
 import { messageHandlerTemplate } from "../clients/discord/templates.ts";
 import {
   Action,
@@ -14,11 +13,22 @@ import { parseJSONObjectFromText } from "../core/parsing.ts";
 
 const maxContinuesInARow = 2;
 
+export const shouldElaborateTemplate = `# Task: Decide if {{agentName}} should continue, or wait for others in the conversation so speak.
+
+{{agentName}} is brief, and doesn't want to be annoying. {{agentName}} will only elaborate if the message requires a continuation to finish the thought.
+
+Based on the following conversation, should {{agentName}} elaborate? YES or NO
+
+{{recentMessages}}
+
+Should {{agentName}} elaborate? Respond with a YES or a NO.`;
+
 export default {
   name: "ELABORATE",
   description:
-    "ONLY use this action when the message necessitates a follow up. Do not use this when asking a question (use WAIT instead). Do not use this action when the conversation is finished or the user does not wish to speak (use IGNORE instead). If the last message action was ELABORATE, and the user has not responded, use WAIT instead. Use sparingly!",
-  validate: async (runtime: AgentRuntime, message: Message) => {
+    "ONLY use this action when the message necessitates a follow up. Do not use this action when the conversation is finished or the user does not wish to speak (use IGNORE instead). If the last message action was ELABORATE, and the user has not responded. Use sparingly.",
+  validate: async (runtime: any, message: Message) => {
+    console.log("Validating elaborate");
     const recentMessagesData = await runtime.messageManager.getMemories({
       room_id: message.room_id,
       count: 10,
@@ -45,16 +55,65 @@ export default {
     return true;
   },
   handler: async (
-    runtime: AgentRuntime,
+    runtime: any,
     message: Message,
     state: State,
     options: any,
     callback: any,
   ) => {
-    state = (await runtime.composeState(message)) as State;
+    if (
+      message.content.content.endsWith("?") ||
+      message.content.content.endsWith("!")
+    ) {
+      return;
+    }
 
-    console.log("discord client?");
-    console.log(state.discordClient);
+    if (!state) {
+      state = (await runtime.composeState(message)) as State;
+    }
+
+    state = await runtime.updateRecentMessageState(state);
+
+    async function _shouldElaborate(state: State): Promise<boolean> {
+      // If none of the above conditions are met, use the completion to decide
+      const shouldRespondContext = composeContext({
+        state,
+        template: shouldElaborateTemplate,
+      });
+
+      let response = "";
+
+      for (let triesLeft = 3; triesLeft > 0; triesLeft--) {
+        try {
+          response = await runtime.completion({
+            context: shouldRespondContext,
+            stop: ["\n"],
+            max_response_length: 5,
+          });
+          break;
+        } catch (error) {
+          console.error("Error in _shouldElaborate:", error);
+          // wait for 2 seconds
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          console.log("Retrying...");
+        }
+      }
+
+      console.log("*** SHOULD ELABORATE ***", response);
+
+      // Parse the response and determine if the runtime should respond
+      const lowerResponse = response.toLowerCase().trim();
+      if (lowerResponse.includes("yes")) {
+        return true;
+      }
+      return false;
+    }
+
+    const shouldElaborate = await _shouldElaborate(state);
+    if (!shouldElaborate) {
+      console.log("Not elaborating");
+      return;
+    }
 
     const context = composeContext({
       state,
@@ -153,7 +212,6 @@ export default {
     await _saveResponseMessage(message, state, responseContent);
 
     // if the action is ELABORATE, check if we are over maxContinuesInARow
-    // if so, then we should change the action to WAIT
     if (responseContent.action === "ELABORATE") {
       const agentMessages = state.recentMessagesData
         .filter((m: { user_id: any }) => m.user_id === runtime.agentId)
@@ -165,7 +223,7 @@ export default {
           (m: string | undefined) => m === "ELABORATE",
         );
         if (allContinues) {
-          responseContent.action = "WAIT";
+          responseContent.action = null;
         }
       }
     }
@@ -179,18 +237,16 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "Planning a solo trip soon. I've always wanted to try backpacking.",
-          action: "WAIT",
+          content: "we're planning a solo backpacking trip soon",
         },
       },
       {
         user: "{{user2}}",
-        content: { content: "Adventurous", action: "ELABORATE" },
+        content: { content: "oh sick", action: "ELABORATE" },
       },
       {
         user: "{{user2}}",
-        content: { content: "Any particular destination?", action: "WAIT" },
+        content: { content: "where are you going" },
       },
     ],
 
@@ -198,83 +254,24 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content: "I started learning the guitar this month!",
-          action: "WAIT",
+          content: "i just got a guitar and started learning last month",
         },
       },
       {
         user: "{{user2}}",
-        content: { content: "How’s that going?", action: "WAIT" },
-      },
-      {
-        user: "{{user1}}",
-        content: {
-          content: "Challenging, but rewarding.",
-          action: "ELABORATE",
-        },
-      },
-      {
-        user: "{{user1}}",
-        content: { content: "Seriously lol it hurts to type", action: "WAIT" },
-      },
-    ],
-
-    [
-      {
-        user: "{{user1}}",
-        content: {
-          content:
-            "I've been summarying a lot on what happiness means to me lately.",
-          action: "ELABORATE",
-        },
-      },
-      {
-        user: "{{user1}}",
-        content: {
-          content: "That it’s more about moments than things.",
-          action: "ELABORATE",
-        },
-      },
-      {
-        user: "{{user2}}",
-        content: {
-          content:
-            "Like the best things that have ever happened were things that happened, or moments that I had with someone.",
-          action: "ELABORATE",
-        },
-      },
-    ],
-
-    [
-      {
-        user: "{{user1}}",
-        content: {
-          content: "I found some incredible art today.",
-          action: "WAIT",
-        },
-      },
-      {
-        user: "{{user2}}",
-        content: { content: "Who's the artist?", action: "WAIT" },
-      },
-      {
-        user: "{{user1}}",
-        content: {
-          content: "Not sure lol, they are anon",
-          action: "ELABORATE",
-        },
+        content: { content: "maybe we can start a band soon lol" },
       },
       {
         user: "{{user1}}",
         content: {
           content:
-            "But the pieces are just so insane looking. Once sec, let me grab a link.",
+            "i'm not very good yet, but i've been playing until my fingers hut",
           action: "ELABORATE",
         },
       },
       {
         user: "{{user1}}",
-        content: { content: "DMed it to you", action: "WAIT" },
+        content: { content: "seriously lol it hurts to type" },
       },
     ],
 
@@ -283,31 +280,86 @@ export default {
         user: "{{user1}}",
         content: {
           content:
-            "The new exhibit downtown is thought-provoking. It's all about tribalism in online spaces.",
+            "I've been reflecting a lot on what happiness means to me lately",
           action: "ELABORATE",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content: "Really challenges your perceptions. I highly recommend it!",
-          action: "WAIT",
+          content: "That it’s more about moments than things",
+          action: "ELABORATE",
         },
       },
       {
         user: "{{user2}}",
-        content: { content: "I’m in. When are you free to go?" },
-        action: "WAIT",
+        content: {
+          content:
+            "Like the best things that have ever happened were things that happened, or moments that I had with someone",
+          action: "ELABORATE",
+        },
+      },
+    ],
+
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "i found some incredible art today",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: { content: "real art or digital art" },
       },
       {
         user: "{{user1}}",
-        content: { content: "Hmm, let me check." },
+        content: {
+          content: "lol real art",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content:
+            "the pieces are just so insane looking, one sec, let me grab a link",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: { content: "DMed it to you" },
+      },
+    ],
+
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content:
+            "the new exhibit downtown is rly cool, it's all about tribalism in online spaces",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "it really blew my mind, you gotta go",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: { content: "lol sure i'd go" },
+      },
+      {
+        user: "{{user1}}",
+        content: { content: "k i was thinking this weekend" },
         action: "ELABORATE",
       },
       {
         user: "{{user1}}",
-        content: { content: "How about this weekend?" },
-        action: "WAIT",
+        content: { content: "i'm free sunday, we could get a crew together" },
       },
     ],
 
@@ -315,29 +367,33 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content: "Just finished a marathon session of my favorite series!",
-          action: "WAIT",
-        },
-      },
-      {
-        user: "{{user2}}",
-        content: {
-          content: "Wow, that's quite a binge. Feeling okay?",
-          action: "WAIT",
+          content: "just finished the best anime i've ever seen",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content: "Surprisingly, yes.",
+          content: "watched 40 hours of it in 2 days",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "damn, u ok",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "surprisingly yes",
           action: "ELABORATE",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content: "Might go for another round this weekend.",
-          action: "WAIT",
+          content: "just found out theres a sequel, gg",
         },
       },
     ],
@@ -345,29 +401,26 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content: "I'm thinking of adopting a pet soon.",
-          action: "WAIT",
+          content: "i'm thinking of adopting a pet soon",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content: "That's great! What kind are you considering?",
-          action: "WAIT",
+          content: "what kind of pet",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content: "Leaning towards a cat.",
+          content: "i'm leaning towards a cat",
           action: "ELABORATE",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content: "They're more independent, and my apartment isn't huge.",
-          action: "WAIT",
+          content: "it'd be hard to take care of a dog in the city",
         },
       },
     ],
@@ -375,21 +428,46 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content: "I've been experimenting with vegan recipes lately.",
-          action: "WAIT",
+          content: "i've been experimenting with vegan recipes lately",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content: "Nice! Found any favorites?",
-          action: "WAIT",
+          content: "no thanks",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content: "A few, actually.",
+          content: "no seriously, its so dank",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "you gotta try some of my food when you come out",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "so i've been diving into photography as a new hobby",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "oh awesome, what do you enjoy taking photos of",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "mostly nature and urban landscapes",
           action: "ELABORATE",
         },
       },
@@ -397,8 +475,7 @@ export default {
         user: "{{user1}}",
         content: {
           content:
-            "The vegan lasagna was a hit even among my non-vegan friends.",
-          action: "WAIT",
+            "there's something peaceful about capturing the world through a lens",
         },
       },
     ],
@@ -406,30 +483,26 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content: "Been diving into photography as a new hobby.",
-          action: "WAIT",
+          content: "i've been getting back into indie music",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content: "That's cool! What do you enjoy taking photos of?",
-          action: "WAIT",
+          content: "what have you been listening to",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content: "Mostly nature and urban landscapes.",
+          content: "a bunch of random stuff i'd never heard before",
           action: "ELABORATE",
         },
       },
       {
         user: "{{user1}}",
         content: {
-          content:
-            "There's something peaceful about capturing the world through a lens.",
-          action: "WAIT",
+          content: "i'll send you a playlist",
         },
       },
     ],
@@ -437,21 +510,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content: "I've been really into indie music scenes lately.",
-          action: "WAIT",
-        },
-      },
-      {
-        user: "{{user2}}",
-        content: {
-          content: "That sounds awesome. Any recommendations?",
-          action: "WAIT",
-        },
-      },
-      {
-        user: "{{user1}}",
-        content: {
-          content: "Definitely! I'll send you a playlist.",
+          content: "i used to live in the city",
           action: "ELABORATE",
         },
       },
@@ -459,8 +518,139 @@ export default {
         user: "{{user1}}",
         content: {
           content:
-            "It's a mix of everything, so you're bound to find something you like.",
-          action: "WAIT",
+            "bad traffic, bad air quality, tons of homeless people, no thx",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "ok dood",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "you kids today dont know the value of hard work",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "always on your phones",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "sure grandpa lets get you to bed",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "hey fren r u ok",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "u look sad",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "im ok sweetie mommy just tired",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "helo fr om mars",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "i com in pes",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "wat",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "Yeah no worries, I get it, I've been crazy busy too",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "What have you been up to",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "Anything fun or just the usual",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "Been working on a new FPS game actually",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content:
+            "Just toying around with something in three.js nothing serious",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "Oh no, what happened",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user1}}",
+        content: {
+          content: "Did Mara leave you lol",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "wtf no, I got into an argument with my roommate",
+          action: "ELABORATE",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "Living with people is just hard",
         },
       },
     ],

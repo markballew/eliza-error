@@ -35,6 +35,19 @@ export function formatActors({ actors }: { actors: Actor[] }) {
  * @param actors - list of actors
  * @returns string
  */
+let serverClientTimeDiff = 0;
+
+export const syncServerTime = (serverTime: string) => {
+  const serverDate = new Date(serverTime);
+  const clientDate = new Date();
+  serverClientTimeDiff = serverDate.getTime() - clientDate.getTime();
+  console.log(
+    "Time difference between server and client:",
+    serverClientTimeDiff,
+    "ms",
+  );
+};
+
 export const formatMessages = ({
   messages,
   actors,
@@ -52,10 +65,6 @@ export const formatMessages = ({
         actors.find((actor: Actor) => actor.id === message.user_id)?.name ||
         "Unknown User";
 
-      if (messageAction === "IGNORE") {
-        messageContent = "*Ignored*";
-      }
-
       const attachments = (message.content as Content).attachments;
 
       const attachmentString =
@@ -63,8 +72,41 @@ export const formatMessages = ({
           ? ` (Attachments: ${attachments.map((media) => `[${media.id} - ${media.title} (${media.url})]`).join(", ")})`
           : "";
 
-      return `${formattedName} (${message.user_id.slice(-5)}): ${messageContent}${attachmentString}${messageAction && messageAction !== "null" ? ` (${messageAction})` : ""}`;
+      const timestamp = message.created_at
+        ? formatTimestamp(message.created_at)
+        : "";
+      const shortId = message.user_id.slice(-5);
+
+      return `(${timestamp}) [${shortId}] ${formattedName}: ${messageContent}${attachmentString}${messageAction && messageAction !== "null" ? ` (${messageAction})` : ""}`;
     })
     .join("\n");
   return messageStrings;
+};
+
+const formatTimestamp = (timestamp: string) => {
+  const clientNow = new Date();
+  const serverNow = new Date(clientNow.getTime() + serverClientTimeDiff);
+  let messageDate = new Date(timestamp);
+
+  // Adjust for the 7-hour difference
+  messageDate = new Date(messageDate.getTime() - 7 * 60 * 60 * 1000);
+
+  const diff = serverNow.getTime() - messageDate.getTime();
+
+  const absDiff = Math.abs(diff);
+  const seconds = Math.floor(absDiff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (absDiff < 60000) {
+    // Within 1 minute
+    return "just now";
+  } else if (minutes < 60) {
+    return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+  } else if (hours < 24) {
+    return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  } else {
+    return `${days} day${days !== 1 ? "s" : ""} ago`;
+  }
 };

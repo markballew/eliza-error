@@ -10,12 +10,11 @@ import {
 } from "discord.js";
 import { composeContext } from "../core/context.ts";
 import { log_to_file } from "../core/logger.ts";
-import { AgentRuntime } from "../core/runtime.ts";
-import { Action, Message, State } from "../core/types.ts";
+import { Action, ActionExample, Message, State } from "../core/types.ts";
 
 export default {
   name: "JOIN_VOICE",
-  validate: async (_runtime: AgentRuntime, message: Message, state: State) => {
+  validate: async (_runtime: any, message: Message, state: State) => {
     if (!state) {
       throw new Error("State is not available.");
     }
@@ -29,6 +28,30 @@ export default {
       throw new Error("Discord client is not available in the state.");
     }
 
+    // did they say something about joining a voice channel? if not, don't validate
+    const keywords = [
+      "join",
+      "come to",
+      "come on",
+      "enter",
+      "voice",
+      "chat",
+      "talk",
+      "call",
+      "hop on",
+      "get on",
+      "vc",
+      "meeting",
+      "discussion",
+    ];
+    if (
+      !keywords.some((keyword) =>
+        message.content.content.toLowerCase().includes(keyword),
+      )
+    ) {
+      return false;
+    }
+
     const client = state.discordClient as Client;
 
     // Check if the client is connected to any voice channel
@@ -38,7 +61,7 @@ export default {
   },
   description: "Join a voice channel to participate in voice chat.",
   handler: async (
-    runtime: AgentRuntime,
+    runtime: any,
     message: Message,
     state: State,
   ): Promise<boolean> => {
@@ -193,20 +216,19 @@ You should only respond with the name of the voice channel or none, no commentar
     }
   },
   condition:
-    "The agent wants to join a voice channel to participate in voice chat.",
+    "The agent wants to or has been asked to join a voice channel to participate in voice chat.",
   examples: [
     [
       {
         user: "{{user1}}",
         content: {
-          content: "Hey, let's jump into the 'General' voice channel and chat!",
-          action: "WAIT",
+          content: "Hey, let's jump into the 'General' voice and chat",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content: "Sure! I'm joining the voice channel now.",
+          content: "Sounds good",
           action: "JOIN_VOICE",
         },
       },
@@ -216,14 +238,13 @@ You should only respond with the name of the voice channel or none, no commentar
         user: "{{user1}}",
         content: {
           content:
-            "{{user2}}, can you join the voice channel? I want to discuss our game strategy.",
-          action: "WAIT",
+            "{{user2}}, can you join the vc, I want to discuss our strat",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content: "Absolutely! I'll join right now.",
+          content: "Sure I'll join right now",
           action: "JOIN_VOICE",
         },
       },
@@ -233,14 +254,13 @@ You should only respond with the name of the voice channel or none, no commentar
         user: "{{user1}}",
         content: {
           content:
-            "Hey {{user2}}, we're having a team meeting in the 'Conference' voice channel. Can you join us?",
-          action: "WAIT",
+            "hey {{user2}}, we're having a team meeting in the 'conference' voice channel, plz join us",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content: "Sure thing! I'll be right there.",
+          content: "OK see you there",
           action: "JOIN_VOICE",
         },
       },
@@ -251,13 +271,12 @@ You should only respond with the name of the voice channel or none, no commentar
         content: {
           content:
             "{{user2}}, let's have a quick voice chat in the 'Lounge' channel.",
-          action: "WAIT",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content: "Sounds good! Joining the 'Lounge' channel now.",
+          content: "kk be there in a sec",
           action: "JOIN_VOICE",
         },
       },
@@ -267,18 +286,61 @@ You should only respond with the name of the voice channel or none, no commentar
         user: "{{user1}}",
         content: {
           content:
-            "Hey {{user2}}, can you join me in the 'Music' voice channel? I want to share a new song with you.",
-          action: "WAIT",
+            "Hey {{user2}}, can you join me in the 'Music' voice channel",
         },
       },
       {
         user: "{{user2}}",
         content: {
-          content:
-            "Oh, exciting! I'm joining the channel. Can't wait to hear it!",
+          content: "Sure",
           action: "JOIN_VOICE",
         },
       },
     ],
-  ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "join voice chat with us {{user2}}",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "coming",
+          action: "JOIN_VOICE",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "hop in vc {{user2}}",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "joining now",
+          action: "JOIN_VOICE",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          content: "get in vc with us {{user2}}",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          content: "im in",
+          action: "JOIN_VOICE",
+        },
+      },
+    ],
+  ] as ActionExample[][],
 } as Action;
