@@ -13,6 +13,14 @@ import {
   Character,
   Content,
   Goal,
+  IAgentRuntime,
+  IAgentRuntimeBase,
+  IBrowserService,
+  IImageRecognitionService,
+  IMemoryManager,
+  IPdfService,
+  ITranscriptionService,
+  IVideoService,
   Media,
   Provider,
   State,
@@ -25,7 +33,13 @@ import { UUID } from "crypto";
 import { default as tiktoken, default as TikToken, TiktokenModel } from "tiktoken";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
 import { formatFacts } from "../evaluators/fact.ts";
+import { BrowserService } from "../services/browser.ts";
+import ImageDescriptionService from "../services/image.ts";
 import LlamaService from "../services/llama.ts";
+import { PdfService } from "../services/pdf.ts";
+import { SpeechService } from "../services/speech.ts";
+import { TranscriptionService } from "../services/transcription.ts";
+import { VideoService } from "../services/video.ts";
 import { wordsToPunish } from "../services/wordsToPunish.ts";
 import {
   composeActionExamples,
@@ -47,7 +61,7 @@ import { type Actor, type Memory } from "./types.ts";
  * Represents the runtime environment for an agent, handling message processing,
  * action registration, and interaction with external services like OpenAI and Supabase.
  */
-export class AgentRuntime {
+export class AgentRuntime implements IAgentRuntime, IAgentRuntimeBase {
   /**
    * Default count for recent messages to be kept in memory.
    * @private
@@ -102,6 +116,20 @@ export class AgentRuntime {
    */
   llamaService: LlamaService | null = null;
 
+  // services
+  speechService: typeof SpeechService;
+
+
+  transcriptionService: ITranscriptionService;
+
+  imageDescriptionService: IImageRecognitionService;
+
+  browserService: IBrowserService;
+
+  videoService: IVideoService;
+
+  pdfService: IPdfService;
+
   /**
    * Fetch function to use
    * Some environments may not have access to the global fetch function and need a custom fetch override.
@@ -116,34 +144,22 @@ export class AgentRuntime {
   /**
    * Store messages that are sent and received by the agent.
    */
-  messageManager: MemoryManager = new MemoryManager({
-    runtime: this,
-    tableName: "messages",
-  });
+  messageManager: IMemoryManager;
 
   /**
    * Store and recall descriptions of users based on conversations.
    */
-  descriptionManager: MemoryManager = new MemoryManager({
-    runtime: this,
-    tableName: "descriptions",
-  });
+  descriptionManager: IMemoryManager;
 
   /**
    * Manage the fact and recall of facts.
    */
-  factManager: MemoryManager = new MemoryManager({
-    runtime: this,
-    tableName: "facts",
-  });
+  factManager: IMemoryManager;
 
   /**
    * Manage the creation and recall of static information (documents, historical game lore, etc)
    */
-  loreManager: MemoryManager = new MemoryManager({
-    runtime: this,
-    tableName: "lore",
-  });
+  loreManager: IMemoryManager;
 
   /**
    * Creates an instance of AgentRuntime.
@@ -174,6 +190,7 @@ export class AgentRuntime {
     embeddingModel?: string; // The model to use for embedding
     databaseAdapter: DatabaseAdapter; // The database adapter used for interacting with the database
     fetch?: typeof fetch | unknown;
+    speechModelPath?: string;
   }) {
     this.#conversationLength =
       opts.conversationLength ?? this.#conversationLength;
@@ -184,6 +201,26 @@ export class AgentRuntime {
     if (!opts.databaseAdapter) {
       throw new Error("No database adapter provided");
     }
+
+    this.messageManager = new MemoryManager({
+      runtime: this as IAgentRuntimeBase,
+      tableName: "messages",
+    });
+
+    this.descriptionManager = new MemoryManager({
+      runtime: this as IAgentRuntimeBase,
+      tableName: "descriptions",
+    });
+
+    this.factManager = new MemoryManager({
+      runtime: this as IAgentRuntimeBase,
+      tableName: "facts",
+    });
+
+    this.loreManager = new MemoryManager({
+      runtime: this as IAgentRuntimeBase,
+      tableName: "lore",
+    });
 
     this.serverUrl = opts.serverUrl ?? this.serverUrl;
     this.model = opts.model ?? this.model;
@@ -207,6 +244,23 @@ export class AgentRuntime {
 
     if (!settings.OPENAI_API_KEY && !this.llamaService) {
       this.llamaService = new LlamaService();
+    }
+
+    this.transcriptionService = new TranscriptionService();
+
+    this.imageDescriptionService = new ImageDescriptionService(this);
+
+    this.browserService = new BrowserService(this);
+
+    this.videoService = new VideoService(this);
+
+    this.pdfService = new PdfService();
+
+
+    // static class, no need to instantiate but we can access it like a class instance
+    this.speechService = SpeechService;
+    if (opts.speechModelPath) {
+      SpeechService.modelPath = opts.speechModelPath;
     }
   }
 
@@ -492,7 +546,7 @@ export class AgentRuntime {
     content: Content,
     state?: State,
     callback?: (response: Content) => void,
-  ) {
+  ): Promise<void> {
     if (!content.action) {
       return;
     }
@@ -509,7 +563,7 @@ export class AgentRuntime {
       return;
     }
 
-    return await action.handler(this, message, state, {}, callback);
+    await action.handler(this as IAgentRuntime, message, state, {}, callback);
   }
 
   /**
@@ -524,7 +578,7 @@ export class AgentRuntime {
         if (!evaluator.handler) {
           return null;
         }
-        const result = await evaluator.validate(this, message, state);
+        const result = await evaluator.validate(this as IAgentRuntime, message, state);
         if (result) {
           return evaluator;
         }
@@ -567,7 +621,7 @@ export class AgentRuntime {
       .forEach((evaluator: Evaluator) => {
         if (!evaluator?.handler) return;
 
-        evaluator.handler(this, message);
+        evaluator.handler(this as IAgentRuntime, message);
       });
 
     return parsedResult;
@@ -715,9 +769,13 @@ export class AgentRuntime {
     const senderName = actorsData?.find(
       (actor: Actor) => actor.id === user_id,
     )?.name;
+
+    console.log("actorsData", actorsData)
+
+    // TODO: We may wish to consolidate and just accept character.name here instead of the actor name
     const agentName = actorsData?.find(
       (actor: Actor) => actor.id === this.agentId,
-    )?.name;
+    )?.name || this.character.name;
 
     let allAttachments = message.content.attachments || [];
 
@@ -776,7 +834,7 @@ Text: ${attachment.text}
     }
 
     const formattedCharacterPostExamples = this.character.postExamples.map((post) => {
-      let messageString = `@${this.character.name}: ${post}`;
+      let messageString = `${post}`;
       return messageString;
     })
       .join("\n");
@@ -800,6 +858,56 @@ Text: ${attachment.text}
       })
       .join("\n\n");
 
+      const getRecentInteractions = async (userA: UUID, userB: UUID): Promise<Memory[]> => {
+        // Find all rooms where userA and userB are participants
+      const rooms = await this.databaseAdapter.getRoomsForParticipants([userA, userB]);
+
+      // Fetch recent messages from the rooms
+      const recentMessages: Memory[] = [];
+      for (const room_id of rooms) {
+        const roomMessages = await this.messageManager.getMemories({
+          room_id,
+          count: 10, // Adjust the count as needed
+          unique: false,
+          user_ids: [userA, userB],
+        });
+        recentMessages.push(...roomMessages);
+      }
+
+      // Sort messages by timestamp in descending order
+      recentMessages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      // Take the most recent messages
+      const recentInteractionsData = recentMessages.slice(0, 10); // Adjust the count as needed
+      return recentInteractionsData;
+    }
+
+    const recentInteractions = (user_id !== this.agentId) ? await getRecentInteractions(user_id, this.agentId) : [];
+
+    const getRecentMessageInteractions = async (recentInteractionsData: Memory[]): Promise<string> => {
+      // Format the recent messages
+      const formattedInteractions = recentInteractionsData.map((message) => {
+        const sender = message.user_id === this.agentId ? this.character.name : "User";
+        return `${sender}: ${message.content.content}`;
+      }).join("\n");
+
+      return formattedInteractions;
+    }
+
+    const formattedMessageInteractions = await getRecentMessageInteractions(recentInteractions);
+
+    const getRecentPostInteractions = async (recentInteractionsData: Memory[]): Promise<string> => {
+      // Format the recent posts
+      const formattedInteractions = recentInteractionsData.map((message) => {
+        const sender = message.user_id === this.agentId ? this.character.name : "User";
+        return `${sender}: ${message.content.content}`;
+      }).join("\n");
+
+      return formattedInteractions;
+    }
+
+    const formattedPostInteractions = await getRecentPostInteractions(recentInteractions);
+
     const initialState = {
       agentId: this.agentId,
       // Character file stuff
@@ -810,6 +918,17 @@ Text: ${attachment.text}
         this.character.adjectives[
         Math.floor(Math.random() * this.character.adjectives.length)
         ] : "",
+        // Recent interactions between the sender and receiver, formatted as messages
+      recentMessageInteractions: formattedMessageInteractions,
+      // Recent interactions between the sender and receiver, formatted as posts
+      recentPostInteractions: formattedPostInteractions,
+      // Raw memory[] array of interactions
+      recentInteractionsData: recentInteractions,
+      // randomly pick one topic
+      topic: this.character.topics && this.character.topics.length > 0 ?
+        this.character.topics[
+        Math.floor(Math.random() * this.character.topics.length)
+        ] : null,
       topics: this.character.topics && this.character.topics.length > 0 ? addHeader(`### Topics for ${this.character.topics}`, this.character.topics
         .sort(() => 0.5 - Math.random())
         .slice(0, 10)
@@ -852,7 +971,7 @@ Text: ${attachment.text}
     };
 
     const actionPromises = this.actions.map(async (action: Action) => {
-      const result = await action.validate(this, message, initialState);
+      const result = await action.validate(this as IAgentRuntime, message, initialState);
       if (result) {
         return action;
       }
@@ -860,7 +979,7 @@ Text: ${attachment.text}
     });
 
     const evaluatorPromises = this.evaluators.map(async (evaluator) => {
-      const result = await evaluator.validate(this, message, initialState);
+      const result = await evaluator.validate(this as IAgentRuntime, message, initialState);
       if (result) {
         return evaluator;
       }

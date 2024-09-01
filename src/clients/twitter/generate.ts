@@ -1,15 +1,14 @@
-import { SearchMode } from "agent-twitter-client";
 import { composeContext } from "../../core/context.ts";
 import { log_to_file } from "../../core/logger.ts";
 import { AgentRuntime } from "../../core/runtime.ts";
 import settings from "../../core/settings.ts";
-import { State } from "../../core/types.ts";
 import { ClientBase } from "./base.ts";
+import { twitterGenerateRoomId } from "./constants.ts";
+import { getRecentConversations, searchRecentPosts } from "./utils.ts";
 
-const newTweetPrompt = `{{recentConversations}}
-
-{{recentSearchResults}}
-
+const newTweetPrompt = `{{recentSearchResultsText}}
+{{recentConversations}}
+{{recentPosts}}
 About {{agentName}} (@{{twitterUserName}}):
 {{bio}}
 {{lore}}
@@ -17,9 +16,9 @@ About {{agentName}} (@{{twitterUserName}}):
 {{characterPostExamples}}
 
 {{postDirections}}
-- do not use the "@" in your response
-- do not use the "#" in your response
-- no @s, #s, ?s or links
+do not use the "@" in your response
+do not use the "#" in your response
+no @s, #s, ?s or links
 
 # Task: Generate a post in the voice and style of {{agentName}}, aka @{{twitterUserName}}
 Write a single sentence post that is {{adjective}} about {{topic}} (without mentioning {{topic}} directly), from the perspective of {{agentName}}. Try to write something totally different than previous posts. Do not add commentary or ackwowledge this request, just write the post.`;
@@ -53,61 +52,35 @@ export class TwitterGenerationClient extends ClientBase {
         return;
       }
 
-      // Get recent conversations
-      const recentConversations = this.twitterClient.searchTweets(
-        `@${botTwitterUsername}`,
-        20,
-        SearchMode.Latest,
-      );
+    const recentConversationsText = await getRecentConversations(this.runtime, this.twitterClient, botTwitterUsername);
+  
+      // Wait 1.5-3.5 seconds to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 2000) + 1500));
 
-      const recentConversationsArray = [];
-      while (true) {
-        const next = await recentConversations.next();
-        if (next.done) {
-          break;
-        }
-        recentConversationsArray.push(next.value);
-      }
-      const recentConversationsText = recentConversationsArray
-        .map((tweet) => tweet.text)
-        .join("\n");
+      await Promise.all([
+        this.runtime.ensureUserExists(this.runtime.agentId, this.runtime.character.name),
+        this.runtime.ensureRoomExists(twitterGenerateRoomId),
+      ]);
+    
+      await this.runtime.ensureParticipantInRoom(this.runtime.agentId, twitterGenerateRoomId);
+      
+      await this.ensureRoomIsPopulated(twitterGenerateRoomId);
 
-      // Get recent search results
-      const searchTerms = this.runtime.character.topics
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 2);
-      const recentSearchResults = [];
-      for (const searchTerm of searchTerms) {
-        const tweets = this.twitterClient.searchTweets(
-          searchTerm,
-          20,
-          SearchMode.Latest,
-        );
-        const tweetsArray = [];
-        while (true) {
-          const next = await tweets.next();
-          if (next.done) {
-            break;
-          }
-          tweetsArray.push(next.value);
-        }
-        recentSearchResults.push(...tweetsArray.map((tweet) => tweet.text));
-      }
-      const recentSearchResultsText = recentSearchResults.join("\n");
-
-      // Generate new tweet
+      const state = await this.runtime.composeState({ user_id: this.runtime.agentId, room_id: twitterGenerateRoomId, content: { content: "", action: "" } }, { twitterUserName: botTwitterUsername, recentConversations: recentConversationsText });
+      const recentSearchResultsText = await searchRecentPosts(this.runtime, this.twitterClient, state.topic);
+      state['recentSearchResultsText'] = recentSearchResultsText;
+      
+      // Generate new tweet  
       const context = composeContext({
-        state: {
-          twitterUserName: botTwitterUsername,
-        } as unknown as State,
+        state,
         template: newTweetPrompt,
       });
-
+  
       const datestr = new Date().toISOString().replace(/:/g, "-");
-
+  
       // log context to file
       log_to_file(`${botTwitterUsername}_${datestr}_generate_context`, context);
-
+  
       let newTweetContent;
       for (let triesLeft = 3; triesLeft > 0; triesLeft--) {
         try {
@@ -115,21 +88,22 @@ export class TwitterGenerationClient extends ClientBase {
             context,
             stop: [],
             temperature: this.temperature,
-            frequency_penalty: 0.5, // TODO: tune these and move to settings
-            presence_penalty: 0.5, // TODO: tune these and move to settings
+            frequency_penalty: 0.5,
+            presence_penalty: 0.5,
             model: this.runtime.model,
           });
           log_to_file(
             `${botTwitterUsername}_${datestr}_generate_response_${3 - triesLeft}`,
             newTweetContent,
           );
+          break;
         } catch (error) {
           console.warn("Could not generate new tweet:", error);
           await new Promise((resolve) => setTimeout(resolve, 2000));
           console.log("Retrying...");
         }
       }
-
+  
       // Send the new tweet
       if (!this.dryRun) {
         await this.twitterClient.sendTweet(newTweetContent.trim());
