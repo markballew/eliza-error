@@ -1,8 +1,8 @@
 import {
-  IAgentRuntimeBase,
+  IAgentRuntime,
   IMemoryManager,
   type Memory,
-  type UUID,
+  type UUID
 } from "./types.ts";
 
 export const embeddingDimension = 1536;
@@ -18,7 +18,7 @@ export class MemoryManager implements IMemoryManager {
   /**
    * The AgentRuntime instance associated with this manager.
    */
-  runtime: IAgentRuntimeBase;
+  runtime: IAgentRuntime;
 
   /**
    * The name of the database table this manager operates on.
@@ -31,7 +31,7 @@ export class MemoryManager implements IMemoryManager {
    * @param opts.tableName The name of the table this manager will operate on.
    * @param opts.runtime The AgentRuntime instance associated with this manager.
    */
-  constructor(opts: { tableName: string; runtime: IAgentRuntimeBase }) {
+  constructor(opts: { tableName: string; runtime: IAgentRuntime }) {
     this.runtime = opts.runtime;
     this.tableName = opts.tableName;
   }
@@ -150,8 +150,12 @@ export class MemoryManager implements IMemoryManager {
   async createMemory(
     memory: Memory,
     unique = false,
-    created_at?: Date,
   ): Promise<void> {
+    const existingMessage = await this.runtime.databaseAdapter.getMemoryById(memory.id);
+    if (existingMessage) {
+      console.log("Memory already exists, skipping");
+      return;
+    }
     await this.runtime.databaseAdapter.createMemory(
       memory,
       this.tableName,
@@ -159,6 +163,20 @@ export class MemoryManager implements IMemoryManager {
     );
   }
 
+  async getMemoriesByRoomIds(params: {
+    room_ids: UUID[];
+  }): Promise<Memory[]> {
+    const result = await this.runtime.databaseAdapter.getMemoriesByRoomIds({
+      room_ids: params.room_ids,
+    });
+    return result;
+  }
+
+  async getMemoryById(id: UUID): Promise<Memory | null> {
+    const result = await this.runtime.databaseAdapter.getMemoryById(id);
+    return result;
+  }
+  
   /**
    * Removes a memory from the database by its ID.
    * @param memoryId The ID of the memory to remove.

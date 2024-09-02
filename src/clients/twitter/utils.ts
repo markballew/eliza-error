@@ -1,6 +1,7 @@
 import { Scraper, SearchMode, Tweet } from "agent-twitter-client";
-import { IAgentRuntime } from "../../core/types.ts";
 import { addHeader } from "../../core/context.ts";
+import { IAgentRuntime } from "../../core/types.ts";
+import { ClientBase } from "./base.ts";
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
   const waitTime =
@@ -167,3 +168,50 @@ export const searchRecentPosts = async (
     recentSearchResultsText,
   );
 };
+
+export async function buildConversationThread(tweet: Tweet, client: ClientBase): Promise<string> {
+  let thread: Tweet[] = [];
+  const visited: Set<string> = new Set();
+
+  async function processThread(currentTweet: Tweet) {
+    if (!currentTweet) {
+      console.log("No current tweet found");
+      return;
+    }
+    if (visited.has(currentTweet.id)) {
+      return;
+    }
+    visited.add(currentTweet.id);
+
+    thread.unshift(currentTweet);
+
+    if (currentTweet.inReplyToStatus) {
+      await processThread(currentTweet.inReplyToStatus);
+    }
+  }
+
+  await processThread(tweet);
+
+  // Make sure that tweets are unique and sorted by timestamp
+  thread = [...new Set(thread)];
+  thread.sort((a, b) => new Date(a.timeParsed).getTime() - new Date(b.timeParsed).getTime());
+
+  const conversationText = thread
+    .map((t) => {
+      const post = [];
+      post.push(`By: ${t.name} (@${t.username})`);
+      post.push(`ID: ${t.id}`);
+      if (t.inReplyToStatusId) {
+        post.push(`In Reply To: ${t.inReplyToStatusId}`);
+      }
+      post.push(`Time: ${t.timeParsed.toLocaleString()}`);
+      post.push(`Content:`)
+      post.push("---");
+      post.push(t.text);
+      post.push("---");
+      return post.join("\n");
+    })
+    .join("\n\n");
+
+  return conversationText;
+}
