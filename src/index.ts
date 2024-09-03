@@ -5,13 +5,10 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import yargs from "yargs";
 import askClaude from "./actions/ask_claude.ts";
-// TODO: We should import these from the discord client
-import follow_room from "./clients/discord/actions/follow_room.ts";
-import joinvoice from "./clients/discord/actions/joinvoice.ts";
-import leavevoice from "./clients/discord/actions/leavevoice.ts";
-import mute_room from "./clients/discord/actions/mute_room.ts";
-import unfollow_room from "./clients/discord/actions/unfollow_room.ts";
-import unmute_room from "./clients/discord/actions/unmute_room.ts";
+import follow_room from "./actions/follow_room.ts";
+import mute_room from "./actions/mute_room.ts";
+import unfollow_room from "./actions/unfollow_room.ts";
+import unmute_room from "./actions/unmute_room.ts";
 import { SqliteDatabaseAdapter } from "./adapters/sqlite.ts";
 import { DiscordClient } from "./clients/discord/index.ts";
 import channelStateProvider from "./clients/discord/providers/channelState.ts";
@@ -21,6 +18,9 @@ import { defaultActions } from "./core/actions.ts";
 import { AgentRuntime } from "./core/runtime.ts";
 import settings from "./core/settings.ts";
 import timeProvider from "./providers/time.ts";
+import { wait } from "./clients/twitter/utils.ts";
+import { TwitterSearchClient } from "./clients/twitter/search.ts";
+import { TwitterGenerationClient } from "./clients/twitter/generate.ts";
 
 interface Arguments {
   character?: string;
@@ -74,13 +74,11 @@ const runtime = new AgentRuntime({
   providers: [channelStateProvider, voiceStateProvider, timeProvider],
   actions: [
     ...defaultActions,
-    joinvoice,
-    leavevoice,
     askClaude,
-    mute_room,
-    unmute_room,
     follow_room,
+    mute_room,
     unfollow_room,
+    unmute_room,
   ],
 });
 
@@ -91,7 +89,7 @@ function startDiscord() {
 async function startTwitter() {
   console.log("Starting interaction client");
   const twitterInteractionClient = new TwitterInteractionClient(runtime);
-  // wait()
+  wait()
   // console.log("Starting search client");
   // const twitterSearchClient = new TwitterSearchClient(runtime);
   // wait()
