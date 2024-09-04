@@ -1,35 +1,56 @@
+import { formatTimestamp } from "./messages.ts";
 import type { Actor, Memory } from "./types.ts";
 
 export const formatPosts = ({
   messages,
   actors,
+  conversationHeader = true,
 }: {
   messages: Memory[];
   actors: Actor[];
+  conversationHeader?: boolean;
 }) => {
-  const messageStrings = messages
-    .filter((message: Memory) => message.user_id)
-    .map((message: Memory) => {
+  // Group messages by roomId
+  const groupedMessages: { [roomId: string]: Memory[] } = {};
+  messages.forEach((message) => {
+    if (message.roomId) {
+      if (!groupedMessages[message.roomId]) {
+        groupedMessages[message.roomId] = [];
+      }
+      groupedMessages[message.roomId].push(message);
+    }
+  });
 
-      console.log("********* message", JSON.stringify(message, null, 2));
+  // Sort messages within each roomId by createdAt (oldest to newest)
+  Object.values(groupedMessages).forEach((roomMessages) => {
+    roomMessages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  });
 
-      console.log("Message user id is", message.user_id);
-      console.log("Actors are", actors);
-      console.log("Username is", message.content.username);
+  // Sort rooms by the newest message's createdAt
+  const sortedRooms = Object.entries(groupedMessages).sort(
+    ([, messagesA], [, messagesB]) =>
+      messagesB[messagesB.length - 1].createdAt.getTime() -
+      messagesA[messagesA.length - 1].createdAt.getTime()
+  );
 
-      const actor = actors.find((actor: Actor) => actor.id === message.user_id);
-      const userName = actor?.name || "Unknown User";
-      const displayName = actor?.username || "unknown";
+  const formattedPosts = sortedRooms.map(([roomId, roomMessages]) => {
+    const messageStrings = roomMessages
+      .filter((message: Memory) => message.userId)
+      .map((message: Memory) => {
+        const actor = actors.find((actor: Actor) => actor.id === message.userId);
+        const userName = actor?.name || "Unknown User";
+        const displayName = actor?.username || "unknown";
 
-      return `Name: ${userName} (@${displayName})
-ID: ${message.id}
-Date: ${message.created_at}
+        return `Name: ${userName} (@${displayName})
+ID: ${message.id}${message.content.inReplyTo ? `\nIn reply to: ${message.content.inReplyTo}` : ""}
+Date: ${formatTimestamp(message.createdAt)}
 Text:
-${message.content.text}
----`;
-    })
-    .join("\n");
-  return messageStrings;
+${message.content.text}`;
+      });
+
+    const header = conversationHeader ? `Conversation: ${roomId.slice(-5)}\n` : "";
+    return `${header}${messageStrings.join("\n\n")}`;
+  });
+
+  return formattedPosts.join("\n\n");
 };
-
-

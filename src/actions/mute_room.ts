@@ -5,10 +5,11 @@ import {
   ActionExample,
   IAgentRuntime,
   Memory,
-  State
+  State,
 } from "../core/types.ts";
 
-export const shouldMuteTemplate = `Based on the conversation so far:
+export const shouldMuteTemplate =
+  `Based on the conversation so far:
 
 {{recentMessages}}
 
@@ -27,7 +28,7 @@ export default {
   description:
     "Mutes a room, ignoring all messages unless explicitly mentioned. Only do this if explicitly asked to, or if you're annoying people.",
   validate: async (runtime: IAgentRuntime, message: Memory) => {
-    const roomId = message.room_id;
+    const roomId = message.roomId;
     const userState = await runtime.databaseAdapter.getParticipantUserState(
       roomId,
       runtime.agentId,
@@ -54,7 +55,7 @@ export default {
 
     if (await _shouldMute(state)) {
       await runtime.databaseAdapter.setParticipantUserState(
-        message.room_id,
+        message.roomId,
         runtime.agentId,
         "MUTED",
       );

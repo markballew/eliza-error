@@ -2,12 +2,7 @@ import dotenv from "dotenv";
 import { createRuntime } from "../test_resources/createRuntime.ts";
 import { zeroUuid } from "./constants.ts";
 import { AgentRuntime } from "./runtime.ts";
-import {
-  type Memory,
-  type Provider,
-  type State,
-  type UUID,
-} from "./types.ts";
+import { type Memory, type Provider, type State, type UUID } from "./types.ts";
 
 dotenv.config({ path: ".dev.vars" });
 
@@ -20,7 +15,7 @@ const TestProvider: Provider = {
 
 describe("TestProvider", () => {
   let runtime: AgentRuntime;
-  let room_id: UUID;
+  let roomId: UUID;
 
   beforeAll(async () => {
     const setup = await createRuntime({
@@ -28,14 +23,14 @@ describe("TestProvider", () => {
       providers: [TestProvider],
     });
     runtime = setup.runtime;
-    room_id = zeroUuid;
+    roomId = zeroUuid;
   });
 
   test("TestProvider should return 'Hello Test'", async () => {
     const message: Memory = {
-      user_id: zeroUuid,
+      userId: zeroUuid,
       content: { text: "" },
-      room_id: room_id,
+      roomId: roomId,
     };
 
     const testProviderResponse = await TestProvider.get(

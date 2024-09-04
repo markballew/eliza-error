@@ -20,7 +20,6 @@ import {
 import fs from "fs";
 import prism from "prism-media";
 import { Readable, pipeline } from "stream";
-import { default as getUuid } from "uuid-by-string";
 import WavEncoder from "wav-encoder";
 import { AgentRuntime } from "../../core/runtime.ts";
 import { AudioMonitor } from "./audioMonitor.ts";
@@ -29,9 +28,16 @@ import EventEmitter from "events";
 import { composeContext } from "../../core/context.ts";
 import { log_to_file } from "../../core/logger.ts";
 import { embeddingZeroVector } from "../../core/memory.ts";
-import { Content, Memory, State, UUID } from "../../core/types.ts";
-import { textToSpeech } from "../elevenlabs/index.ts";
+import {
+  Content,
+  HandlerCallback,
+  Memory,
+  State,
+  UUID,
+} from "../../core/types.ts";
+import { stringToUuid } from "../../core/uuid.ts";
 import { voiceHandlerTemplate } from "./templates.ts";
+import { SpeechService } from "../../services/speech.ts";
 
 // These values are chosen for compatibility with picovoice components
 const DECODE_FRAME_SIZE = 1024;
@@ -68,18 +74,13 @@ export class VoiceManager extends EventEmitter {
   }
 
   async handleUserStream(
-    user_id: UUID,
+    userId: UUID,
     name: string,
     userName: string,
     channel: BaseGuildVoiceChannel,
     audioStream: Readable,
   ) {
     const channelId = channel.id;
-
-    const callback = async (responseAudioStream) => {
-      await this.playAudioStream(user_id, responseAudioStream);
-    };
-
     const buffers: Buffer[] = [];
     let totalLength = 0;
     const maxSilenceTime = 500; // Maximum pause duration in milliseconds
@@ -115,28 +116,33 @@ export class VoiceManager extends EventEmitter {
             return;
           }
 
-          const room_id = getUuid(channelId) as UUID;
-          const userIdUUID = getUuid(user_id) as UUID;
+          const roomId = stringToUuid(channelId);
+          const userIdUUID = stringToUuid(userId);
           await this.runtime.ensureUserExists(
             this.runtime.agentId,
             this.client.user.username,
             this.runtime.character.name,
           );
           await Promise.all([
-            this.runtime.ensureUserExists(userIdUUID, userName, name),
-            this.runtime.ensureRoomExists(room_id),
+            this.runtime.ensureUserExists(
+              userIdUUID,
+              userName,
+              name,
+              "discord",
+            ),
+            this.runtime.ensureRoomExists(roomId),
           ]);
 
           await Promise.all([
-            this.runtime.ensureParticipantInRoom(userIdUUID, room_id),
-            this.runtime.ensureParticipantInRoom(this.runtime.agentId, room_id),
+            this.runtime.ensureParticipantInRoom(userIdUUID, roomId),
+            this.runtime.ensureParticipantInRoom(this.runtime.agentId, roomId),
           ]);
 
           const state = await this.runtime.composeState(
             {
               content: { text: text, source: "Discord" },
-              user_id: userIdUUID,
-              room_id,
+              userId: userIdUUID,
+              roomId,
             },
             {
               discordClient: this.client,
@@ -149,12 +155,14 @@ export class VoiceManager extends EventEmitter {
           }
 
           const response = await this.handleVoiceMessage({
-            message: {
+            memory: {
+              id: stringToUuid(channelId + "-voice-message-" + Date.now()),
               content: { text: text },
-              user_id: userIdUUID,
-              room_id,
+              userId: userIdUUID,
+              roomId,
+              embedding: embeddingZeroVector,
+              createdAt: new Date(),
             },
-            callback: (str: any) => {},
             state,
           });
 
@@ -166,10 +174,10 @@ export class VoiceManager extends EventEmitter {
             return null;
           }
 
-          let responseStream = await this.textToSpeech(content);
+          let responseStream = await SpeechService.generate(content);
 
           if (responseStream) {
-            callback(responseStream as Readable);
+            await this.playAudioStream(userId, responseStream as Readable);
           }
         } catch (error) {
           console.error("Error processing audio stream:", error);
@@ -179,28 +187,26 @@ export class VoiceManager extends EventEmitter {
   }
 
   async handleVoiceMessage({
-    message,
+    memory,
     shouldIgnore = false,
     shouldRespond = true,
-    callback,
     state,
   }: {
-    message: Memory;
+    memory: Memory;
     shouldIgnore?: boolean;
     shouldRespond?: boolean;
-    callback: (response: string) => void;
     state?: State;
   }): Promise<Content> {
-    if (!message.content.text) {
+    if (!memory.content.text) {
       return { text: "", action: "IGNORE" };
     }
 
-    await this._saveRequestMessage(message, state);
+    await this.runtime.messageManager.createMemory(memory);
 
     state = await this.runtime.updateRecentMessageState(state);
 
     if (!shouldIgnore) {
-      shouldIgnore = await this._shouldIgnore(message);
+      shouldIgnore = await this._shouldIgnore(memory);
     }
 
     if (shouldIgnore) {
@@ -217,20 +223,43 @@ export class VoiceManager extends EventEmitter {
     });
 
     const responseContent = await this._generateResponse(
-      message,
+      memory,
       state,
       context,
     );
+    const callback: HandlerCallback = async (content: Content) => {
+      const { roomId } = memory;
 
-    await this._saveResponseMessage(message, state, responseContent);
+      const responseMemory: Memory = {
+        id: stringToUuid(memory.id + "-voice-response-" + Date.now()),
+        userId: this.runtime.agentId,
+        content: {
+          ...content,
+          user: this.runtime.character.name,
+          inReplyTo: memory.id,
+        },
+        roomId,
+        embedding: embeddingZeroVector,
+      };
 
-    this.runtime
-      .processActions(message, responseContent, state)
-      .then((response: unknown) => {
-        if (response && (response as Content).text) {
-          callback((response as Content).text);
-        }
-      });
+      if (responseMemory.content.text?.trim()) {
+        await this.runtime.messageManager.createMemory(responseMemory);
+        state = await this.runtime.updateRecentMessageState(state);
+        await this.runtime.evaluate(memory, state);
+      } else {
+        console.warn("Empty response, skipping");
+      }
+      return [responseMemory];
+    };
+
+    const responseMemories = await callback(responseContent);
+
+    await this.runtime.processActions(
+      memory,
+      responseMemories,
+      state,
+      callback,
+    );
 
     return responseContent;
   }
@@ -241,7 +270,7 @@ export class VoiceManager extends EventEmitter {
     context: string,
   ): Promise<Content> {
     let responseContent: Content | null = null;
-    const { user_id, room_id } = message;
+    const { userId, roomId } = message;
 
     const datestr = new Date().toISOString().replace(/:/g, "-");
 
@@ -265,54 +294,12 @@ export class VoiceManager extends EventEmitter {
 
     await this.runtime.databaseAdapter.log({
       body: { message, context, response },
-      user_id: user_id,
-      room_id,
+      userId: userId,
+      roomId,
       type: "response",
     });
 
     return response;
-  }
-
-  private async _saveRequestMessage(message: Memory, state: State) {
-    const { content: senderContent } = message;
-
-    if ((senderContent as Content).text) {
-      const memory = {
-        id: getUuid(message.id) as UUID,
-        user_id: message.user_id,
-        content: senderContent,
-        room_id: message.room_id,
-        embedding: embeddingZeroVector,
-      };
-
-      console.log("voice memory being saved", memory);
-
-      await this.runtime.messageManager.createMemory(memory);
-    }
-  }
-
-  private async _saveResponseMessage(
-    message: Memory,
-    state: State,
-    responseContent: Content,
-  ) {
-    const { room_id } = message;
-
-    responseContent.content = responseContent.text?.trim();
-
-    if (responseContent.content) {
-      await this.runtime.messageManager.createMemory({
-        id: getUuid(message.id) as UUID,
-        user_id: this.runtime.agentId,
-        content: { ...responseContent, user: this.runtime.character.name },
-        room_id,
-        embedding: embeddingZeroVector,
-      });
-      state = await this.runtime.updateRecentMessageState(state);
-      await this.runtime.evaluate(message, state);
-    } else {
-      console.warn("Empty response, skipping");
-    }
   }
 
   private async _shouldIgnore(message: Memory): Promise<boolean> {
@@ -410,17 +397,17 @@ export class VoiceManager extends EventEmitter {
       this.monitorMember(member, channel);
     }
 
-    connection.receiver.speaking.on("start", (user_id: string) => {
-      const user = channel.members.get(user_id);
+    connection.receiver.speaking.on("start", (userId: string) => {
+      const user = channel.members.get(userId);
       // if (user?.user.bot) return;
       this.monitorMember(user as GuildMember, channel);
-      this.streams.get(user_id)?.emit("speakingStarted");
+      this.streams.get(userId)?.emit("speakingStarted");
     });
 
-    connection.receiver.speaking.on("end", async (user_id: string) => {
-      const user = channel.members.get(user_id);
+    connection.receiver.speaking.on("end", async (userId: string) => {
+      const user = channel.members.get(userId);
       // if (user?.user.bot) return;
-      this.streams.get(user_id)?.emit("speakingStopped");
+      this.streams.get(userId)?.emit("speakingStopped");
     });
   }
 
@@ -428,11 +415,11 @@ export class VoiceManager extends EventEmitter {
     member: GuildMember,
     channel: BaseGuildVoiceChannel,
   ) {
-    const user_id = member.id;
+    const userId = member.id;
     const userName = member.user.username;
     const name = member.user.displayName;
     const connection = getVoiceConnection(member.guild.id);
-    const receiveStream = connection?.receiver.subscribe(user_id, {
+    const receiveStream = connection?.receiver.subscribe(userId, {
       autoDestroy: true,
       emitClose: true,
     });
@@ -453,8 +440,8 @@ export class VoiceManager extends EventEmitter {
         }
       },
     );
-    this.streams.set(user_id, opusDecoder);
-    this.connections.set(user_id, connection as VoiceConnection);
+    this.streams.set(userId, opusDecoder);
+    this.connections.set(userId, connection as VoiceConnection);
     opusDecoder.on("error", (err: any) => {
       console.log(`Opus decoding error: ${err}`);
     });
@@ -463,8 +450,8 @@ export class VoiceManager extends EventEmitter {
     };
     const streamCloseHandler = () => {
       console.log(`voice stream from ${member?.displayName} closed`);
-      this.streams.delete(user_id);
-      this.connections.delete(user_id);
+      this.streams.delete(userId);
+      this.connections.delete(userId);
     };
     const closeHandler = () => {
       console.log(`Opus decoder for ${member?.displayName} closed`);
@@ -478,7 +465,7 @@ export class VoiceManager extends EventEmitter {
 
     this.client.emit(
       "userStream",
-      user_id,
+      userId,
       name,
       userName,
       channel,
@@ -486,10 +473,10 @@ export class VoiceManager extends EventEmitter {
     );
   }
 
-  async playAudioStream(user_id: UUID, audioStream: Readable) {
-    const connection = this.connections.get(user_id);
+  async playAudioStream(userId: UUID, audioStream: Readable) {
+    const connection = this.connections.get(userId);
     if (connection == null) {
-      console.log(`No connection for user ${user_id}`);
+      console.log(`No connection for user ${userId}`);
       return;
     }
     const audioPlayer = createAudioPlayer({
@@ -565,31 +552,5 @@ export class VoiceManager extends EventEmitter {
       console.error("Error leaving voice channel:", error);
       await interaction.reply("Failed to leave the voice channel.");
     }
-  }
-
-  async textToSpeech(text: string): Promise<Readable> {
-    // check for elevenlabs API key
-    if (process.env.ELEVENLABS_XI_API_KEY) {
-      return textToSpeech(text);
-    }
-
-    // Generate the speech to get a Float32Array of single channel 22050Hz audio data
-    const audio = await this.runtime.speechService.generate(text);
-
-    // Encode the audio data into a WAV format
-    const { encode } = WavEncoder;
-    const audioData = {
-      sampleRate: 22050,
-      channelData: [audio],
-    };
-    const wavArrayBuffer = encode.sync(audioData);
-
-    // TODO: Move to a temp file
-    // Convert the ArrayBuffer to a Buffer and save it to a file
-    fs.writeFileSync("buffer.wav", Buffer.from(wavArrayBuffer));
-
-    // now read the file
-    const wavStream = fs.createReadStream("buffer.wav");
-    return wavStream;
   }
 }

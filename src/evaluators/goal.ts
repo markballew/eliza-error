@@ -2,12 +2,7 @@ import { composeContext } from "../core/context.ts";
 import { getGoals } from "../core/goals.ts";
 import { parseJsonArrayFromText } from "../core/parsing.ts";
 import { type AgentRuntime } from "../core/runtime.ts";
-import {
-  Memory,
-  Objective,
-  type Goal,
-  type State
-} from "../core/types.ts";
+import { Memory, Objective, type Goal, type State } from "../core/types.ts";
 
 const template = `TASK: Update Goal
 Analyze the conversation and update the status of the goals based on the new information provided.
@@ -55,7 +50,7 @@ async function handler(
   // get goals
   let goalsData = await getGoals({
     runtime,
-    room_id: message.room_id,
+    roomId: message.roomId,
     onlyInProgress: options.onlyInProgress as boolean,
   });
 
@@ -77,7 +72,7 @@ async function handler(
   // get goals
   goalsData = await getGoals({
     runtime,
-    room_id: message.room_id,
+    roomId: message.roomId,
     onlyInProgress: true,
   });
 
@@ -134,7 +129,7 @@ export default {
       runtime,
       count: 1,
       onlyInProgress: true,
-      room_id: message.room_id,
+      roomId: message.roomId,
     });
     return goals.length > 0;
   },

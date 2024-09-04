@@ -8,11 +8,17 @@ import {
   formatEvaluators,
 } from "./evaluators.ts";
 import { MemoryManager } from "./memory.ts";
-import { parseBooleanFromText, parseJsonArrayFromText, parseJSONObjectFromText, parseShouldRespondFromText } from "./parsing.ts";
+import {
+  parseBooleanFromText,
+  parseJsonArrayFromText,
+  parseJSONObjectFromText,
+  parseShouldRespondFromText,
+} from "./parsing.ts";
 import {
   Character,
   Content,
   Goal,
+  HandlerCallback,
   IAgentRuntime,
   IBrowserService,
   IDatabaseAdapter,
@@ -26,7 +32,7 @@ import {
   State,
   type Action,
   type Evaluator,
-  type Memory
+  type Memory,
 } from "./types.ts";
 
 import {
@@ -327,7 +333,7 @@ export class AgentRuntime implements IAgentRuntime {
           max_context_length,
         );
         if (!settings.OPENAI_API_KEY) {
-          console.log("queueing text completion")
+          console.log("queueing text completion");
           const result = await this.llamaService.queueTextCompletion(
             context,
             temperature,
@@ -341,13 +347,11 @@ export class AgentRuntime implements IAgentRuntime {
           const biasValue = -20.0;
           const encoding = TikToken.encoding_for_model("gpt-4o-mini");
 
-          const mappedWords = wordsToPunish.map((word) => encoding.encode(word, [], "all")[0]);
+          const mappedWords = wordsToPunish.map(
+            (word) => encoding.encode(word, [], "all")[0],
+          );
 
-          const tokenIds = [
-            ...new Set(
-                mappedWords,
-            ),
-          ];
+          const tokenIds = [...new Set(mappedWords)];
 
           const logit_bias = tokenIds.reduce((acc, tokenId) => {
             acc[tokenId] = biasValue;
@@ -385,9 +389,9 @@ export class AgentRuntime implements IAgentRuntime {
           if (!response.ok) {
             throw new Error(
               "OpenAI API Error: " +
-              response.status +
-              " " +
-              response.statusText,
+                response.status +
+                " " +
+                response.statusText,
             );
           }
 
@@ -582,7 +586,6 @@ export class AgentRuntime implements IAgentRuntime {
           max_response_length,
         });
 
-
         const parsedResponse = parseJsonArrayFromText(response);
         if (parsedResponse) {
           return parsedResponse;
@@ -595,7 +598,6 @@ export class AgentRuntime implements IAgentRuntime {
       retryDelay *= 2;
     }
   }
-
 
   /**
    * Send a message to the model for completion.
@@ -635,9 +637,7 @@ export class AgentRuntime implements IAgentRuntime {
         });
 
         // try parsing the response as JSON, if null then try again
-        const parsedContent = parseJSONObjectFromText(
-          response,
-        ) as Content;
+        const parsedContent = parseJSONObjectFromText(response) as Content;
 
         if (!parsedContent) {
           continue;
@@ -727,20 +727,20 @@ export class AgentRuntime implements IAgentRuntime {
    */
   async processActions(
     message: Memory,
-    content: Content,
+    responses: Memory[],
     state?: State,
-    callback?: (response: Content) => void,
+    callback?: HandlerCallback,
   ): Promise<void> {
-    if (!content.action) {
+    if (!responses[0].content?.action) {
       return;
     }
 
     const action = this.actions.find(
-      (a: { name: string }) => a.name === content.action,
+      (a: { name: string }) => a.name === responses[0].content.action,
     )!;
 
     if (!action) {
-      return console.warn("No action found for", content.action);
+      return console.warn("No action found for", responses[0].content.action);
     }
 
     if (!action.handler) {
@@ -813,56 +813,58 @@ export class AgentRuntime implements IAgentRuntime {
 
   /**
    * Ensure the existence of a participant in the room. If the participant does not exist, they are added to the room.
-   * @param user_id - The user ID to ensure the existence of.
+   * @param userId - The user ID to ensure the existence of.
    * @throws An error if the participant cannot be added.
    */
-  async ensureParticipantExists(user_id: UUID, room_id: UUID) {
+  async ensureParticipantExists(userId: UUID, roomId: UUID) {
     const participants =
-      await this.databaseAdapter.getParticipantsForAccount(user_id);
+      await this.databaseAdapter.getParticipantsForAccount(userId);
 
     if (participants?.length === 0) {
-      await this.databaseAdapter.addParticipant(user_id, room_id);
+      await this.databaseAdapter.addParticipant(userId, roomId);
     }
   }
 
   /**
    * Ensure the existence of a user in the database. If the user does not exist, they are added to the database.
-   * @param user_id - The user ID to ensure the existence of.
+   * @param userId - The user ID to ensure the existence of.
    * @param userName - The user name to ensure the existence of.
    * @returns
    */
 
   async ensureUserExists(
-    user_id: UUID,
+    userId: UUID,
     userName: string | null,
     name: string | null,
+    email?: string | null,
+    source?: string | null,
   ) {
-    const account = await this.databaseAdapter.getAccountById(user_id);
+    const account = await this.databaseAdapter.getAccountById(userId);
     if (!account) {
       await this.databaseAdapter.createAccount({
-        id: user_id,
+        id: userId,
         name: name || userName || "Unknown User",
         username: userName || name || "Unknown",
-        email: (userName || "Bot") + "@discord", // Temporary
+        email: email || (userName || "Bot") + "@" + source || "Unknown", // Temporary
         details: { summary: "" },
       });
       console.log(`User ${userName} created successfully.`);
     }
   }
 
-  async ensureParticipantInRoom(user_id: UUID, roomId: UUID) {
+  async ensureParticipantInRoom(userId: UUID, roomId: UUID) {
     const participants =
       await this.databaseAdapter.getParticipantsForRoom(roomId);
-    if (!participants.includes(user_id)) {
-      await this.databaseAdapter.addParticipant(user_id, roomId);
-      console.log(`User ${user_id} linked to room ${roomId} successfully.`);
+    if (!participants.includes(userId)) {
+      await this.databaseAdapter.addParticipant(userId, roomId);
+      console.log(`User ${userId} linked to room ${roomId} successfully.`);
     }
   }
 
   /**
    * Ensure the existence of a room between the agent and a user. If no room exists, a new room is created and the user
    * and agent are added as participants. The room ID is returned.
-   * @param user_id - The user ID to create a room with.
+   * @param userId - The user ID to create a room with.
    * @returns The room ID of the room between the agent and the user.
    * @throws An error if the room cannot be created.
    */
@@ -883,7 +885,7 @@ export class AgentRuntime implements IAgentRuntime {
     message: Memory,
     additionalKeys: { [key: string]: unknown } = {},
   ) {
-    const { user_id, room_id } = message;
+    const { userId, roomId } = message;
 
     const conversationLength = this.getConversationLength();
     const recentFactsCount = Math.ceil(this.getConversationLength() / 2);
@@ -895,21 +897,21 @@ export class AgentRuntime implements IAgentRuntime {
       Memory[],
       Goal[],
     ] = await Promise.all([
-      getActorDetails({ runtime: this, room_id }),
+      getActorDetails({ runtime: this, roomId }),
       this.messageManager.getMemories({
-        room_id,
+        roomId,
         count: conversationLength,
         unique: false,
       }),
       this.factManager.getMemories({
-        room_id,
+        roomId,
         count: recentFactsCount,
       }),
       getGoals({
         runtime: this,
         count: 10,
         onlyInProgress: false,
-        room_id,
+        roomId,
       }),
     ]);
 
@@ -922,7 +924,7 @@ export class AgentRuntime implements IAgentRuntime {
         await this.factManager.searchMemoriesByEmbedding(
           recentFactsData[0].embedding!,
           {
-            room_id,
+            roomId,
             count: relevantFactsCount,
           },
         )
@@ -933,13 +935,18 @@ export class AgentRuntime implements IAgentRuntime {
       });
     }
 
-    console.log('********* actorsData', actorsData);
-
     const actors = formatActors({ actors: actorsData ?? [] });
 
-    const recentMessages = formatMessages({ messages: recentMessagesData, actors: actorsData });
+    const recentMessages = formatMessages({
+      messages: recentMessagesData,
+      actors: actorsData,
+    });
 
-    const recentPosts = formatPosts({ messages: recentMessagesData, actors: actorsData });
+    const recentPosts = formatPosts({
+      messages: recentMessagesData,
+      actors: actorsData,
+      conversationHeader: false,
+    });
 
     const recentFacts = formatFacts(recentFactsData);
     const relevantFacts = formatFacts(relevantFactsData);
@@ -947,7 +954,7 @@ export class AgentRuntime implements IAgentRuntime {
     // const lore = formatLore(loreData);
 
     const senderName = actorsData?.find(
-      (actor: Actor) => actor.id === user_id,
+      (actor: Actor) => actor.id === userId,
     )?.name;
 
     // TODO: We may wish to consolidate and just accept character.name here instead of the actor name
@@ -963,13 +970,13 @@ export class AgentRuntime implements IAgentRuntime {
       );
 
       if (lastMessageWithAttachment) {
-        const lastMessageTime = lastMessageWithAttachment.created_at.getTime();
+        const lastMessageTime = lastMessageWithAttachment.createdAt.getTime();
         const oneHourBeforeLastMessage = lastMessageTime - 60 * 60 * 1000; // 1 hour before last message
 
         allAttachments = recentMessagesData
           .reverse()
           .map((msg) => {
-            const msgTime = msg.created_at.getTime();
+            const msgTime = msg.createdAt.getTime();
             const isWithinTime =
               msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime;
             const attachments = msg.content.attachments || [];
@@ -1045,14 +1052,15 @@ Text: ${attachment.text}
         userB,
       ]);
 
-  
-    // Check the existing memories in the database
-    const existingMemories = await this.messageManager.getMemoriesByRoomIds({
-      room_ids: rooms,
-    });
+      // Check the existing memories in the database
+      const existingMemories = await this.messageManager.getMemoriesByRoomIds({
+        roomIds: rooms,
+      });
 
       // Sort messages by timestamp in descending order
-      existingMemories.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+      existingMemories.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      );
 
       // Take the most recent messages
       const recentInteractionsData = existingMemories.slice(0, 20);
@@ -1060,24 +1068,26 @@ Text: ${attachment.text}
     };
 
     const recentInteractions =
-      user_id !== this.agentId
-        ? await getRecentInteractions(user_id, this.agentId)
+      userId !== this.agentId
+        ? await getRecentInteractions(userId, this.agentId)
         : [];
-
-    console.log('********* recentInteractions', recentInteractions);
-
-    if (user_id === this.agentId) {
-      console.log('********* user_id === this.agentId');
-    }
 
     const getRecentMessageInteractions = async (
       recentInteractionsData: Memory[],
     ): Promise<string> => {
       // Format the recent messages
-      const formattedInteractions = recentInteractionsData
-        .map((message) => {
-          const sender =
-            message.user_id === this.agentId ? this.character.name : message.content.name;
+      const formattedInteractions = await recentInteractionsData
+        .map(async (message) => {
+          const isSelf = message.userId === this.agentId;
+          let sender;
+          if (isSelf) {
+            sender = this.character.name;
+          } else {
+            const accountId = await this.databaseAdapter.getAccountById(
+              message.userId,
+            );
+            sender = accountId?.username || "unknown";
+          }
           return `${sender}: ${message.content.text}`;
         })
         .join("\n");
@@ -1088,20 +1098,23 @@ Text: ${attachment.text}
     const formattedMessageInteractions =
       await getRecentMessageInteractions(recentInteractions);
 
-      const getRecentPostInteractions = async (
-        recentInteractionsData: Memory[],
-        actors: Actor[],
-      ): Promise<string> => {
-        const formattedInteractions = formatPosts({
-          messages: recentInteractionsData,
-          actors,
-        });
-      
-        return formattedInteractions;
-      };
+    const getRecentPostInteractions = async (
+      recentInteractionsData: Memory[],
+      actors: Actor[],
+    ): Promise<string> => {
+      const formattedInteractions = formatPosts({
+        messages: recentInteractionsData,
+        actors,
+        conversationHeader: true,
+      });
 
-    const formattedPostInteractions =
-      await getRecentPostInteractions(recentInteractions, actorsData);
+      return formattedInteractions;
+    };
+
+    const formattedPostInteractions = await getRecentPostInteractions(
+      recentInteractions,
+      actorsData,
+    );
 
     const initialState = {
       agentId: this.agentId,
@@ -1112,8 +1125,8 @@ Text: ${attachment.text}
       adjective:
         this.character.adjectives && this.character.adjectives.length > 0
           ? this.character.adjectives[
-          Math.floor(Math.random() * this.character.adjectives.length)
-          ]
+              Math.floor(Math.random() * this.character.adjectives.length)
+            ]
           : "",
       // Recent interactions between the sender and receiver, formatted as messages
       recentMessageInteractions: formattedMessageInteractions,
@@ -1125,73 +1138,73 @@ Text: ${attachment.text}
       topic:
         this.character.topics && this.character.topics.length > 0
           ? this.character.topics[
-          Math.floor(Math.random() * this.character.topics.length)
-          ]
+              Math.floor(Math.random() * this.character.topics.length)
+            ]
           : null,
       topics:
         this.character.topics && this.character.topics.length > 0
           ? addHeader(
-            `### Topics for ${this.character.topics}`,
-            this.character.topics
-              .sort(() => 0.5 - Math.random())
-              .slice(0, 10)
-              .join(", "),
-          )
+              `### Topics for ${this.character.topics}`,
+              this.character.topics
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 10)
+                .join(", "),
+            )
           : "",
       characterPostExamples:
         formattedCharacterPostExamples &&
-          formattedCharacterPostExamples.replaceAll("\n", "").length > 0
+        formattedCharacterPostExamples.replaceAll("\n", "").length > 0
           ? addHeader(
-            `### Example Posts for ${this.character.name}`,
-            formattedCharacterPostExamples,
-          )
+              `### Example Posts for ${this.character.name}`,
+              formattedCharacterPostExamples,
+            )
           : "",
       characterMessageExamples:
         formattedCharacterMessageExamples &&
-          formattedCharacterMessageExamples.replaceAll("\n", "").length > 0
+        formattedCharacterMessageExamples.replaceAll("\n", "").length > 0
           ? addHeader(
-            `### Example Conversations for ${this.character.name}`,
-            formattedCharacterMessageExamples,
-          )
+              `### Example Conversations for ${this.character.name}`,
+              formattedCharacterMessageExamples,
+            )
           : "",
       messageDirections:
         this.character?.style?.all?.length > 0 ||
-          this.character?.style?.chat.length > 0
+        this.character?.style?.chat.length > 0
           ? addHeader(
-            "### Message Directions for " + this.character.name,
-            (this.character?.style?.all?.join("\n") || "") +
-            (this.character?.style?.all?.length > 0 &&
-              this.character?.style?.chat.length > 0
-              ? "\n"
-              : "") +
-            (this.character?.style?.chat?.join("\n") || ""),
-          )
+              "### Message Directions for " + this.character.name,
+              (this.character?.style?.all?.join("\n") || "") +
+                (this.character?.style?.all?.length > 0 &&
+                this.character?.style?.chat.length > 0
+                  ? "\n"
+                  : "") +
+                (this.character?.style?.chat?.join("\n") || ""),
+            )
           : "",
       postDirections:
         this.character?.style?.all?.length > 0 ||
-          this.character?.style?.post.length > 0
+        this.character?.style?.post.length > 0
           ? addHeader(
-            "### Post Directions for " + this.character.name,
-            (this.character?.style?.all?.join("\n") || "") +
-            (this.character?.style?.all?.length > 0 &&
-              this.character?.style?.post.length > 0
-              ? "\n"
-              : "") +
-            (this.character?.style?.post?.join("\n") || ""),
-          )
+              "### Post Directions for " + this.character.name,
+              (this.character?.style?.all?.join("\n") || "") +
+                (this.character?.style?.all?.length > 0 &&
+                this.character?.style?.post.length > 0
+                  ? "\n"
+                  : "") +
+                (this.character?.style?.post?.join("\n") || ""),
+            )
           : "",
       // Agent runtime stuff
       senderName,
       actors:
         actors && actors.length > 0 ? addHeader("### Actors", actors) : "",
       actorsData,
-      room_id,
+      roomId,
       goals:
         goals && goals.length > 0
           ? addHeader(
-            "### Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
-            goals,
-          )
+              "### Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
+              goals,
+            )
           : "",
       goalsData,
       recentMessages:
@@ -1200,7 +1213,7 @@ Text: ${attachment.text}
           : "",
       recentPosts:
         recentPosts && recentPosts.length > 0
-          ? addHeader("### Recent Posts", recentPosts)
+          ? addHeader("### Posts in Thread", recentPosts)
           : "",
       recentMessagesData,
       recentFacts:
@@ -1256,9 +1269,9 @@ Text: ${attachment.text}
       actionExamples:
         actionsData.length > 0
           ? addHeader(
-            "### Action Examples",
-            composeActionExamples(actionsData, 10),
-          )
+              "### Action Examples",
+              composeActionExamples(actionsData, 10),
+            )
           : "",
       evaluatorsData,
       evaluators:
@@ -1276,13 +1289,13 @@ Text: ${attachment.text}
       providers,
     };
 
-    return { ...initialState, ...actionState };
+    return { ...initialState, ...actionState } as State;
   }
 
   async updateRecentMessageState(state: State): Promise<State> {
     const conversationLength = this.getConversationLength();
     const recentMessagesData = await this.messageManager.getMemories({
-      room_id: state.room_id,
+      roomId: state.roomId,
       count: conversationLength,
       unique: false,
     });
@@ -1304,12 +1317,12 @@ Text: ${attachment.text}
       );
 
       if (lastMessageWithAttachment) {
-        const lastMessageTime = lastMessageWithAttachment.created_at.getTime();
+        const lastMessageTime = lastMessageWithAttachment.createdAt.getTime();
         const oneHourBeforeLastMessage = lastMessageTime - 60 * 60 * 1000; // 1 hour before last message
 
         allAttachments = recentMessagesData
           .filter((msg) => {
-            const msgTime = msg.created_at.getTime();
+            const msgTime = msg.createdAt.getTime();
             return (
               msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime
             );
@@ -1336,6 +1349,6 @@ Text: ${attachment.text}
       recentMessages: addHeader("### Conversation Messages", recentMessages),
       recentMessagesData,
       attachments: formattedAttachments,
-    };
+    } as State;
   }
 }

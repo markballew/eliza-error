@@ -8,6 +8,8 @@ import {
   Action,
   ActionExample,
   Content,
+  HandlerCallback,
+  IAgentRuntime,
   Memory,
   State,
   UUID,
@@ -28,14 +30,14 @@ export default {
     return !!settings.ANTHROPIC_API_KEY;
   },
   handler: async (
-    runtime: AgentRuntime,
+    runtime: IAgentRuntime,
     message: Memory,
     state: State,
     options: any,
-    callback: any,
+    callback: HandlerCallback,
   ) => {
     state = (await runtime.composeState(message)) as State;
-    const user_id = runtime.agentId;
+    const userId = runtime.agentId;
 
     const context = composeContext({
       state,
@@ -49,12 +51,12 @@ export default {
 
     let responseContent;
     let callbackData: Content = {
-      text: responseContent,
+      text: undefined, // fill in later
       action: "CLAUDE_RESPONSE",
       source: "Claude",
       attachments: [],
     };
-    const { room_id } = message;
+    const { roomId } = message;
 
     const anthropic = new Anthropic({
       // defaults to process.env["ANTHROPIC_API_KEY"]
@@ -85,6 +87,7 @@ export default {
         const lines = responseContent.split("\n");
         const description = lines.slice(0, 3).join("\n");
         callbackData.content = responseContent;
+        callbackData.inReplyTo = message.id;
         callbackData.attachments.push({
           id: attachmentId,
           url: "",
@@ -106,8 +109,8 @@ export default {
 
         runtime.databaseAdapter.log({
           body: { message, context, response: responseContent },
-          user_id: user_id as UUID,
-          room_id,
+          userId: userId as UUID,
+          roomId,
           type: "claude",
         });
         break;
@@ -121,31 +124,19 @@ export default {
       return;
     }
 
-    const _saveResponseMessage = async (
-      message: Memory,
-      state: State,
-      responseContent: Content,
-    ) => {
-      const { user_id, room_id } = message;
-
-      responseContent.content = responseContent.text?.trim();
-
-      if (responseContent.content) {
-        await runtime.messageManager.createMemory({
-          user_id: user_id,
-          content: responseContent,
-          room_id,
-          embedding: embeddingZeroVector,
-        });
-        await runtime.evaluate(message, { ...state });
-      } else {
-        console.warn("Empty response from Claude, skipping");
-      }
+    const response = {
+      userId,
+      content: callbackData,
+      roomId,
+      embedding: embeddingZeroVector,
     };
 
-    console.log("Calling callback with data:", callbackData);
-
-    await _saveResponseMessage(message, state, callbackData);
+    if (responseContent.text?.trim()) {
+      await runtime.messageManager.createMemory(response);
+      await runtime.evaluate(message, state);
+    } else {
+      console.warn("Empty response from Claude, skipping");
+    }
 
     return callbackData;
   },

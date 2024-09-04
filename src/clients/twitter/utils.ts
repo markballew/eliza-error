@@ -1,9 +1,11 @@
 import { Scraper, SearchMode, Tweet } from "agent-twitter-client";
 import { addHeader } from "../../core/context.ts";
-import { IAgentRuntime, UUID } from "../../core/types.ts";
+import { Content, IAgentRuntime, Memory, UUID } from "../../core/types.ts";
 import { ClientBase } from "./base.ts";
-import { default as getUuid } from "uuid-by-string";
 import { embeddingZeroVector } from "../../core/memory.ts";
+import { stringToUuid } from "../../core/uuid.ts";
+
+const MAX_TWEET_LENGTH = 280;
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
   const waitTime =
@@ -28,7 +30,7 @@ export const isValidTweet = (tweet: Tweet): boolean => {
 
 export const getRecentConversations = async (
   runtime: IAgentRuntime,
-  twitterClient: Scraper,
+  twitterClient: ClientBase,
   botTwitterUsername: string,
 ) => {
   // Get recent conversations
@@ -171,7 +173,10 @@ export const searchRecentPosts = async (
   );
 };
 
-export async function buildConversationThread(tweet: Tweet, client: ClientBase): Promise<void> {
+export async function buildConversationThread(
+  tweet: Tweet,
+  client: ClientBase,
+): Promise<void> {
   let thread: Tweet[] = [];
   const visited: Set<string> = new Set();
 
@@ -181,24 +186,39 @@ export async function buildConversationThread(tweet: Tweet, client: ClientBase):
       return;
     }
     // check if the current tweet has already been saved
-    const memory = await client.runtime.messageManager.getMemoryById(getUuid(currentTweet.id) as UUID);
+    const memory = await client.runtime.messageManager.getMemoryById(
+      stringToUuid(currentTweet.id),
+    );
     if (!memory) {
       console.log("Creating memory for tweet", currentTweet.id);
-      const room_id = getUuid(currentTweet.conversationId) as UUID;
-      const user_id = getUuid(currentTweet.userId) as UUID;
-      await client.runtime.ensureRoomExists(room_id);
-      await client.runtime.ensureUserExists(user_id, currentTweet.username, currentTweet.name);
-      await client.runtime.ensureParticipantInRoom(user_id, room_id);
-      await client.runtime.ensureParticipantInRoom(client.runtime.agentId, room_id);
+      const roomId = stringToUuid(currentTweet.conversationId);
+      const userId = stringToUuid(currentTweet.userId);
+      await client.runtime.ensureRoomExists(roomId);
+      await client.runtime.ensureUserExists(
+        userId,
+        currentTweet.username,
+        currentTweet.name,
+        "twitter",
+      );
+      await client.runtime.ensureParticipantInRoom(userId, roomId);
+      await client.runtime.ensureParticipantInRoom(
+        client.runtime.agentId,
+        roomId,
+      );
       client.runtime.messageManager.createMemory({
-        id: getUuid(currentTweet.id) as UUID,
+        id: stringToUuid(currentTweet.id),
         content: {
           text: currentTweet.text,
-          username: currentTweet.username,
-          name: currentTweet.name,
+          inReplyTo: currentTweet.inReplyToStatusId
+            ? stringToUuid(currentTweet.inReplyToStatusId)
+            : undefined,
         },
-        room_id,
-        user_id,
+        createdAt: new Date(currentTweet.timestamp * 1000),
+        roomId,
+        userId:
+          currentTweet.userId === client.twitterUserId
+            ? client.runtime.agentId
+            : stringToUuid(currentTweet.userId),
         embedding: embeddingZeroVector,
       });
     }
@@ -215,4 +235,81 @@ export async function buildConversationThread(tweet: Tweet, client: ClientBase):
   }
 
   await processThread(tweet);
+}
+
+export async function sendTweetChunks(
+  client: ClientBase,
+  content: Content,
+  roomId: UUID,
+  twitterUsername: string,
+  inReplyTo: string,
+): Promise<Memory[]> {
+  console.log("Sending tweet chunks", content);
+  const tweetChunks = splitTweetContent(content.text);
+  console.log("Tweet chunks", tweetChunks);
+  const sentTweets: Tweet[] = [];
+
+  for (const chunk of tweetChunks) {
+    const success = await client.requestQueue.add(async () => {
+      if (inReplyTo) {
+        console.log('***** REPLYING')
+        return await client.twitterClient.sendTweet(chunk, inReplyTo);
+      } else {
+        console.log('***** NOT REPLYING')
+        return await client.twitterClient.sendTweet(chunk);
+      }
+    });
+    if (success) {
+      const tweet = await client.requestQueue.add(async () => {
+        return await client.twitterClient.getLatestTweet(
+          twitterUsername,
+          false,
+        );
+      });
+      if (tweet) {
+        sentTweets.push(tweet);
+      } else {
+        console.error("Failed to get latest tweet after posting it");
+      }
+    } else {
+      console.error("Failed to send tweet");
+    }
+  }
+
+  const memories: Memory[] = sentTweets.map((tweet) => ({
+    id: stringToUuid(tweet.id),
+    userId: client.runtime.agentId,
+    content: {
+      text: tweet.text,
+      inReplyTo: tweet.inReplyToStatusId
+        ? stringToUuid(tweet.inReplyToStatusId)
+        : undefined,
+    },
+    roomId,
+    embedding: embeddingZeroVector,
+    createdAt: new Date(tweet.timestamp * 1000),
+  }));
+
+  return memories;
+}
+
+function splitTweetContent(content: string): string[] {
+  const tweetChunks: string[] = [];
+  let currentChunk = "";
+
+  const words = content.split(" ");
+  for (const word of words) {
+    if (currentChunk.length + word.length + 1 <= MAX_TWEET_LENGTH) {
+      currentChunk += (currentChunk ? " " : "") + word;
+    } else {
+      tweetChunks.push(currentChunk);
+      currentChunk = word;
+    }
+  }
+
+  if (currentChunk) {
+    tweetChunks.push(currentChunk);
+  }
+
+  return tweetChunks;
 }
