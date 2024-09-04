@@ -3,17 +3,15 @@ import { log_to_file } from "../../core/logger.ts";
 import { embeddingZeroVector } from "../../core/memory.ts";
 import { AgentRuntime } from "../../core/runtime.ts";
 import settings from "../../core/settings.ts";
-import { UUID } from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
 import { ClientBase } from "./base.ts";
-import { getRecentConversations, searchRecentPosts } from "./utils.ts";
 
-const newTweetPrompt = `{{recentSearchResultsText}}
-{{recentConversations}}
-{{recentPosts}}
+const newTweetPrompt = `{{recentPosts}}
+
 About {{agentName}} (@{{twitterUserName}}):
 {{bio}}
 {{lore}}
+{{topics}}
 
 {{characterPostExamples}}
 
@@ -31,8 +29,8 @@ export class TwitterGenerationClient extends ClientBase {
       this.generateNewTweet();
       setTimeout(
         generateNewTweetLoop,
-        Math.floor(Math.random() * 300000) + 600000,
-      ); // Random interval between 10-15 minutes
+        (Math.floor(Math.random() * (60 - 45 + 1)) + 45) * 60 * 1000,
+      ); // Random interval between 45-60 minutes
     };
     generateNewTweetLoop();
   }
@@ -47,11 +45,11 @@ export class TwitterGenerationClient extends ClientBase {
   private async generateNewTweet() {
     console.log("Generating new tweet");
     try {
-      const recentConversationsText = await getRecentConversations(
-        this.runtime,
-        this,
-        settings.TWITTER_USERNAME,
-      );
+      // const recentConversationsText = await getRecentConversations(
+      //   this.runtime,
+      //   this,
+      //   settings.TWITTER_USERNAME,
+      // );
 
       // Wait 1.5-3.5 seconds to avoid rate limiting
       await new Promise((resolve) =>
@@ -73,15 +71,15 @@ export class TwitterGenerationClient extends ClientBase {
         },
         {
           twitterUserName: settings.TWITTER_USERNAME,
-          recentConversations: recentConversationsText,
+          // recentConversations: recentConversationsText,
         },
       );
-      const recentSearchResultsText = await searchRecentPosts(
-        this.runtime,
-        this.twitterClient,
-        state.topic as string,
-      );
-      state["recentSearchResultsText"] = recentSearchResultsText;
+      // const recentSearchResultsText = await searchRecentPosts(
+      //   this.runtime,
+      //   this,
+      //   state.topic as string,
+      // );
+      // state["recentSearchResultsText"] = recentSearchResultsText;
 
       // Generate new tweet
       const context = composeContext({
