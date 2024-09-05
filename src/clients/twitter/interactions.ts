@@ -7,13 +7,7 @@ import {
   shouldRespondFooter,
 } from "../../core/parsing.ts";
 import { AgentRuntime } from "../../core/runtime.ts";
-import settings from "../../core/settings.ts";
-import {
-  Content,
-  HandlerCallback,
-  Memory,
-  State
-} from "../../core/types.ts";
+import { Content, HandlerCallback, Memory, State } from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
 import { ClientBase } from "./base.ts";
 import {
@@ -94,7 +88,7 @@ export class TwitterInteractionClient extends ClientBase {
       // Check for mentions
       const tweetCandidates = (
         await this.fetchSearchTweets(
-          `@${settings.TWITTER_USERNAME}`,
+          `@${this.runtime.getSetting("TWITTER_USERNAME")}`,
           20,
           SearchMode.Latest,
         )
@@ -104,11 +98,16 @@ export class TwitterInteractionClient extends ClientBase {
       const uniqueTweetCandidates = [...new Set(tweetCandidates)];
 
       // Sort tweet candidates by ID in ascending order
-      uniqueTweetCandidates.sort((a, b) => a.id.localeCompare(b.id)).filter(tweet => tweet.userId !== this.twitterUserId);
+      uniqueTweetCandidates
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .filter((tweet) => tweet.userId !== this.twitterUserId);
 
       // for each tweet candidate, handle the tweet
       for (const tweet of uniqueTweetCandidates) {
-        if (!this.lastCheckedTweetId || parseInt(tweet.id) > this.lastCheckedTweetId) {
+        if (
+          !this.lastCheckedTweetId ||
+          parseInt(tweet.id) > this.lastCheckedTweetId
+        ) {
           const conversationId = tweet.conversationId;
 
           const roomId = stringToUuid(conversationId);
@@ -120,7 +119,7 @@ export class TwitterInteractionClient extends ClientBase {
           await Promise.all([
             this.runtime.ensureUserExists(
               agentId,
-              settings.TWITTER_USERNAME,
+              this.runtime.getSetting("TWITTER_USERNAME"),
               this.runtime.character.name,
               "twitter",
             ),
@@ -192,7 +191,7 @@ export class TwitterInteractionClient extends ClientBase {
     tweet: Tweet;
     message: Memory;
   }) {
-    if (tweet.username === settings.TWITTER_USERNAME) {
+    if (tweet.username === this.runtime.getSetting("TWITTER_USERNAME")) {
       console.log("skipping tweet from bot itself", tweet.id);
       // Skip processing if the tweet is from the bot itself
       return;
@@ -212,7 +211,7 @@ export class TwitterInteractionClient extends ClientBase {
     const recentConversationsText = await getRecentConversations(
       this.runtime,
       this,
-      settings.TWITTER_USERNAME,
+      this.runtime.getSetting("TWITTER_USERNAME"),
     );
 
     const currentPost = formatTweet(tweet);
@@ -223,7 +222,7 @@ export class TwitterInteractionClient extends ClientBase {
 
     let state = await this.runtime.composeState(message, {
       twitterClient: this.twitterClient,
-      twitterUserName: settings.TWITTER_USERNAME,
+      twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
       recentConversations: recentConversationsText,
       currentPost,
     });
@@ -265,7 +264,6 @@ export class TwitterInteractionClient extends ClientBase {
     const shouldRespond = await this.runtime.shouldRespondCompletion({
       context: shouldRespondContext,
       stop: [],
-      model: this.runtime.model,
     });
 
     if (!shouldRespond) {
@@ -282,7 +280,7 @@ export class TwitterInteractionClient extends ClientBase {
 
     // log context to file
     log_to_file(
-      `${settings.TWITTER_USERNAME}_${datestr}_interactions_context`,
+      `${this.runtime.getSetting("TWITTER_USERNAME")}_${datestr}_interactions_context`,
       context,
     );
 
@@ -290,7 +288,6 @@ export class TwitterInteractionClient extends ClientBase {
       context,
       stop: [],
       temperature: this.temperature,
-      model: this.runtime.model,
     });
 
     console.log("tweet is", tweet);
@@ -304,7 +301,7 @@ export class TwitterInteractionClient extends ClientBase {
     console.log("response is", response);
 
     log_to_file(
-      `${settings.TWITTER_USERNAME}_${datestr}_interactions_response`,
+      `${this.runtime.getSetting("TWITTER_USERNAME")}_${datestr}_interactions_response`,
       JSON.stringify(response),
     );
 
@@ -316,8 +313,8 @@ export class TwitterInteractionClient extends ClientBase {
               this,
               response,
               message.roomId,
-              settings.TWITTER_USERNAME,
-              tweet.id
+              this.runtime.getSetting("TWITTER_USERNAME"),
+              tweet.id,
             );
             return memories;
           };
