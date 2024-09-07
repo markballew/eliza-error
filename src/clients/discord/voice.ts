@@ -105,12 +105,10 @@ export class VoiceManager extends EventEmitter {
 
           if (!text) return;
 
+          // handle whisper cases
           if (
-            (text.length < 5 &&
-              !text.toLowerCase().includes("yes") &&
-              !text.toLowerCase().includes("no")) ||
-            (text.length > 5 && text.toLowerCase().includes("ok")) ||
-            text.toLowerCase().includes("sure")
+            (text.length < 15 && text.includes("[BLANK_AUDIO]")) ||
+            (text.length < 5 && text.toLowerCase().includes("you"))
           ) {
             return;
           }
@@ -159,7 +157,7 @@ export class VoiceManager extends EventEmitter {
             userId: userIdUUID,
             roomId,
             embedding: embeddingZeroVector,
-            createdAt: new Date(),
+            createdAt: Date.now(),
           };
 
           if (!memory.content.text) {
@@ -256,7 +254,7 @@ export class VoiceManager extends EventEmitter {
   ): Promise<Content> {
     const { userId, roomId } = message;
 
-    const datestr = new Date().toISOString().replace(/:/g, "-");
+    const datestr = new Date().toUTCString().replace(/:/g, "-");
 
     // log context to file
     log_to_file(`${state.agentName}_${datestr}_generate_context`, context);
