@@ -1,7 +1,11 @@
-import { type AgentRuntime } from "../core/runtime.ts";
-import { Evaluator, type Memory, type State } from "../core/types.ts";
+import {
+  Evaluator,
+  IAgentRuntime,
+  type Memory,
+  type State,
+} from "../core/types.ts";
 
-async function handler(runtime: AgentRuntime, message: Memory) {
+async function handler(runtime: IAgentRuntime, message: Memory) {
   const state = (await runtime.composeState(message)) as State;
   return state;
 }
@@ -10,14 +14,13 @@ export const TEST_EVALUATOR = {
   name: "TEST_EVALUATOR",
   validate: async (
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _runtime: AgentRuntime,
+    _runtime: IAgentRuntime,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _message: Memory,
   ): Promise<boolean> => {
     return await Promise.resolve(true);
   },
   description: "Test evaluator.",
-  condition: "When we are evualating whether tests work.",
   handler,
   examples: [
     {
@@ -40,14 +43,13 @@ export const TEST_EVALUATOR_FAIL = {
   name: "TEST_EVALUATOR_FAIL",
   validate: async (
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _runtime: AgentRuntime,
+    _runtime: IAgentRuntime,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _message: Memory,
   ): Promise<boolean> => {
     return await Promise.resolve(false);
   },
   description: "Test failure of the evaluator and validation.",
-  condition: "When we are evualating whether tests work.",
   handler,
   examples: [
     {

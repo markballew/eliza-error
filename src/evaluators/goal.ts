@@ -1,8 +1,13 @@
 import { composeContext } from "../core/context.ts";
 import { getGoals } from "../core/goals.ts";
 import { parseJsonArrayFromText } from "../core/parsing.ts";
-import { type AgentRuntime } from "../core/runtime.ts";
-import { Memory, Objective, type Goal, type State } from "../core/types.ts";
+import {
+  IAgentRuntime,
+  Memory,
+  Objective,
+  type Goal,
+  type State,
+} from "../core/types.ts";
 
 const template = `TASK: Update Goal
 Analyze the conversation and update the status of the goals based on the new information provided.
@@ -42,7 +47,7 @@ Response format should be:
 \`\`\``;
 
 async function handler(
-  runtime: AgentRuntime,
+  runtime: IAgentRuntime,
   message: Memory,
   state: State | undefined,
   options: { [key: string]: unknown } = { onlyInProgress: true },
@@ -120,8 +125,14 @@ async function handler(
 
 export default {
   name: "UPDATE_GOAL",
+  similes: [
+    "UPDATE_GOALS",
+    "EDIT_GOAL",
+    "UPDATE_GOAL_STATUS",
+    "UPDATE_OBJECTIVES",
+  ],
   validate: async (
-    runtime: AgentRuntime,
+    runtime: IAgentRuntime,
     message: Memory,
   ): Promise<boolean> => {
     // Check if there are active goals that could potentially be updated
@@ -135,8 +146,6 @@ export default {
   },
   description:
     "Analyze the conversation and update the status of the goals based on the new information provided.",
-  condition:
-    "The conversation provides new information relevant to the current goals.",
   handler,
   examples: [
     {

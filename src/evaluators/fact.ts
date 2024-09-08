@@ -1,6 +1,10 @@
 import { composeContext } from "../core/context.ts";
-import { type AgentRuntime } from "../core/runtime.ts";
-import { ActionExample, Content, Memory } from "../core/types.ts";
+import {
+  ActionExample,
+  Content,
+  IAgentRuntime,
+  Memory,
+} from "../core/types.ts";
 
 export const formatFacts = (facts: Memory[]) => {
   const messageStrings = facts
@@ -48,7 +52,7 @@ Response should be a JSON object array inside a JSON markdown block. Correct res
 ]
 \`\`\``;
 
-async function handler(runtime: AgentRuntime, message: Memory) {
+async function handler(runtime: IAgentRuntime, message: Memory) {
   const state = await runtime.composeState(message);
 
   const { agentId, roomId } = state;
@@ -97,9 +101,16 @@ async function handler(runtime: AgentRuntime, message: Memory) {
 
 export default {
   name: "GET_FACTS",
+  similes: [
+    "GET_CLAIMS",
+    "EXTRACT_CLAIMS",
+    "EXTRACT_FACTS",
+    "EXTRACT_CLAIM",
+    "EXTRACT_INFORMATION",
+  ],
   validate: async (
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    runtime: AgentRuntime,
+    runtime: IAgentRuntime,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     message: Memory,
   ): Promise<boolean> => {
@@ -113,8 +124,6 @@ export default {
   },
   description:
     "Extract factual information about the people in the conversation, the current events in the world, and anything else that might be important to remember.",
-  condition:
-    "New factual information was revealed in the recent conversation which should be remembered.",
   handler,
   examples: [
     {

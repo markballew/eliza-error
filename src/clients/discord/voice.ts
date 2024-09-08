@@ -19,7 +19,6 @@ import {
 } from "discord.js";
 import prism from "prism-media";
 import { Readable, pipeline } from "stream";
-import { AgentRuntime } from "../../core/runtime.ts";
 import { AudioMonitor } from "./audioMonitor.ts";
 
 import EventEmitter from "events";
@@ -29,6 +28,7 @@ import { embeddingZeroVector } from "../../core/memory.ts";
 import {
   Content,
   HandlerCallback,
+  IAgentRuntime,
   Memory,
   State,
   UUID,
@@ -43,7 +43,7 @@ const DECODE_SAMPLE_RATE = 16000;
 
 export class VoiceManager extends EventEmitter {
   private client: Client;
-  private runtime: AgentRuntime;
+  private runtime: IAgentRuntime;
   private streams: Map<string, Readable> = new Map();
   private connections: Map<string, VoiceConnection> = new Map();
 
@@ -68,7 +68,7 @@ export class VoiceManager extends EventEmitter {
 
   async handleGuildCreate(guild: Guild) {
     console.log(`Joined guild ${guild.name}`);
-    this.scanGuild(guild);
+    // this.scanGuild(guild);
   }
 
   async handleUserStream(
@@ -100,8 +100,9 @@ export class VoiceManager extends EventEmitter {
 
         try {
           console.log("transcribing");
-          const text = await this.runtime.transcriptionService.transcribe(inputBuffer);
-          console.log("text: ", text)
+          const text =
+            await this.runtime.transcriptionService.transcribe(inputBuffer);
+          console.log("text: ", text);
 
           if (!text) return;
 
@@ -119,6 +120,7 @@ export class VoiceManager extends EventEmitter {
             this.runtime.agentId,
             this.client.user.username,
             this.runtime.character.name,
+            "discord",
           );
           await Promise.all([
             this.runtime.ensureUserExists(
@@ -142,6 +144,7 @@ export class VoiceManager extends EventEmitter {
               roomId,
             },
             {
+              discordChannel: channel,
               discordClient: this.client,
               agentName: this.runtime.character.name,
             },
@@ -186,7 +189,7 @@ export class VoiceManager extends EventEmitter {
             context,
           );
           const callback: HandlerCallback = async (content: Content) => {
-            console.log("callback content: ", content)
+            console.log("callback content: ", content);
             const { roomId } = memory;
 
             const responseMemory: Memory = {
@@ -231,7 +234,7 @@ export class VoiceManager extends EventEmitter {
             return null;
           }
 
-          console.log("responseMemories: ", responseMemories)
+          console.log("responseMemories: ", responseMemories);
 
           await this.runtime.processActions(
             memory,
@@ -239,7 +242,6 @@ export class VoiceManager extends EventEmitter {
             state,
             callback,
           );
-
         } catch (error) {
           console.error("Error processing audio stream:", error);
         }

@@ -150,7 +150,7 @@ export type Validator = (
  * Represents an action that the agent can perform, including conditions for its use, a description, examples, a handler function, and a validation function.
  */
 export interface Action {
-  condition: string; // A description of the conditions under which the action is appropriate.
+  similes: string[]; // An array of strings representing the similies of the action.
   description: string; // A detailed description of what the action entails.
   examples: ActionExample[][]; // An array of arrays of content examples demonstrating the action.
   handler: Handler; // The function that handles the action.
@@ -171,8 +171,8 @@ export interface EvaluationExample {
  * Represents an evaluator, which is used to assess and guide the agent's responses based on the current context and state.
  */
 export interface Evaluator {
-  condition: string; // A description of the conditions under which the evaluator is applicable.
   description: string; // A detailed description of what the evaluator assesses or guides.
+  similes: string[]; // An array of strings representing the similies of the action.
   examples: EvaluationExample[]; // An array of evaluation examples demonstrating the evaluator.
   handler: Handler; // The function that handles the evaluation.
   name: string; // The name of the evaluator.
@@ -404,6 +404,8 @@ export interface IAgentRuntime {
   model: string;
   embeddingModel: string;
   character: Character;
+  providers: Provider[];
+  actions: Action[];
 
   messageManager: IMemoryManager;
   descriptionManager: IMemoryManager;
@@ -415,6 +417,7 @@ export interface IAgentRuntime {
   llamaService: ILlamaService;
   browserService: IBrowserService;
   speechService: ISpeechService;
+  pdfService: IPdfService;
 
   trimTokens(text: string, maxTokens: number, model: string): string;
   splitChunks(
@@ -477,6 +480,15 @@ export interface IAgentRuntime {
     max_context_length?: number;
     max_response_length?: number;
   }): Promise<Content>;
+  objectArrayCompletion(opts: {
+    context?: string;
+    stop?: string[];
+    model?: string;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    temperature?: number;
+    max_context_length?: number;
+  }): Promise<any[]>;
   embed(input: string): Promise<number[]>;
   processActions(
     message: Memory,
@@ -490,7 +502,9 @@ export interface IAgentRuntime {
     userId: UUID,
     userName: string | null,
     name: string | null,
+    source: string | null,
   ): Promise<void>;
+  registerAction(action: Action): void;
   ensureParticipantInRoom(userId: UUID, roomId: UUID): Promise<void>;
   ensureRoomExists(roomId: UUID): Promise<void>;
   composeState(
@@ -548,8 +562,7 @@ export interface IBrowserService {
   ): Promise<{ title: string; description: string; bodyContent: string }>;
 }
 
-export interface ISpeechService {
-}
+export interface ISpeechService {}
 
 export interface IPdfService {
   convertPdfToText(pdfBuffer: Buffer): Promise<string>;

@@ -5,6 +5,7 @@ import { embeddingZeroVector } from "../../core/memory.ts";
 import {
   Content,
   HandlerCallback,
+  IAgentRuntime,
   Media,
   Memory,
   State,
@@ -16,10 +17,9 @@ import { messageHandlerTemplate, shouldRespondTemplate } from "./templates.ts";
 import { InterestChannels } from "./types.ts";
 
 import { TextChannel } from "discord.js";
-import { AgentRuntime } from "../../core/runtime.ts";
-import { VoiceManager } from "./voice.ts";
 import { stringToUuid } from "../../core/uuid.ts";
 import { SpeechService } from "../../services/speech.ts";
+import { VoiceManager } from "./voice.ts";
 
 const MAX_MESSAGE_LENGTH = 1990;
 
@@ -61,7 +61,7 @@ function splitMessage(content: string): string[] {
 
 export class MessageManager {
   private client: Client;
-  private runtime: AgentRuntime;
+  private runtime: IAgentRuntime;
   private attachmentManager: AttachmentManager;
   private interestChannels: InterestChannels = {};
   private discordClient: any;
@@ -82,8 +82,6 @@ export class MessageManager {
     const userName = message.author.username;
     const name = message.author.displayName;
     const channelId = message.channel.id;
-
-    await this.runtime.browserService.initialize();
 
     try {
       const { processedContent, attachments } =
@@ -107,6 +105,7 @@ export class MessageManager {
           agentId,
           this.client.user.username,
           this.runtime.character.name,
+          "discord",
         ),
         this.runtime.ensureUserExists(userIdUUID, userName, name, "discord"),
         this.runtime.ensureRoomExists(roomId),
@@ -228,9 +227,9 @@ export class MessageManager {
         if (message.id && !content.inReplyTo) {
           content.inReplyTo = stringToUuid(message.id);
         }
-        console.log("received callback", message.channel.type)
+        console.log("received callback", message.channel.type);
         if (message.channel.type === ChannelType.GuildVoice) {
-          console.log("generating voice")
+          console.log("generating voice");
           // For voice channels, use text-to-speech
           const audioStream = await SpeechService.generate(
             this.runtime,

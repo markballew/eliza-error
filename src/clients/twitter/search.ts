@@ -1,7 +1,5 @@
 import { SearchMode } from "agent-twitter-client";
 import fs from "fs";
-import { AgentRuntime } from "../../core/runtime.ts";
-
 import { addHeader, composeContext } from "../../core/context.ts";
 import { log_to_file } from "../../core/logger.ts";
 import { messageCompletionFooter } from "../../core/parsing.ts";
@@ -52,7 +50,7 @@ Your response should not contain any questions. Brief, concise statements only.
 export class TwitterSearchClient extends ClientBase {
   private respondedTweets: Set<string> = new Set();
 
-  constructor(runtime: AgentRuntime) {
+  constructor(runtime: IAgentRuntime) {
     // Initialize the client and pass an optional callback to be called when the client is ready
     super({
       runtime,
@@ -95,7 +93,7 @@ export class TwitterSearchClient extends ClientBase {
       );
 
       const formattedHomeTimeline =
-        `### ${this.runtime.character.name}'s Home Timeline\n\n` +
+        `# ${this.runtime.character.name}'s Home Timeline\n\n` +
         homeTimeline
           .map((tweet) => {
             return `ID: ${tweet.id}\nFrom: ${tweet.name} (@${tweet.username})${tweet.inReplyToStatusId ? ` In reply to: ${tweet.inReplyToStatusId}` : ""}\nText: ${tweet.text}\n---\n`;
@@ -263,7 +261,9 @@ export class TwitterSearchClient extends ClientBase {
             ),
         );
 
-        const sortedTweets = tweets.tweets.sort((a, b) => b.timestamp - a.timestamp);
+        const sortedTweets = tweets.tweets.sort(
+          (a, b) => b.timestamp - a.timestamp,
+        );
 
         // Format search results
         for (const tweet of sortedTweets.filter((tweet) =>
@@ -331,7 +331,7 @@ export class TwitterSearchClient extends ClientBase {
 
         const recentSearchResultsText = recentSearchResults.join("\n");
         return addHeader(
-          "### Recent Search Results for " + searchTerm,
+          "# Recent Search Results for " + searchTerm,
           recentSearchResultsText,
         );
       };

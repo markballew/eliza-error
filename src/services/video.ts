@@ -2,24 +2,23 @@ import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
 import youtubeDl from "youtube-dl-exec";
-import { AgentRuntime } from "../core/runtime.ts";
-import { Media } from "../core/types.ts";
+import { IAgentRuntime, Media } from "../core/types.ts";
 import { stringToUuid } from "../core/uuid.ts";
 
 export class VideoService {
   private static instance: VideoService | null = null;
   private CONTENT_CACHE_DIR = "./content_cache";
-  runtime: AgentRuntime;
+  runtime: IAgentRuntime;
 
   private queue: string[] = [];
   private processing: boolean = false;
 
-  private constructor(runtime: AgentRuntime) {
+  private constructor(runtime: IAgentRuntime) {
     this.ensureCacheDirectoryExists();
     this.runtime = runtime;
   }
 
-  public static getInstance(runtime: AgentRuntime): VideoService {
+  public static getInstance(runtime: IAgentRuntime): VideoService {
     if (!VideoService.instance) {
       VideoService.instance = new VideoService(runtime);
     }
@@ -45,17 +44,18 @@ export class VideoService {
     this.processQueue();
 
     return new Promise((resolve, reject) => {
-      const checkQueue = () => {
-        console.log("***** CHECKING QUEUE", this.queue);
+      const checkQueue = async () => {
+        console.log("***** CHECKING VIDEO QUEUE", this.queue);
         const index = this.queue.indexOf(url);
         if (index !== -1) {
           setTimeout(checkQueue, 100);
         } else {
-          // ??? Might be a bug here.
-          resolve(
-            (async () =>
-              await this.processVideoFromUrl(url)) as unknown as Promise<Media>,
-          );
+          try {
+            const result = await this.processVideoFromUrl(url);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
         }
       };
       checkQueue();
@@ -70,15 +70,14 @@ export class VideoService {
     this.processing = true;
 
     while (this.queue.length > 0) {
-      const videoUrl = this.queue.shift();
-      await this.processVideoFromUrl(videoUrl);
+      const url = this.queue.shift()!;
+      await this.processVideoFromUrl(url);
     }
 
     this.processing = false;
   }
 
   private async processVideoFromUrl(url: string): Promise<Media> {
-    // Extract YouTube ID from URL
     const videoId =
       url.match(
         /(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^\/&?]+)/,
@@ -89,9 +88,8 @@ export class VideoService {
       `${videoUuid}.json`,
     );
 
-    // Check if the result is already cached
     if (fs.existsSync(cacheFilePath)) {
-      console.log("Returning cached file");
+      console.log("Returning cached video file");
       return JSON.parse(fs.readFileSync(cacheFilePath, "utf-8")) as Media;
     }
 
@@ -110,7 +108,6 @@ export class VideoService {
       text: transcript,
     };
 
-    // Cache the result
     fs.writeFileSync(cacheFilePath, JSON.stringify(result));
     return result;
   }
@@ -257,6 +254,28 @@ export class VideoService {
 
     fs.unlinkSync(audioFilePath);
     return transcript || "Transcription failed";
+  }
+
+  public async downloadMedia(url: string): Promise<string> {
+    const videoId = this.getVideoId(url);
+    const outputFile = path.join(this.CONTENT_CACHE_DIR, `${videoId}.mp4`);
+
+    // if it already exists, return it
+    if (fs.existsSync(outputFile)) {
+      return outputFile;
+    }
+
+    try {
+      await youtubeDl(url, {
+        verbose: true,
+        output: outputFile,
+        writeInfoJson: true,
+      });
+      return outputFile;
+    } catch (error) {
+      console.error("Error downloading media:", error);
+      throw new Error("Failed to download media");
+    }
   }
 
   private async downloadAudio(url: string): Promise<string> {

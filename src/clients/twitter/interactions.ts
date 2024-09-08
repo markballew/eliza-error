@@ -6,8 +6,13 @@ import {
   messageCompletionFooter,
   shouldRespondFooter,
 } from "../../core/parsing.ts";
-import { AgentRuntime } from "../../core/runtime.ts";
-import { Content, HandlerCallback, Memory, State } from "../../core/types.ts";
+import {
+  Content,
+  HandlerCallback,
+  IAgentRuntime,
+  Memory,
+  State,
+} from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
 import { ClientBase } from "./base.ts";
 import { buildConversationThread, sendTweetChunks, wait } from "./utils.ts";
@@ -73,7 +78,7 @@ export class TwitterInteractionClient extends ClientBase {
     handleTwitterInteractionsLoop();
   }
 
-  constructor(runtime: AgentRuntime) {
+  constructor(runtime: IAgentRuntime) {
     super({
       runtime,
     });
@@ -222,7 +227,7 @@ export class TwitterInteractionClient extends ClientBase {
     }
 
     const formattedHomeTimeline =
-      `### ${this.runtime.character.name}'s Home Timeline\n\n` +
+      `# ${this.runtime.character.name}'s Home Timeline\n\n` +
       homeTimeline
         .map((tweet) => {
           return `ID: ${tweet.id}\nFrom: ${tweet.name} (@${tweet.username})${tweet.inReplyToStatusId ? ` In reply to: ${tweet.inReplyToStatusId}` : ""}\nText: ${tweet.text}\n---\n`;
@@ -269,8 +274,6 @@ export class TwitterInteractionClient extends ClientBase {
       template: shouldRespondTemplate,
     });
 
-    console.log("shouldRespondContext");
-
     const shouldRespond = await this.runtime.shouldRespondCompletion({
       context: shouldRespondContext,
       stop: [],
@@ -280,8 +283,6 @@ export class TwitterInteractionClient extends ClientBase {
       console.log("Not responding to message");
       return { text: "", action: "IGNORE" };
     }
-
-    console.log("shouldRespond", shouldRespond);
 
     const context = composeContext({
       state,

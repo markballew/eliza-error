@@ -1,12 +1,14 @@
 import { getVoiceConnection } from "@discordjs/voice";
 import { ChannelType, Message as DiscordMessage } from "discord.js";
-import { AgentRuntime } from "../../../core/runtime.ts";
-import { Memory, Provider, State } from "../../../core/types.ts";
+import { IAgentRuntime, Memory, Provider, State } from "../../../core/types.ts";
 
 const voiceStateProvider: Provider = {
-  get: async (runtime: AgentRuntime, message: Memory, state?: State) => {
+  get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
+    // Voice doesn't get a discord message, so we need to use the channel for guild data
+    const discordMessage = (state?.discordMessage ||
+      state.discordChannel) as DiscordMessage;
     const connection = getVoiceConnection(
-      (state?.discordMessage as DiscordMessage)?.guild?.id as string,
+      (discordMessage as DiscordMessage)?.guild?.id as string,
     );
     const agentName = state?.agentName || "The agent";
     if (!connection) {
@@ -14,8 +16,10 @@ const voiceStateProvider: Provider = {
     }
 
     const channel = (
-      state?.discordMessage as DiscordMessage
-    )?.guild?.channels.cache.get(connection.joinConfig.channelId as string);
+      (state?.discordMessage as DiscordMessage) ||
+      (state.discordChannel as DiscordMessage)
+    )?.guild?.channels?.cache?.get(connection.joinConfig.channelId as string);
+
     if (!channel || channel.type !== ChannelType.GuildVoice) {
       return agentName + " is in an invalid voice channel";
     }
