@@ -473,7 +473,6 @@ export class AgentRuntime implements IAgentRuntime {
 
     while (true) {
       try {
-        console.log("shouldRespondCompletion");
         const response = await this.completion({
           context,
           stop,
@@ -485,11 +484,8 @@ export class AgentRuntime implements IAgentRuntime {
           max_response_length,
         });
 
-        console.log("shouldRespondCompletion response", response);
-
         const parsedResponse = parseShouldRespondFromText(response.trim());
         if (parsedResponse) {
-          console.log("shouldRespondCompletion parsedResponse", parsedResponse);
           return parsedResponse;
         } else {
           console.log("shouldRespondCompletion no response");
@@ -1342,7 +1338,7 @@ Text: ${attachment.text}
 
     const actionState = {
       actionNames:
-        "Possible response actions:" + formatActionNames(actionsData),
+        "Possible response actions: " + formatActionNames(actionsData),
       actions: actionsData.length > 0 ? formatActions(actionsData) : "",
       actionExamples:
         actionsData.length > 0
@@ -1383,7 +1379,7 @@ Text: ${attachment.text}
       }),
     });
 
-    let allAttachments = state.attachments || [];
+    let allAttachments = [];
 
     if (recentMessagesData && Array.isArray(recentMessagesData)) {
       const lastMessageWithAttachment = recentMessagesData.find(
@@ -1397,15 +1393,13 @@ Text: ${attachment.text}
         allAttachments = recentMessagesData
           .filter((msg) => {
             const msgTime = msg.createdAt;
-            return (
-              msgTime >= oneHourBeforeLastMessage && msgTime <= lastMessageTime
-            );
+            return msgTime >= oneHourBeforeLastMessage;
           })
           .flatMap((msg) => msg.content.attachments || []);
       }
     }
 
-    const formattedAttachments = (allAttachments as Media[])
+    const formattedAttachments = allAttachments
       .map(
         (attachment) =>
           `ID: ${attachment.id}

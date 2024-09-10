@@ -10,7 +10,7 @@ import {
   Memory,
   State,
 } from "../../../core/types.ts";
-
+import fs from "fs";
 export const transcriptionTemplate = `# Transcription of media file
 {{mediaTranscript}}
 
@@ -135,37 +135,35 @@ const transcribeMediaAction = {
 
     const mediaTranscript = attachment.text;
 
-    const datestr = new Date().toUTCString().replace(/:/g, "-");
+    callbackData.text = mediaTranscript.trim();
 
-    const context = composeContext({
-      state: {
-        ...state,
-        mediaTranscript,
-      },
-      template: transcriptionTemplate,
-    });
-
-    log_to_file(
-      `${state.agentName}_${datestr}_transcribe_media_context`,
-      context,
-    );
-
-    const transcript = await runtime.completion({
-      context,
-    });
-
-    log_to_file(
-      `${state.agentName}_${datestr}_transcribe_media_response`,
-      transcript,
-    );
-
-    callbackData.text = transcript.trim();
-
-    if (callbackData.text) {
-      callback(callbackData);
-      await runtime.evaluate(message, state);
+    // if callbackData.text is < 4 lines or < 100 words, then we we callback with normal message wrapped in markdown block
+    if (
+      callbackData.text &&
+      (callbackData.text?.split("\n").length < 4 ||
+        callbackData.text?.split(" ").length < 100)
+    ) {
+      callbackData.text = `Here is the transcript:
+\`\`\`md
+${mediaTranscript.trim()}
+\`\`\`
+`;
+      await callback(callbackData);
+    }
+    // if text is big, let's send as an attachment
+    else if (callbackData.text) {
+      const transcriptFilename = `content_cache/transcript_${Date.now()}.txt`;
+      // save the transcript to a file
+      fs.writeFileSync(transcriptFilename, callbackData.text);
+      await callback(
+        {
+          ...callbackData,
+          text: `I've attached the transcript as a text file.`,
+        },
+        [transcriptFilename],
+      );
     } else {
-      console.warn("Empty response from Claude, skipping");
+      console.warn("Empty response from transcribe media action, skipping");
     }
 
     return callbackData;

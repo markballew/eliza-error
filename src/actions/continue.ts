@@ -31,7 +31,6 @@ export default {
   description:
     "ONLY use this action when the message necessitates a follow up. Do not use this action when the conversation is finished or the user does not wish to speak (use IGNORE instead). If the last message action was CONTINUE, and the user has not responded. Use sparingly.",
   validate: async (runtime: IAgentRuntime, message: Memory) => {
-    console.log("Validating continue");
     const recentMessagesData = await runtime.messageManager.getMemories({
       roomId: message.roomId,
       count: 10,
@@ -192,8 +191,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "i'm not very good yet, but i've been playing until my fingers hut",
+          text: "i'm not very good yet, but i've been playing until my fingers hut",
           action: "CONTINUE",
         },
       },
@@ -207,8 +205,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "I've been reflecting a lot on what happiness means to me lately",
+          text: "I've been reflecting a lot on what happiness means to me lately",
           action: "CONTINUE",
         },
       },
@@ -222,8 +219,7 @@ export default {
       {
         user: "{{user2}}",
         content: {
-          content:
-            "Like the best things that have ever happened were things that happened, or moments that I had with someone",
+          text: "Like the best things that have ever happened were things that happened, or moments that I had with someone",
           action: "CONTINUE",
         },
       },
@@ -250,8 +246,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "the pieces are just so insane looking, one sec, let me grab a link",
+          text: "the pieces are just so insane looking, one sec, let me grab a link",
           action: "CONTINUE",
         },
       },
@@ -265,8 +260,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "the new exhibit downtown is rly cool, it's all about tribalism in online spaces",
+          text: "the new exhibit downtown is rly cool, it's all about tribalism in online spaces",
           action: "CONTINUE",
         },
       },
@@ -402,8 +396,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "there's something peaceful about capturing the world through a lens",
+          text: "there's something peaceful about capturing the world through a lens",
         },
       },
     ],
@@ -445,8 +438,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "bad traffic, bad air quality, tons of homeless people, no thx",
+          text: "bad traffic, bad air quality, tons of homeless people, no thx",
         },
       },
       {
@@ -549,8 +541,7 @@ export default {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "Just toying around with something in three.js nothing serious",
+          text: "Just toying around with something in three.js nothing serious",
         },
       },
     ],

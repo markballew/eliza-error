@@ -12,7 +12,7 @@ import {
   Memory,
   State,
 } from "../../../core/types.ts";
-
+import fs from "fs";
 export const summarizationTemplate = `# Summarized so far (we are adding to this)
 {{currentSummary}}
 
@@ -301,13 +301,33 @@ const summarizeAction = {
       return;
     }
 
-    callbackData.text = currentSummary;
-
-    if (currentSummary.trim()) {
-      callback(callbackData);
-      await runtime.evaluate(message, state);
+    callbackData.text = currentSummary.trim();
+    if (
+      callbackData.text &&
+      (currentSummary.trim()?.split("\n").length < 4 ||
+        currentSummary.trim()?.split(" ").length < 100)
+    ) {
+      callbackData.text = `Here is the summary:
+\`\`\`md
+${currentSummary.trim()}
+\`\`\`
+`;
+      await callback(callbackData);
+    } else if (currentSummary.trim()) {
+      const summaryFilename = `content_cache/conversation_summary_${Date.now()}.txt`;
+      // save the summary to a file
+      fs.writeFileSync(summaryFilename, currentSummary);
+      await callback(
+        {
+          ...callbackData,
+          text: `I've attached the summary of the conversation from \`${new Date(parseInt(start as string)).toString()}\` to \`${new Date(parseInt(end as string)).toString()}\` as a text file.`,
+        },
+        [summaryFilename],
+      );
     } else {
-      console.warn("Empty response from Claude, skipping");
+      console.warn(
+        "Empty response from summarize conversation action, skipping",
+      );
     }
 
     return callbackData;
@@ -323,8 +343,7 @@ const summarizeAction = {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "can you give me a detailed report on what we're talking about?",
+          text: "can you give me a detailed report on what we're talking about?",
         },
       },
       {
@@ -339,8 +358,7 @@ const summarizeAction = {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "please summarize the conversation we just had and include this blogpost i'm linking (Attachment: b3e12)",
+          text: "please summarize the conversation we just had and include this blogpost i'm linking (Attachment: b3e12)",
         },
       },
       {
@@ -355,7 +373,7 @@ const summarizeAction = {
       {
         user: "{{user1}}",
         content: {
-          content: "Can you summarize what moon and avf are talking about?",
+          text: "Can you summarize what moon and avf are talking about?",
         },
       },
       {
@@ -370,8 +388,7 @@ const summarizeAction = {
       {
         user: "{{user1}}",
         content: {
-          content:
-            "i need to write a blog post about farming, can you summarize the discussion from a few hours ago?",
+          text: "i need to write a blog post about farming, can you summarize the discussion from a few hours ago?",
         },
       },
       {

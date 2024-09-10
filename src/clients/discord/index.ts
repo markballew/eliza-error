@@ -23,6 +23,9 @@ import joinvoice from "./actions/joinvoice.ts";
 import leavevoice from "./actions/leavevoice.ts";
 import summarize from "./actions/summarize_conversation.ts";
 import transcribe_media from "./actions/transcribe_media.ts";
+import download_media from "./actions/download_media.ts";
+import channelStateProvider from "./providers/channelState.ts";
+import voiceStateProvider from "./providers/voiceState.ts";
 
 export class DiscordClient extends EventEmitter {
   apiToken: string;
@@ -69,6 +72,10 @@ export class DiscordClient extends EventEmitter {
     this.runtime.registerAction(summarize);
     this.runtime.registerAction(chat_with_attachments);
     this.runtime.registerAction(transcribe_media);
+    this.runtime.registerAction(download_media);
+
+    this.runtime.providers.push(channelStateProvider);
+    this.runtime.providers.push(voiceStateProvider);
   }
 
   private setupEventListeners() {
@@ -251,11 +258,11 @@ export class DiscordClient extends EventEmitter {
   }
 
   private async onReady() {
-    // const guilds = await this.client.guilds.fetch();
-    // for (const [, guild] of guilds) {
-    //   const fullGuild = await guild.fetch();
-    //   this.voiceManager.scanGuild(fullGuild);
-    // }
+    const guilds = await this.client.guilds.fetch();
+    for (const [, guild] of guilds) {
+      const fullGuild = await guild.fetch();
+      this.voiceManager.scanGuild(fullGuild);
+    }
   }
 }
 

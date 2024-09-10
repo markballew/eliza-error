@@ -7,8 +7,14 @@ import { IAgentRuntime, Memory, Provider, State } from "../../../core/types.ts";
 
 const channelStateProvider: Provider = {
   get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
-    const discordMessage = state?.discordMessage as DiscordMessage;
-    console.log("discordMessage", discordMessage);
+    const discordMessage =
+      (state?.discordMessage as DiscordMessage) ||
+      (state?.discordChannel as DiscordMessage);
+    if (!discordMessage) {
+      console.log("discordMessage is null");
+      return "";
+    }
+
     const guild = discordMessage?.guild;
     const agentName = state?.agentName || "The agent";
     const senderName = state?.senderName || "someone";
@@ -24,6 +30,11 @@ const channelStateProvider: Provider = {
     const serverName = guild.name; // The name of the server
     const guildId = guild.id; // The ID of the guild
     const channel = discordMessage.channel;
+
+    if (!channel) {
+      console.log("channel is null");
+      return "";
+    }
 
     let response =
       agentName +
