@@ -105,9 +105,10 @@ export class TwitterGenerationClient extends ClientBase {
       const newTweetContent = await this.runtime.completion({
         context,
         stop: [],
-        temperature: this.temperature,
+        temperature: this.temperature + 0.3,
         frequency_penalty: 0.5,
         presence_penalty: 0.5,
+        model: "gpt-4o",
       });
       log_to_file(
         `${this.runtime.getSetting("TWITTER_USERNAME")}_${datestr}_generate_response`,
