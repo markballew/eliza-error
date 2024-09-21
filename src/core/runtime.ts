@@ -6,7 +6,7 @@ import {
   formatEvaluatorNames,
   formatEvaluators,
 } from "./evaluators.ts";
-import { MemoryManager } from "./memory.ts";
+import { embeddingZeroVector, MemoryManager } from "./memory.ts";
 import {
   parseBooleanFromText,
   parseJsonArrayFromText,
@@ -167,6 +167,16 @@ export class AgentRuntime implements IAgentRuntime {
   loreManager: IMemoryManager;
 
   /**
+   * Hold large documents that can be referenced
+   */
+  documentsManager: IMemoryManager;
+
+  /**
+   * Searchable document fragments
+   */
+  fragmentsManager: IMemoryManager;
+
+  /**
    * Creates an instance of AgentRuntime.
    * @param opts - The options for configuring the AgentRuntime.
    * @param opts.conversationLength - The number of messages to hold in the recent message cache.
@@ -229,6 +239,16 @@ export class AgentRuntime implements IAgentRuntime {
       tableName: "lore",
     });
 
+    this.documentsManager = new MemoryManager({
+      runtime: this,
+      tableName: "documents",
+    });
+
+    this.fragmentsManager = new MemoryManager({
+      runtime: this,
+      tableName: "fragments",
+    });
+
     this.serverUrl = opts.serverUrl ?? this.serverUrl;
     this.model = this.character.settings?.model ?? opts.model ?? this.model;
     this.embeddingModel =
@@ -268,6 +288,56 @@ export class AgentRuntime implements IAgentRuntime {
 
     // static class, no need to instantiate but we can access it like a class instance
     this.speechService = SpeechService;
+
+    if (opts.character && opts.character.knowledge && opts.character.knowledge.length > 0) {
+      this.processCharacterKnowledge(opts.character.knowledge);
+    }
+  }
+
+  /**
+   * Processes character knowledge by creating document memories and fragment memories.
+   * This function takes an array of knowledge items, creates a document memory for each item if it doesn't exist,
+   * then chunks the content into fragments, embeds each fragment, and creates fragment memories.
+   * @param knowledge An array of knowledge items containing id, path, and content.
+   */
+  private async processCharacterKnowledge(knowledge: string[]) {
+    // ensure the room exists and the agent exists in the room
+    this.ensureRoomExists(this.agentId);
+    this.ensureUserExists(this.agentId, this.character.name, this.character.name);
+    this.ensureParticipantExists(this.agentId, this.agentId);
+
+    for (const knowledgeItem of knowledge) {
+      const knowledgeId = stringToUuid(knowledgeItem);
+      const existingDocument = await this.documentsManager.getMemoryById(knowledgeId);
+      if (!existingDocument) {
+        console.log("Processing knowledge for ", this.character.name, " - ",  knowledgeItem.slice(0, 100))
+        await this.documentsManager.createMemory({
+          embedding: embeddingZeroVector,
+          id: knowledgeId,
+          roomId: this.agentId,
+          userId: this.agentId,
+          createdAt: Date.now(),
+          content: {
+            text: knowledgeItem,
+          },
+        });
+        const fragments = await this.splitChunks(knowledgeItem, 1200, 200);
+        for (const fragment of fragments) {
+          const embedding = await this.embed(fragment);
+          await this.fragmentsManager.createMemory({
+            id: stringToUuid(fragment),
+            roomId: this.agentId,
+            userId: this.agentId,
+            createdAt: Date.now(),
+            content: {
+              source: knowledgeId,
+              text: fragment,
+            },
+            embedding,
+          });
+        }
+      }
+    }
   }
 
   getSetting(key: string) {
@@ -508,10 +578,11 @@ export class AgentRuntime implements IAgentRuntime {
     const encoding = tiktoken.encoding_for_model(model as TiktokenModel);
     const tokens = encoding.encode(content);
     const chunks: string[] = [];
+    const textDecoder = new TextDecoder();
 
     for (let i = 0; i < tokens.length; i += chunkSize) {
       const chunk = tokens.slice(i, i + chunkSize);
-      const decodedChunk = encoding.decode(chunk);
+      const decodedChunk = textDecoder.decode(encoding.decode(chunk));
 
       // Append bleed characters from the previous chunk
       const startBleed = i > 0 ? content.slice(i - bleed, i) : "";

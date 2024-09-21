@@ -56,6 +56,8 @@ export class TwitterGenerationClient extends ClientBase {
       );
 
       let homeTimeline = [];
+
+      if (!fs.existsSync("tweetcache")) fs.mkdirSync("tweetcache");
       // read the file if it exists
       if (fs.existsSync("tweetcache/home_timeline.json")) {
         homeTimeline = JSON.parse(
@@ -108,8 +110,9 @@ export class TwitterGenerationClient extends ClientBase {
         temperature: this.temperature + 0.3,
         frequency_penalty: 0.5,
         presence_penalty: 0.5,
-        model: "gpt-4o",
+        model: "gpt-4o-2024-08-06",
       });
+      console.log("newTweetContent", newTweetContent);
       log_to_file(
         `${this.runtime.getSetting("TWITTER_USERNAME")}_${datestr}_generate_response`,
         JSON.stringify(newTweetContent),
