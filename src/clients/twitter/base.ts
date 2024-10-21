@@ -1,540 +1,225 @@
-import {
-  QueryTweetsResponse,
-  Scraper,
-  SearchMode,
-  Tweet,
-} from "agent-twitter-client";
-import { EventEmitter } from "events";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { embeddingZeroVector } from "../../core/memory.ts";
+import { Scraper, Tweet } from "agent-twitter-client";
 import {
   Content,
-  IAgentRuntime,
-  Memory,
+  Message,
   State,
-  UUID,
-} from "../../core/types.ts";
-import ImageDescriptionService from "../../services/image.ts";
+  embeddingZeroVector
+} from "bgent";
+import { UUID } from "crypto";
+import { EventEmitter } from "events";
+import fs from "fs";
+import path from 'path';
+import { default as getUuid } from "uuid-by-string";
+import { Agent } from "../../core/agent.ts";
+import { adapter } from "../../core/db.ts";
+import settings from "../../core/settings.ts";
 
-import glob from "glob";
-import { stringToUuid } from "../../core/uuid.ts";
-
-export function extractAnswer(text: string): string {
-  const startIndex = text.indexOf("Answer: ") + 8;
-  const endIndex = text.indexOf("<|endoftext|>", 11);
-  return text.slice(startIndex, endIndex);
-}
+import { fileURLToPath } from 'url';
+import ImageRecognitionService from "../../services/imageRecognition.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-class RequestQueue {
-  private queue: (() => Promise<any>)[] = [];
-  private processing: boolean = false;
-
-  async add<T>(request: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.queue.push(async () => {
-        try {
-          const result = await request();
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        }
-      });
-      this.processQueue();
-    });
-  }
-
-  private async processQueue(): Promise<void> {
-    if (this.processing || this.queue.length === 0) {
-      return;
-    }
-    this.processing = true;
-
-    while (this.queue.length > 0) {
-      const request = this.queue.shift()!;
-      try {
-        await request();
-      } catch (error) {
-        console.error("Error processing request:", error);
-        this.queue.unshift(request);
-        await this.exponentialBackoff(this.queue.length);
-      }
-      await this.randomDelay();
-    }
-
-    this.processing = false;
-  }
-
-  private async exponentialBackoff(retryCount: number): Promise<void> {
-    const delay = Math.pow(2, retryCount) * 1000;
-    await new Promise((resolve) => setTimeout(resolve, delay));
-  }
-
-  private async randomDelay(): Promise<void> {
-    const delay = Math.floor(Math.random() * 2000) + 1500;
-    await new Promise((resolve) => setTimeout(resolve, delay));
+export type Character = {
+  name: string,
+  bio: string,
+  people: string[],
+  topics: string[],
+  adjectives: string[],
+  style: {
+    all: string[],
+    chat: string[],
+    post: string[]
   }
 }
 
 export class ClientBase extends EventEmitter {
-  static _twitterClient: Scraper;
   twitterClient: Scraper;
-  runtime: IAgentRuntime;
+  agent: Agent;
+  character: Character;
   directions: string;
-  lastCheckedTweetId: number | null = null;
-  tweetCacheFilePath = "tweetcache/latest_checked_tweet_id.txt";
-  imageDescriptionService: ImageDescriptionService;
-  temperature: number = 0.7;
-  dryRun: boolean = false;
-
-  private tweetCache: Map<string, Tweet> = new Map();
-  requestQueue: RequestQueue = new RequestQueue();
-  twitterUserId: string;
-
-  async cacheTweet(tweet: Tweet): Promise<void> {
-    if (!tweet) {
-      console.warn("Tweet is undefined, skipping cache");
-      return;
-    }
-    const cacheDir = path.join(
-      __dirname,
-      "../../../tweetcache",
-      tweet.conversationId,
-      `${tweet.id}.json`,
-    );
-    await fs.promises.mkdir(path.dirname(cacheDir), { recursive: true });
-    await fs.promises.writeFile(cacheDir, JSON.stringify(tweet, null, 2));
-    this.tweetCache.set(tweet.id, tweet);
-  }
-
-  async getCachedTweet(tweetId: string): Promise<Tweet | undefined> {
-    if (this.tweetCache.has(tweetId)) {
-      return this.tweetCache.get(tweetId);
-    }
-
-    const cacheFile = path.join(
-      __dirname,
-      "tweetcache",
-      "*",
-      `${tweetId}.json`,
-    );
-    const files = await glob(cacheFile);
-    if (files.length > 0) {
-      const tweetData = await fs.promises.readFile(files[0], "utf-8");
-      const tweet = JSON.parse(tweetData) as Tweet;
-      this.tweetCache.set(tweet.id, tweet);
-      return tweet;
-    }
-
-    return undefined;
-  }
-
-  async getTweet(tweetId: string): Promise<Tweet> {
-    const cachedTweet = await this.getCachedTweet(tweetId);
-    if (cachedTweet) {
-      return cachedTweet;
-    }
-
-    const tweet = await this.requestQueue.add(() =>
-      this.twitterClient.getTweet(tweetId),
-    );
-    await this.cacheTweet(tweet);
-    return tweet;
-  }
-
+  model: string;
+  lastCheckedTweetId: string | null = null;
+  imageRecognitionService: ImageRecognitionService;
+  temperature: number = 0.5;
   callback: (self: ClientBase) => any = null;
 
   onReady() {
     throw new Error("Not implemented in base class, please call from subclass");
   }
 
-  constructor({ runtime }: { runtime: IAgentRuntime }) {
-    super();
-    this.runtime = runtime;
-    if (ClientBase._twitterClient) {
-      this.twitterClient = ClientBase._twitterClient;
+  constructor({ agent, character, model = 'gpt-4o-mini', callback = null }: {
+    agent: Agent,
+    character: Character,
+    model?: string,
+    callback?: (self: ClientBase) => any
+  }) {
+    super()
+    this.agent = agent;
+    this.twitterClient = new Scraper();
+    this.character = character;
+    this.directions = "- " + character.style.all.join("\n- ") + "- " + character.style.post.join()
+    this.callback = callback;
+    this.model = model;
+    this.imageRecognitionService = new ImageRecognitionService();
+  
+    // Check for Twitter cookies
+    if (settings.TWITTER_COOKIES) {
+      console.log("settings.TWITTER_COOKIES")
+      console.log(settings.TWITTER_COOKIES)
+      const cookiesArray = JSON.parse(settings.TWITTER_COOKIES);
+      this.setCookiesFromArray(cookiesArray);
     } else {
-      this.twitterClient = new Scraper();
-      ClientBase._twitterClient = this.twitterClient;
-    }
-    this.dryRun =
-      this.runtime.getSetting("TWITTER_DRY_RUN")?.toLowerCase() === "true";
-    this.directions =
-      "- " +
-      this.runtime.character.style.all.join("\n- ") +
-      "- " +
-      this.runtime.character.style.post.join();
-
-    try {
-      if (fs.existsSync(this.tweetCacheFilePath)) {
-        const data = fs.readFileSync(this.tweetCacheFilePath, "utf-8");
-        this.lastCheckedTweetId = parseInt(data.trim());
+      const cookiesFilePath = path.join(__dirname, 'cookies.json');
+      if (fs.existsSync(cookiesFilePath)) {
+        const cookiesArray = JSON.parse(fs.readFileSync(cookiesFilePath, 'utf-8'));
+        console.log("cookies")
+        console.log(cookiesArray)
+        this.setCookiesFromArray(cookiesArray);
       } else {
-        console.warn("Tweet cache file not found.");
-      }
-    } catch (error) {
-      console.error("Error loading latest checked tweet ID from file:", error);
-    }
-    const cookiesFilePath = path.join(
-      __dirname,
-      "../../../tweetcache/" +
-        this.runtime.getSetting("TWITTER_USERNAME") +
-        "_cookies.json",
-    );
-
-    const dir = path.dirname(cookiesFilePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    // async initialization
-    (async () => {
-      // Check for Twitter cookies
-      if (this.runtime.getSetting("TWITTER_COOKIES")) {
-        const cookiesArray = JSON.parse(
-          this.runtime.getSetting("TWITTER_COOKIES"),
-        );
-        await this.setCookiesFromArray(cookiesArray);
-      } else {
-        console.log("Cookies file path:", cookiesFilePath);
-        if (fs.existsSync(cookiesFilePath)) {
-          const cookiesArray = JSON.parse(
-            fs.readFileSync(cookiesFilePath, "utf-8"),
-          );
-          await this.setCookiesFromArray(cookiesArray);
-        } else {
-          await this.twitterClient.login(
-            this.runtime.getSetting("TWITTER_USERNAME"),
-            this.runtime.getSetting("TWITTER_PASSWORD"),
-            this.runtime.getSetting("TWITTER_EMAIL"),
-          );
-          console.log("Logged in to Twitter");
-          const cookies = await this.twitterClient.getCookies();
-          fs.writeFileSync(cookiesFilePath, JSON.stringify(cookies), "utf-8");
-        }
-      }
-
-      let loggedInWaits = 0;
-
-      while (!(await this.twitterClient.isLoggedIn())) {
-        console.log("Waiting for Twitter login");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        if (loggedInWaits > 10) {
-          console.error("Failed to login to Twitter");
-          await this.twitterClient.login(
-            this.runtime.getSetting("TWITTER_USERNAME"),
-            this.runtime.getSetting("TWITTER_PASSWORD"),
-            this.runtime.getSetting("TWITTER_EMAIL"),
-          );
-
-          const cookies = await this.twitterClient.getCookies();
-          fs.writeFileSync(cookiesFilePath, JSON.stringify(cookies), "utf-8");
-          loggedInWaits = 0;
-        }
-        loggedInWaits++;
-      }
-      const userId = await this.requestQueue.add(
-        async () =>
-          await this.twitterClient.getUserIdByScreenName(
-            this.runtime.getSetting("TWITTER_USERNAME"),
-          ),
-      );
-      console.log("Twitter user ID:", userId);
-      this.twitterUserId = userId;
-
-      await this.populateTimeline();
-
-      this.onReady();
-    })();
-  }
-
-  async fetchHomeTimeline(count: number): Promise<Tweet[]> {
-    const homeTimeline = await this.twitterClient.fetchHomeTimeline(count, []);
-
-    return homeTimeline.filter(t => t.__typename !== "TweetWithVisibilityResults").map((tweet) => {
-      console.log("tweet is", tweet);
-      const obj =  {
-        id: tweet.rest_id,
-        name: tweet.name ?? tweet.core?.user_results?.result?.legacy.name,
-        username: tweet.username ?? tweet.core?.user_results?.result?.legacy.screen_name,
-        text: tweet.text ?? tweet.legacy?.full_text,
-        inReplyToStatusId: tweet.inReplyToStatusId ?? tweet.legacy?.in_reply_to_status_id_str,
-        createdAt: tweet.createdAt ?? tweet.legacy?.created_at,
-        userId: tweet.userId ?? tweet.legacy?.user_id_str,
-        conversationId: tweet.conversationId ?? tweet.legacy?.conversation_id_str,
-        hashtags: tweet.hashtags ?? tweet.legacy?.entities.hashtags,
-        mentions: tweet.mentions ?? tweet.legacy?.entities.user_mentions,
-        photos: tweet.photos ??
-          tweet.legacy?.entities.media?.filter(
-            (media) => media.type === "photo",
-          ) ?? [],
-        thread: [],
-        urls: tweet.urls ?? tweet.legacy?.entities.urls,
-        videos: tweet.videos ??
-          tweet.legacy?.entities.media?.filter(
-            (media) => media.type === "video",
-          ) ?? [],
-      };
-
-      console.log("obj is", obj);
-
-      return obj;
-    });
-  }
-
-  async fetchSearchTweets(
-    query: string,
-    maxTweets: number,
-    searchMode: SearchMode,
-    cursor?: string,
-  ): Promise<QueryTweetsResponse> {
-    try {
-      // Sometimes this fails because we are rate limited. in this case, we just need to return an empty array
-      // if we dont get a response in 5 seconds, something is wrong
-      const timeoutPromise = new Promise((resolve) =>
-        setTimeout(() => resolve({ tweets: [] }), 10000),
-      );
-
-      try {
-        const result = await this.requestQueue.add(
-          async () =>
-            await Promise.race([
-              this.twitterClient.fetchSearchTweets(
-                query,
-                maxTweets,
-                searchMode,
-                cursor,
-              ),
-              timeoutPromise,
-            ]),
-        );
-        console.log("result", result);
-        return (result ?? { tweets: [] }) as QueryTweetsResponse;
-      } catch (error) {
-        console.error("Error fetching search tweets:", error);
-        return { tweets: [] };
-      }
-    } catch (error) {
-      console.error("Error fetching search tweets:", error);
-      return { tweets: [] };
-    }
-  }
-
-  private async populateTimeline() {
-    const cacheFile = "timeline_cache.json";
-
-    // Check if the cache file exists
-    if (fs.existsSync(cacheFile)) {
-      // Read the cached search results from the file
-      const cachedResults = JSON.parse(fs.readFileSync(cacheFile, "utf-8"));
-
-      // Get the existing memories from the database
-      const existingMemories =
-        await this.runtime.messageManager.getMemoriesByRoomIds({
-          roomIds: cachedResults.map((tweet) =>
-            stringToUuid(tweet.conversationId),
-          ),
-        });
-
-      // Create a Set to store the IDs of existing memories
-      const existingMemoryIds = new Set(
-        existingMemories.map((memory) => memory.id.toString()),
-      );
-
-      // Check if any of the cached tweets exist in the existing memories
-      const someCachedTweetsExist = cachedResults.some((tweet) =>
-        existingMemoryIds.has(tweet.id),
-      );
-
-      if (someCachedTweetsExist) {
-        // Filter out the cached tweets that already exist in the database
-        const tweetsToSave = cachedResults.filter(
-          (tweet) => !existingMemoryIds.has(tweet.id),
-        );
-
-        // Save the missing tweets as memories
-        for (const tweet of tweetsToSave) {
-          const roomId = stringToUuid(tweet.conversationId);
-          const tweetuserId =
-            tweet.userId === this.twitterUserId
-              ? this.runtime.agentId
-              : stringToUuid(tweet.userId);
-
-          await this.runtime.ensureRoomExists(roomId);
-          await this.runtime.ensureParticipantExists(
-            this.runtime.agentId,
-            roomId,
-          );
-
-          await this.runtime.ensureUserExists(
-            tweetuserId,
-            tweet.username,
-            tweet.name,
-            "twitter",
-          );
-          await this.runtime.ensureParticipantExists(tweetuserId, roomId);
-
-          const content = {
-            text: tweet.text,
-            url: tweet.permanentUrl,
-            source: "twitter",
-            inReplyTo: tweet.inReplyToStatusId
-              ? stringToUuid(tweet.inReplyToStatusId)
-              : undefined,
-          } as Content;
-
-          console.log("Creating memory for tweet", tweet.id);
-
-          // check if it already exists
-          const memory = await this.runtime.messageManager.getMemoryById(
-            stringToUuid(tweet.id),
-          );
-          if (memory) {
-            console.log("Memory already exists, skipping timeline population");
-            break;
-          }
-
-          await this.runtime.messageManager.createMemory({
-            id: stringToUuid(tweet.id),
-            userId: tweetuserId,
-            content: content,
-            roomId,
-            embedding: embeddingZeroVector,
-            createdAt: tweet.timestamp * 1000,
+        console.log("settings.TWITTER_USERNAME")
+        console.log(settings.TWITTER_USERNAME)
+        this.twitterClient.login(settings.TWITTER_USERNAME, settings.TWITTER_PASSWORD, settings.TWITTER_EMAIL)
+          .then(() => {
+            console.log('Logged in to Twitter')
+            return this.twitterClient.getCookies();
+          })
+          .then((cookies) => {
+            console.log("cookies")
+            console.log(cookies)
+            fs.writeFileSync(cookiesFilePath, JSON.stringify(cookies), 'utf-8');
+          })
+          .catch((error) => {
+            console.error('Error logging in to Twitter:', error);
           });
-        }
-
-        console.log(
-          `Populated ${tweetsToSave.length} missing tweets from the cache.`,
-        );
-        return;
       }
     }
+  
+    console.log("doing stuff");
+  
+    (async () => {
+      while (!(await this.twitterClient.isLoggedIn())) {
+        console.log('Waiting for Twitter login');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+      if(callback) {
+        callback(this);
+      }
+    })()
+  }
 
-    // Get the most recent 20 mentions and interactions
-    const mentionsAndInteractions = await this.fetchSearchTweets(
-      `@${this.runtime.getSetting("TWITTER_USERNAME")}`,
-      20,
-      SearchMode.Latest,
+  private setCookiesFromArray(cookiesArray: any[]) {
+    const cookieStrings = cookiesArray.map(cookie =>
+      `${cookie.key}=${cookie.value}; Domain=${cookie.domain}; Path=${cookie.path}; ${cookie.secure ? 'Secure' : ''}; ${cookie.httpOnly ? 'HttpOnly' : ''}; SameSite=${cookie.sameSite || 'Lax'}`
     );
+    this.twitterClient.setCookies(cookieStrings);
+  }
 
-    // Combine the timeline tweets and mentions/interactions
-    const allTweets = [...mentionsAndInteractions.tweets];
+  async getReplies(tweetId: string): Promise<Tweet[]> {
+    // TODO: Fix this
+    // We can get all data for a tweet and see who has replied to it
+    return [];
+  }
 
-    // Create a Set to store unique tweet IDs
-    const tweetIdsToCheck = new Set<string>();
-
-    // Add tweet IDs to the Set
-    for (const tweet of allTweets) {
-      tweetIdsToCheck.add(tweet.id);
+  async describeImage(imageUrl: string): Promise<string> {
+    try {
+      const description = await this.imageRecognitionService.recognizeImage(imageUrl);
+      return description[0] || 'Unable to describe the image.';
+    } catch (error) {
+      console.error('Error describing image:', error);
+      return 'Error occurred while describing the image.';
     }
+  }
 
-    // Convert the Set to an array of UUIDs
-    const tweetUuids = Array.from(tweetIdsToCheck).map((id) =>
-      stringToUuid(id),
-    );
+  async describeGif(imageUrl: string): Promise<string> {
+    // TODO:
+    // get the first frame of the gif
+    // describe image
+    return ''
+  }
 
-    // Check the existing memories in the database
-    const existingMemories =
-      await this.runtime.messageManager.getMemoriesByRoomIds({
-        roomIds: tweetUuids,
-      });
+  async searchArxiv(query: string): Promise<string> {
+    // TODO: Search Arxiv for a topic, find a paper, summarize it and return the link and summary
+    return '';
+  }
 
-    // Create a Set to store the existing memory IDs
-    const existingMemoryIds = new Set<UUID>(
-      existingMemories.map((memory) => memory.roomId),
-    );
+  async generateImage(description: string): Promise<string> {
+    // TODO: Implement this and return an image which can be added to a tweet http request
+    return '';
+  }
 
-    // Filter out the tweets that already exist in the database
-    const tweetsToSave = allTweets.filter(
-      (tweet) => !existingMemoryIds.has(stringToUuid(tweet.id)),
-    );
+  async summarizeWebpage(url: string): Promise<string> {
+    // TODO: Visit with playwright, get content, summarize
+    return '';
+  }
 
-    await this.runtime.ensureUserExists(
-      this.runtime.agentId,
-      this.runtime.getSetting("TWITTER_USERNAME"),
-      this.runtime.character.name,
-      "twitter",
-    );
+  async saveResponseMessage(
+    message: Message,
+    state: State,
+    responseContent: Content,
+    userName: string = settings.TWITTER_USERNAME
+  ) {
+    const { room_id } = message;
+    const agentId = getUuid(
+      userName
+    ) as UUID;
 
-    // Save the new tweets as memories
-    for (const tweet of tweetsToSave) {
-      const roomId = stringToUuid(tweet.conversationId);
-      const tweetuserId =
-        tweet.userId === this.twitterUserId
-          ? this.runtime.agentId
-          : stringToUuid(tweet.userId);
+    responseContent.content = responseContent.content?.trim();
 
-      await this.runtime.ensureRoomExists(roomId);
-      await this.runtime.ensureParticipantExists(this.runtime.agentId, roomId);
-
-      await this.runtime.ensureUserExists(
-        tweetuserId,
-        tweet.username,
-        tweet.name,
-        "twitter",
-      );
-      await this.runtime.ensureParticipantExists(tweetuserId, roomId);
-
-      const content = {
-        text: tweet.text,
-        url: tweet.permanentUrl,
-        source: "twitter",
-        inReplyTo: tweet.inReplyToStatusId
-          ? stringToUuid(tweet.inReplyToStatusId)
-          : undefined,
-      } as Content;
-
-      await this.runtime.messageManager.createMemory({
-        id: stringToUuid(tweet.id),
-        userId: tweetuserId,
-        content: content,
-        roomId,
+    if (responseContent.content) {
+      console.log("Creating memory 2", {
+        user_id: agentId!,
+        content: responseContent,
+        room_id,
         embedding: embeddingZeroVector,
-        createdAt: tweet.timestamp * 1000,
-      });
+      })
+      await this.agent.ensureUserExists(agentId, userName);
+      await this.agent.runtime.messageManager.createMemory({
+        user_id: agentId!,
+        content: responseContent,
+        room_id,
+        embedding: embeddingZeroVector,
+      },
+        false);
+      await this.agent.runtime.evaluate(message, { ...state, responseContent });
+    } else {
+      console.warn("Empty response, skipping");
     }
+  };
 
-    // Cache the search results to the file
-    fs.writeFileSync(cacheFile, JSON.stringify(allTweets));
-  }
+  async saveRequestMessage(message: Message, state: State) {
+    const { content: senderContent } = message;
 
-  async setCookiesFromArray(cookiesArray: any[]) {
-    const cookieStrings = cookiesArray.map(
-      (cookie) =>
-        `${cookie.key}=${cookie.value}; Domain=${cookie.domain}; Path=${cookie.path}; ${cookie.secure ? "Secure" : ""}; ${cookie.httpOnly ? "HttpOnly" : ""}; SameSite=${cookie.sameSite || "Lax"}`,
-    );
-    await this.twitterClient.setCookies(cookieStrings);
-  }
+    if ((senderContent as Content).content) {
+      const data2 = adapter.db
+        .prepare(
+          "SELECT * FROM memories WHERE type = ? AND user_id = ? AND room_id = ? ORDER BY created_at DESC LIMIT 1"
+        )
+        .all("messages", message.user_id, message.room_id) as {
+          content: Content;
+        }[];
 
-  async saveRequestMessage(message: Memory, state: State) {
-    if (message.content.text) {
-      const recentMessage = await this.runtime.messageManager.getMemories({
-        roomId: message.roomId,
-        count: 1,
-        unique: false,
-      });
-
-      if (
-        recentMessage.length > 0 &&
-        recentMessage[0].content === message.content
-      ) {
-        console.log("Message already saved", recentMessage[0].id);
+      if (data2.length > 0 && data2[0].content === message.content) {
+        console.log("already saved", data2);
       } else {
-        await this.runtime.messageManager.createMemory({
-          ...message,
+        console.log("Creating memory", {
+          user_id: message.user_id,
+          content: senderContent,
+          room_id: message.room_id,
+          embedding: embeddingZeroVector,
+        })
+        await this.agent.runtime.messageManager.createMemory({
+          user_id: message.user_id,
+          content: senderContent,
+          room_id: message.room_id,
           embedding: embeddingZeroVector,
         });
       }
-
-      await this.runtime.evaluate(message, {
+      await this.agent.runtime.evaluate(message, {
         ...state,
+        twitterMessage: message,
         twitterClient: this.twitterClient,
       });
     }
-  }
+  };
 }
