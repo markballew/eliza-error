@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
-const settings = process.env
+const settings = process.env;
 
 export default settings;

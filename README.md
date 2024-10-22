@@ -18,7 +18,7 @@ https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 ## Linux Installation
 You might need these
 ```
-apt-get install build-essential libatlas-base-dev
+npm install --include=optional sharp
 ```
 
 # Discord Bot

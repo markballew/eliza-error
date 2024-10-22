@@ -1,8 +1,7 @@
-import { type BgentRuntime, type Message, type Provider, type State } from "bgent";
+import { IAgentRuntime, Memory, Provider, State } from "../core/types.ts";
 
 const time: Provider = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  get: async (_runtime: BgentRuntime, _message: Message, _state?: State) => {
+  get: async (_runtime: IAgentRuntime, _message: Memory, _state?: State) => {
     const currentTime = new Date().toLocaleTimeString("en-US");
     return "The current time is: " + currentTime;
   },
