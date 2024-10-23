@@ -17,6 +17,7 @@ import settings from "./core/settings.ts";
 import { Character } from "./core/types.ts";
 import boredomProvider from "./providers/boredom.ts";
 import timeProvider from "./providers/time.ts";
+import walletProvider from "./providers/wallet.ts";
 import { TwitterInteractionClient } from "./clients/twitter/interactions.ts";
 import { TwitterGenerationClient } from "./clients/twitter/generate.ts";
 import { wait } from "./clients/twitter/utils.ts";
@@ -89,17 +90,18 @@ async function startAgent(character: Character) {
       character.settings?.secrets?.OPENAI_API_KEY ??
       (settings.OPENAI_API_KEY as string),
     serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4-turbo",
+    embeddingModel: character.settings?.embeddingModel || "text-embedding-3-small",
+    model: "gpt-4o-mini",
     evaluators: [],
     character,
-    providers: [timeProvider, boredomProvider],
+    providers: [timeProvider, boredomProvider, walletProvider],
     actions: [
       ...defaultActions,
       askClaude,
       follow_room,
-      mute_room,
       unfollow_room,
       unmute_room,
+      // mute_room,
     ],
   });
 
@@ -109,7 +111,7 @@ async function startAgent(character: Character) {
       character.settings?.secrets?.OPENAI_API_KEY ??
       (settings.OPENAI_API_KEY as string),
     serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4-turbo",
+    model: "gpt-4o",
     evaluators: [],
     character,
     providers: [timeProvider, boredomProvider],

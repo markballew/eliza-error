@@ -100,7 +100,7 @@ export class VoiceManager extends EventEmitter {
     const connection = joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
-      adapterCreator: channel.guild.voiceAdapterCreator,
+      adapterCreator: channel.guild.voiceAdapterCreator as any,
       selfDeaf: false,
       selfMute: false,
     });
@@ -467,9 +467,9 @@ export class VoiceManager extends EventEmitter {
         serverUrl: this.runtime.getSetting("X_SERVER_URL") ?? this.runtime.serverUrl,
         token: this.runtime.getSetting("XAI_API_KEY") ?? this.runtime.token,
         model: this.runtime.getSetting("XAI_MODEL") ? this.runtime.getSetting("XAI_MODEL") : "gpt-4o-mini",
-        temperature: 1.2,
-        frequency_penalty: 1.5,
-        presence_penalty: 0.8,
+        temperature: 0.7,
+        // frequency_penalty: 1.5,
+        // presence_penalty: 1.5,
     });
 
     response.source = "discord";
