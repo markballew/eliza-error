@@ -20,6 +20,7 @@ tweets/
 *.wav
 *.mp3
 
+characters/
 logs/
 
 test-report.json
