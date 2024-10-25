@@ -1,6 +1,8 @@
-# eliza
+# Degen Spartan AI
 
-A cognitive framework for social agents and multi-agent simulations.
+So you want to make your own AI, huh?
+
+This isn't for the faint of heart. You're gonna need to learn how to run a Node.js application and edit some text files.
 
 # Install Node.js
 https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
@@ -29,4 +31,4 @@ You can run Grok models by setting the `XAI_MODEL` environment variable to `grok
 You can run OpenAI models by setting the `XAI_MODEL` environment variable to `gpt-4o-mini` or `gpt-4o`
 
 # Discord Bot
-For help with setting up your Discord Bot, check out here: https://discordjs.guide/preparations/setting-up-a-bot-application.html
+For help with setting up your Discord Bot, check out here: https://discordjs.guide/preparations/setting-up-a-bot-applicat
