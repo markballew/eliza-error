@@ -9,7 +9,6 @@ import OpenAI from "openai";
 import { File } from "formdata-node";
 import os from "os";
 import { IAgentRuntime } from "../core/types.ts";
-import settings from "../core/settings.ts";
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -75,7 +74,7 @@ export class TranscriptionService extends EventEmitter {
       }
     } else if (platform === "win32") {
       const cudaPath = path.join(
-        settings.CUDA_PATH ||
+        process.env.CUDA_PATH ||
           "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.0",
         "bin",
         "nvcc.exe",

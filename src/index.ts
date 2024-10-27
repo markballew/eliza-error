@@ -6,6 +6,7 @@ import follow_room from "./actions/follow_room.ts";
 import mute_room from "./actions/mute_room.ts";
 import unfollow_room from "./actions/unfollow_room.ts";
 import unmute_room from "./actions/unmute_room.ts";
+import image_gen from "./actions/image_gen.ts";
 import { SqliteDatabaseAdapter } from "./adapters/sqlite.ts";
 import { DiscordClient } from "./clients/discord/index.ts";
 //import { TwitterSearchClient } from "./clients/twitter/search.ts";
@@ -93,7 +94,7 @@ async function startAgent(character: Character) {
       character.settings?.secrets?.OPENAI_API_KEY ??
       (settings.OPENAI_API_KEY as string),
     serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4o",
+    model: "gpt-4-turbo",
     evaluators: [],
     character,
     providers: [timeProvider, boredomProvider],
@@ -104,6 +105,7 @@ async function startAgent(character: Character) {
       unfollow_room,
       unmute_room,
       mute_room,
+      image_gen,
     ],
   });
 
@@ -113,7 +115,7 @@ async function startAgent(character: Character) {
       character.settings?.secrets?.OPENAI_API_KEY ??
       (settings.OPENAI_API_KEY as string),
     serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4o-mini",
+    model: "gpt-4-turbo",
     evaluators: [],
     character,
     providers: [timeProvider, boredomProvider],
@@ -132,7 +134,7 @@ async function startAgent(character: Character) {
     
     const botToken =
       character.settings?.secrets?.TELEGRAM_BOT_TOKEN ??
-      settings.TELEGRAM_BOT_TOKEN;
+      process.env.TELEGRAM_BOT_TOKEN;
   
     if (!botToken) {
       console.error(

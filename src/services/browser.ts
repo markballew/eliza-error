@@ -7,7 +7,6 @@ import { Browser, BrowserContext, chromium, Page } from "playwright";
 import { IAgentRuntime } from "../core/types.ts";
 import { stringToUuid } from "../core/uuid.ts";
 import { generateSummary } from "./summary.ts";
-import settings from "../core/settings.ts";
 
 export class BrowserService {
   private static instance: BrowserService | null = null;
@@ -26,7 +25,7 @@ export class BrowserService {
     this.browser = undefined;
     this.context = undefined;
     this.blocker = undefined;
-    this.captchaSolver = new CaptchaSolver(settings.CAPSOLVER_API_KEY || "");
+    this.captchaSolver = new CaptchaSolver(process.env.CAPSOLVER_API_KEY || "");
     this.ensureCacheDirectoryExists();
   }
 
