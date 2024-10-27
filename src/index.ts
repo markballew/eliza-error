@@ -6,7 +6,6 @@ import follow_room from "./actions/follow_room.ts";
 import mute_room from "./actions/mute_room.ts";
 import unfollow_room from "./actions/unfollow_room.ts";
 import unmute_room from "./actions/unmute_room.ts";
-import image_gen from "./actions/image_gen.ts";
 import { SqliteDatabaseAdapter } from "./adapters/sqlite.ts";
 import { DiscordClient } from "./clients/discord/index.ts";
 //import { TwitterSearchClient } from "./clients/twitter/search.ts";
@@ -94,7 +93,7 @@ async function startAgent(character: Character) {
       character.settings?.secrets?.OPENAI_API_KEY ??
       (settings.OPENAI_API_KEY as string),
     serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4-turbo",
+    model: "gpt-4o",
     evaluators: [],
     character,
     providers: [timeProvider, boredomProvider],
@@ -105,7 +104,6 @@ async function startAgent(character: Character) {
       unfollow_room,
       unmute_room,
       mute_room,
-      image_gen,
     ],
   });
 
@@ -115,7 +113,7 @@ async function startAgent(character: Character) {
       character.settings?.secrets?.OPENAI_API_KEY ??
       (settings.OPENAI_API_KEY as string),
     serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4-turbo",
+    model: "gpt-4o-mini",
     evaluators: [],
     character,
     providers: [timeProvider, boredomProvider],
@@ -134,7 +132,7 @@ async function startAgent(character: Character) {
     
     const botToken =
       character.settings?.secrets?.TELEGRAM_BOT_TOKEN ??
-      process.env.TELEGRAM_BOT_TOKEN;
+      settings.TELEGRAM_BOT_TOKEN;
   
     if (!botToken) {
       console.error(
@@ -230,10 +228,38 @@ const startAgents = async () => {
 
 startAgents();
 
-// way for user input to quit
-const stdin = process.stdin;
+import readline from 'readline';
 
-stdin.resume();
-stdin.setEncoding("utf8");
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-console.log("Press Ctrl+C to quit");
+function chat() {
+  rl.question('You: ', async (input) => {
+    if (input.toLowerCase() === 'exit') {
+      rl.close();
+      return;
+    }
+
+    const agentId = characters[0].name.toLowerCase(); // Assuming we're using the first character
+    const response = await fetch(`http://localhost:3000/${agentId}/message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: input,
+        userId: 'user',
+        userName: 'User',
+      }),
+    });
+
+    const data = await response.json();
+    console.log(`${characters[0].name}: ${data.text}`);
+    chat();
+  });
+}
+
+console.log("Chat started. Type 'exit' to quit.");
+chat();
