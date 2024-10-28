@@ -1,6 +1,5 @@
 import { SqliteDatabaseAdapter } from "../adapters/sqlite.ts";
-// import { load } from "../adapters/sqlite/sqlite_vss.ts";
-import { load } from "../adapters/sqlite/sqlite_vec.ts";
+import { load } from "../adapters/sqlite/sqlite_vss.ts";
 import { SqlJsDatabaseAdapter } from "../adapters/sqljs.ts";
 import { SupabaseDatabaseAdapter } from "../adapters/supabase.ts";
 import { DatabaseAdapter } from "../core/database.ts";
@@ -67,7 +66,7 @@ export async function createRuntime({
 
       const supabase = createClient(
         env?.SUPABASE_URL ?? SUPABASE_URL,
-        env?.SUPABASE_SERVICE_API_KEY ?? SUPABASE_ANON_KEY
+        env?.SUPABASE_SERVICE_API_KEY ?? SUPABASE_ANON_KEY,
       );
 
       const { data } = await supabase.auth.signInWithPassword({
@@ -100,7 +99,7 @@ export async function createRuntime({
 
       adapter = new SupabaseDatabaseAdapter(
         env?.SUPABASE_URL ?? SUPABASE_URL,
-        env?.SUPABASE_SERVICE_API_KEY ?? SUPABASE_ANON_KEY
+        env?.SUPABASE_SERVICE_API_KEY ?? SUPABASE_ANON_KEY,
       );
     }
     case "sqlite":
