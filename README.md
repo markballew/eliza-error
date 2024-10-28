@@ -26,7 +26,7 @@ https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 
 ## Edit the character file
 - Check out the file `src/core/defaultCharacter.ts` - you can modify this
-- You can also load characters with the `node --loader ts-node/esm src/index.ts --characters="path/to/your/character.json"` and run multiple bots at the same time.
+- You can also load characters with the `--charaters=<path>` and run multiple bots at the same time.
 
 ### Linux Installation
 You might need these
@@ -75,10 +75,15 @@ TWITTER_COOKIES= # Account cookies
 If you have an NVIDIA GPU, you can install CUDA to speed up local inference dramatically.
 ```
 npm install
-npx --no node-llama-cpp source download --gpu cuda
+npx --no node-llama-cpp download --gpu cuda
 ```
 
 Make sure that you've installed the CUDA Toolkit, including cuDNN and cuBLAS.
+
+## Running locally
+Add XAI_MODEL and set it to one of the above options from [Run with
+Llama](#run-with-llama) - you can leave X_SERVER_URL and XAI_API_KEY blank, it
+downloads the model from huggingface and queries it locally
 
 # Cloud Setup (with OpenAI)
 
