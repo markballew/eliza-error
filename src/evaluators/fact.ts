@@ -1,4 +1,5 @@
 import { composeContext } from "../core/context.ts";
+import { generateObjectArray } from "../core/generation.ts";
 import {
   ActionExample,
   Content,
@@ -62,9 +63,10 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
     template,
   });
 
-  let facts = await runtime.objectArrayCompletion({
+  let facts = await generateObjectArray({
+    runtime,
     context,
-    stop: [],
+    modelClass: "fast"
   });
 
   if (!facts) {
