@@ -5,6 +5,7 @@ import { AgentRuntime } from "../../core/runtime.ts";
 import {
   Content,
   Memory,
+  ModelClass,
   State
 } from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
@@ -13,6 +14,7 @@ import { messageCompletionFooter } from "../../core/parsing.ts";
 import multer, { File } from 'multer';
 import { Request as ExpressRequest } from 'express';
 import { generateMessageResponse } from "../../core/generation.ts";
+import { generateCaption, generateImage } from "../../actions/imageGenerationUtils.ts";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -175,7 +177,7 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
       let response = await generateMessageResponse({
         runtime: runtime,
         context,
-        modelClass: "fast"
+        modelClass: ModelClass.SMALL,
       });
 
       // save response to memory
@@ -193,6 +195,30 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
       }
 
       res.json(response);
+    });
+
+    this.app.post("/:agentId/image", async (req: express.Request, res: express.Response) => {
+      const agentId = req.params.agentId;
+      const agent = this.agents.get(agentId);
+      if (!agent) {
+        res.status(404).send("Agent not found");
+        return;
+      }
+
+      const togetherApiKey = agent.getSetting("TOGETHER_API_KEY");
+      const images = await generateImage({...req.body, apiKey: togetherApiKey });
+      const imagesRes: {image: string, caption: string}[] = [];
+      if (images.data && images.data.length > 0) {
+        for(let i = 0; i < images.data.length; i++) {
+          const caption = await generateCaption({imageUrl: images.data[i]}, agent);
+          if (caption.success) {
+            imagesRes.push({image: images.data[i], caption: caption.caption});
+          } else {
+            imagesRes.push({image: images.data[i], caption: "Uncaptioned image"});
+          }
+        }
+      }
+      res.json({images: imagesRes});
     });
   }
 

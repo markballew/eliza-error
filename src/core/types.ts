@@ -71,6 +71,13 @@ export interface Goal {
   objectives: Objective[]; // A list of objectives that make up the goal.
 }
 
+export enum ModelClass {
+  SMALL = "small",
+  MEDIUM = "medium",
+  LARGE = "large",
+  EMBEDDING = "embedding",
+}
+
 export type Model = {
   endpoint?: string;
   settings: {
@@ -83,27 +90,21 @@ export type Model = {
     temperature: number;
   };
   model: {
-      tiny: {
-          model: string;
-      };
-      fast: {
-          model: string;
-      };
-      slow: {
-          model: string;
-      };
-      embedding: string;
+    [ModelClass.SMALL]: string;
+    [ModelClass.MEDIUM]: string;
+    [ModelClass.LARGE]: string;
+    [ModelClass.EMBEDDING]?: string;
   };
 };
 
 export enum ModelProvider {
   OPENAI = "openai",
-  CLAUDE = "claude",
+  ANTHROPIC = "anthropic",
   GROK = "grok",
-  LLAMACLOUD = "llamacloud",
-  LLAMALOCAL = "llamalocal",
+  LLAMACLOUD = "llama_cloud",
+  LLAMALOCAL = "llama_local",
   GOOGLE = "google",
-  CLAUDE_VERTEX = "google_claude"
+  CLAUDE_VERTEX = "claude_vertex"
 }
 
 /**
@@ -538,7 +539,7 @@ export interface IBrowserService {
   ): Promise<{ title: string; description: string; bodyContent: string }>;
 }
 
-export interface ISpeechService {}
+export interface ISpeechService { }
 
 export interface IPdfService {
   convertPdfToText(pdfBuffer: Buffer): Promise<string>;
