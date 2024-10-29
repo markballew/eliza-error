@@ -5,7 +5,6 @@ import { AgentRuntime } from "../../core/runtime.ts";
 import {
   Content,
   Memory,
-  ModelClass,
   State
 } from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
@@ -13,8 +12,6 @@ import cors from "cors";
 import { messageCompletionFooter } from "../../core/parsing.ts";
 import multer, { File } from 'multer';
 import { Request as ExpressRequest } from 'express';
-import { generateMessageResponse } from "../../core/generation.ts";
-import { generateCaption, generateImage } from "../../actions/imageGenerationUtils.ts";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -79,14 +76,14 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
     return;
   }
 
-  let runtime = this.agents.get(agentId);
+  let agent = this.agents.get(agentId);
 
-  // if runtime is null, look for runtime with the same name
-  if (!runtime) {
-    runtime = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
+  // if agent is null, look for agent with the same name
+  if (!agent) {
+    agent = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
   }
 
-  if (!runtime) {
+  if (!agent) {
     res.status(404).send("Agent not found");
     return;
   }
@@ -99,7 +96,7 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${runtime.token}`,
+      "Authorization": `Bearer ${agent.token}`,
     },
     body: formData,
   });
@@ -113,32 +110,32 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
       const roomId = stringToUuid(req.body.roomId ?? ("default-room-" + agentId));
       const userId = stringToUuid(req.body.userId ?? "user");
       
-      let runtime = this.agents.get(agentId);
+      let agent = this.agents.get(agentId);
 
-      // if runtime is null, look for runtime with the same name
-      if (!runtime) {
-        runtime = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
+      // if agent is null, look for agent with the same name
+      if (!agent) {
+        agent = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
       }
 
-      if (!runtime) {
+      if (!agent) {
         res.status(404).send("Agent not found");
         return;
       }
 
       await Promise.all([
-        runtime.ensureUserExists(
-          runtime.agentId,
-          runtime.character.name ?? "Agent",
-          runtime.character.name ?? "Agent",
+        agent.ensureUserExists(
+          agent.agentId,
+          agent.character.name ?? "Agent",
+          agent.character.name ?? "Agent",
           "direct",
         ),
-        runtime.ensureUserExists(userId, req.body.userName ?? "User", req.body.name ?? "User", "direct"),
-        runtime.ensureRoomExists(roomId),
+        agent.ensureUserExists(userId, req.body.userName ?? "User", req.body.name ?? "User", "direct"),
+        agent.ensureRoomExists(roomId),
       ]);
 
       await Promise.all([
-        runtime.ensureParticipantInRoom(userId, roomId),
-        runtime.ensureParticipantInRoom(runtime.agentId, roomId),
+        agent.ensureParticipantInRoom(userId, roomId),
+        agent.ensureParticipantInRoom(agent.agentId, roomId),
       ]);
 
       const text = req.body.text;
@@ -162,11 +159,11 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
         createdAt: Date.now(),
       };
 
-      await runtime.messageManager.createMemory(memory);
+      await agent.messageManager.createMemory(memory);
 
 
-      const state = (await runtime.composeState(userMessage, {
-        agentName: runtime.character.name,
+      const state = (await agent.composeState(userMessage, {
+        agentName: agent.character.name,
       })) as State;
 
       const context = composeContext({
@@ -174,60 +171,36 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
         template: messageHandlerTemplate,
       });
 
-      let response = await generateMessageResponse({
-        runtime: runtime,
+      const response = await agent.messageCompletion({
         context,
-        modelClass: ModelClass.SMALL,
+        model: 'gpt-4o-mini',
+        stop: [],
       });
 
       // save response to memory
       const responseMessage = {
         ...userMessage,
-        userId: runtime.agentId,
+        userId: agent.agentId,
         content: response,
       };
 
-      await runtime.messageManager.createMemory(responseMessage);
+      await agent.messageManager.createMemory(responseMessage);
 
       if (!response) {
-        res.status(500).send("No response from generateMessageResponse");
+        res.status(500).send("No response from runtime.messageCompletion");
         return;
       }
 
       res.json(response);
     });
-
-    this.app.post("/:agentId/image", async (req: express.Request, res: express.Response) => {
-      const agentId = req.params.agentId;
-      const agent = this.agents.get(agentId);
-      if (!agent) {
-        res.status(404).send("Agent not found");
-        return;
-      }
-
-      const togetherApiKey = agent.getSetting("TOGETHER_API_KEY");
-      const images = await generateImage({...req.body, apiKey: togetherApiKey });
-      const imagesRes: {image: string, caption: string}[] = [];
-      if (images.data && images.data.length > 0) {
-        for(let i = 0; i < images.data.length; i++) {
-          const caption = await generateCaption({imageUrl: images.data[i]}, agent);
-          if (caption.success) {
-            imagesRes.push({image: images.data[i], caption: caption.caption});
-          } else {
-            imagesRes.push({image: images.data[i], caption: "Uncaptioned image"});
-          }
-        }
-      }
-      res.json({images: imagesRes});
-    });
   }
 
-  public registerAgent(runtime: AgentRuntime) {
-    this.agents.set(runtime.agentId, runtime);
+  public registerAgent(agent: AgentRuntime) {
+    this.agents.set(agent.agentId, agent);
   }
 
-  public unregisterAgent(runtime: AgentRuntime) {
-    this.agents.delete(runtime.agentId);
+  public unregisterAgent(agent: AgentRuntime) {
+    this.agents.delete(agent.agentId);
   }
 
   public start(port: number) {
