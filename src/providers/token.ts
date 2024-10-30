@@ -1,17 +1,19 @@
+import { Connection } from "@solana/web3.js";
 // import fetch from "cross-fetch";
-import BigNumber from "bignumber.js";
-import * as fs from "fs";
-import NodeCache from "node-cache";
-import * as path from "path";
+import { IAgentRuntime, Memory, Provider, State } from "../core/types";
 import settings from "../core/settings";
-import { IAgentRuntime, Memory, Provider, State } from "../core/types.ts";
+import BigNumber from "bignumber.js";
 import {
-  DexScreenerData,
-  HolderData,
   ProcessedTokenData,
   TokenSecurityData,
-  TokenTradeData
+  TokenTradeData,
+  DexScreenerData,
+  DexScreenerPair,
+  HolderData,
 } from "../types/token";
+import NodeCache from "node-cache";
+import * as fs from "fs";
+import * as path from "path";
 
 const PROVIDER_CONFIG = {
   BIRDEYE_API: "https://public-api.birdeye.so",
@@ -171,7 +173,7 @@ export class TokenProvider {
     return security;
   }
 
-  async fetchTokenTradeData(runtime: IAgentRuntime): Promise<TokenTradeData> {
+  async fetchTokenTradeData(): Promise<TokenTradeData> {
     const cacheKey = `tokenTradeData_${this.tokenAddress}`;
     const cachedData = this.getCachedData<TokenTradeData>(cacheKey);
     if (cachedData) {
@@ -186,7 +188,7 @@ export class TokenProvider {
       method: "GET",
       headers: {
         accept: "application/json",
-        "X-API-KEY": runtime.getSetting('BIRDEYE_API_KEY') || "",
+        "X-API-KEY": settings.BIRDEYE_API_KEY || "",
       },
     };
 
@@ -610,13 +612,13 @@ export class TokenProvider {
     }
   }
 
-  async getProcessedTokenData(runtime: IAgentRuntime): Promise<ProcessedTokenData> {
+  async getProcessedTokenData(): Promise<ProcessedTokenData> {
     try {
       console.log(`Fetching security data for token: ${this.tokenAddress}`);
       const security = await this.fetchTokenSecurity();
 
       console.log(`Fetching trade data for token: ${this.tokenAddress}`);
-      const tradeData = await this.fetchTokenTradeData(runtime);
+      const tradeData = await this.fetchTokenTradeData();
 
       console.log(`Fetching DexScreener data for token: ${this.tokenAddress}`);
       const dexData = await this.fetchDexScreenerData();
@@ -733,10 +735,10 @@ export class TokenProvider {
     return output;
   }
 
-  async getFormattedTokenReport(runtime: IAgentRuntime): Promise<string> {
+  async getFormattedTokenReport(): Promise<string> {
     try {
       console.log("Generating formatted token report...");
-      const processedData = await this.getProcessedTokenData(runtime);
+      const processedData = await this.getProcessedTokenData();
       return this.formatTokenData(processedData);
     } catch (error) {
       console.error("Error generating token report:", error);
@@ -746,6 +748,7 @@ export class TokenProvider {
 }
 
 const tokenAddress = PROVIDER_CONFIG.TOKEN_ADDRESSES.Example;
+const connection = new Connection(PROVIDER_CONFIG.DEFAULT_RPC);
 const tokenProvider: Provider = {
   get: async (
     runtime: IAgentRuntime,
@@ -754,7 +757,7 @@ const tokenProvider: Provider = {
   ): Promise<string> => {
     try {
       const provider = new TokenProvider(tokenAddress);
-      return provider.getFormattedTokenReport(runtime);
+      return provider.getFormattedTokenReport();
     } catch (error) {
       console.error("Error fetching token data:", error);
       return "Unable to fetch token information. Please try again later.";

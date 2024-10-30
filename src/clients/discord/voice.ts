@@ -29,7 +29,6 @@ import {
   HandlerCallback,
   IAgentRuntime,
   Memory,
-  ModelClass,
   State,
   UUID,
 } from "../../core/types.ts";
@@ -38,7 +37,6 @@ import { getWavHeader } from "../../services/audioUtils.ts";
 import { SpeechService } from "../../services/speech.ts";
 import { AudioMonitor } from "./audioMonitor.ts";
 import { voiceHandlerTemplate } from "./templates.ts";
-import { generateMessageResponse } from "../../core/generation.ts";
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -463,16 +461,21 @@ export class VoiceManager extends EventEmitter {
     // log context to file
     log_to_file(`${state.agentName}_${datestr}_discord_voice_context`, context);
 
-    const response = await generateMessageResponse({
-      runtime: this.runtime,
+    const response = await this.runtime.messageCompletion({
       context,
-      modelClass: ModelClass.SMALL,
+      stop: ["<|eot_id|>","<|eom_id|>"],
+        serverUrl: this.runtime.getSetting("X_SERVER_URL") ?? this.runtime.serverUrl,
+        token: this.runtime.getSetting("XAI_API_KEY") ?? this.runtime.token,
+        model: this.runtime.getSetting("XAI_MODEL") ? this.runtime.getSetting("XAI_MODEL") : "gpt-4o-mini",
+        temperature: 0.5,
+        frequency_penalty: 0.5,
+        // presence_penalty: 0.7,
     });
 
     response.source = "discord";
 
     if (!response) {
-      console.error("No response from generateMessageResponse");
+      console.error("No response from runtime.messageCompletion");
       return;
     }
 

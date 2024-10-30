@@ -1,4 +1,3 @@
-import { createRuntime } from "../test_resources/createRuntime";
 import { TokenProvider } from "./token";
 import NodeCache from "node-cache";
 
@@ -20,11 +19,6 @@ describe("TokenProvider Tests", () => {
   });
 
   test("should fetch token security data", async () => {
-
-    const { runtime } = await createRuntime({
-      conversationLength: 10,
-    });
-
     // Mock the response for the fetchTokenSecurity call
     const mockFetchResponse = {
       success: true,
@@ -68,7 +62,7 @@ describe("TokenProvider Tests", () => {
     //  const dexScreenerData = await tokenProvider.fetchDexScreenerData();
     //  console.log({ dexScreenerData });
 
-    const tokenReport = await tokenProvider.getFormattedTokenReport(runtime);
+    const tokenReport = await tokenProvider.getFormattedTokenReport();
     console.log({ tokenReport });
 
     // Ensure the mock was called

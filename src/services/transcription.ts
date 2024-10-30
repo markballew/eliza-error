@@ -1,14 +1,16 @@
-import { exec } from "child_process";
 import EventEmitter from "events";
-import { File } from "formdata-node";
+import { exec } from "child_process";
 import fs from "fs";
+import path from "path";
+import { promisify } from "util";
+import { getWavHeader } from "./audioUtils.ts";
 import { nodewhisper } from "nodejs-whisper";
 import OpenAI from "openai";
+import { File } from "formdata-node";
 import os from "os";
-import path from "path";
-import { fileURLToPath } from "url";
-import { promisify } from "util";
 import { IAgentRuntime } from "../core/types.ts";
+import settings from "../core/settings.ts";
+import { fileURLToPath } from "url";
 
 // const __dirname = path.dirname(new URL(import.meta.url).pathname); #compatibility issues with windows
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +38,6 @@ export class TranscriptionService extends EventEmitter {
     this.DEBUG_AUDIO_DIR = path.join(rootDir, "debug_audio");
     this.ensureCacheDirectoryExists();
     this.ensureDebugDirectoryExists();
-    // TODO: It'd be nice to handle this more gracefully, but we can do local transcription for now
     if (this.runtime.getSetting("OPENAI_API_KEY")) {
       this.openai = new OpenAI({
         apiKey: this.runtime.getSetting("OPENAI_API_KEY"),
@@ -77,7 +78,7 @@ export class TranscriptionService extends EventEmitter {
       }
     } else if (platform === "win32") {
       const cudaPath = path.join(
-        this.runtime.getSetting("CUDA_PATH") ||
+        settings.CUDA_PATH ||
           "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.0",
         "bin",
         "nvcc.exe"
