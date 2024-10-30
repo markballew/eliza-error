@@ -8,6 +8,7 @@ import {
   IAgentRuntime,
   Media,
   Memory,
+  ModelClass,
   State,
   UUID,
 } from "../../core/types.ts";
@@ -20,6 +21,7 @@ import { TextChannel } from "discord.js";
 import { stringToUuid } from "../../core/uuid.ts";
 import { SpeechService } from "../../services/speech.ts";
 import { VoiceManager } from "./voice.ts";
+import { generateMessageResponse, generateShouldRespond } from "../../core/generation.ts";
 
 const MAX_MESSAGE_LENGTH = 1900;
 
@@ -595,16 +597,16 @@ export class MessageManager {
       return true;
     }
 
-    // If none of the above conditions are met, use the completion to decide
+    // If none of the above conditions are met, use the generateText to decide
     const shouldRespondContext = composeContext({
       state,
       template: shouldRespondTemplate,
     });
 
-    const response = await this.runtime.shouldRespondCompletion({
+    const response = await generateShouldRespond({
+      runtime: this.runtime,
       context: shouldRespondContext,
-      stop: ["\n"],
-      max_response_length: 5,
+      modelClass: ModelClass.SMALL,
     });
 
     if (response === "RESPOND") {
@@ -615,7 +617,7 @@ export class MessageManager {
       delete this.interestChannels[message.channelId];
       return false;
     } else {
-      console.error("Invalid response from response completion:", response);
+      console.error("Invalid response from response generateText:", response);
       return false;
     }
   }
@@ -635,19 +637,14 @@ export class MessageManager {
       context,
     );
 
-    const response = await this.runtime.messageCompletion({
+    const response = await generateMessageResponse({
+      runtime: this.runtime,
       context,
-      stop: ["<|eot_id|>","<|eom_id|>"],
-        serverUrl: this.runtime.getSetting("X_SERVER_URL") ?? this.runtime.serverUrl,
-        token: this.runtime.getSetting("XAI_API_KEY") ?? this.runtime.token,
-        model: this.runtime.getSetting("XAI_MODEL") ? this.runtime.getSetting("XAI_MODEL") : "gpt-4o-mini",
-        temperature: 0.5,
-        frequency_penalty: 1.1,
-        // presence_penalty: 1.2,
+      modelClass: "slow"
     });
 
     if (!response) {
-      console.error("No response from runtime.messageCompletion");
+      console.error("No response from generateMessageResponse");
       return;
     }
 

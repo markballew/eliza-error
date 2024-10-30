@@ -6,6 +6,7 @@ import {
   Content,
   IAgentRuntime,
   Memory,
+  ModelClass,
   State,
   type UUID,
 } from "../core/types.ts";
@@ -21,6 +22,7 @@ import { runAiTest } from "../test_resources/runAiTest.ts";
 import { messageHandlerTemplate } from "../test_resources/templates.ts";
 import { type User } from "../test_resources/types.ts";
 import action from "./ignore.ts";
+import { generateMessageResponse } from "../core/generation.ts";
 
 async function handleMessage(
   runtime: IAgentRuntime,
@@ -56,9 +58,10 @@ async function handleMessage(
 
   const { userId, roomId } = message;
 
-  let response = await runtime.messageCompletion({
+  let response = await generateMessageResponse({
     context,
-    stop: [],
+    runtime,
+    modelClass: ModelClass.SMALL,
   });
 
   await runtime.databaseAdapter.log({

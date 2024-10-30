@@ -5,6 +5,7 @@ import { AgentRuntime } from "../../core/runtime.ts";
 import {
   Content,
   Memory,
+  ModelClass,
   State
 } from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
@@ -12,6 +13,8 @@ import cors from "cors";
 import { messageCompletionFooter } from "../../core/parsing.ts";
 import multer, { File } from 'multer';
 import { Request as ExpressRequest } from 'express';
+import { generateMessageResponse } from "../../core/generation.ts";
+import { generateCaption, generateImage } from "../../actions/imageGenerationUtils.ts";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -36,6 +39,8 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 {{messageDirections}}
 
 {{recentMessages}}
+
+{{actions}}
 
 # Instructions: Write the next message for {{agentName}}. Ignore "action".
 ` + messageCompletionFooter;
@@ -76,14 +81,14 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
     return;
   }
 
-  let agent = this.agents.get(agentId);
+  let runtime = this.agents.get(agentId);
 
-  // if agent is null, look for agent with the same name
-  if (!agent) {
-    agent = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
+  // if runtime is null, look for runtime with the same name
+  if (!runtime) {
+    runtime = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
   }
 
-  if (!agent) {
+  if (!runtime) {
     res.status(404).send("Agent not found");
     return;
   }
@@ -96,7 +101,7 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${agent.token}`,
+      "Authorization": `Bearer ${runtime.token}`,
     },
     body: formData,
   });
@@ -110,32 +115,32 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
       const roomId = stringToUuid(req.body.roomId ?? ("default-room-" + agentId));
       const userId = stringToUuid(req.body.userId ?? "user");
       
-      let agent = this.agents.get(agentId);
+      let runtime = this.agents.get(agentId);
 
-      // if agent is null, look for agent with the same name
-      if (!agent) {
-        agent = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
+      // if runtime is null, look for runtime with the same name
+      if (!runtime) {
+        runtime = Array.from(this.agents.values()).find((a) => a.character.name.toLowerCase() === agentId.toLowerCase());
       }
 
-      if (!agent) {
+      if (!runtime) {
         res.status(404).send("Agent not found");
         return;
       }
 
       await Promise.all([
-        agent.ensureUserExists(
-          agent.agentId,
-          agent.character.name ?? "Agent",
-          agent.character.name ?? "Agent",
+        runtime.ensureUserExists(
+          runtime.agentId,
+          runtime.character.name ?? "Agent",
+          runtime.character.name ?? "Agent",
           "direct",
         ),
-        agent.ensureUserExists(userId, req.body.userName ?? "User", req.body.name ?? "User", "direct"),
-        agent.ensureRoomExists(roomId),
+        runtime.ensureUserExists(userId, req.body.userName ?? "User", req.body.name ?? "User", "direct"),
+        runtime.ensureRoomExists(roomId),
       ]);
 
       await Promise.all([
-        agent.ensureParticipantInRoom(userId, roomId),
-        agent.ensureParticipantInRoom(agent.agentId, roomId),
+        runtime.ensureParticipantInRoom(userId, roomId),
+        runtime.ensureParticipantInRoom(runtime.agentId, roomId),
       ]);
 
       const text = req.body.text;
@@ -159,11 +164,11 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
         createdAt: Date.now(),
       };
 
-      await agent.messageManager.createMemory(memory);
+      await runtime.messageManager.createMemory(memory);
 
 
-      const state = (await agent.composeState(userMessage, {
-        agentName: agent.character.name,
+      const state = (await runtime.composeState(userMessage, {
+        agentName: runtime.character.name,
       })) as State;
 
       const context = composeContext({
@@ -171,36 +176,62 @@ this.app.post("/:agentId/whisper", upload.single('file'), async (req: CustomRequ
         template: messageHandlerTemplate,
       });
 
-      const response = await agent.messageCompletion({
+      let response = await generateMessageResponse({
+        runtime: runtime,
         context,
-        model: 'gpt-4o-mini',
-        stop: [],
+        modelClass: ModelClass.SMALL,
       });
 
       // save response to memory
       const responseMessage = {
         ...userMessage,
-        userId: agent.agentId,
+        userId: runtime.agentId,
         content: response,
       };
 
-      await agent.messageManager.createMemory(responseMessage);
+      await runtime.messageManager.createMemory(responseMessage);
 
       if (!response) {
-        res.status(500).send("No response from runtime.messageCompletion");
+        res.status(500).send("No response from generateMessageResponse");
         return;
       }
 
       res.json(response);
     });
+
+    this.app.post("/:agentId/image", async (req: express.Request, res: express.Response) => {
+      const agentId = req.params.agentId;
+      const agent = this.agents.get(agentId);
+      if (!agent) {
+        res.status(404).send("Agent not found");
+        return;
+      }
+
+      const togetherApiKey = agent.getSetting("TOGETHER_API_KEY");
+      const claudeApiKey = agent.getSetting("ANTHROPIC_API_KEY");
+      
+      const images = await generateImage({...req.body, apiKey: togetherApiKey });
+      const imagesRes: {image: string, caption: string}[] = [];
+      if (images.data && images.data.length > 0) {
+        for(let i = 0; i < images.data.length; i++) {
+          const caption = await generateCaption({apiKey: claudeApiKey, imageUrl: images.data[i]});
+          if (caption.success) {
+            imagesRes.push({image: images.data[i], caption: caption.caption});
+          } else {
+            imagesRes.push({image: images.data[i], caption: "Uncaptioned image"});
+          }
+        }
+      }
+      res.json({images: imagesRes});
+    });
   }
 
-  public registerAgent(agent: AgentRuntime) {
-    this.agents.set(agent.agentId, agent);
+  public registerAgent(runtime: AgentRuntime) {
+    this.agents.set(runtime.agentId, runtime);
   }
 
-  public unregisterAgent(agent: AgentRuntime) {
-    this.agents.delete(agent.agentId);
+  public unregisterAgent(runtime: AgentRuntime) {
+    this.agents.delete(runtime.agentId);
   }
 
   public start(port: number) {

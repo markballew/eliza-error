@@ -6,11 +6,9 @@ import follow_room from "./actions/follow_room.ts";
 import mute_room from "./actions/mute_room.ts";
 import unfollow_room from "./actions/unfollow_room.ts";
 import unmute_room from "./actions/unmute_room.ts";
+import imageGeneration from "./actions/imageGeneration.ts";
+import swap from "./actions/swap.ts";
 import { SqliteDatabaseAdapter } from "./adapters/sqlite.ts";
-import {
-  PostgresDatabaseAdapter,
-  createLoggingDatabaseAdapter
-} from "./adapters/postgres.ts";
 import { DiscordClient } from "./clients/discord/index.ts";
 import DirectClient from "./clients/direct/index.ts";
 import { TelegramClient } from "./clients/telegram/src/index.ts"; // Added Telegram import
@@ -18,13 +16,14 @@ import { defaultActions } from "./core/actions.ts";
 import defaultCharacter from "./core/defaultCharacter.ts";
 import { AgentRuntime } from "./core/runtime.ts";
 import settings from "./core/settings.ts";
-import { Character, IAgentRuntime } from "./core/types.ts"; // Added IAgentRuntime
+import { Character, IAgentRuntime, ModelProvider } from "./core/types.ts"; // Added IAgentRuntime
 import boredomProvider from "./providers/boredom.ts";
 import timeProvider from "./providers/time.ts";
 import { wait } from "./clients/twitter/utils.ts";
 import { TwitterSearchClient } from "./clients/twitter/search.ts";
 import { TwitterInteractionClient } from "./clients/twitter/interactions.ts";
 import { TwitterGenerationClient } from "./clients/twitter/generate.ts";
+import walletProvider from "./providers/wallet.ts";
 
 interface Arguments {
   character?: string;
@@ -36,7 +35,7 @@ interface Arguments {
 
 let argv: Arguments = {
   character: "./src/agent/default_character.json",
-  characters: ""
+  characters: "",
 };
 
 try {
@@ -44,16 +43,16 @@ try {
   argv = yargs(process.argv.slice(2))
     .option("character", {
       type: "string",
-      description: "Path to the character JSON file"
+      description: "Path to the character JSON file",
     })
     .option("characters", {
       type: "string",
-      description: "Comma separated list of paths to character JSON files"
+      description: "Comma separated list of paths to character JSON files",
     })
     .option("telegram", {
       type: "boolean",
       description: "Enable Telegram client",
-      default: false
+      default: false,
     })
     .parseSync() as Arguments;
 } catch (error) {
@@ -64,11 +63,7 @@ try {
 // Load character
 const characterPath = argv.character || argv.characters;
 
-console.log("characterPath", characterPath);
-
 const characterPaths = argv.characters?.split(",").map((path) => path.trim());
-
-console.log("characterPaths", characterPaths);
 
 const characters = [];
 
@@ -79,7 +74,6 @@ if (characterPaths?.length > 0) {
   for (const path of characterPaths) {
     try {
       const character = JSON.parse(fs.readFileSync(path, "utf8"));
-      console.log("character", character.name);
       characters.push(character);
     } catch (e) {
       console.log(`Error loading character from ${path}: ${e}`);
@@ -87,55 +81,51 @@ if (characterPaths?.length > 0) {
   }
 }
 
+function getTokenForProvider(provider: ModelProvider, character: Character) {
+  switch (provider) {
+    case ModelProvider.OPENAI:
+      return character.settings?.secrets?.OPENAI_API_KEY ||
+      (settings.OPENAI_API_KEY as string);
+    case ModelProvider.ANTHROPIC:
+      return character.settings?.secrets?.CLAUDE_API_KEY ||
+      (settings.CLAUDE_API_KEY as string);
+  }
+}
+
 async function startAgent(character: Character) {
   console.log("Starting agent for character " + character.name);
-  const token =
-    character.settings?.secrets?.OPENAI_API_KEY ||
-    (settings.OPENAI_API_KEY as string);
+  const token = getTokenForProvider(character.modelProvider, character);
 
-  console.log("token", token);
-
-  let db;
-  if (process.env.POSTGRES_URL) {
-    // const db = new SqliteDatabaseAdapter(new Database("./db.sqlite"));
-    db = new PostgresDatabaseAdapter({
-      connectionString: process.env.POSTGRES_URL
-    });
-  } else {
-    db = new SqliteDatabaseAdapter(new Database("./db.sqlite"));
-    // Debug adapter
-    // const loggingDb = createLoggingDatabaseAdapter(db);
-  }
-
+  const db = new SqliteDatabaseAdapter(new Database("./db.sqlite"))
   const runtime = new AgentRuntime({
     databaseAdapter: db,
-    token: token,
-    serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4o",
+    token,
+    modelProvider: character.modelProvider,
     evaluators: [],
     character,
-    providers: [timeProvider, boredomProvider],
+    providers: [timeProvider, boredomProvider, walletProvider],
     actions: [
       ...defaultActions,
       askClaude,
       follow_room,
       unfollow_room,
       unmute_room,
-      mute_room
-    ]
+      mute_room,
+      imageGeneration,
+      swap,
+    ],
   });
 
   const directRuntime = new AgentRuntime({
     databaseAdapter: db,
-    token:
-      character.settings?.secrets?.OPENAI_API_KEY ??
-      (settings.OPENAI_API_KEY as string),
-    serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4o-mini",
+    token,
+    modelProvider: character.modelProvider,
     evaluators: [],
     character,
-    providers: [timeProvider, boredomProvider],
-    actions: [...defaultActions]
+    providers: [timeProvider, boredomProvider, walletProvider, orderbook, tokenProvider],
+    actions: [
+      ...defaultActions,
+    ],
   });
 
   function startDiscord(runtime: IAgentRuntime) {
@@ -145,55 +135,48 @@ async function startAgent(character: Character) {
 
   async function startTelegram(runtime: IAgentRuntime, character: Character) {
     console.log("🔍 Attempting to start Telegram bot...");
-
-    const botToken =
-      character.settings?.secrets?.TELEGRAM_BOT_TOKEN ??
-      settings.TELEGRAM_BOT_TOKEN;
-
+    
+    const botToken = runtime.getSetting('TELEGRAM_BOT_TOKEN');
+  
     if (!botToken) {
       console.error(
         `❌ Telegram bot token is not set for character ${character.name}.`
       );
       return null;
     }
-
+  
     console.log("✅ Bot token found, initializing Telegram client...");
-
+  
     try {
       console.log("Creating new TelegramClient instance...");
       const telegramClient = new TelegramClient(runtime, botToken);
-
+      
       console.log("Calling start() on TelegramClient...");
       await telegramClient.start();
-
-      console.log(
-        `✅ Telegram client successfully started for character ${character.name}`
-      );
+      
+      console.log(`✅ Telegram client successfully started for character ${character.name}`);
       return telegramClient;
     } catch (error) {
-      console.error(
-        `❌ Error creating/starting Telegram client for ${character.name}:`,
-        error
-      );
+      console.error(`❌ Error creating/starting Telegram client for ${character.name}:`, error);
       return null;
     }
   }
 
   async function startTwitter(runtime) {
-    console.log("Starting search client");
-    const twitterSearchClient = new TwitterSearchClient(runtime);
-    await wait();
-    console.log("Starting interaction client");
-    const twitterInteractionClient = new TwitterInteractionClient(runtime);
-    await wait();
-    console.log("Starting generation client");
-    const twitterGenerationClient = new TwitterGenerationClient(runtime);
-
-    return {
-      twitterInteractionClient,
-      twitterSearchClient,
-      twitterGenerationClient
-    };
+   console.log("Starting search client");
+   const twitterSearchClient = new TwitterSearchClient(runtime);
+   await wait();
+   console.log("Starting interaction client");
+   const twitterInteractionClient = new TwitterInteractionClient(runtime);
+   await wait();
+   console.log("Starting generation client");
+   const twitterGenerationClient = new TwitterGenerationClient(runtime);
+  
+   return {
+     twitterInteractionClient,
+     twitterSearchClient,
+     twitterGenerationClient,
+   };
   }
 
   if (!character.clients) {
@@ -209,8 +192,7 @@ async function startAgent(character: Character) {
 
   // Add Telegram client initialization
   if (
-    argv.telegram ||
-    character.clients.map((str) => str.toLowerCase()).includes("telegram")
+    (argv.telegram || character.clients.map((str) => str.toLowerCase()).includes("telegram"))
   ) {
     console.log("🔄 Telegram client enabled, starting initialization...");
     const telegramClient = await startTelegram(runtime, character);
@@ -223,16 +205,14 @@ async function startAgent(character: Character) {
   }
 
   if (character.clients.map((str) => str.toLowerCase()).includes("twitter")) {
-    const {
-      twitterInteractionClient,
-      twitterSearchClient,
-      twitterGenerationClient
-    } = await startTwitter(runtime);
-    clients.push(
-      twitterInteractionClient,
-      twitterSearchClient,
-      twitterGenerationClient
-    );
+   const {
+     twitterInteractionClient,
+     twitterSearchClient,
+     twitterGenerationClient,
+   } = await startTwitter(runtime);
+   clients.push(
+     twitterInteractionClient, twitterSearchClient, twitterGenerationClient,
+   );
   }
 
   directClient.registerAgent(directRuntime);
@@ -252,7 +232,9 @@ const startAgents = async () => {
 
 startAgents();
 
-import readline from "readline";
+import readline from 'readline';
+import orderbook from "./providers/order_book.ts";
+import tokenProvider from "./providers/token.ts";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -260,23 +242,23 @@ const rl = readline.createInterface({
 });
 
 function chat() {
-  rl.question("You: ", async (input) => {
-    if (input.toLowerCase() === "exit") {
+  rl.question('You: ', async (input) => {
+    if (input.toLowerCase() === 'exit') {
       rl.close();
       return;
     }
 
     const agentId = characters[0].name.toLowerCase(); // Assuming we're using the first character
     const response = await fetch(`http://localhost:3000/${agentId}/message`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         text: input,
-        userId: "user",
-        userName: "User"
-      })
+        userId: 'user',
+        userName: 'User',
+      }),
     });
 
     const data = await response.json();

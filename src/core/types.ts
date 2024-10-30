@@ -56,7 +56,7 @@ export interface Objective {
 export enum GoalStatus {
   DONE = "DONE",
   FAILED = "FAILED",
-  IN_PROGRESS = "IN_PROGRESS"
+  IN_PROGRESS = "IN_PROGRESS",
 }
 
 /**
@@ -69,6 +69,42 @@ export interface Goal {
   name: string; // The name or title of the goal.
   status: GoalStatus; // The current status of the goal, such as "in progress" or "completed".
   objectives: Objective[]; // A list of objectives that make up the goal.
+}
+
+export enum ModelClass {
+  SMALL = "small",
+  MEDIUM = "medium",
+  LARGE = "large",
+  EMBEDDING = "embedding",
+}
+
+export type Model = {
+  endpoint?: string;
+  settings: {
+    maxInputTokens: number;
+    maxOutputTokens: number;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    repetition_penalty?: number;
+    stop: string[];
+    temperature: number;
+  };
+  model: {
+    [ModelClass.SMALL]: string;
+    [ModelClass.MEDIUM]: string;
+    [ModelClass.LARGE]: string;
+    [ModelClass.EMBEDDING]?: string;
+  };
+};
+
+export enum ModelProvider {
+  OPENAI = "openai",
+  ANTHROPIC = "anthropic",
+  GROK = "grok",
+  LLAMACLOUD = "llama_cloud",
+  LLAMALOCAL = "llama_local",
+  GOOGLE = "google",
+  CLAUDE_VERTEX = "claude_vertex"
 }
 
 /**
@@ -133,13 +169,13 @@ export type Handler = (
   message: Memory,
   state?: State,
   options?: { [key: string]: unknown }, // additional options can be used for things like tests or state-passing on a chain
-  callback?: HandlerCallback
+  callback?: HandlerCallback,
 ) => Promise<unknown>;
 
 //
 export type HandlerCallback = (
   response: Content,
-  files?: any
+  files?: any,
 ) => Promise<Memory[]>;
 
 /**
@@ -148,7 +184,7 @@ export type HandlerCallback = (
 export type Validator = (
   runtime: IAgentRuntime,
   message: Memory,
-  state?: State
+  state?: State,
 ) => Promise<boolean>;
 
 /**
@@ -244,6 +280,9 @@ export type Media = {
 export type Character = {
   id?: UUID; // optional UUID which can be passed down to identify the character
   name: string;
+  system?: string;
+  modelProvider: ModelProvider;
+  modelOverride?: string;
   bio: string | string[];
   lore: string[];
   messageExamples: MessageExample[][];
@@ -316,19 +355,19 @@ export interface IDatabaseAdapter {
       roomId?: UUID;
       unique?: boolean;
       tableName: string;
-    }
+    },
   ): Promise<Memory[]>;
   createMemory(
     memory: Memory,
     tableName: string,
-    unique?: boolean
+    unique?: boolean,
   ): Promise<void>;
   removeMemory(memoryId: UUID, tableName: string): Promise<void>;
   removeAllMemories(roomId: UUID, tableName: string): Promise<void>;
   countMemories(
     roomId: UUID,
     unique?: boolean,
-    tableName?: string
+    tableName?: string,
   ): Promise<number>;
   getGoals(params: {
     roomId: UUID;
@@ -351,12 +390,12 @@ export interface IDatabaseAdapter {
   getParticipantsForRoom(roomId: UUID): Promise<UUID[]>;
   getParticipantUserState(
     roomId: UUID,
-    userId: UUID
+    userId: UUID,
   ): Promise<"FOLLOWED" | "MUTED" | null>;
   setParticipantUserState(
     roomId: UUID,
     userId: UUID,
-    state: "FOLLOWED" | "MUTED" | null
+    state: "FOLLOWED" | "MUTED" | null,
   ): Promise<void>;
   createRelationship(params: { userA: UUID; userB: UUID }): Promise<boolean>;
   getRelationship(params: {
@@ -382,7 +421,7 @@ export interface IMemoryManager {
     end?: number;
   }): Promise<Memory[]>;
   getCachedEmbeddings(
-    content: string
+    content: string,
   ): Promise<{ embedding: number[]; levenshtein_score: number }[]>;
   getMemoryById(id: UUID): Promise<Memory | null>;
   getMemoriesByRoomIds(params: { roomIds: UUID[] }): Promise<Memory[]>;
@@ -393,7 +432,7 @@ export interface IMemoryManager {
       count?: number;
       roomId: UUID;
       unique?: boolean;
-    }
+    },
   ): Promise<Memory[]>;
   createMemory(memory: Memory, unique?: boolean): Promise<void>;
   removeMemory(memoryId: UUID): Promise<void>;
@@ -407,8 +446,7 @@ export interface IAgentRuntime {
   serverUrl: string;
   databaseAdapter: IDatabaseAdapter;
   token: string | null;
-  model: string;
-  embeddingModel: string;
+  modelProvider: ModelProvider;
   character: Character;
   providers: Provider[];
   actions: Action[];
@@ -425,94 +463,15 @@ export interface IAgentRuntime {
   speechService: ISpeechService;
   pdfService: IPdfService;
 
-  trimTokens(text: string, maxTokens: number, model: string): string;
-  splitChunks(
-    content: string,
-    chunkSize: number,
-    bleed: number,
-    model: string
-  ): Promise<string[]>;
   getSetting(key: string): string | null;
 
   // Methods
   getConversationLength(): number;
-  completion(opts: {
-    serverUrl?: string;
-    token?: string;
-    context?: string;
-    stop?: string[];
-    model?: string;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    temperature?: number;
-    max_context_length?: number;
-    max_response_length?: number;
-  }): Promise<string>;
-  stringArrayCompletion(opts: {
-    serverUrl?: string;
-    token?: string;
-    context?: string;
-    stop?: string[];
-    model?: string;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    temperature?: number;
-    max_context_length?: number;
-    max_response_length?: number;
-  }): Promise<string[]>;
-  shouldRespondCompletion(opts: {
-    serverUrl?: string;
-    token?: string;
-    context?: string;
-    stop?: string[];
-    model?: string;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    temperature?: number;
-    max_context_length?: number;
-    max_response_length?: number;
-  }): Promise<"RESPOND" | "IGNORE" | "STOP" | null>;
-  booleanCompletion(opts: {
-    serverUrl?: string;
-    token?: string;
-    context?: string;
-    stop?: string[];
-    model?: string;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    temperature?: number;
-    max_context_length?: number;
-    max_response_length?: number;
-  }): Promise<boolean>;
-  messageCompletion(opts: {
-    serverUrl?: string;
-    token?: string;
-    context?: string;
-    stop?: string[];
-    model?: string;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    temperature?: number;
-    max_context_length?: number;
-    max_response_length?: number;
-  }): Promise<Content>;
-  objectArrayCompletion(opts: {
-    serverUrl?: string;
-    token?: string;
-    context?: string;
-    stop?: string[];
-    model?: string;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    temperature?: number;
-    max_context_length?: number;
-  }): Promise<any[]>;
-  embed(input: string): Promise<number[]>;
   processActions(
     message: Memory,
     responses: Memory[],
     state?: State,
-    callback?: HandlerCallback
+    callback?: HandlerCallback,
   ): Promise<void>;
   evaluate(message: Memory, state?: State): Promise<string[]>;
   ensureParticipantExists(userId: UUID, roomId: UUID): Promise<void>;
@@ -520,14 +479,14 @@ export interface IAgentRuntime {
     userId: UUID,
     userName: string | null,
     name: string | null,
-    source: string | null
+    source: string | null,
   ): Promise<void>;
   registerAction(action: Action): void;
   ensureParticipantInRoom(userId: UUID, roomId: UUID): Promise<void>;
   ensureRoomExists(roomId: UUID): Promise<void>;
   composeState(
     message: Memory,
-    additionalKeys?: { [key: string]: unknown }
+    additionalKeys?: { [key: string]: unknown },
   ): Promise<State>;
   updateRecentMessageState(state: State): Promise<State>;
 }
@@ -535,7 +494,7 @@ export interface IAgentRuntime {
 export interface IImageRecognitionService {
   initialize(modelId?: string | null, device?: string | null): Promise<void>;
   describeImage(
-    imageUrl: string
+    imageUrl: string,
   ): Promise<{ title: string; description: string }>;
 }
 
@@ -559,7 +518,7 @@ export interface ILlamaService {
     stop: string[],
     frequency_penalty: number,
     presence_penalty: number,
-    max_tokens: number
+    max_tokens: number,
   ): Promise<any>;
   queueTextCompletion(
     context: string,
@@ -567,7 +526,7 @@ export interface ILlamaService {
     stop: string[],
     frequency_penalty: number,
     presence_penalty: number,
-    max_tokens: number
+    max_tokens: number,
   ): Promise<string>;
   getEmbeddingResponse(input: string): Promise<number[] | undefined>;
 }
@@ -576,11 +535,11 @@ export interface IBrowserService {
   initialize(): Promise<void>;
   closeBrowser(): Promise<void>;
   getPageContent(
-    url: string
+    url: string,
   ): Promise<{ title: string; description: string; bodyContent: string }>;
 }
 
-export interface ISpeechService {}
+export interface ISpeechService { }
 
 export interface IPdfService {
   convertPdfToText(pdfBuffer: Buffer): Promise<string>;
