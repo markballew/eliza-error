@@ -6,6 +6,7 @@ import follow_room from "./actions/follow_room.ts";
 import mute_room from "./actions/mute_room.ts";
 import unfollow_room from "./actions/unfollow_room.ts";
 import unmute_room from "./actions/unmute_room.ts";
+import imageGeneration from "./actions/imageGeneration.ts";
 import { SqliteDatabaseAdapter } from "./adapters/sqlite.ts";
 import { DiscordClient } from "./clients/discord/index.ts";
 import DirectClient from "./clients/direct/index.ts";
@@ -14,7 +15,7 @@ import { defaultActions } from "./core/actions.ts";
 import defaultCharacter from "./core/defaultCharacter.ts";
 import { AgentRuntime } from "./core/runtime.ts";
 import settings from "./core/settings.ts";
-import { Character, IAgentRuntime } from "./core/types.ts"; // Added IAgentRuntime
+import { Character, IAgentRuntime, ModelProvider } from "./core/types.ts"; // Added IAgentRuntime
 import boredomProvider from "./providers/boredom.ts";
 import timeProvider from "./providers/time.ts";
 import { wait } from "./clients/twitter/utils.ts";
@@ -60,11 +61,7 @@ try {
 // Load character
 const characterPath = argv.character || argv.characters;
 
-console.log("characterPath", characterPath);
-
 const characterPaths = argv.characters?.split(",").map((path) => path.trim());
-
-console.log("characterPaths", characterPaths);
 
 const characters = [];
 
@@ -75,7 +72,6 @@ if (characterPaths?.length > 0) {
   for (const path of characterPaths) {
     try {
       const character = JSON.parse(fs.readFileSync(path, "utf8"));
-      console.log("character", character.name);
       characters.push(character);
     } catch (e) {
       console.log(`Error loading character from ${path}: ${e}`);
@@ -83,22 +79,29 @@ if (characterPaths?.length > 0) {
   }
 }
 
+function getTokenForProvider(provider: ModelProvider, character: Character) {
+  switch (provider) {
+    case ModelProvider.OPENAI:
+      return character.settings?.secrets?.OPENAI_API_KEY ||
+      (settings.OPENAI_API_KEY as string);
+    case ModelProvider.ANTHROPIC:
+      return character.settings?.secrets?.CLAUDE_API_KEY ||
+      (settings.CLAUDE_API_KEY as string);
+  }
+}
+
 async function startAgent(character: Character) {
   console.log("Starting agent for character " + character.name);
-  const token = character.settings?.secrets?.OPENAI_API_KEY ||
-  (settings.OPENAI_API_KEY as string)
+  const token = getTokenForProvider(character.modelProvider, character);
 
-  console.log("token", token);
   const db = new SqliteDatabaseAdapter(new Database("./db.sqlite"))
   const runtime = new AgentRuntime({
     databaseAdapter: db,
-    token:
-      token,
-    serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4o",
+    token,
+    modelProvider: character.modelProvider,
     evaluators: [],
     character,
-    providers: [timeProvider, boredomProvider],
+    providers: [timeProvider, boredomProvider, walletProvider],
     actions: [
       ...defaultActions,
       askClaude,
@@ -106,16 +109,14 @@ async function startAgent(character: Character) {
       unfollow_room,
       unmute_room,
       mute_room,
+      imageGeneration,
     ],
   });
 
   const directRuntime = new AgentRuntime({
     databaseAdapter: db,
-    token:
-      character.settings?.secrets?.OPENAI_API_KEY ??
-      (settings.OPENAI_API_KEY as string),
-    serverUrl: "https://api.openai.com/v1",
-    model: "gpt-4o-mini",
+    token,
+    modelProvider: character.modelProvider,
     evaluators: [],
     character,
     providers: [timeProvider, boredomProvider],
@@ -132,9 +133,7 @@ async function startAgent(character: Character) {
   async function startTelegram(runtime: IAgentRuntime, character: Character) {
     console.log("🔍 Attempting to start Telegram bot...");
     
-    const botToken =
-      character.settings?.secrets?.TELEGRAM_BOT_TOKEN ??
-      settings.TELEGRAM_BOT_TOKEN;
+    const botToken = runtime.getSetting('TELEGRAM_BOT_TOKEN');
   
     if (!botToken) {
       console.error(
@@ -231,6 +230,7 @@ const startAgents = async () => {
 startAgents();
 
 import readline from 'readline';
+import walletProvider from "./providers/wallet.ts";
 
 const rl = readline.createInterface({
   input: process.stdin,

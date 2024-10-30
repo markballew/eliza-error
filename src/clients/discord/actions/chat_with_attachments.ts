@@ -1,5 +1,7 @@
 import { composeContext } from "../../../core/context.ts";
+import { generateText, trimTokens } from "../../../core/generation.ts";
 import { log_to_file } from "../../../core/logger.ts";
+import models from "../../../core/models.ts";
 import { parseJSONObjectFromText } from "../../../core/parsing.ts";
 import {
   Action,
@@ -8,6 +10,7 @@ import {
   HandlerCallback,
   IAgentRuntime,
   Memory,
+  ModelClass,
   State,
 } from "../../../core/types.ts";
 import fs from "fs";
@@ -50,8 +53,10 @@ const getAttachmentIds = async (
   });
 
   for (let i = 0; i < 5; i++) {
-    const response = await runtime.completion({
+    const response = await generateText({
+      runtime,
       context,
+      modelClass: ModelClass.SMALL,
     });
     console.log("response", response);
     // try parsing to a json object
@@ -171,7 +176,9 @@ const summarizeAction = {
       .join("\n\n");
 
     let currentSummary = "";
-    const chunkSize = runtime.getSetting("OPENAI_API_KEY") ? 100000 : 3500;
+
+    const model = models[runtime.character.settings.model];
+    const chunkSize = model.settings.maxContextLength;
 
     state.attachmentsWithText = attachmentsWithText;
     state.objective = objective;
@@ -181,10 +188,10 @@ const summarizeAction = {
     const context = composeContext({
       state,
       // make sure it fits, we can pad the tokens a bit
-      template: runtime.trimTokens(
+      template: trimTokens(
         summarizationTemplate,
         chunkSize + 500,
-        "gpt-4o-mini",
+        "gpt-4o-mini", // TODO: make this dynamic and generic
       ),
     });
 
@@ -193,8 +200,10 @@ const summarizeAction = {
       context,
     );
 
-    const summary = await runtime.completion({
+    const summary = await generateText({
+      runtime,
       context,
+      modelClass: ModelClass.SMALL,
     });
 
     log_to_file(
