@@ -1,11 +1,9 @@
 import { composeContext } from "../core/context.ts";
-import { generateObjectArray } from "../core/generation.ts";
 import {
   ActionExample,
   Content,
   IAgentRuntime,
   Memory,
-  ModelClass,
 } from "../core/types.ts";
 
 export const formatFacts = (facts: Memory[]) => {
@@ -64,10 +62,9 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
     template,
   });
 
-  let facts = await generateObjectArray({
-    runtime,
+  let facts = await runtime.objectArrayCompletion({
     context,
-    modelClass: ModelClass.SMALL,
+    stop: [],
   });
 
   if (!facts) {

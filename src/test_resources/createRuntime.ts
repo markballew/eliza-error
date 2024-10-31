@@ -3,13 +3,15 @@ import { load } from "../adapters/sqlite/sqlite_vec.ts";
 import { SqlJsDatabaseAdapter } from "../adapters/sqljs.ts";
 import { SupabaseDatabaseAdapter } from "../adapters/supabase.ts";
 import { DatabaseAdapter } from "../core/database.ts";
+import { IAgentRuntime } from "../core/types.ts";
 import { AgentRuntime } from "../core/runtime.ts";
-import { Action, Evaluator, ModelProvider, Provider } from "../core/types.ts";
+import { Action, Evaluator, Provider } from "../core/types.ts";
+import { zeroUuid } from "./constants.ts";
 import {
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
   TEST_EMAIL,
-  TEST_PASSWORD, zeroUuid
+  TEST_PASSWORD,
 } from "./constants.ts";
 import { User } from "./types.ts";
 
@@ -128,7 +130,6 @@ export async function createRuntime({
     serverUrl: "https://api.openai.com/v1",
     conversationLength,
     token: env!.OPENAI_API_KEY!,
-    modelProvider: ModelProvider.OPENAI,
     actions: actions ?? [],
     evaluators: evaluators ?? [],
     providers: providers ?? [],

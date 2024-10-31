@@ -12,7 +12,6 @@ import {
   State,
   UUID,
   HandlerCallback,
-  ModelClass,
 } from "../../../core/types.ts";
 import { stringToUuid } from "../../../core/uuid.ts";
 import {
@@ -20,7 +19,6 @@ import {
   shouldRespondTemplate,
 } from "../../discord/templates.ts";
 import ImageDescriptionService from "../../../services/image.ts";
-import { generateMessageResponse, generateShouldRespond } from "../../../core/generation.ts";
 
 const MAX_MESSAGE_LENGTH = 4096; // Telegram's max message length
 
@@ -106,10 +104,10 @@ export class MessageManager {
         template: shouldRespondTemplate,
       });
 
-      const response = await generateShouldRespond({
-        runtime: this.runtime,
+      const response = await this.runtime.shouldRespondCompletion({
         context: shouldRespondContext,
-        modelClass: ModelClass.SMALL,
+        stop: ["\n"],
+        max_response_length: 5,
       });
 
       return response === "RESPOND";
@@ -175,14 +173,20 @@ export class MessageManager {
       context
     );
 
-    const response = await generateMessageResponse({
-      runtime: this.runtime,
+    const response = await this.runtime.messageCompletion({
       context,
-      modelClass: "slow"
+      stop: ["<|eot|>"],
+      temperature: 0.7,
+      serverUrl:
+        this.runtime.getSetting("X_SERVER_URL") ?? this.runtime.serverUrl,
+      token: this.runtime.getSetting("XAI_API_KEY") ?? this.runtime.token,
+      model: this.runtime.getSetting("XAI_MODEL")
+        ? this.runtime.getSetting("XAI_MODEL")
+        : "gpt-4o-mini",
     });
 
     if (!response) {
-      console.error("❌ No response from generateMessageResponse");
+      console.error("❌ No response from runtime.messageCompletion");
       return null;
     }
 

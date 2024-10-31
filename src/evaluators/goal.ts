@@ -1,11 +1,9 @@
 import { composeContext } from "../core/context.ts";
-import { generateText } from "../core/generation.ts";
 import { getGoals } from "../core/goals.ts";
 import { parseJsonArrayFromText } from "../core/parsing.ts";
 import {
   IAgentRuntime,
   Memory,
-  ModelClass,
   Objective,
   type Goal,
   type State,
@@ -67,11 +65,10 @@ async function handler(
     template,
   });
 
-  // Request generateText from OpenAI to analyze conversation and suggest goal updates
-  const response = await generateText({
-    runtime,
+  // Request completion from OpenAI to analyze conversation and suggest goal updates
+  const response = await runtime.completion({
     context,
-    modelClass: ModelClass.SMALL,
+    stop: [],
   });
 
   // Parse the JSON response to extract goal updates

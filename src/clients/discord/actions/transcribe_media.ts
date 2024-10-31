@@ -1,5 +1,4 @@
 import { composeContext } from "../../../core/context.ts";
-import { generateText } from "../../../core/generation.ts";
 import { log_to_file } from "../../../core/logger.ts";
 import { parseJSONObjectFromText } from "../../../core/parsing.ts";
 import {
@@ -9,7 +8,6 @@ import {
   HandlerCallback,
   IAgentRuntime,
   Memory,
-  ModelClass,
   State,
 } from "../../../core/types.ts";
 import fs from "fs";
@@ -45,10 +43,8 @@ const getMediaAttachmentId = async (
   });
 
   for (let i = 0; i < 5; i++) {
-    const response = await generateText({
-      runtime,
+    const response = await runtime.completion({
       context,
-      modelClass: ModelClass.SMALL,
     });
     console.log("response", response);
 

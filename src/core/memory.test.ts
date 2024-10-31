@@ -9,7 +9,6 @@ import { getOrCreateRelationship } from "../test_resources/getOrCreateRelationsh
 import { type User } from "../test_resources/types.ts";
 import { MemoryManager } from "./memory.ts";
 import { type Content, type Memory, type UUID } from "./types.ts";
-import { embed } from "./embedding.ts";
 
 dotenv.config({ path: ".dev.vars" });
 describe("Memory", () => {
@@ -59,7 +58,7 @@ describe("Memory", () => {
     const dissimilarMemoryContent = "Dissimilar memory content, not related";
 
     // Create and add embedding to the base memory
-    const baseMemory = await embed(memoryManager.runtime, baseMemoryContent);
+    const baseMemory = await memoryManager.runtime.embed(baseMemoryContent);
 
     let embedding = await getCachedEmbeddings(similarMemoryContent);
 
@@ -324,7 +323,7 @@ describe("Memory - Extended Tests", () => {
     const similarMemoryContent = "Base memory content for testing similarity";
 
     // Create and add embedding to the base memory
-    const baseMemory = await embed(memoryManager.runtime, baseMemoryContent);
+    const baseMemory = await memoryManager.runtime.embed(baseMemoryContent);
 
     const embedding = await getCachedEmbeddings(similarMemoryContent);
 
@@ -364,7 +363,7 @@ describe("Memory - Extended Tests", () => {
     const similarMemoryContent = "Cognitive security in the information age";
 
     // Create and add embedding to the base memory
-    const baseMemory = await embed(memoryManager.runtime, baseMemoryContent);
+    const baseMemory = await memoryManager.runtime.embed(baseMemoryContent);
 
     const embedding = await getCachedEmbeddings(similarMemoryContent);
 
@@ -449,7 +448,7 @@ describe("Memory - Extended Tests", () => {
     const dissimilarMemoryContent = "Dissimilar, not related";
 
     // Create and add embedding to the base memory
-    const baseMemory = await embed(memoryManager.runtime, baseMemoryContent);
+    const baseMemory = await memoryManager.runtime.embed(baseMemoryContent);
 
     let embedding = await getCachedEmbeddings(similarMemoryContent);
 
