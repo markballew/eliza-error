@@ -1,10 +1,12 @@
 import { composeContext } from "../core/context.ts";
+import { generateTrueOrFalse } from "../core/generation.ts";
 import { booleanFooter } from "../core/parsing.ts";
 import {
   Action,
   ActionExample,
   IAgentRuntime,
   Memory,
+  ModelClass,
   State,
 } from "../core/types.ts";
 
@@ -47,10 +49,10 @@ export default {
         template: shouldUnmuteTemplate, // Define this template separately
       });
 
-      const response = await runtime.booleanCompletion({
+      const response = generateTrueOrFalse({
         context: shouldUnmuteContext,
-        stop: ["\n"],
-        max_response_length: 5,
+        runtime,
+        modelClass: ModelClass.SMALL,
       });
 
       return response;

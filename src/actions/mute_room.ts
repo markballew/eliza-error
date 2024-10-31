@@ -1,10 +1,12 @@
 import { composeContext } from "../core/context.ts";
+import { generateTrueOrFalse } from "../core/generation.ts";
 import { booleanFooter } from "../core/parsing.ts";
 import {
   Action,
   ActionExample,
   IAgentRuntime,
   Memory,
+  ModelClass,
   State,
 } from "../core/types.ts";
 
@@ -49,10 +51,10 @@ export default {
         template: shouldMuteTemplate, // Define this template separately
       });
 
-      const response = await runtime.booleanCompletion({
+      const response = await generateTrueOrFalse({
+        runtime,
         context: shouldMuteContext,
-        stop: ["\n"],
-        max_response_length: 5,
+        modelClass: ModelClass.SMALL,
       });
 
       return response;

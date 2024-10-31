@@ -10,11 +10,13 @@ import { embeddingZeroVector } from "./memory.ts";
 import {
   Content,
   IAgentRuntime,
+  ModelClass,
   State,
   type Memory,
   type UUID,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
+import { generateMessageResponse } from "./generation.ts";
 
 async function handleMessage(
   runtime: IAgentRuntime,
@@ -54,9 +56,10 @@ async function handleMessage(
   const { userId, roomId } = message;
 
   for (let triesLeft = 3; triesLeft > 0; triesLeft--) {
-    const response = await runtime.messageCompletion({
+    const response = await generateMessageResponse({
       context,
-      stop: [],
+      runtime,
+      modelClass: ModelClass.SMALL,
     });
 
     runtime.databaseAdapter.log({
