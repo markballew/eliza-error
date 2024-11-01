@@ -1,25 +1,26 @@
-import { AnchorProvider } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import {
   Connection,
   Keypair,
-  PublicKey
+  PublicKey,
+  LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import {
-  CreateTokenMetadata,
   DEFAULT_DECIMALS,
-  PriorityFee,
   PumpFunSDK,
+  CreateTokenMetadata,
+  PriorityFee,
 } from "pumpdotfun-sdk";
+import { AnchorProvider } from "@coral-xyz/anchor";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import settings from "../core/settings";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 import {
   ActionExample,
-  Content,
   IAgentRuntime,
   Memory,
+  Content,
   type Action,
 } from "../core/types.ts";
 
@@ -35,7 +36,6 @@ export interface CreateAndBuyContent extends Content {
 }
 
 export function isCreateAndBuyContent(
-  runtime: IAgentRuntime,
   content: any
 ): content is CreateAndBuyContent {
   return (
@@ -52,6 +52,17 @@ export function isCreateAndBuyContent(
   );
 }
 
+const privateKey = settings.WALLET_PRIVATE_KEY!;
+const wallet = new NodeWallet(
+  Keypair.fromSecretKey(new Uint8Array(JSON.parse(privateKey)))
+);
+const connection = new Connection(settings.RPC_URL!);
+const provider = new AnchorProvider(connection, wallet, {
+  commitment: "finalized",
+});
+const sdk = new PumpFunSDK(provider);
+const slippage = settings.SLIPPAGE!;
+
 export const createAndBuyToken = async ({
   deployer,
   mint,
@@ -60,9 +71,6 @@ export const createAndBuyToken = async ({
   priorityFee,
   allowOffCurve,
   commitment = "finalized",
-  sdk,
-  connection,
-  slippage,
 }: {
   deployer: Keypair;
   mint: Keypair;
@@ -79,9 +87,6 @@ export const createAndBuyToken = async ({
     | "singleGossip"
     | "root"
     | "max";
-  sdk: PumpFunSDK;
-  connection: Connection;
-  slippage: string;
 }) => {
   const createResults = await sdk.createAndBuy(
     deployer,
@@ -118,8 +123,6 @@ export const buyToken = async ({
   amount,
   priorityFee,
   allowOffCurve,
-  slippage,
-  connection,
 }: {
   sdk: PumpFunSDK;
   buyer: Keypair;
@@ -127,8 +130,6 @@ export const buyToken = async ({
   amount: bigint;
   priorityFee: PriorityFee;
   allowOffCurve: boolean;
-  slippage: string;
-  connection: Connection;
 }) => {
   const buyResults = await sdk.buy(
     buyer,
@@ -163,8 +164,6 @@ export const sellToken = async ({
   amount,
   priorityFee,
   allowOffCurve,
-  slippage,
-  connection,
 }: {
   sdk: PumpFunSDK;
   seller: Keypair;
@@ -172,8 +171,6 @@ export const sellToken = async ({
   amount: bigint;
   priorityFee: PriorityFee;
   allowOffCurve: boolean;
-  slippage: string;
-  connection: Connection;
 }) => {
   const sellResults = await sdk.sell(
     seller,
@@ -212,7 +209,7 @@ export default {
   name: "CREATE_AND_BUY_TOKEN",
   similes: ["CREATE_AND_PURCHASE_TOKEN", "DEPLOY_AND_BUY_TOKEN"],
   validate: async (runtime: IAgentRuntime, message: Memory) => {
-    return isCreateAndBuyContent(runtime, message.content);
+    return isCreateAndBuyContent(message.content);
   },
   description:
     "Create a new token and buy a specified amount using SOL. Requires deployer private key, token metadata, buy amount in SOL, priority fee, and allowOffCurve flag.",
@@ -221,7 +218,7 @@ export default {
     message: Memory
   ): Promise<boolean> => {
     const content = message.content;
-    if (!isCreateAndBuyContent(runtime, content)) {
+    if (!isCreateAndBuyContent(content)) {
       console.error("Invalid content for CREATE_AND_BUY_TOKEN action.");
       return false;
     }
@@ -232,19 +229,6 @@ export default {
       priorityFee,
       allowOffCurve,
     } = content;
-
-      const privateKey = runtime.getSetting('WALLET_PRIVATE_KEY')!;
-      const wallet = new NodeWallet(
-        Keypair.fromSecretKey(new Uint8Array(JSON.parse(privateKey)))
-      );
-      const connection = new Connection(settings.RPC_URL!);
-      const provider = new AnchorProvider(connection, wallet, {
-        commitment: "finalized",
-      });
-      const sdk = new PumpFunSDK(provider);
-      const slippage = runtime.getSetting('SLIPPAGE');
-
-      
 
     try {
       const deployerKeypair = Keypair.fromSecretKey(
@@ -267,9 +251,6 @@ export default {
         buyAmountSol: BigInt(buyAmountSol),
         priorityFee: priorityFee as PriorityFee,
         allowOffCurve: allowOffCurve as boolean,
-        sdk,
-        connection,
-        slippage,
       });
 
       console.log(

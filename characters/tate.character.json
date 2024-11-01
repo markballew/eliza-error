@@ -1,7 +1,9 @@
 {
     "name": "tate",
-    "clients": ["discord", "twitter", "telegram"],
+    "clients": ["discord", "direct, telegram"],
     "settings": {
+      "model": "gpt-4o-mini",
+      "embeddingModel": "text-embedding-3-small",
       "secrets": {},
       "voice": {
         "model": "en_US-male-medium"

@@ -71,42 +71,6 @@ export interface Goal {
   objectives: Objective[]; // A list of objectives that make up the goal.
 }
 
-export enum ModelClass {
-  SMALL = "small",
-  MEDIUM = "medium",
-  LARGE = "large",
-  EMBEDDING = "embedding",
-}
-
-export type Model = {
-  endpoint?: string;
-  settings: {
-    maxInputTokens: number;
-    maxOutputTokens: number;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    repetition_penalty?: number;
-    stop: string[];
-    temperature: number;
-  };
-  model: {
-    [ModelClass.SMALL]: string;
-    [ModelClass.MEDIUM]: string;
-    [ModelClass.LARGE]: string;
-    [ModelClass.EMBEDDING]?: string;
-  };
-};
-
-export enum ModelProvider {
-  OPENAI = "openai",
-  ANTHROPIC = "anthropic",
-  GROK = "grok",
-  LLAMACLOUD = "llama_cloud",
-  LLAMALOCAL = "llama_local",
-  GOOGLE = "google",
-  CLAUDE_VERTEX = "claude_vertex"
-}
-
 /**
  * Represents the state of the conversation or context in which the agent is operating, including information about users, messages, goals, and other relevant data.
  */
@@ -280,9 +244,6 @@ export type Media = {
 export type Character = {
   id?: UUID; // optional UUID which can be passed down to identify the character
   name: string;
-  system?: string;
-  modelProvider: ModelProvider;
-  modelOverride?: string;
   bio: string | string[];
   lore: string[];
   messageExamples: MessageExample[][];
@@ -446,7 +407,8 @@ export interface IAgentRuntime {
   serverUrl: string;
   databaseAdapter: IDatabaseAdapter;
   token: string | null;
-  modelProvider: ModelProvider;
+  model: string;
+  embeddingModel: string;
   character: Character;
   providers: Provider[];
   actions: Action[];
@@ -463,10 +425,89 @@ export interface IAgentRuntime {
   speechService: ISpeechService;
   pdfService: IPdfService;
 
+  trimTokens(text: string, maxTokens: number, model: string): string;
+  splitChunks(
+    content: string,
+    chunkSize: number,
+    bleed: number,
+    model: string,
+  ): Promise<string[]>;
   getSetting(key: string): string | null;
 
   // Methods
   getConversationLength(): number;
+  completion(opts: {
+    serverUrl?: string;
+    token?: string;
+    context?: string;
+    stop?: string[];
+    model?: string;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    temperature?: number;
+    max_context_length?: number;
+    max_response_length?: number;
+  }): Promise<string>;
+  stringArrayCompletion(opts: {
+    serverUrl?: string;
+    token?: string;
+    context?: string;
+    stop?: string[];
+    model?: string;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    temperature?: number;
+    max_context_length?: number;
+    max_response_length?: number;
+  }): Promise<string[]>;
+  shouldRespondCompletion(opts: {
+    serverUrl?: string;
+    token?: string;
+    context?: string;
+    stop?: string[];
+    model?: string;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    temperature?: number;
+    max_context_length?: number;
+    max_response_length?: number;
+  }): Promise<"RESPOND" | "IGNORE" | "STOP" | null>;
+  booleanCompletion(opts: {
+    serverUrl?: string;
+    token?: string;
+    context?: string;
+    stop?: string[];
+    model?: string;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    temperature?: number;
+    max_context_length?: number;
+    max_response_length?: number;
+  }): Promise<boolean>;
+  messageCompletion(opts: {
+    serverUrl?: string;
+    token?: string;
+    context?: string;
+    stop?: string[];
+    model?: string;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    temperature?: number;
+    max_context_length?: number;
+    max_response_length?: number;
+  }): Promise<Content>;
+  objectArrayCompletion(opts: {
+    serverUrl?: string;
+    token?: string;
+    context?: string;
+    stop?: string[];
+    model?: string;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    temperature?: number;
+    max_context_length?: number;
+  }): Promise<any[]>;
+  embed(input: string): Promise<number[]>;
   processActions(
     message: Memory,
     responses: Memory[],
@@ -539,7 +580,7 @@ export interface IBrowserService {
   ): Promise<{ title: string; description: string; bodyContent: string }>;
 }
 
-export interface ISpeechService { }
+export interface ISpeechService {}
 
 export interface IPdfService {
   convertPdfToText(pdfBuffer: Buffer): Promise<string>;
