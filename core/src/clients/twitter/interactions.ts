@@ -314,7 +314,7 @@ export class TwitterInteractionClient extends ClientBase {
         const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
-            modelClass: "slow",
+            modelClass: ModelClass.SMALL,
         });
 
         console.log("response", response);

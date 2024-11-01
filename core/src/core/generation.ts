@@ -54,15 +54,22 @@ export async function generateText({
     const apiKey = runtime.token;
 
     try {
+        console.log(
+            `Trimming context to max length of ${max_context_length} tokens.`
+        );
         context = await trimTokens(context, max_context_length, "gpt-4o");
 
         let response: string;
 
         const _stop = stop || models[provider].settings.stop;
+        console.log(
+            `Using provider: ${provider}, model: ${model}, temperature: ${temperature}, max response length: ${max_response_length}`
+        );
 
         switch (provider) {
             case ModelProvider.OPENAI:
             case ModelProvider.LLAMACLOUD:
+                console.log("Initializing OpenAI model.");
                 const openai = createOpenAI({ apiKey });
 
                 const { text: openaiResponse } = await aiGenerateText({
@@ -75,9 +82,11 @@ export async function generateText({
                 });
 
                 response = openaiResponse;
+                console.log("Received response from OpenAI model.");
                 break;
 
             case ModelProvider.ANTHROPIC:
+                console.log("Initializing Anthropic model.");
                 const anthropicVertex = createAnthropicVertex();
 
                 const { text: anthropicResponse } = await aiGenerateText({
@@ -90,9 +99,11 @@ export async function generateText({
                 });
 
                 response = anthropicResponse;
+                console.log("Received response from Anthropic model.");
                 break;
 
             case ModelProvider.GROK:
+                console.log("Initializing Grok model.");
                 const grok = createGroq({ apiKey });
 
                 const { text: grokResponse } = await aiGenerateText({
@@ -107,9 +118,11 @@ export async function generateText({
                 });
 
                 response = grokResponse;
+                console.log("Received response from Grok model.");
                 break;
 
             case ModelProvider.LLAMALOCAL:
+                console.log("Using local Llama model for text completion.");
                 response = await runtime.llamaService.queueTextCompletion(
                     context,
                     temperature,
@@ -118,10 +131,13 @@ export async function generateText({
                     presence_penalty,
                     max_response_length
                 );
+                console.log("Received response from local Llama model.");
                 break;
 
             default:
-                throw new Error(`Unsupported provider: ${provider}`);
+                const errorMessage = `Unsupported provider: ${provider}`;
+                console.error(errorMessage);
+                throw new Error(errorMessage);
         }
 
         return response;
@@ -176,22 +192,34 @@ export async function generateShouldRespond({
     let retryDelay = 1000;
     while (true) {
         try {
+            console.log("Attempting to generate text with context:", context);
             const response = await generateText({
                 runtime,
                 context,
                 modelClass,
             });
 
+            console.log("Received response from generateText:", response);
             const parsedResponse = parseShouldRespondFromText(response.trim());
             if (parsedResponse) {
+                console.log("Parsed response:", parsedResponse);
                 return parsedResponse;
             } else {
                 console.log("generateShouldRespond no response");
             }
         } catch (error) {
             console.error("Error in generateShouldRespond:", error);
+            if (
+                error instanceof TypeError &&
+                error.message.includes("queueTextCompletion")
+            ) {
+                console.error(
+                    "TypeError: Cannot read properties of null (reading 'queueTextCompletion')"
+                );
+            }
         }
 
+        console.log(`Retrying in ${retryDelay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
         retryDelay *= 2;
     }

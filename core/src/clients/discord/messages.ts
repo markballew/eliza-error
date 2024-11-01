@@ -665,7 +665,7 @@ export class MessageManager {
         const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
-            modelClass: "slow",
+            modelClass: ModelClass.SMALL,
         });
 
         if (!response) {

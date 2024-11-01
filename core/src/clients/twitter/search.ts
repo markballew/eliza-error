@@ -7,6 +7,7 @@ import {
     Content,
     HandlerCallback,
     IAgentRuntime,
+    ModelClass,
     State,
 } from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
@@ -149,7 +150,7 @@ export class TwitterSearchClient extends ClientBase {
             const mostInterestingTweetResponse = await generateText({
                 runtime: this.runtime,
                 context: prompt,
-                modelClass: "slow",
+                modelClass: ModelClass.SMALL,
             });
 
             const responseLogName = `${this.runtime.character.name}_search_${datestr}_result`;
@@ -286,7 +287,7 @@ export class TwitterSearchClient extends ClientBase {
             const responseContent = await generateMessageResponse({
                 runtime: this.runtime,
                 context,
-                modelClass: "slow",
+                modelClass: ModelClass.SMALL,
             });
 
             responseContent.inReplyTo = message.id;
