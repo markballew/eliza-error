@@ -1,11 +1,4 @@
-import {
-    Action,
-    IAgentRuntime,
-    Memory,
-    Content,
-    ActionExample,
-    ModelClass,
-} from "../core/types.ts";
+import { Action, IAgentRuntime, Memory, Content, ActionExample, ModelClass } from "../core/types.ts";
 import * as fs from "fs";
 import settings from "../core/settings.ts";
 import { composeContext } from "../core/context.ts";
@@ -49,9 +42,10 @@ Determine if the user is trying to shill the ticker. if they are, respond with e
 // - conviction: negative, low, medium, high
 // - ticker: string (extract from CA so we have context)
 // - contractAddress: string
-`;
+`
 
         let ticker, contractAddress;
+
 
         // TODO:
 
@@ -60,7 +54,7 @@ Determine if the user is trying to shill the ticker. if they are, respond with e
         // 3. get generateText
         // 4. validate generateText
 
-        // if ticker or contractAddress are empty, return a message asking for them
+        // if ticker or contractAddress are empty, return a message asking for them 
         if (!ticker || !contractAddress) {
             return {
                 text: "Ticker and CA?",
@@ -79,9 +73,9 @@ Determine if the user is trying to shill the ticker. if they are, respond with e
         });
 
         const convictionResponse = await generateText({
-            runtime,
+             runtime,
             context: context,
-            modelClass: ModelClass.SMALL,
+            modelClass: ModelClass.LARGE,
         });
 
         // TODOL parse and validate the JSON
@@ -128,7 +122,7 @@ Determine if the user is trying to shill the ticker. if they are, respond with e
         return {
             text: `Recorded a ${conviction} conviction buy order for ${ticker} (${contractAddress}) with an amount of ${buyAmount} at the price of ${currentPrice}.`,
         };
-    },
+    }
 };
 
 export default take_order;
