@@ -42,7 +42,7 @@ const config = {
       {
         entryPoints: ['../src/index.ts'],
         tsconfig: '../tsconfig.json',
-        out: ".",
+        out: "./docs",
       },
     ],
   ],
