@@ -22,7 +22,6 @@ import path from "path";
 import prism from "prism-media";
 import { Readable, pipeline } from "stream";
 import { composeContext } from "../../core/context.ts";
-import { generateMessageResponse } from "../../core/generation.ts";
 import { log_to_file } from "../../core/logger.ts";
 import { embeddingZeroVector } from "../../core/memory.ts";
 import {
@@ -36,8 +35,10 @@ import {
 } from "../../core/types.ts";
 import { stringToUuid } from "../../core/uuid.ts";
 import { getWavHeader } from "../../services/audioUtils.ts";
+import { SpeechService } from "../../services/speech.ts";
 import { AudioMonitor } from "./audioMonitor.ts";
 import { voiceHandlerTemplate } from "./templates.ts";
+import { generateMessageResponse } from "../../core/generation.ts";
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -402,7 +403,7 @@ export class VoiceManager extends EventEmitter {
                                         state
                                     );
                                 const responseStream =
-                                    await this.runtime.speechService.generate(
+                                    await SpeechService.generate(
                                         this.runtime,
                                         content.text
                                     );

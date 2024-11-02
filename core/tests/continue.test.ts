@@ -157,7 +157,6 @@ describe("User Profile", () => {
 
                 const agentMessages = await runtime.messageManager.getMemories({
                     roomId,
-                    agentId: runtime.agentId,
                     count: finalMessageCount - initialMessageCount,
                     unique: false,
                 });

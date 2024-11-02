@@ -102,19 +102,12 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
 
     async getMemoriesByRoomIds(params: {
         roomIds: UUID[];
-        agentId?: UUID;
         tableName: string;
     }): Promise<Memory[]> {
-        let query = this.supabase
+        const { data, error } = await this.supabase
             .from(params.tableName)
             .select("*")
             .in("roomId", params.roomIds);
-
-        if (params.agentId) {
-            query = query.eq("agentId", params.agentId);
-        }
-
-        const { data, error } = await query;
 
         if (error) {
             console.error("Error retrieving memories by room IDs:", error);
@@ -267,7 +260,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
         count?: number;
         unique?: boolean;
         tableName: string;
-        agentId?: UUID;
+        userIds?: UUID[];
         start?: number;
         end?: number;
     }): Promise<Memory[]> {
@@ -288,8 +281,8 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             query.eq("unique", true);
         }
 
-        if (params.agentId) {
-            query.eq("agentId", params.agentId);
+        if (params.userIds && params.userIds.length > 0) {
+            query.in("userId", params.userIds);
         }
 
         query.order("createdAt", { ascending: false });
@@ -313,25 +306,18 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             match_threshold?: number;
             count?: number;
             roomId?: UUID;
-            agentId?: UUID;
             unique?: boolean;
             tableName: string;
         }
     ): Promise<Memory[]> {
-
-        const queryParams = {
+        const result = await this.supabase.rpc("search_memories", {
             query_table_name: params.tableName,
             query_roomId: params.roomId,
             query_embedding: embedding,
             query_match_threshold: params.match_threshold,
             query_match_count: params.count,
             query_unique: !!params.unique,
-        }
-        if (params.agentId) {
-            (queryParams as any).query_agentId = params.agentId;
-        }
-
-        const result = await this.supabase.rpc("search_memories", queryParams);
+        });
         if (result.error) {
             throw new Error(JSON.stringify(result.error));
         }

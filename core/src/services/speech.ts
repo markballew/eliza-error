@@ -107,7 +107,7 @@ async function textToSpeech(runtime: IAgentRuntime, text: string) {
 }
 
 export class SpeechService implements ISpeechService {
-    async generate(
+    static async generate(
         runtime: IAgentRuntime,
         text: string
     ): Promise<Readable> {
