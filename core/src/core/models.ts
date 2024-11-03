@@ -20,12 +20,12 @@ const models: Models = {
             maxOutputTokens: 8192,
             frequency_penalty: 0.0,
             presence_penalty: 0.0,
-            temperature: 0.3,
+            temperature: 0.6,
         },
         model: {
             [ModelClass.SMALL]: "gpt-4o-mini",
             [ModelClass.MEDIUM]: "gpt-4o",
-            [ModelClass.LARGE]: "gpt-4o",
+            [ModelClass.LARGE]: "gpt-4-turbo",
             [ModelClass.EMBEDDING]: "text-embedding-3-small",
         },
     },
@@ -104,13 +104,13 @@ const models: Models = {
             temperature: 0.3,
         },
         model: {
-            [ModelClass.SMALL]: "NousResearch/Hermes-3-Llama-3.1-8B-GGUF/resolve/main/Hermes-3-Llama-3.1-8B.Q8_0.gguf?download=true",
+            [ModelClass.SMALL]: "bartowski/Llama-3.2-3B-Instruct-GGUF",
             [ModelClass.MEDIUM]:
-                "NousResearch/Hermes-3-Llama-3.1-8B-GGUF/resolve/main/Hermes-3-Llama-3.1-8B.Q8_0.gguf?download=true", // TODO: ?download=true
+                "NousResearch/Hermes-3-Llama-3.1-8B-GGUF/resolve/main/Hermes-3-Llama-3.1-8B.Q8_0.gguf", // TODO: ?download=true
             [ModelClass.LARGE]:
-            "NousResearch/Hermes-3-Llama-3.1-8B-GGUF/resolve/main/Hermes-3-Llama-3.1-8B.Q8_0.gguf?download=true",
-                // "RichardErkhov/NousResearch_-_Meta-Llama-3.1-70B-gguf", // TODO: 
-            [ModelClass.EMBEDDING]: "togethercomputer/m2-bert-80M-32k-retrieval"
+                "RichardErkhov/NousResearch_-_Meta-Llama-3.1-70B-gguf", // TODO: ?download=true
+            [ModelClass.EMBEDDING]:
+                "togethercomputer/m2-bert-80M-32k-retrieval",
         },
     },
     [ModelProvider.GOOGLE]: {

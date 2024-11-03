@@ -404,8 +404,7 @@ export class ClientBase extends EventEmitter {
                 // Save the missing tweets as memories
                 for (const tweet of tweetsToSave) {
                     const roomId = stringToUuid(
-                        tweet.conversationId ??
-                            "default-room-" + this.runtime.agentId
+                        tweet.conversationId ?? "default-room-" + this.runtime.agentId
                     );
                     const tweetuserId =
                         tweet.userId === this.twitterUserId
@@ -509,9 +508,7 @@ export class ClientBase extends EventEmitter {
 
         // Save the new tweets as memories
         for (const tweet of tweetsToSave) {
-            const roomId = stringToUuid(
-                tweet.conversationId ?? "default-room-" + this.runtime.agentId
-            );
+            const roomId = stringToUuid(tweet.conversationId ?? "default-room-" + this.runtime.agentId);
             const tweetuserId =
                 tweet.userId === this.twitterUserId
                     ? this.runtime.agentId

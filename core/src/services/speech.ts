@@ -107,7 +107,10 @@ async function textToSpeech(runtime: IAgentRuntime, text: string) {
 }
 
 export class SpeechService implements ISpeechService {
-    async generate(runtime: IAgentRuntime, text: string): Promise<Readable> {
+    async generate(
+        runtime: IAgentRuntime,
+        text: string
+    ): Promise<Readable> {
         // check for elevenlabs API key
         if (runtime.getSetting("ELEVENLABS_XI_API_KEY")) {
             return textToSpeech(runtime, text);

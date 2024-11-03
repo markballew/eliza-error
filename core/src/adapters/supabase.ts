@@ -318,6 +318,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             tableName: string;
         }
     ): Promise<Memory[]> {
+
         const queryParams = {
             query_table_name: params.tableName,
             query_roomId: params.roomId,
@@ -325,7 +326,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             query_match_threshold: params.match_threshold,
             query_match_count: params.count,
             query_unique: !!params.unique,
-        };
+        }
         if (params.agentId) {
             (queryParams as any).query_agentId = params.agentId;
         }
