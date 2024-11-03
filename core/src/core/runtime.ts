@@ -55,7 +55,6 @@ import settings from "./settings.ts";
 import { UUID, type Actor } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { ImageGenModel } from "./imageGenModels.ts";
-import { prettyConsole } from "../index.ts";
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -404,7 +403,6 @@ export class AgentRuntime implements IAgentRuntime {
      * @param action The action to register.
      */
     registerAction(action: Action) {
-        prettyConsole.success(`Registering action: ${action.name}`);
         this.actions.push(action);
     }
 
@@ -588,7 +586,7 @@ export class AgentRuntime implements IAgentRuntime {
                 email: email || (userName || "Bot") + "@" + source || "Unknown", // Temporary
                 details: { summary: "" },
             });
-            prettyConsole.success(`User ${userName} created successfully.`);
+            console.log(`User ${userName} created successfully.`);
         }
     }
 
@@ -597,7 +595,7 @@ export class AgentRuntime implements IAgentRuntime {
             await this.databaseAdapter.getParticipantsForRoom(roomId);
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
-            prettyConsole.log(
+            console.log(
                 `User ${userId} linked to room ${roomId} successfully.`
             );
         }
@@ -643,7 +641,7 @@ export class AgentRuntime implements IAgentRuntime {
         const room = await this.databaseAdapter.getRoom(roomId);
         if (!room) {
             await this.databaseAdapter.createRoom(roomId);
-            prettyConsole.log(`Room ${roomId} created successfully.`);
+            console.log(`Room ${roomId} created successfully.`);
         }
     }
 

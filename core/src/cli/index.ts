@@ -14,7 +14,6 @@ import { AgentRuntime } from "../core/runtime.ts";
 import { defaultActions } from "../core/actions.ts";
 import { Arguments } from "../types/index.ts";
 import { loadActionConfigs, loadCustomActions } from "./config.ts";
-import { prettyConsole } from "../index.ts";
 
 export async function initializeClients(
     character: Character,
@@ -150,16 +149,11 @@ export async function createAgentRuntime(
     });
 }
 
-export async function createDirectRuntime(
+export function createDirectRuntime(
     character: Character,
     db: any,
-    token: string,
-    configPath: string = "./elizaConfig.yaml"
+    token: string
 ) {
-    const actionConfigs = loadActionConfigs(configPath);
-    const customActions = await loadCustomActions(actionConfigs);
-
-    console.log("Creating runtime for character", character.name);
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -167,18 +161,7 @@ export async function createDirectRuntime(
         evaluators: [],
         character,
         providers: [Provider.timeProvider, Provider.boredomProvider],
-        actions: [
-            ...defaultActions,
-            // Custom actions
-            Action.followRoom,
-            Action.unfollowRoom,
-            Action.unmuteRoom,
-            Action.muteRoom,
-            Action.imageGeneration,
-
-            // imported from elizaConfig.yaml
-            ...customActions,
-        ],
+        actions: [...defaultActions],
     });
 }
 
@@ -190,11 +173,11 @@ export async function startTelegram(
     runtime: IAgentRuntime,
     character: Character
 ) {
-    prettyConsole.log("🔍 Attempting to start Telegram bot...");
+    console.log("🔍 Attempting to start Telegram bot...");
     const botToken = runtime.getSetting("TELEGRAM_BOT_TOKEN");
 
     if (!botToken) {
-        prettyConsole.error(
+        console.error(
             `❌ Telegram bot token is not set for character ${character.name}.`
         );
         return null;
@@ -203,12 +186,12 @@ export async function startTelegram(
     try {
         const telegramClient = new Client.TelegramClient(runtime, botToken);
         await telegramClient.start();
-        prettyConsole.success(
+        console.log(
             `✅ Telegram client successfully started for character ${character.name}`
         );
         return telegramClient;
     } catch (error) {
-        prettyConsole.error(
+        console.error(
             `❌ Error creating/starting Telegram client for ${character.name}:`,
             error
         );
@@ -217,7 +200,7 @@ export async function startTelegram(
 }
 
 export async function startTwitter(runtime: IAgentRuntime) {
-    prettyConsole.log("Starting Twitter clients...");
+    console.log("Starting Twitter clients...");
     const twitterSearchClient = new Client.TwitterSearchClient(runtime);
     await wait();
     const twitterInteractionClient = new Client.TwitterInteractionClient(
