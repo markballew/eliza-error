@@ -1,31 +1,41 @@
 // @ts-check
 import { themes as prismThemes } from "prism-react-renderer";
-
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "eliza",
   tagline: "The flexible, scalable AI agent for everyone",
   favicon: "img/favicon.ico",
-  url: "https://docs.ai16z.ai",
-  baseUrl: "/",
-  organizationName: "ai16z",
+ 
+  // GitHub Pages Configuration
+  url: "https://madjin.github.io",
+  baseUrl: "/eliza/",
+  organizationName: "madjin",
   projectName: "eliza",
+  deploymentBranch: "gh-pages",
+  trailingSlash: true,
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
-
+  
   i18n: {
     defaultLocale: "en",
     locales: ["en"],
   },
-
+  markdown: {
+    mermaid: true,
+  },
+  themes: [
+    '@docusaurus/theme-mermaid',
+    // Any other themes...
+  ],
   plugins: [
     // TypeDoc plugin for API documentation
     [
       "docusaurus-plugin-typedoc",
       {
-        entryPoints: ["../src/index.ts"],
-        tsconfig: "../tsconfig.json",
-        out: "./api", // Changed to output directly to api folder
+        entryPoints: ["src/index.ts"],
+        tsconfig: "../core/tsconfig.json",
+        out: "./api",
+	skipErrorChecking: true,
       },
     ],
     // Search functionality
@@ -41,7 +51,6 @@ const config = {
       },
     ],
   ],
-
   presets: [
     [
       "classic",
@@ -58,10 +67,22 @@ const config = {
       }),
     ],
   ],
-
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      // Enable dark mode by default
+      colorMode: {
+        defaultMode: 'dark',
+        disableSwitch: false,
+        respectPrefersColorScheme: true,
+      },
+      // Add sidebar configuration
+      docs: {
+        sidebar: {
+          hideable: true,
+          autoCollapseCategories: true,
+        },
+      },
       navbar: {
         title: "eliza",
         logo: {
@@ -86,11 +107,50 @@ const config = {
             href: "https://github.com/ai16z/eliza",
             label: "GitHub",
             position: "right",
-          },
-        ],
+          }
+        ]
       },
-      // ... rest of themeConfig remains the same
+      footer: {
+        style: 'dark',
+        links: [
+          {
+            title: 'Docs',
+            items: [
+              { 
+                label: 'General',
+                href: './'
+              },
+            ]
+          },
+          {
+            title: 'Community',
+            items: [
+              {
+                label: 'Discord',
+                href: 'https://discord.gg/NQHKW7US'
+              },
+              {
+                label: 'Twitter',
+                href: 'https://twitter.com/pmairca'
+              }
+            ]
+          },
+          {
+            title: 'More',
+            items: [
+              {
+                label: 'GitHub',
+                href: 'https://github.com/ai16z/eliza'
+              }
+            ]
+          }
+        ],
+        copyright: `Copyright © ${new Date().getFullYear()} ai16z.ai`
+      },
+      prism: {
+        theme: prismThemes.github,
+        darkTheme: prismThemes.dracula
+      }
     }),
 };
-
 export default config;
