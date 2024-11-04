@@ -103,6 +103,11 @@ export function getTokenForProvider(
                 character.settings?.secrets?.CLAUDE_API_KEY ||
                 settings.CLAUDE_API_KEY
             );
+        case ModelProvider.REDPILL:
+            return (
+                character.settings?.secrets?.REDPILL_API_KEY ||
+                settings.REDPILL_API_KEY
+            );
     }
 }
 export function initializeDatabase() {
@@ -166,12 +171,7 @@ export async function createDirectRuntime(
         modelProvider: character.modelProvider,
         evaluators: [],
         character,
-        providers: [
-            Provider.timeProvider,
-            Provider.boredomProvider,
-            character.settings?.secrets?.WALLET_PUBLIC_KEY &&
-                Provider.walletProvider,
-        ].filter(Boolean),
+        providers: [Provider.timeProvider, Provider.boredomProvider],
         actions: [
             ...defaultActions,
             // Custom actions
