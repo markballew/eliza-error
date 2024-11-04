@@ -94,6 +94,7 @@ export const imageGeneration: Action = {
         }
     },
     examples: [
+
         // TODO: We want to generate images in more abstract ways, not just when asked to generate an image
 
         [
@@ -103,11 +104,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a cat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a cat", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -116,11 +114,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a dog",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a dog", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -129,11 +124,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a cat with a hat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a cat with a hat", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -142,11 +134,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a dog with a hat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a dog with a hat", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -155,11 +144,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a cat with a hat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a cat with a hat", action: "GENERATE_IMAGE" },
+            }
         ],
     ],
 } as Action;
