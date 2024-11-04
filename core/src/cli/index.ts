@@ -103,11 +103,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.CLAUDE_API_KEY ||
                 settings.CLAUDE_API_KEY
             );
-        case ModelProvider.REDPILL:
-            return (
-                character.settings?.secrets?.REDPILL_API_KEY ||
-                settings.REDPILL_API_KEY
-            );
     }
 }
 export function initializeDatabase() {
