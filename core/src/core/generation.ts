@@ -14,7 +14,7 @@ import models from "./models.ts";
 import { generateText as aiGenerateText } from "ai";
 
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { elizaLog } from "../index.ts";
+import { prettyConsole } from "../index.ts";
 
 /**
  * Send a message to the model for a text generateText - receive a string back and parse how you'd like
@@ -56,7 +56,7 @@ export async function generateText({
     const apiKey = runtime.token;
 
     try {
-        elizaLog.log(
+        prettyConsole.log(
             `Trimming context to max length of ${max_context_length} tokens.`
         );
         context = await trimTokens(context, max_context_length, "gpt-4o");
@@ -64,17 +64,17 @@ export async function generateText({
         let response: string;
 
         const _stop = stop || models[provider].settings.stop;
-        elizaLog.log(
+        prettyConsole.log(
             `Using provider: ${provider}, model: ${model}, temperature: ${temperature}, max response length: ${max_response_length}`
         );
 
         switch (provider) {
             case ModelProvider.OPENAI:
             case ModelProvider.LLAMACLOUD: {
-                elizaLog.log("Initializing OpenAI model.");
+                prettyConsole.log("Initializing OpenAI model.");
                 const openai = createOpenAI({ apiKey });
 
-                console.log("****** CONTEXT\n", context);
+                console.log('****** CONTEXT\n', context)
 
                 const { text: openaiResponse } = await aiGenerateText({
                     model: openai.languageModel(model),
@@ -88,12 +88,12 @@ export async function generateText({
                 console.log("****** RESPONSE\n", openaiResponse);
 
                 response = openaiResponse;
-                elizaLog.log("Received response from OpenAI model.");
+                prettyConsole.log("Received response from OpenAI model.");
                 break;
             }
 
             case ModelProvider.ANTHROPIC: {
-                elizaLog.log("Initializing Anthropic model.");
+                prettyConsole.log("Initializing Anthropic model.");
 
                 const anthropic = createAnthropic({ apiKey });
 
@@ -107,13 +107,14 @@ export async function generateText({
                 });
 
                 response = anthropicResponse;
-                elizaLog.log("Received response from Anthropic model.");
+                prettyConsole.log("Received response from Anthropic model.");
                 break;
             }
 
             case ModelProvider.GROK: {
-                elizaLog.log("Initializing Grok model.");
-                const grok = createGroq({ apiKey });
+                prettyConsole.log("Initializing Grok model.");
+                const serverUrl = models[provider].endpoint;
+                const grok = createOpenAI({ apiKey, baseURL: serverUrl });
 
                 const { text: grokResponse } = await aiGenerateText({
                     model: grok.languageModel(model, {
@@ -127,7 +128,7 @@ export async function generateText({
                 });
 
                 response = grokResponse;
-                elizaLog.log("Received response from Grok model.");
+                prettyConsole.log("Received response from Grok model.");
                 break;
             }
 
@@ -150,26 +151,28 @@ export async function generateText({
             }
 
             case ModelProvider.LLAMALOCAL: {
-                elizaLog.log("Using local Llama model for text completion.");
-                response = await runtime.llamaService.queueTextCompletion(
-                    context,
-                    temperature,
-                    _stop,
-                    frequency_penalty,
-                    presence_penalty,
-                    max_response_length
+                prettyConsole.log(
+                  "Using local Llama model for text completion."
                 );
-                elizaLog.log("Received response from local Llama model.");
+                response = await runtime.llamaService.queueTextCompletion(
+                  context,
+                  temperature,
+                  _stop,
+                  frequency_penalty,
+                  presence_penalty,
+                  max_response_length
+                );
+                prettyConsole.log("Received response from local Llama model.");
                 break;
             }
 
             case ModelProvider.REDPILL: {
-                elizaLog.log("Initializing RedPill model.");
+                prettyConsole.log("Initializing RedPill model.");
                 const serverUrl = models[provider].endpoint;
                 const openai = createOpenAI({ apiKey, baseURL: serverUrl });
 
-                console.log("****** MODEL\n", model);
-                console.log("****** CONTEXT\n", context);
+                console.log('****** MODEL\n', model)
+                console.log('****** CONTEXT\n', context)
 
                 const { text: openaiResponse } = await aiGenerateText({
                     model: openai.languageModel(model),
@@ -183,20 +186,20 @@ export async function generateText({
                 console.log("****** RESPONSE\n", openaiResponse);
 
                 response = openaiResponse;
-                elizaLog.log("Received response from OpenAI model.");
+                prettyConsole.log("Received response from OpenAI model.");
                 break;
             }
 
             default: {
                 const errorMessage = `Unsupported provider: ${provider}`;
-                elizaLog.error(errorMessage);
+                prettyConsole.error(errorMessage);
                 throw new Error(errorMessage);
             }
         }
 
         return response;
     } catch (error) {
-        elizaLog.error("Error in generateText:", error);
+        prettyConsole.error("Error in generateText:", error);
         throw error;
     }
 }
@@ -246,34 +249,37 @@ export async function generateShouldRespond({
     let retryDelay = 1000;
     while (true) {
         try {
-            elizaLog.log("Attempting to generate text with context:", context);
+            prettyConsole.log(
+                "Attempting to generate text with context:",
+                context
+            );
             const response = await generateText({
                 runtime,
                 context,
                 modelClass,
             });
 
-            elizaLog.log("Received response from generateText:", response);
+            prettyConsole.log("Received response from generateText:", response);
             const parsedResponse = parseShouldRespondFromText(response.trim());
             if (parsedResponse) {
-                elizaLog.log("Parsed response:", parsedResponse);
+                prettyConsole.log("Parsed response:", parsedResponse);
                 return parsedResponse;
             } else {
-                elizaLog.log("generateShouldRespond no response");
+                prettyConsole.log("generateShouldRespond no response");
             }
         } catch (error) {
-            elizaLog.error("Error in generateShouldRespond:", error);
+            prettyConsole.error("Error in generateShouldRespond:", error);
             if (
                 error instanceof TypeError &&
                 error.message.includes("queueTextCompletion")
             ) {
-                elizaLog.error(
+                prettyConsole.error(
                     "TypeError: Cannot read properties of null (reading 'queueTextCompletion')"
                 );
             }
         }
 
-        elizaLog.log(`Retrying in ${retryDelay}ms...`);
+        prettyConsole.log(`Retrying in ${retryDelay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
         retryDelay *= 2;
     }
@@ -364,7 +370,7 @@ export async function generateTrueOrFalse({
                 return parsedResponse;
             }
         } catch (error) {
-            elizaLog.error("Error in generateTrueOrFalse:", error);
+            prettyConsole.error("Error in generateTrueOrFalse:", error);
         }
 
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
@@ -397,7 +403,7 @@ export async function generateTextArray({
     modelClass: string;
 }): Promise<string[]> {
     if (!context) {
-        elizaLog.error("generateTextArray context is empty");
+        prettyConsole.error("generateTextArray context is empty");
         return [];
     }
     let retryDelay = 1000;
@@ -415,7 +421,7 @@ export async function generateTextArray({
                 return parsedResponse;
             }
         } catch (error) {
-            elizaLog.error("Error in generateTextArray:", error);
+            prettyConsole.error("Error in generateTextArray:", error);
         }
 
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
@@ -433,7 +439,7 @@ export async function generateObject({
     modelClass: string;
 }): Promise<any> {
     if (!context) {
-        elizaLog.error("generateObject context is empty");
+        prettyConsole.error("generateObject context is empty");
         return null;
     }
     let retryDelay = 1000;
@@ -442,16 +448,16 @@ export async function generateObject({
         try {
             // this is slightly different than generateObjectArray, in that we parse object, not object array
             const response = await generateText({
-                runtime,
-                context,
-                modelClass,
-            });
-            const parsedResponse = parseJSONObjectFromText(response);
-            if (parsedResponse) {
+        runtime,
+        context,
+        modelClass,
+    });
+    const parsedResponse = parseJSONObjectFromText(response);
+    if (parsedResponse) {
                 return parsedResponse;
             }
         } catch (error) {
-            elizaLog.error("Error in generateObject:", error);
+            prettyConsole.error("Error in generateObject:", error);
         }
 
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
@@ -469,7 +475,7 @@ export async function generateObjectArray({
     modelClass: string;
 }): Promise<any[]> {
     if (!context) {
-        elizaLog.error("generateObjectArray context is empty");
+        prettyConsole.error("generateObjectArray context is empty");
         return [];
     }
     let retryDelay = 1000;
@@ -487,7 +493,7 @@ export async function generateObjectArray({
                 return parsedResponse;
             }
         } catch (error) {
-            elizaLog.error("Error in generateTextArray:", error);
+            prettyConsole.error("Error in generateTextArray:", error);
         }
 
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
@@ -530,17 +536,17 @@ export async function generateMessageResponse({
             // try parsing the response as JSON, if null then try again
             const parsedContent = parseJSONObjectFromText(response) as Content;
             if (!parsedContent) {
-                elizaLog.log("parsedContent is null, retrying");
+                prettyConsole.log("parsedContent is null, retrying");
                 continue;
             }
 
             return parsedContent;
         } catch (error) {
-            elizaLog.error("ERROR:", error);
+            prettyConsole.error("ERROR:", error);
             // wait for 2 seconds
             retryLength *= 2;
             await new Promise((resolve) => setTimeout(resolve, retryLength));
-            elizaLog.log("Retrying...");
+            prettyConsole.log("Retrying...");
         }
     }
 }

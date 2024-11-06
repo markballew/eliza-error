@@ -1,9 +1,0 @@
-{
-    "name": "plugin-image-generation",
-    "version": "0.0.1",
-    "main": "index.ts",
-    "type": "module",
-    "dependencies": {
-        "@eliza/core": "workspace:*"
-    }
-}

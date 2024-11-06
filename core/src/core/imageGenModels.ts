@@ -3,7 +3,7 @@ export enum ImageGenModel {
     Dalle = "Dalle",
 }
 
-export const imageGenModels = {
+const imageGenModels = {
     [ImageGenModel.TogetherAI]: {
         steps: 4,
         subModel: "black-forest-labs/FLUX.1-schnell",
@@ -14,6 +14,6 @@ export const imageGenModels = {
     },
 };
 
-export function getImageGenModel(model: ImageGenModel) {
+export function getModel(model: ImageGenModel) {
     return imageGenModels[model];
 }

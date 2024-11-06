@@ -2,7 +2,7 @@ import { Context, Telegraf } from "telegraf";
 
 import { IAgentRuntime } from "../../../core/types.ts";
 import { MessageManager } from "./messageManager.ts";
-import { elizaLog } from "../../../index.ts";
+import { prettyConsole } from "../../../index.ts";
 
 export class TelegramClient {
     private bot: Telegraf<Context>;
@@ -10,18 +10,18 @@ export class TelegramClient {
     private messageManager: MessageManager;
 
     constructor(runtime: IAgentRuntime, botToken: string) {
-        elizaLog.log("📱 Constructing new TelegramClient...");
+        prettyConsole.log("📱 Constructing new TelegramClient...");
         this.runtime = runtime;
         this.bot = new Telegraf(botToken);
         this.messageManager = new MessageManager(this.bot, this.runtime);
 
-        elizaLog.log("Setting up message handler...");
+        prettyConsole.log("Setting up message handler...");
         this.bot.on("message", async (ctx) => {
             try {
-                elizaLog.log("📥 Received message:", ctx.message);
+                prettyConsole.log("📥 Received message:", ctx.message);
                 await this.messageManager.handleMessage(ctx);
             } catch (error) {
-                elizaLog.error("❌ Error handling message:", error);
+                prettyConsole.error("❌ Error handling message:", error);
                 await ctx.reply(
                     "An error occurred while processing your message."
                 );
@@ -30,48 +30,51 @@ export class TelegramClient {
 
         // Handle specific message types for better logging
         this.bot.on("photo", (ctx) => {
-            elizaLog.log(
+            prettyConsole.log(
                 "📸 Received photo message with caption:",
                 ctx.message.caption
             );
         });
 
         this.bot.on("document", (ctx) => {
-            elizaLog.log(
+            prettyConsole.log(
                 "📎 Received document message:",
                 ctx.message.document.file_name
             );
         });
 
         this.bot.catch((err, ctx) => {
-            elizaLog.error(`❌ Telegram Error for ${ctx.updateType}:`, err);
+            prettyConsole.error(
+                `❌ Telegram Error for ${ctx.updateType}:`,
+                err
+            );
             ctx.reply("An unexpected error occurred. Please try again later.");
         });
 
-        elizaLog.log("✅ TelegramClient constructor completed");
+        prettyConsole.log("✅ TelegramClient constructor completed");
     }
 
     public async start(): Promise<void> {
-        elizaLog.log("🚀 Starting Telegram bot...");
+        prettyConsole.log("🚀 Starting Telegram bot...");
         try {
             this.bot.launch({
                 dropPendingUpdates: true,
             });
-            elizaLog.log(
+            prettyConsole.log(
                 "✨ Telegram bot successfully launched and is running!"
             );
-            elizaLog.log(`Bot username: @${this.bot.botInfo?.username}`);
+            prettyConsole.log(`Bot username: @${this.bot.botInfo?.username}`);
 
             // Graceful shutdown handlers
             const shutdownHandler = async (signal: string) => {
-                elizaLog.log(
+                prettyConsole.log(
                     `⚠️ Received ${signal}. Shutting down Telegram bot gracefully...`
                 );
                 try {
                     await this.stop();
-                    elizaLog.log("🛑 Telegram bot stopped gracefully");
+                    prettyConsole.log("🛑 Telegram bot stopped gracefully");
                 } catch (error) {
-                    elizaLog.error(
+                    prettyConsole.error(
                         "❌ Error during Telegram bot shutdown:",
                         error
                     );
@@ -83,14 +86,14 @@ export class TelegramClient {
             process.once("SIGTERM", () => shutdownHandler("SIGTERM"));
             process.once("SIGHUP", () => shutdownHandler("SIGHUP"));
         } catch (error) {
-            elizaLog.error("❌ Failed to launch Telegram bot:", error);
+            prettyConsole.error("❌ Failed to launch Telegram bot:", error);
             throw error;
         }
     }
 
     public async stop(): Promise<void> {
-        elizaLog.log("Stopping Telegram bot...");
+        prettyConsole.log("Stopping Telegram bot...");
         await this.bot.stop();
-        elizaLog.log("Telegram bot stopped");
+        prettyConsole.log("Telegram bot stopped");
     }
 }

@@ -29,7 +29,7 @@ import { AttachmentManager } from "./attachments.ts";
 import { messageHandlerTemplate, shouldRespondTemplate } from "./templates.ts";
 import { InterestChannels } from "./types.ts";
 import { VoiceManager } from "./voice.ts";
-import { elizaLog } from "../../index.ts";
+import { prettyConsole } from "../../index.ts";
 
 const MAX_MESSAGE_LENGTH = 1900;
 
@@ -39,9 +39,11 @@ export async function sendMessageInChunks(
     inReplyTo: string,
     files: any[]
 ): Promise<DiscordMessage[]> {
+
     const sentMessages: DiscordMessage[] = [];
     const messages = splitMessage(content);
     try {
+
         for (let i = 0; i < messages.length; i++) {
             const message = messages[i];
             if (
@@ -69,7 +71,7 @@ export async function sendMessageInChunks(
             }
         }
     } catch (error) {
-        elizaLog.error("Error sending message:", error);
+        prettyConsole.error("Error sending message:", error);
     }
 
     return sentMessages;
@@ -108,13 +110,14 @@ function splitMessage(content: string): string[] {
     return messages;
 }
 
+
 function canSendMessage(channel) {
     console.log("canSendMessage", channel);
     // if it is a DM channel, we can always send messages
     if (channel.type === ChannelType.DM) {
         return {
             canSend: true,
-            reason: null,
+            reason: null
         };
     }
     const botMember = channel.guild?.members.cache.get(channel.client.user.id);
@@ -122,7 +125,7 @@ function canSendMessage(channel) {
     if (!botMember) {
         return {
             canSend: false,
-            reason: "Not a guild channel or bot member not found",
+            reason: 'Not a guild channel or bot member not found'
         };
     }
 
@@ -130,14 +133,12 @@ function canSendMessage(channel) {
     const requiredPermissions = [
         PermissionsBitField.Flags.ViewChannel,
         PermissionsBitField.Flags.SendMessages,
-        PermissionsBitField.Flags.ReadMessageHistory,
+        PermissionsBitField.Flags.ReadMessageHistory
     ];
 
     // Add thread-specific permission if it's a thread
     if (channel instanceof ThreadChannel) {
-        requiredPermissions.push(
-            PermissionsBitField.Flags.SendMessagesInThreads
-        );
+        requiredPermissions.push(PermissionsBitField.Flags.SendMessagesInThreads);
     }
 
     // Check permissions
@@ -146,22 +147,19 @@ function canSendMessage(channel) {
     if (!permissions) {
         return {
             canSend: false,
-            reason: "Could not retrieve permissions",
+            reason: 'Could not retrieve permissions'
         };
     }
 
     // Check each required permission
-    const missingPermissions = requiredPermissions.filter(
-        (perm) => !permissions.has(perm)
-    );
+    const missingPermissions = requiredPermissions.filter(perm => !permissions.has(perm));
 
     return {
         canSend: missingPermissions.length === 0,
         missingPermissions: missingPermissions,
-        reason:
-            missingPermissions.length > 0
-                ? `Missing permissions: ${missingPermissions.map((p) => String(p)).join(", ")}`
-                : null,
+        reason: missingPermissions.length > 0
+            ? `Missing permissions: ${missingPermissions.map(p => String(p)).join(', ')}`
+            : null
     };
 }
 
@@ -185,7 +183,7 @@ export class MessageManager {
         if (
             message.interaction ||
             message.author.id ===
-                this.client.user?.id /* || message.author?.bot*/
+            this.client.user?.id /* || message.author?.bot*/
         )
             return;
         const userId = message.author.id as UUID;
@@ -219,9 +217,7 @@ export class MessageManager {
                 "discord"
             );
 
-            const messageId = stringToUuid(
-                message.id + "-" + this.runtime.agentId
-            );
+            const messageId = stringToUuid(message.id + "-" + this.runtime.agentId);
 
             let shouldIgnore = false;
             let shouldRespond = true;
@@ -232,11 +228,7 @@ export class MessageManager {
                 source: "discord",
                 url: message.url,
                 inReplyTo: message.reference?.messageId
-                    ? stringToUuid(
-                          message.reference.messageId +
-                              "-" +
-                              this.runtime.agentId
-                      )
+                    ? stringToUuid(message.reference.messageId + "-" + this.runtime.agentId)
                     : undefined,
             };
 
@@ -271,11 +263,9 @@ export class MessageManager {
             })) as State;
 
             if (!canSendMessage(message.channel).canSend) {
-                return elizaLog.warn(
-                    `Cannot send message to channel ${message.channel}`,
-                    canSendMessage(message.channel)
-                );
+                return prettyConsole.warn(`Cannot send message to channel ${message.channel}`, canSendMessage(message.channel));
             }
+
 
             if (!shouldIgnore) {
                 shouldIgnore = await this._shouldIgnore(message);
@@ -329,12 +319,8 @@ export class MessageManager {
                 context
             );
 
-            console.log("Response content:", responseContent);
-
             responseContent.text = responseContent.text?.trim();
-            responseContent.inReplyTo = stringToUuid(
-                message.id + "-" + this.runtime.agentId
-            );
+            responseContent.inReplyTo = stringToUuid(message.id + "-" + this.runtime.agentId);
 
             if (!responseContent.text) {
                 return;
@@ -346,9 +332,7 @@ export class MessageManager {
             ) => {
                 try {
                     if (message.id && !content.inReplyTo) {
-                        content.inReplyTo = stringToUuid(
-                            message.id + "-" + this.runtime.agentId
-                        );
+                        content.inReplyTo = stringToUuid(message.id + "-" + this.runtime.agentId);
                     }
                     if (message.channel.type === ChannelType.GuildVoice) {
                         // For voice channels, use text-to-speech
@@ -362,9 +346,7 @@ export class MessageManager {
                             audioStream
                         );
                         const memory: Memory = {
-                            id: stringToUuid(
-                                message.id + "-" + this.runtime.agentId
-                            ),
+                            id: stringToUuid(message.id + "-" + this.runtime.agentId),
                             userId: this.runtime.agentId,
                             agentId: this.runtime.agentId,
                             content,
@@ -394,9 +376,7 @@ export class MessageManager {
                             }
 
                             const memory: Memory = {
-                                id: stringToUuid(
-                                    m.id + "-" + this.runtime.agentId
-                                ),
+                                id: stringToUuid(m.id + "-" + this.runtime.agentId),
                                 userId: this.runtime.agentId,
                                 agentId: this.runtime.agentId,
                                 content: {

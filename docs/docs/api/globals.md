@@ -29,7 +29,7 @@
 - [muteRoom](variables/muteRoom.md)
 - [none](variables/none.md)
 - [orderBookProvider](variables/orderBookProvider.md)
-- [elizaLog](variables/elizaLog.md)
+- [prettyConsole](variables/prettyConsole.md)
 - [shouldContinueTemplate](variables/shouldContinueTemplate.md)
 - [shouldFollowTemplate](variables/shouldFollowTemplate.md)
 - [shouldMuteTemplate](variables/shouldMuteTemplate.md)
