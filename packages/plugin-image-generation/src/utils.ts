@@ -1,8 +1,9 @@
 // TODO: Replace with the vercel ai sdk and support all providers
 import { Buffer } from "buffer";
 import Together from "together-ai";
-import { IAgentRuntime } from "../core/types.ts";
-import { getImageGenModel, ImageGenModel } from "../core/imageGenModels.ts";
+import { IAgentRuntime } from "eliza";
+import { getImageGenModel, ImageGenModel } from "eliza";
+
 import OpenAI from "openai";
 
 export const generateImage = async (
@@ -33,7 +34,7 @@ export const generateImage = async (
 
     try {
         if (imageGenModel === ImageGenModel.TogetherAI) {
-            const together = new Together({ apiKey });
+            const together = new Together({ apiKey: apiKey as string });
             const response = await together.images.create({
                 model: "black-forest-labs/FLUX.1-schnell",
                 prompt,
@@ -68,7 +69,7 @@ export const generateImage = async (
             ) {
                 targetSize = "1024x1024";
             }
-            const openai = new OpenAI({ apiKey });
+            const openai = new OpenAI({ apiKey: apiKey as string });
             const response = await openai.images.generate({
                 model: model.subModel,
                 prompt,
