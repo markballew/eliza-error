@@ -1,5 +1,3 @@
-import fs from "fs";
-
 interface TestResult {
     testName: string;
     attempts: number;
@@ -8,7 +6,7 @@ interface TestResult {
 }
 
 export async function deleteReport() {
-    const { existsSync, unlinkSync } = fs;
+    const { existsSync, unlinkSync } = await import("fs");
 
     // Define the path to the test-report.json file
     const reportPath = "./test-report.json";
@@ -26,7 +24,7 @@ export async function addToReport(
     successful: number,
     successRate: number
 ) {
-    const { existsSync, readFileSync, writeFileSync } = fs;
+    const { existsSync, readFileSync, writeFileSync } = await import("fs");
 
     // Define the path to the test-report.json file
     const reportPath = "./test-report.json";
@@ -67,7 +65,7 @@ export async function addToReport(
 }
 
 export async function logReport() {
-    const { existsSync, readFileSync } = fs;
+    const { existsSync, readFileSync } = await import("fs");
     const colors = await import("ansi-colors");
 
     // Define the path to the test-report.json file

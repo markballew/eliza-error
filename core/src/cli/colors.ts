@@ -1,4 +1,4 @@
-export class elizaLog {
+export class PrettyConsole {
     closeByNewLine = true;
     useIcons = true;
     logsTitle = "LOGS";

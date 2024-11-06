@@ -5,7 +5,7 @@ import {
     State,
     Action,
 } from "../core/types.ts";
-import { elizaLog } from "../index.ts";
+import { prettyConsole } from "../index.ts";
 import { generateCaption, generateImage } from "./imageGenerationUtils.ts";
 
 export const imageGeneration: Action = {
@@ -27,19 +27,19 @@ export const imageGeneration: Action = {
         options: any,
         callback: HandlerCallback
     ) => {
-        elizaLog.log("Composing state for message:", message);
+        prettyConsole.log("Composing state for message:", message);
         state = (await runtime.composeState(message)) as State;
         const userId = runtime.agentId;
-        elizaLog.log("User ID:", userId);
+        prettyConsole.log("User ID:", userId);
 
         const imagePrompt = message.content.text;
-        elizaLog.log("Image prompt received:", imagePrompt);
+        prettyConsole.log("Image prompt received:", imagePrompt);
 
         // TODO: Generate a prompt for the image
 
         const res: { image: string; caption: string }[] = [];
 
-        elizaLog.log("Generating image with prompt:", imagePrompt);
+        prettyConsole.log("Generating image with prompt:", imagePrompt);
         const images = await generateImage(
             {
                 prompt: imagePrompt,
@@ -51,13 +51,13 @@ export const imageGeneration: Action = {
         );
 
         if (images.success && images.data && images.data.length > 0) {
-            elizaLog.log(
+            prettyConsole.log(
                 "Image generation successful, number of images:",
                 images.data.length
             );
             for (let i = 0; i < images.data.length; i++) {
                 const image = images.data[i];
-                elizaLog.log(`Processing image ${i + 1}:`, image);
+                prettyConsole.log(`Processing image ${i + 1}:`, image);
 
                 const caption = await generateCaption(
                     {
@@ -66,7 +66,7 @@ export const imageGeneration: Action = {
                     runtime
                 );
 
-                elizaLog.log(
+                prettyConsole.log(
                     `Generated caption for image ${i + 1}:`,
                     caption.title
                 );
@@ -90,10 +90,11 @@ export const imageGeneration: Action = {
                 );
             }
         } else {
-            elizaLog.error("Image generation failed or returned no data.");
+            prettyConsole.error("Image generation failed or returned no data.");
         }
     },
     examples: [
+
         // TODO: We want to generate images in more abstract ways, not just when asked to generate an image
 
         [
@@ -103,11 +104,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a cat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a cat", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -116,11 +114,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a dog",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a dog", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -129,11 +124,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a cat with a hat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a cat with a hat", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -142,11 +134,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a dog with a hat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a dog with a hat", action: "GENERATE_IMAGE" },
+            }
         ],
         [
             {
@@ -155,11 +144,8 @@ export const imageGeneration: Action = {
             },
             {
                 user: "{{agentName}}",
-                content: {
-                    text: "Here's an image of a cat with a hat",
-                    action: "GENERATE_IMAGE",
-                },
-            },
+                content: { text: "Here's an image of a cat with a hat", action: "GENERATE_IMAGE" },
+            }
         ],
     ],
 } as Action;
