@@ -2,23 +2,18 @@
 
 <img src="./docs/static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
 
-### [For Chinese Version: 中文说明](./README_CN.md)
+_As seen powering [@DegenSpartanAI](https://x.com/degenspartanai) and [@MarcAIndreessen](https://x.com/pmairca)_
 
-## Features
-
-- 🛠 Full-featured Discord, Twitter and Telegram connectors
-- 👥 Multi-agent and room support
-- 📚 Easily ingest and interact with your documents
-- 💾 Retrievable memory and document store
-- 🚀 Highly extensible - create your own actions and clients to extend capabilities
-- ☁️ Supports many models, including local Llama, OpenAI, Anthropic, Groq, and more
-- 📦 Just works!
-
-## What can I use it for?
-- 🤖 Chatbots
-- 🕵️ Autonomous Agents
-- 📈 Business process handling
-- 🎮 Video game NPCs
+-   Multi-agent simulation framework
+-   Add as many unique characters as you want with [characterfile](https://github.com/lalalune/characterfile/)
+-   Full-featured Discord and Twitter connectors, with Discord voice channel support
+-   Full conversational and document RAG memory
+-   Can read links and PDFs, transcribe audio and videos, summarize conversations, and more
+-   Highly extensible - create your own actions and clients to extend Eliza's capabilities
+-   Supports open source and local models (default configured with Nous Hermes Llama 3.1B)
+-   Supports OpenAI for cloud inference on a light-weight device
+-   "Ask Claude" mode for calling Claude on more complex queries
+-   100% Typescript
 
 # Getting Started
 
