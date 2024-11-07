@@ -1,7 +1,7 @@
 # Variable: timeProvider
 
-> `const` **timeProvider**: `Provider`
+> `const` **timeProvider**: [`Provider`](../interfaces/Provider.md)
 
 ## Defined in
 
-[core/src/providers/time.ts:3](https://github.com/ai16z/eliza/blob/d62ba1b3bd238d14ac669409dda20e8446e34da9/core/src/providers/time.ts#L3)
+[core/src/providers/time.ts:3](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/providers/time.ts#L3)

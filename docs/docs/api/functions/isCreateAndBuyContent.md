@@ -4,7 +4,7 @@
 
 ## Parameters
 
-• **runtime**: `IAgentRuntime`
+• **runtime**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
 
 • **content**: `any`
 
@@ -14,4 +14,4 @@
 
 ## Defined in
 
-[core/src/actions/pumpfun.ts:33](https://github.com/ai16z/eliza/blob/d62ba1b3bd238d14ac669409dda20e8446e34da9/core/src/actions/pumpfun.ts#L33)
+[core/src/actions/pumpfun.ts:33](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/actions/pumpfun.ts#L33)
