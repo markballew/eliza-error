@@ -10,9 +10,8 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     // get the charcter, and handle by model type
     const model = models[runtime.character.settings.model];
 
-    if (model !== ModelProvider.OPENAI && model !== ModelProvider.OLLAMA) {
+    if (model !== ModelProvider.OPENAI) {
         return await runtime.llamaService.getEmbeddingResponse(input);
-        //ollama supports embedding api so just use that
     }
 
     const embeddingModel = models[runtime.modelProvider].model.embedding;
@@ -27,8 +26,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            //Authorization: `Bearer ${runtime.token}`,
-            ...(runtime.modelProvider !== ModelProvider.OLLAMA && { Authorization: `Bearer ${runtime.token}` }),
+            Authorization: `Bearer ${runtime.token}`,
         },
         body: JSON.stringify({
             input,
@@ -38,8 +36,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     };
     try {
         const response = await fetch(
-            //`${runtime.serverUrl}/embeddings`,
-            `${runtime.serverUrl}${runtime.modelProvider === ModelProvider.OLLAMA ? '/v1' : ''}/embeddings`,
+            `${runtime.serverUrl}/embeddings`,
             requestOptions
         );
 

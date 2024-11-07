@@ -224,6 +224,7 @@ function splitMessage(content: string): string[] {
 }
 
 function canSendMessage(channel) {
+    console.log("canSendMessage", channel);
     // if it is a DM channel, we can always send messages
     if (channel.type === ChannelType.DM) {
         return {
@@ -442,6 +443,8 @@ export class MessageManager {
                 state,
                 context
             );
+
+            console.log("Response content:", responseContent);
 
             responseContent.text = responseContent.text?.trim();
             responseContent.inReplyTo = stringToUuid(

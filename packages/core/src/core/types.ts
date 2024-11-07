@@ -98,19 +98,6 @@ export type Model = {
     };
 };
 
-export type Models = {
-    [ModelProvider.OPENAI]: Model;
-    [ModelProvider.ANTHROPIC]: Model;
-    [ModelProvider.GROK]: Model;
-    [ModelProvider.GROQ]: Model;
-    [ModelProvider.LLAMACLOUD]: Model;
-    [ModelProvider.LLAMALOCAL]: Model;
-    [ModelProvider.GOOGLE]: Model;
-    [ModelProvider.CLAUDE_VERTEX]: Model;
-    [ModelProvider.REDPILL]: Model;
-    [ModelProvider.OLLAMA]: Model;
-};
-
 export enum ModelProvider {
     OPENAI = "openai",
     ANTHROPIC = "anthropic",
@@ -121,7 +108,7 @@ export enum ModelProvider {
     GOOGLE = "google",
     CLAUDE_VERTEX = "claude_vertex",
     REDPILL = "redpill",
-    OLLAMA = "ollama"
+    GITHUB = "GITHUB",
 }
 
 /**
