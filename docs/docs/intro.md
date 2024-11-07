@@ -6,7 +6,7 @@ sidebar_position: 1
 
 ![](/img/eliza_banner.jpg)
 
-_As seen powering [@DegenSpartanAI](https://x.com/degenspartanai) and [@MarcAIndreessen](https://x.com/pmairca)_
+*As seen powering [@DegenSpartanAI](https://x.com/degenspartanai) and [@MarcAIndreessen](https://x.com/pmairca)*
 
 ## What is Eliza?
 
@@ -24,7 +24,6 @@ Eliza is a powerful multi-agent simulation framework designed to create, deploy,
 ### Communication & Media
 
 - **Multi-Platform Support**:
-
   - Full-featured Discord integration with voice channel support
   - Twitter/X bot capabilities
   - Telegram integration
@@ -41,7 +40,6 @@ Eliza is a powerful multi-agent simulation framework designed to create, deploy,
 ### AI & Technical Features
 
 - **Flexible Model Support**:
-
   - Local inference with open-source models
   - Cloud-based inference through OpenAI
   - Default configuration with Nous Hermes Llama 3.1B
@@ -59,19 +57,16 @@ Eliza is a powerful multi-agent simulation framework designed to create, deploy,
 Eliza can be used to create:
 
 1. **AI Assistants**
-
    - Customer support agents
    - Community moderators
    - Personal assistants
 
 2. **Social Media Personas**
-
    - Automated content creators
    - Engagement bots
    - Brand representatives
 
 3. **Knowledge Workers**
-
    - Research assistants
    - Content analysts
    - Document processors
