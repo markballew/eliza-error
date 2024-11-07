@@ -1,4 +1,5 @@
 import { Readable } from "stream";
+import { ImageGenModel } from "./imageGenModels.ts";
 
 /**
  * Represents a UUID, which is a universally unique identifier conforming to the UUID standard.
@@ -69,12 +70,6 @@ export interface Goal {
     name: string; // The name or title of the goal.
     status: GoalStatus; // The current status of the goal, such as "in progress" or "completed".
     objectives: Objective[]; // A list of objectives that make up the goal.
-}
-
-// TODO: Could be unified into modelclass
-export enum ImageGenModel {
-    TogetherAI = "TogetherAI",
-    Dalle = "Dalle",
 }
 
 export enum ModelClass {
@@ -304,11 +299,6 @@ export type Media = {
     description: string;
     text: string;
 };
-
-export type Client = {
-    start: (runtime: IAgentRuntime) => Promise<unknown>;
-    stop: (runtime: IAgentRuntime) => Promise<unknown>
-}
 
 export type Plugin = {
     name: string;

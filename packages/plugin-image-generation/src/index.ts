@@ -5,8 +5,8 @@ import {
     State,
     Plugin,
     Action,
-} from "@ai16z/eliza";
-import { elizaLogger } from "@ai16z/eliza";
+} from "@eliza/core";
+import { elizaLogger } from "@eliza/core";
 import { generateCaption, generateImage } from "./utils.ts";
 
 const imageGeneration: Action = {
