@@ -110,9 +110,7 @@ export function getTokenForProvider(
             );
         case ModelProvider.ANTHROPIC:
             return (
-                character.settings?.secrets?.ANTHROPIC_API_KEY ||
                 character.settings?.secrets?.CLAUDE_API_KEY ||
-                settings.ANTHROPIC_API_KEY ||
                 settings.CLAUDE_API_KEY
             );
         case ModelProvider.REDPILL:
@@ -246,7 +244,7 @@ export async function startTwitter(runtime: IAgentRuntime) {
         runtime
     );
     await wait();
-    const twitterGenerationClient = new Client.TwitterGenerationClient(runtime);
+    const twitterGenerationClient = new Client.TwitterPostClient(runtime);
 
     return [
         twitterInteractionClient,

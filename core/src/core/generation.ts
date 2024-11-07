@@ -113,8 +113,7 @@ export async function generateText({
 
             case ModelProvider.GROK: {
                 prettyConsole.log("Initializing Grok model.");
-                const serverUrl = models[provider].endpoint;
-                const grok = createOpenAI({ apiKey, baseURL: serverUrl });
+                const grok = createGroq({ apiKey });
 
                 const { text: grokResponse } = await aiGenerateText({
                     model: grok.languageModel(model, {
