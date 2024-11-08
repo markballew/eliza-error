@@ -1,0 +1,16 @@
+{
+    "name": "@ai16z/adapter-postgres",
+    "version": "0.0.1",
+    "main": "src/index.ts",
+    "type": "module",
+    "types": "dist/index.d.ts",
+    "dependencies": {
+        "@ai16z/eliza": "workspace:*",
+        "tsup": "^8.3.5",
+        "pg": "^8.13.1"
+    },
+    "scripts": {
+        "build": "echo 'No build step required'",
+        "dev": "tsup --watch"
+    }
+}

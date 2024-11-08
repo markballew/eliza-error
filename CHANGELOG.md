@@ -1,8 +1,48 @@
 # Changelog
 
-## [Unreleased](https://github.com/ai16z/eliza/tree/HEAD)
+## [v0.0.10](https://github.com/ai16z/eliza/tree/v0.0.10) (2024-11-04)
 
-[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.1...HEAD)
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.9...v0.0.10)
+
+## [v0.0.9](https://github.com/ai16z/eliza/tree/v0.0.9) (2024-11-04)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.8...v0.0.9)
+
+## [v0.0.8](https://github.com/ai16z/eliza/tree/v0.0.8) (2024-11-04)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.7...v0.0.8)
+
+## [v0.0.7](https://github.com/ai16z/eliza/tree/v0.0.7) (2024-11-04)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.6...v0.0.7)
+
+## [v0.0.6](https://github.com/ai16z/eliza/tree/v0.0.6) (2024-11-04)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.5...v0.0.6)
+
+## [v0.0.5](https://github.com/ai16z/eliza/tree/v0.0.5) (2024-11-04)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.4...v0.0.5)
+
+## [v0.0.4](https://github.com/ai16z/eliza/tree/v0.0.4) (2024-11-04)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.3...v0.0.4)
+
+## [v0.0.3](https://github.com/ai16z/eliza/tree/v0.0.3) (2024-11-04)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.2...v0.0.3)
+
+**Closed issues:**
+
+- Get CI/CD working [\#174](https://github.com/ai16z/eliza/issues/174)
+
+**Merged pull requests:**
+
+- Update generate-changelog.yml [\#192](https://github.com/ai16z/eliza/pull/192) ([sirkitree](https://github.com/sirkitree))
+
+## [v0.0.2](https://github.com/ai16z/eliza/tree/v0.0.2) (2024-11-03)
+
+[Full Changelog](https://github.com/ai16z/eliza/compare/v0.0.1...v0.0.2)
 
 **Implemented enhancements:**
 
@@ -31,6 +71,7 @@
 
 **Merged pull requests:**
 
+- 181  generate changelog [\#182](https://github.com/ai16z/eliza/pull/182) ([sirkitree](https://github.com/sirkitree))
 - server port in env [\#179](https://github.com/ai16z/eliza/pull/179) ([alextitonis](https://github.com/alextitonis))
 - prettier log setup, minor cleanups [\#177](https://github.com/ai16z/eliza/pull/177) ([ponderingdemocritus](https://github.com/ponderingdemocritus))
 - postgres updates [\#173](https://github.com/ai16z/eliza/pull/173) ([minghinmatthewlam](https://github.com/minghinmatthewlam))

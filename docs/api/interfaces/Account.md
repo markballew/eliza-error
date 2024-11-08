@@ -1,43 +1,67 @@
----
-id: "Account"
-title: "Interface: Account"
-sidebar_label: "Account"
-sidebar_position: 0
-custom_edit_url: null
----
+# Interface: Account
 
 Represents a user, including their name, details, and a unique identifier.
 
 ## Properties
 
-### avatar_url
-
-• `Optional` **avatar_url**: `string`
-
----
-
-### details
-
-• `Optional` **details**: `Object`
-
-#### Index signature
-
-▪ [key: `string`]: `unknown`
-
----
-
-### email
-
-• `Optional` **email**: `string`
-
----
-
 ### id
 
-• **id**: \`$\{string}-$\{string}-$\{string}-$\{string}-$\{string}\`
+> **id**: \`$\{string\}-$\{string\}-$\{string\}-$\{string\}-$\{string\}\`
 
----
+#### Defined in
+
+[packages/core/src/types.ts:275](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L275)
+
+***
 
 ### name
 
-• **name**: `string`
+> **name**: `string`
+
+#### Defined in
+
+[packages/core/src/types.ts:276](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L276)
+
+***
+
+### username
+
+> **username**: `string`
+
+#### Defined in
+
+[packages/core/src/types.ts:277](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L277)
+
+***
+
+### details?
+
+> `optional` **details**: `object`
+
+#### Index Signature
+
+ \[`key`: `string`\]: `any`
+
+#### Defined in
+
+[packages/core/src/types.ts:278](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L278)
+
+***
+
+### email?
+
+> `optional` **email**: `string`
+
+#### Defined in
+
+[packages/core/src/types.ts:279](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L279)
+
+***
+
+### avatarUrl?
+
+> `optional` **avatarUrl**: `string`
+
+#### Defined in
+
+[packages/core/src/types.ts:280](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L280)

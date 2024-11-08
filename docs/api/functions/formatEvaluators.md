@@ -1,23 +1,21 @@
----
-id: "formatEvaluators"
-title: "Function: formatEvaluators"
-sidebar_label: "formatEvaluators"
-sidebar_position: 0
-custom_edit_url: null
----
+# Function: formatEvaluators()
 
-▸ **formatEvaluators**(`evaluators`): `string`
+> **formatEvaluators**(`evaluators`): `string`
 
 Formats evaluator details into a string, including both the name and description of each evaluator.
 
-#### Parameters
+## Parameters
 
-| Name         | Type                                        | Description                    |
-| :----------- | :------------------------------------------ | :----------------------------- |
-| `evaluators` | [`Evaluator`](../interfaces/Evaluator.md)[] | An array of evaluator objects. |
+• **evaluators**: [`Evaluator`](../interfaces/Evaluator.md)[]
 
-#### Returns
+An array of evaluator objects.
+
+## Returns
 
 `string`
 
 A string that concatenates the name and description of each evaluator, separated by a colon and a newline character.
+
+## Defined in
+
+[packages/core/src/evaluators.ts:41](https://github.com/ai16z/eliza/blob/main/packages/core/src/evaluators.ts#L41)
