@@ -7,6 +7,7 @@ import {
     Content,
     HandlerCallback,
     IAgentRuntime,
+    IImageDescriptionService,
     Memory,
     ModelClass,
     State,
@@ -101,12 +102,6 @@ const telegramMessageHandlerTemplate =
 {{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
 
-# Relevant facts that {{agentName}} knows:
-{{relevantFacts}}
-
-# Recent facts that {{agentName}} has learned:
-{{recentFacts}}
-
 # Task: Generate dialog and actions for the character {{agentName}}.
 About {{agentName}}:
 {{bio}}
@@ -134,7 +129,7 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 export class MessageManager {
     private bot: Telegraf<Context>;
     private runtime: IAgentRuntime;
-    private imageService: ImageDescriptionService;
+    private imageService: IImageDescriptionService;
 
     constructor(bot: Telegraf<Context>, runtime: IAgentRuntime) {
         this.bot = bot;
@@ -175,8 +170,9 @@ export class MessageManager {
             }
 
             if (imageUrl) {
-                const { title, description } =
-                    await this.imageService.describeImage(imageUrl);
+                const { title, description } = await this.imageService
+                    .getInstance()
+                    .describeImage(imageUrl);
                 const fullDescription = `[Image: ${title}\n${description}]`;
                 return { description: fullDescription };
             }

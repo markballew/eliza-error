@@ -1,18 +1,22 @@
-import { Connection } from "@solana/web3.js";
-// import fetch from "cross-fetch";
-import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza/src/types.ts";
 import settings from "@ai16z/eliza/src/settings.ts";
-import { toBN } from "@ai16z/eliza/src/utils/bignumber.ts";
 import {
-    ProcessedTokenData,
-    TokenSecurityData,
-    TokenTradeData,
+    IAgentRuntime,
+    Memory,
+    Provider,
+    State,
+} from "@ai16z/eliza/src/types.ts";
+import {
     DexScreenerData,
     //   DexScreenerPair,
     HolderData,
+    ProcessedTokenData,
+    TokenSecurityData,
+    TokenTradeData,
 } from "@ai16z/eliza/src/types/token.ts";
-import NodeCache from "node-cache";
+import { toBN } from "@ai16z/eliza/src/utils/bignumber.ts";
+import { Connection } from "@solana/web3.js";
 import * as fs from "fs";
+import NodeCache from "node-cache";
 import * as path from "path";
 
 const PROVIDER_CONFIG = {
@@ -43,14 +47,13 @@ export class TokenProvider {
         const __dirname = path.resolve();
 
         // Find the 'eliza' folder in the filepath and adjust the cache directory path
-        const elizaIndex = __dirname.indexOf('eliza');
+        const elizaIndex = __dirname.indexOf("eliza");
         if (elizaIndex !== -1) {
             const pathToEliza = __dirname.slice(0, elizaIndex + 5); // include 'eliza'
-            this.cacheDir = path.join(pathToEliza, 'cache');
+            this.cacheDir = path.join(pathToEliza, "cache");
         } else {
-            this.cacheDir = path.join(__dirname, 'cache');
+            this.cacheDir = path.join(__dirname, "cache");
         }
-
 
         this.cacheDir = path.join(__dirname, "cache");
         if (!fs.existsSync(this.cacheDir)) {

@@ -1,5 +1,4 @@
 import { names, uniqueNamesGenerator } from "unique-names-generator";
-// import { formatFacts } from "../evaluators/fact.ts";
 import {
     composeActionExamples,
     formatActionNames,
@@ -43,7 +42,6 @@ import {
     type Memory,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
-
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -116,11 +114,6 @@ export class AgentRuntime implements IAgentRuntime {
     descriptionManager: IMemoryManager;
 
     /**
-     * Manage the fact and recall of facts.
-     */
-    factManager: IMemoryManager;
-
-    /**
      * Manage the creation and recall of static information (documents, historical game lore, etc)
      */
     loreManager: IMemoryManager;
@@ -140,11 +133,13 @@ export class AgentRuntime implements IAgentRuntime {
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
-            throw new Error('Memory manager must have a tableName');
+            throw new Error("Memory manager must have a tableName");
         }
 
         if (this.memoryManagers.has(manager.tableName)) {
-            console.warn(`Memory manager ${manager.tableName} is already registered. Skipping registration.`);
+            console.warn(
+                `Memory manager ${manager.tableName} is already registered. Skipping registration.`
+            );
             return;
         }
 
@@ -154,7 +149,7 @@ export class AgentRuntime implements IAgentRuntime {
     getMemoryManager(tableName: string): IMemoryManager | null {
         return this.memoryManagers.get(tableName) || null;
     }
-    
+
     getService<T>(service: ServiceType): T | null {
         const serviceInstance = this.services.get(service);
         if (!serviceInstance) {
@@ -165,12 +160,15 @@ export class AgentRuntime implements IAgentRuntime {
     }
     registerService(service: Service): void {
         const serviceType = (service as typeof Service).serviceType;
+        console.log("Registering service:", serviceType);
         if (this.services.has(serviceType)) {
-            console.warn(`Service ${serviceType} is already registered. Skipping registration.`);
+            console.warn(
+                `Service ${serviceType} is already registered. Skipping registration.`
+            );
             return;
         }
 
-        this.services.set((service.constructor as typeof Service).serviceType, service);
+        this.services.set((service as typeof Service).serviceType, service);
     }
 
     /**
@@ -236,12 +234,6 @@ export class AgentRuntime implements IAgentRuntime {
             tableName: "descriptions",
         });
 
-        // TODO: register fact manager
-        // this.factManager = new MemoryManager({
-        //     runtime: this,
-        //     tableName: "facts",
-        // });
-
         this.loreManager = new MemoryManager({
             runtime: this,
             tableName: "lore",
@@ -272,23 +264,25 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.token = opts.token;
 
-        ([...(opts.character.plugins || []), ...(opts.plugins || [])]).forEach((plugin) => {
-            plugin.actions?.forEach((action) => {
-                this.registerAction(action);
-            });
+        [...(opts.character.plugins || []), ...(opts.plugins || [])].forEach(
+            (plugin) => {
+                plugin.actions?.forEach((action) => {
+                    this.registerAction(action);
+                });
 
-            plugin.evaluators?.forEach((evaluator) => {
-                this.registerEvaluator(evaluator);
-            });
+                plugin.evaluators?.forEach((evaluator) => {
+                    this.registerEvaluator(evaluator);
+                });
 
-            plugin.providers?.forEach((provider) => {
-                this.registerContextProvider(provider);
-            });
+                plugin.providers?.forEach((provider) => {
+                    this.registerContextProvider(provider);
+                });
 
-            plugin.services?.forEach((service) => {
-                this.registerService(service);
-            });
-        });
+                plugin.services?.forEach((service) => {
+                    this.registerService(service);
+                });
+            }
+        );
 
         (opts.actions ?? []).forEach((action) => {
             this.registerAction(action);
@@ -300,7 +294,7 @@ export class AgentRuntime implements IAgentRuntime {
 
         (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
             this.registerEvaluator(evaluator);
-        })
+        });
 
         if (
             opts.character &&
@@ -671,13 +665,10 @@ export class AgentRuntime implements IAgentRuntime {
         const { userId, roomId } = message;
 
         const conversationLength = this.getConversationLength();
-        // const recentFactsCount = Math.ceil(this.getConversationLength() / 2);
-        // const relevantFactsCount = Math.ceil(this.getConversationLength() / 2);
 
-        const [actorsData, recentMessagesData, /*recentFactsData,*/ goalsData]: [
+        const [actorsData, recentMessagesData, goalsData]: [
             Actor[],
             Memory[],
-            /*Memory[],*/
             Goal[],
         ] = await Promise.all([
             getActorDetails({ runtime: this, roomId }),
@@ -687,11 +678,6 @@ export class AgentRuntime implements IAgentRuntime {
                 count: conversationLength,
                 unique: false,
             }),
-            // this.factManager.getMemories({
-            //     agentId: this.agentId,
-            //     roomId,
-            //     count: recentFactsCount,
-            // }),
             getGoals({
                 runtime: this,
                 count: 10,
@@ -701,25 +687,6 @@ export class AgentRuntime implements IAgentRuntime {
         ]);
 
         const goals = formatGoalsAsString({ goals: goalsData });
-
-        // let relevantFactsData: Memory[] = [];
-
-        // if (recentFactsData.length > recentFactsCount) {
-        //     relevantFactsData = (
-        //         await this.factManager.searchMemoriesByEmbedding(
-        //             recentFactsData[0].embedding!,
-        //             {
-        //                 roomId,
-        //                 agentId: this.agentId,
-        //                 count: relevantFactsCount,
-        //             }
-        //         )
-        //     ).filter((fact: Memory) => {
-        //         return !recentFactsData.find(
-        //             (recentFact: Memory) => recentFact.id === fact.id
-        //         );
-        //     });
-        // }
 
         const actors = formatActors({ actors: actorsData ?? [] });
 
@@ -733,9 +700,6 @@ export class AgentRuntime implements IAgentRuntime {
             actors: actorsData,
             conversationHeader: false,
         });
-
-        // const recentFacts = formatFacts(recentFactsData);
-        // const relevantFacts = formatFacts(relevantFactsData);
 
         // const lore = formatLore(loreData);
 
@@ -1049,16 +1013,6 @@ Text: ${attachment.text}
                     ? addHeader("# Posts in Thread", recentPosts)
                     : "",
             recentMessagesData,
-            // recentFacts:
-            //     recentFacts && recentFacts.length > 0
-            //         ? addHeader("# Recent Facts", recentFacts)
-            //         : "",
-            // recentFactsData,
-            // relevantFacts:
-            //     relevantFacts && relevantFacts.length > 0
-            //         ? addHeader("# Relevant Facts", relevantFacts)
-            //         : "",
-            // relevantFactsData,
             attachments:
                 formattedAttachments && formattedAttachments.length > 0
                     ? addHeader("# Attachments", formattedAttachments)

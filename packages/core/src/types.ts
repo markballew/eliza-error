@@ -125,7 +125,7 @@ export enum ModelProviderName {
     GOOGLE = "google",
     CLAUDE_VERTEX = "claude_vertex",
     REDPILL = "redpill",
-    OLLAMA = "ollama"
+    OLLAMA = "ollama",
 }
 
 /**
@@ -147,10 +147,6 @@ export interface State {
     goalsData?: Goal[]; // An optional array of goal objects relevant to the current conversation or context.
     recentMessages: string; // A string representation of recent messages in the conversation, for context.
     recentMessagesData: Memory[]; // An array of memory objects representing recent messages in the conversation.
-    recentFacts?: string; // An optional string representation of recent facts derived from the conversation.
-    recentFactsData?: Memory[]; // An optional array of memory objects representing recent facts.
-    relevantFacts?: string; // An optional string representation of facts relevant to the current context or topic.
-    relevantFactsData?: Memory[]; // An optional array of memory objects representing relevant facts.
     actionNames?: string; // An optional string listing the names of actions that are valid in the current state.
     actions?: string; // An optional string representation of actions and their descriptions, relevant to the current state.
     actionsData?: Action[]; // An optional array of action objects relevant to the current state.
@@ -306,8 +302,8 @@ export type Media = {
 
 export type Client = {
     start: (runtime?: IAgentRuntime) => Promise<unknown>;
-    stop: (runtime?: IAgentRuntime) => Promise<unknown>
-}
+    stop: (runtime?: IAgentRuntime) => Promise<unknown>;
+};
 
 export type Plugin = {
     name: string;
@@ -531,14 +527,12 @@ export interface IAgentRuntime {
     messageManager: IMemoryManager;
     descriptionManager: IMemoryManager;
     loreManager: IMemoryManager;
-    factManager: IMemoryManager; // move me
-
 
     services: Map<ServiceType, Service>;
     registerMemoryManager(manager: IMemoryManager): void;
 
     getMemoryManager(name: string): IMemoryManager | null;
-    
+
     getService<Service>(service: string): Service | null;
 
     registerService(service: Service): void;
@@ -579,6 +573,7 @@ export interface IAgentRuntime {
 }
 
 export interface IImageDescriptionService extends Service {
+    getInstance(): IImageDescriptionService;
     initialize(modelId?: string | null, device?: string | null): Promise<void>;
     describeImage(
         imageUrl: string
@@ -586,21 +581,23 @@ export interface IImageDescriptionService extends Service {
 }
 
 export interface ITranscriptionService extends Service {
-    transcribeAttachment(audioBuffer: ArrayBuffer, runtime: IAgentRuntime): Promise<string | null>;
+    transcribeAttachment(audioBuffer: ArrayBuffer): Promise<string | null>;
     transcribeAttachmentLocally(
-        audioBuffer: ArrayBuffer,
-        runtime: IAgentRuntime
+        audioBuffer: ArrayBuffer
     ): Promise<string | null>;
-    transcribe(audioBuffer: ArrayBuffer, runtime: IAgentRuntime): Promise<string | null>;
-    transcribeLocally(audioBuffer: ArrayBuffer, runtime: IAgentRuntime): Promise<string | null>;
+    transcribe(audioBuffer: ArrayBuffer): Promise<string | null>;
+    transcribeLocally(audioBuffer: ArrayBuffer): Promise<string | null>;
 }
 
 export interface IVideoService extends Service {
     isVideoUrl(url: string): boolean;
     processVideo(url: string): Promise<Media>;
+    fetchVideoInfo(url: string): Promise<Media>;
+    downloadVideo(videoInfo: Media): Promise<string>;
 }
 
 export interface ITextGenerationService extends Service {
+    getInstance(): ITextGenerationService;
     initializeModel(): Promise<void>;
     queueMessageCompletion(
         context: string,

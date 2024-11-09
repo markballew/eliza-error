@@ -1,10 +1,5 @@
 import dotenv from "dotenv";
-import {
-    Content,
-    IAgentRuntime,
-    Memory,
-    type UUID,
-} from "../src/types.ts";
+import { Content, IAgentRuntime, Memory, type UUID } from "../src/types.ts";
 import { zeroUuid } from "../src/test_resources/constants.ts";
 import { createRuntime } from "../src/test_resources/createRuntime.ts";
 import { Goodbye1 } from "../src/test_resources/data.ts";
@@ -14,6 +9,7 @@ import { runAiTest } from "../src/test_resources/runAiTest.ts";
 import { type User } from "../src/test_resources/types.ts";
 import action from "../src/actions/continue.ts";
 import ignore from "../src/actions/ignore.ts";
+import { MemoryManager } from "@ai16z/eliza/src/memory.ts";
 
 dotenv.config({ path: ".dev.vars" });
 
@@ -74,7 +70,12 @@ describe("User Profile", () => {
     });
 
     async function cleanup() {
-        await runtime.factManager.removeAllMemories(roomId);
+        const factsManager = new MemoryManager({
+            runtime,
+            tableName: "facts",
+        });
+
+        await factsManager.removeAllMemories(roomId);
         await runtime.messageManager.removeAllMemories(roomId);
     }
 

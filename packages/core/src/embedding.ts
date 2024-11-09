@@ -1,5 +1,10 @@
 import models from "./models.ts";
-import { IAgentRuntime, ITextGenerationService, ModelProviderName, ServiceType } from "./types.ts";
+import {
+    IAgentRuntime,
+    ITextGenerationService,
+    ModelProviderName,
+    ServiceType,
+} from "./types.ts";
 
 /**
  * Send a message to the OpenAI API for embedding.
@@ -8,26 +13,37 @@ import { IAgentRuntime, ITextGenerationService, ModelProviderName, ServiceType }
  */
 export async function embed(runtime: IAgentRuntime, input: string) {
     // get the charcter, and handle by model type
-    const model = models[runtime.character.settings.model];
+    const modelProvider = models[runtime.character.modelProvider];
+    const embeddingModel = modelProvider.model.embedding;
 
-    if (model !== ModelProviderName.OPENAI && model !== ModelProviderName.OLLAMA) {
-        return await runtime.getService<ITextGenerationService>(ServiceType.TEXT_GENERATION).getEmbeddingResponse(input);
+    if (
+        runtime.character.modelProvider !== ModelProviderName.OPENAI &&
+        runtime.character.modelProvider !== ModelProviderName.OLLAMA
+    ) {
+        const service = runtime.getService<ITextGenerationService>(
+            ServiceType.TEXT_GENERATION
+        );
+        
+        const instance = service?.getInstance();
+
+        if (instance) {
+            return await instance.getEmbeddingResponse(input);
+        }
     }
-
-    const embeddingModel = models[runtime.modelProvider].model.embedding;
-
     // Check if we already have the embedding in the lore
-    const cachedEmbedding = await retrieveCachedEmbedding(runtime, input);
-    if (cachedEmbedding) {
-        return cachedEmbedding;
-    }
+    // const cachedEmbedding = await retrieveCachedEmbedding(runtime, input);
+    // if (cachedEmbedding) {
+    //     return cachedEmbedding;
+    // }
 
     const requestOptions = {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            //Authorization: `Bearer ${runtime.token}`,
-            ...(runtime.modelProvider !== ModelProviderName.OLLAMA && { Authorization: `Bearer ${runtime.token}` }),
+            // TODO: make this not hardcoded
+            ...(runtime.modelProvider !== ModelProviderName.OLLAMA && {
+                Authorization: `Bearer ${runtime.token}`,
+            }),
         },
         body: JSON.stringify({
             input,
@@ -37,8 +53,8 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     };
     try {
         const response = await fetch(
-            //`${runtime.serverUrl}/embeddings`,
-            `${runtime.serverUrl}${runtime.modelProvider === ModelProviderName.OLLAMA ? '/v1' : ''}/embeddings`,
+            // TODO: make this not hardcoded
+            `${runtime.character.modelEndpointOverride || modelProvider.endpoint}${runtime.character.modelProvider === ModelProviderName.OLLAMA ? "/v1" : ""}/embeddings`,
             requestOptions
         );
 
@@ -68,6 +84,11 @@ export async function retrieveCachedEmbedding(
     runtime: IAgentRuntime,
     input: string
 ) {
+    if(!input) {
+        console.log("No input to retrieve cached embedding for");
+        return null;
+    }
+
     const similaritySearchResult =
         await runtime.messageManager.getCachedEmbeddings(input);
     if (similaritySearchResult.length > 0) {

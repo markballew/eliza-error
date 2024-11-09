@@ -1,4 +1,4 @@
-console.log("ok")
+console.log("ok");
 import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres/src/index.ts";
 import { SqliteDatabaseAdapter } from "@ai16z/adapter-sqlite/src/index.ts";
 import { DirectClientInterface } from "@ai16z/client-direct/src/index.ts";
@@ -11,9 +11,10 @@ import settings from "@ai16z/eliza/src/settings.ts";
 import {
     Character,
     IAgentRuntime,
-    IDatabaseAdapter, ModelProviderName,
+    IDatabaseAdapter,
+    ModelProviderName,
 } from "@ai16z/eliza/src/types.ts";
-import { defaultPlugin } from "@ai16z/plugin-bootstrap/src/index.ts";
+import { bootstrapPlugin } from "@ai16z/plugin-bootstrap/src/index.ts";
 import { nodePlugin } from "@ai16z/plugin-node/src/index.ts";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -48,7 +49,9 @@ export function parseArguments(): {
     }
 }
 
-export async function loadCharacters(charactersArg: string): Promise<Character[]> {
+export async function loadCharacters(
+    charactersArg: string
+): Promise<Character[]> {
     let characterPaths = charactersArg
         ?.split(",")
         .map((path) => path.trim())
@@ -76,15 +79,16 @@ export async function loadCharacters(charactersArg: string): Promise<Character[]
                 if (character.plugins) {
                     console.log("Plugins are: ", character.plugins);
 
-                    const importedPlugins = await Promise.all(character.plugins.map(async (plugin) => {
+                    const importedPlugins = await Promise.all(
+                        character.plugins.map(async (plugin) => {
+                            // if the plugin name doesnt start with @eliza,
 
-                        // if the plugin name doesnt start with @eliza, 
+                            const importedPlugin = await import(plugin);
+                            return importedPlugin;
+                        })
+                    );
 
-                        const importedPlugin = await import(plugin)
-                        return importedPlugin
-                    }))
-
-                    character.plugins = importedPlugins
+                    character.plugins = importedPlugins;
                 }
 
                 loadedCharacters.push(character);
@@ -130,7 +134,7 @@ export function getTokenForProvider(
 export async function createDirectRuntime(
     character: Character,
     db: IDatabaseAdapter,
-    token: string,
+    token: string
 ) {
     console.log("Creating runtime for character", character.name);
     return new AgentRuntime({
@@ -165,14 +169,14 @@ export async function initializeClients(
     const clientTypes =
         character.clients?.map((str) => str.toLowerCase()) || [];
 
-    // if (clientTypes.includes("discord")) {
-    //     clients.push(await DiscordClientInterface.start(runtime));
-    // }
+    if (clientTypes.includes("discord")) {
+        clients.push(await DiscordClientInterface.start(runtime));
+    }
 
-    // if (clientTypes.includes("telegram")) {
-    //     const telegramClient = await TelegramClientInterface.start(runtime);
-    //     if (telegramClient) clients.push(telegramClient);
-    // }
+    if (clientTypes.includes("telegram")) {
+        const telegramClient = await TelegramClientInterface.start(runtime);
+        if (telegramClient) clients.push(telegramClient);
+    }
 
     if (clientTypes.includes("twitter")) {
         const twitterClients = await TwitterClientInterface.start(runtime);
@@ -185,7 +189,7 @@ export async function initializeClients(
 export async function createAgent(
     character: Character,
     db: any,
-    token: string,
+    token: string
 ) {
     console.log("Creating runtime for character", character.name);
     return new AgentRuntime({
@@ -194,7 +198,7 @@ export async function createAgent(
         modelProvider: character.modelProvider,
         evaluators: [],
         character,
-        plugins: [defaultPlugin, nodePlugin],
+        plugins: [bootstrapPlugin, nodePlugin],
         providers: [],
         actions: [],
         services: [],
@@ -227,7 +231,7 @@ async function startAgent(character: Character, directClient: any) {
 }
 
 const startAgents = async () => {
-    const directClient = (await DirectClientInterface.start());
+    const directClient = await DirectClientInterface.start();
     const args = parseArguments();
 
     let charactersArg = args.characters || args.character;
@@ -237,7 +241,6 @@ const startAgents = async () => {
     if (charactersArg) {
         characters = await loadCharacters(charactersArg);
     }
-
 
     try {
         for (const character of characters) {
@@ -251,7 +254,7 @@ const startAgents = async () => {
         const agentId = characters[0].name ?? "Agent";
         rl.question("You: ", (input) => handleUserInput(input, agentId));
     }
-    
+
     console.log("Chat started. Type 'exit' to quit.");
     chat();
 };
@@ -289,11 +292,8 @@ async function handleUserInput(input, agentId) {
         );
 
         const data = await response.json();
-        data.forEach((message) =>
-            console.log(`${"Agent"}: ${message.text}`)
-        );
+        data.forEach((message) => console.log(`${"Agent"}: ${message.text}`));
     } catch (error) {
         console.error("Error fetching response:", error);
     }
 }
-

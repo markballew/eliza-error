@@ -6,7 +6,6 @@ import {
     VersionedTransaction,
 } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
-import fetch from "cross-fetch";
 import { v4 as uuidv4 } from "uuid";
 import { TrustScoreDatabase } from "@ai16z/eliza/src/adapters/trustScoreDatabase.ts";
 import { composeContext } from "@ai16z/eliza/src/context.ts";
@@ -23,7 +22,10 @@ import {
 } from "@ai16z/eliza/src/types.ts";
 import { TokenProvider } from "@ai16z/eliza/src/providers/token.ts";
 import { TrustScoreProvider } from "@ai16z/eliza/src/providers/trustScoreProvider.ts";
-import { walletProvider, WalletProvider } from "@ai16z/eliza/src/providers/wallet.ts";
+import {
+    walletProvider,
+    WalletProvider,
+} from "@ai16z/eliza/src/providers/wallet.ts";
 import { getTokenDecimals } from "./swapUtils.ts";
 
 async function swapToken(
