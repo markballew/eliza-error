@@ -12,22 +12,18 @@
 
 > **description**: `string`
 
-### actions?
+### actions
 
-> `optional` **actions**: [`Action`](../interfaces/Action.md)[]
+> **actions**: [`Action`](../interfaces/Action.md)[]
 
-### providers?
+### providers
 
-> `optional` **providers**: [`Provider`](../interfaces/Provider.md)[]
+> **providers**: [`Provider`](../interfaces/Provider.md)[]
 
-### evaluators?
+### evaluators
 
-> `optional` **evaluators**: [`Evaluator`](../interfaces/Evaluator.md)[]
-
-### services?
-
-> `optional` **services**: [`Service`](../classes/Service.md)[]
+> **evaluators**: [`Evaluator`](../interfaces/Evaluator.md)[]
 
 ## Defined in
 
-[packages/core/src/types.ts:308](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L308)
+[packages/core/src/core/types.ts:303](https://github.com/ai16z/eliza/blob/main/packages/core/src/core/types.ts#L303)

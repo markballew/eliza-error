@@ -1,223 +1,75 @@
-import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres/src/index.ts";
-import { SqliteDatabaseAdapter } from "@ai16z/adapter-sqlite/src/index.ts";
-import { DirectClientInterface } from "@ai16z/client-direct/src/index.ts";
-import { DiscordClientInterface } from "@ai16z/client-discord/src/index.ts";
-import { TelegramClientInterface } from "@ai16z/client-telegram/src/index.ts";
-import { TwitterClientInterface } from "@ai16z/client-twitter/src/index.ts";
-import { defaultCharacter } from "@ai16z/eliza/src/defaultCharacter.ts";
-import { AgentRuntime } from "@ai16z/eliza/src/runtime.ts";
-import settings from "@ai16z/eliza/src/settings.ts";
 import {
+    AgentRuntime,
+    boredomProvider,
     Character,
+    defaultActions,
+    defaultCharacter,
+    DirectClient,
+    followRoom,
+    getTokenForProvider,
     IAgentRuntime,
-    IDatabaseAdapter,
-    ModelProviderName,
-} from "@ai16z/eliza/src/types.ts";
-import { bootstrapPlugin } from "@ai16z/plugin-bootstrap/src/index.ts";
-import { solanaPlugin } from "@ai16z/plugin-solana/src/index.ts";
-import { nodePlugin } from "@ai16z/plugin-node/src/index.ts";
-import Database from "better-sqlite3";
-import fs from "fs";
+    settings,
+    initializeClients,
+    initializeDatabase,
+    loadActionConfigs,
+    loadCharacters,
+    loadCustomActions,
+    muteRoom,
+    parseArguments,
+    timeProvider,
+    unfollowRoom,
+    unmuteRoom,
+    walletProvider,
+} from "@eliza/core";
 import readline from "readline";
-import yargs from "yargs";
+const args = parseArguments();
 
-export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
-    const waitTime =
-        Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
-    return new Promise((resolve) => setTimeout(resolve, waitTime));
-};
+let charactersArg = args.characters || args.character;
 
-export function parseArguments(): {
-    character?: string;
-    characters?: string;
-} {
-    try {
-        return yargs(process.argv.slice(2))
-            .option("character", {
-                type: "string",
-                description: "Path to the character JSON file",
-            })
-            .option("characters", {
-                type: "string",
-                description:
-                    "Comma separated list of paths to character JSON files",
-            })
-            .parseSync();
-    } catch (error) {
-        console.error("Error parsing arguments:", error);
-        return {};
-    }
+let characters = [defaultCharacter];
+
+if (charactersArg) {
+    characters = loadCharacters(charactersArg);
 }
 
-export async function loadCharacters(
-    charactersArg: string
-): Promise<Character[]> {
-    let characterPaths = charactersArg
-        ?.split(",")
-        .map((path) => path.trim())
-        .map((path) => {
-            if (path.startsWith("../characters")) {
-                return `../${path}`;
-            }
-            if (path.startsWith("characters")) {
-                return `../../${path}`;
-            }
-            if (path.startsWith("./characters")) {
-                return `../.${path}`;
-            }
-            return path;
-        });
+const directClient = new DirectClient();
 
-    const loadedCharacters = [];
-
-    if (characterPaths?.length > 0) {
-        for (const path of characterPaths) {
-            try {
-                const character = JSON.parse(fs.readFileSync(path, "utf8"));
-
-                // is there a "plugins" field?
-                if (character.plugins) {
-                    console.log("Plugins are: ", character.plugins);
-
-                    const importedPlugins = await Promise.all(
-                        character.plugins.map(async (plugin) => {
-                            // if the plugin name doesnt start with @eliza,
-
-                            const importedPlugin = await import(plugin);
-                            return importedPlugin;
-                        })
-                    );
-
-                    character.plugins = importedPlugins;
-                }
-
-                loadedCharacters.push(character);
-            } catch (e) {
-                console.error(`Error loading character from ${path}: ${e}`);
-            }
-        }
-    }
-
-    if (loadedCharacters.length === 0) {
-        console.log("No characters found, using default character");
-        loadedCharacters.push(defaultCharacter);
-    }
-
-    return loadedCharacters;
-}
-
-export function getTokenForProvider(
-    provider: ModelProviderName,
-    character: Character
-) {
-    switch (provider) {
-        case ModelProviderName.OPENAI:
-            return (
-                character.settings?.secrets?.OPENAI_API_KEY ||
-                settings.OPENAI_API_KEY
-            );
-        case ModelProviderName.ANTHROPIC:
-            return (
-                character.settings?.secrets?.ANTHROPIC_API_KEY ||
-                character.settings?.secrets?.CLAUDE_API_KEY ||
-                settings.ANTHROPIC_API_KEY ||
-                settings.CLAUDE_API_KEY
-            );
-        case ModelProviderName.REDPILL:
-            return (
-                character.settings?.secrets?.REDPILL_API_KEY ||
-                settings.REDPILL_API_KEY
-            );
-        case ModelProviderName.OPENROUTER:
-            return (
-                character.settings?.secrets?.OPENROUTER ||
-                settings.OPENROUTER_API_KEY
-            );
-    }
-}
-
-export async function createDirectRuntime(
-    character: Character,
-    db: IDatabaseAdapter,
-    token: string
-) {
-    console.log("Creating runtime for character", character.name);
-    return new AgentRuntime({
-        databaseAdapter: db,
-        token,
-        modelProvider: character.modelProvider,
-        evaluators: [],
-        character,
-        plugins: [],
-        providers: [],
-        actions: [],
-        services: [],
-        managers: [],
-    });
-}
-
-function initializeDatabase() {
-    if (process.env.POSTGRES_URL) {
-        return new PostgresDatabaseAdapter({
-            connectionString: process.env.POSTGRES_URL,
-        });
-    } else {
-        return new SqliteDatabaseAdapter(new Database("./db.sqlite"));
-    }
-}
-
-export async function initializeClients(
-    character: Character,
-    runtime: IAgentRuntime
-) {
-    const clients = [];
-    const clientTypes =
-        character.clients?.map((str) => str.toLowerCase()) || [];
-
-    if (clientTypes.includes("discord")) {
-        clients.push(await DiscordClientInterface.start(runtime));
-    }
-
-    if (clientTypes.includes("telegram")) {
-        const telegramClient = await TelegramClientInterface.start(runtime);
-        if (telegramClient) clients.push(telegramClient);
-    }
-
-    if (clientTypes.includes("twitter")) {
-        const twitterClients = await TwitterClientInterface.start(runtime);
-        clients.push(twitterClients);
-    }
-
-    return clients;
-}
+const serverPort = parseInt(settings.SERVER_PORT || "3000");
+directClient.start(serverPort);
 
 export async function createAgent(
     character: Character,
     db: any,
-    token: string
+    token: string,
+    configPath: string = "./elizaConfig.yaml"
 ) {
-    console.log("Creating runtime for character", character.name);
     return new AgentRuntime({
         databaseAdapter: db,
         token,
         modelProvider: character.modelProvider,
         evaluators: [],
         character,
-        plugins: [
-            bootstrapPlugin,
-            nodePlugin,
-            character.settings.secrets.WALLET_PUBLIC_KEY
-                ? solanaPlugin
-                : null
+        providers: [
+            timeProvider,
+            boredomProvider,
+            (character.settings?.secrets?.WALLET_PUBLIC_KEY !== undefined) && walletProvider,
         ].filter(Boolean),
-        providers: [],
-        actions: [],
-        services: [],
-        managers: [],
+        actions: [
+            ...defaultActions,
+
+            // Custom actions
+            followRoom,
+            unfollowRoom,
+            unmuteRoom,
+            muteRoom,
+
+            // imported from elizaConfig.yaml
+            ...(await loadCustomActions(loadActionConfigs(configPath))),
+        ],
     });
 }
 
-async function startAgent(character: Character, directClient: any) {
+async function startAgent(character: Character) {
     try {
         const token = getTokenForProvider(character.modelProvider, character);
         const db = initializeDatabase();
@@ -242,32 +94,13 @@ async function startAgent(character: Character, directClient: any) {
 }
 
 const startAgents = async () => {
-    const directClient = await DirectClientInterface.start();
-    const args = parseArguments();
-
-    let charactersArg = args.characters || args.character;
-
-    let characters = [defaultCharacter];
-
-    if (charactersArg) {
-        characters = await loadCharacters(charactersArg);
-    }
-
     try {
         for (const character of characters) {
-            await startAgent(character, directClient);
+            await startAgent(character);
         }
     } catch (error) {
         console.error("Error starting agents:", error);
     }
-
-    function chat() {
-        const agentId = characters[0].name ?? "Agent";
-        rl.question("You: ", (input) => handleUserInput(input, agentId));
-    }
-
-    console.log("Chat started. Type 'exit' to quit.");
-    chat();
 };
 
 startAgents().catch((error) => {
@@ -280,15 +113,14 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-async function handleUserInput(input, agentId) {
+async function handleUserInput(input) {
     if (input.toLowerCase() === "exit") {
         rl.close();
         return;
     }
 
+    const agentId = characters[0].name.toLowerCase();
     try {
-        const serverPort = parseInt(settings.SERVER_PORT || "3000");
-
         const response = await fetch(
             `http://localhost:${serverPort}/${agentId}/message`,
             {
@@ -303,8 +135,19 @@ async function handleUserInput(input, agentId) {
         );
 
         const data = await response.json();
-        data.forEach((message) => console.log(`${"Agent"}: ${message.text}`));
+        data.forEach((message) =>
+            console.log(`${characters[0].name}: ${message.text}`)
+        );
     } catch (error) {
         console.error("Error fetching response:", error);
     }
+
+    chat();
 }
+
+function chat() {
+    rl.question("You: ", handleUserInput);
+}
+
+console.log("Chat started. Type 'exit' to quit.");
+chat();

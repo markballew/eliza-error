@@ -1,9 +1,5 @@
 # Interface: IPdfService
 
-## Extends
-
-- [`Service`](../classes/Service.md)
-
 ## Methods
 
 ### convertPdfToText()
@@ -20,4 +16,4 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:634](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L634)
+[packages/core/src/core/types.ts:611](https://github.com/ai16z/eliza/blob/main/packages/core/src/core/types.ts#L611)
