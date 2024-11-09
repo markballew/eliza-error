@@ -15,9 +15,8 @@
         "watch": "tsc --watch",
         "dev": "tsup --format esm --dts --watch",
         "build:docs": "cd docs && pnpm run build",
-        "postinstall": "npx playwright install-deps && npx playwright install",
-        "test": "vitest",
-        "test:watch": "vitest --watch"
+        "test": "jest --runInBand",
+        "test:watch": "jest --runInBand --watch"
     },
     "author": "",
     "license": "MIT",
@@ -64,6 +63,7 @@
         "@types/uuid": "^10.0.0",
         "ai": "^3.4.23",
         "anthropic-vertex-ai": "^1.0.0",
+        "fastembed": "^1.14.1",
         "gaxios": "6.7.1",
         "glob": "11.0.0",
         "js-sha1": "0.7.0",
@@ -73,7 +73,6 @@
         "tinyld": "1.3.4",
         "together-ai": "^0.7.0",
         "unique-names-generator": "4.7.1",
-        "uuid": "11.0.2",
-        "vitest": "^2.1.4"
+        "uuid": "11.0.2"
     }
 }

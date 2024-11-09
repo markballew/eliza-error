@@ -1,10 +1,25 @@
+import { EmbeddingModel, FlagEmbedding } from "fastembed";
+import path from "path";
+import { fileURLToPath } from "url";
 import models from "./models.ts";
 import {
     IAgentRuntime,
-    ITextGenerationService,
-    ModelProviderName,
-    ServiceType,
+    ModelProviderName
 } from "./types.ts";
+import fs from "fs";
+import { trimTokens } from "./generation.ts";
+
+function getRootPath() {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+
+    const rootPath = path.resolve(__dirname, "..");
+    if (rootPath.includes("/eliza/")) {
+        return rootPath.split("/eliza/")[0] + "/eliza/";
+    }
+    
+    return path.resolve(__dirname, "..");
+}
 
 /**
  * Send a message to the OpenAI API for embedding.
@@ -20,21 +35,43 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         runtime.character.modelProvider !== ModelProviderName.OPENAI &&
         runtime.character.modelProvider !== ModelProviderName.OLLAMA
     ) {
-        const service = runtime.getService<ITextGenerationService>(
-            ServiceType.TEXT_GENERATION
-        );
-        
-        const instance = service?.getInstance();
 
-        if (instance) {
-            return await instance.getEmbeddingResponse(input);
+        // make sure to trim tokens to 8192
+        const cacheDir = getRootPath() + "/cache/";
+
+        // if the cache directory doesn't exist, create it
+        if (!fs.existsSync(cacheDir)) {
+            fs.mkdirSync(cacheDir, { recursive: true });
         }
+
+        const embeddingModel = await FlagEmbedding.init({
+            cacheDir: cacheDir
+        });
+
+        const trimmedInput = trimTokens(input, 8000, "gpt-4o-mini");
+        
+        const embedding: number[] = await embeddingModel.queryEmbed(trimmedInput);
+        console.log("Embedding dimensions: ", embedding.length);
+        return embedding;
+
+        // commented out the text generation service that uses llama
+        // const service = runtime.getService<ITextGenerationService>(
+        //     ServiceType.TEXT_GENERATION
+        // );
+        
+        // const instance = service?.getInstance();
+
+        // if (instance) {
+        //     return await instance.getEmbeddingResponse(input);
+        // }
     }
+
+    // TODO: Fix retrieveCachedEmbedding
     // Check if we already have the embedding in the lore
-    // const cachedEmbedding = await retrieveCachedEmbedding(runtime, input);
-    // if (cachedEmbedding) {
-    //     return cachedEmbedding;
-    // }
+    const cachedEmbedding = await retrieveCachedEmbedding(runtime, input);
+    if (cachedEmbedding) {
+        return cachedEmbedding;
+    }
 
     const requestOptions = {
         method: "POST",
@@ -48,7 +85,8 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         body: JSON.stringify({
             input,
             model: embeddingModel,
-            length: 1536,
+            length: 384, // we are squashing dimensions to 768 for openai, even thought the model supports 1536
+            // -- this is ok for matryoshka embeddings but longterm, we might want to support 1536
         }),
     };
     try {
