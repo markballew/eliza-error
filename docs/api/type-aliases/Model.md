@@ -20,17 +20,17 @@
 
 > **maxOutputTokens**: `number`
 
-### settings.frequency_penalty?
+### settings.frequency\_penalty?
 
-> `optional` **frequency_penalty**: `number`
+> `optional` **frequency\_penalty**: `number`
 
-### settings.presence_penalty?
+### settings.presence\_penalty?
 
-> `optional` **presence_penalty**: `number`
+> `optional` **presence\_penalty**: `number`
 
-### settings.repetition_penalty?
+### settings.repetition\_penalty?
 
-> `optional` **repetition_penalty**: `number`
+> `optional` **repetition\_penalty**: `number`
 
 ### settings.stop
 
@@ -39,14 +39,6 @@
 ### settings.temperature
 
 > **temperature**: `number`
-
-### imageSettings?
-
-> `optional` **imageSettings**: `object`
-
-### imageSettings.steps?
-
-> `optional` **steps**: `number`
 
 ### model
 
@@ -68,10 +60,6 @@
 
 > `optional` **embedding**: `string`
 
-### model.image?
-
-> `optional` **image**: `string`
-
 ## Defined in
 
-[packages/core/src/types.ts:82](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L82)
+[packages/core/src/core/types.ts:82](https://github.com/ai16z/eliza/blob/main/packages/core/src/core/types.ts#L82)

@@ -68,13 +68,14 @@ export async function addToReport(
 
 export async function logReport() {
     const { existsSync, readFileSync } = fs;
+    const colors = await import("ansi-colors");
 
     // Define the path to the test-report.json file
     const reportPath = "./test-report.json";
 
     // Check if test-report.json exists
     if (!existsSync(reportPath)) {
-        console.log("Error: test-report.json does not exist.");
+        console.log(colors.red("Error: test-report.json does not exist."));
         return;
     }
 
@@ -87,11 +88,11 @@ export async function logReport() {
         const logMessage = `${test.testName}: ${test.attempts} Attempts, ${test.successful} Successful, Success Rate: ${test.successRate}%`;
 
         if (test.successRate === 100) {
-            console.log(logMessage);
+            console.log(colors.green(logMessage));
         } else if (test.successRate < 100 && test.successRate > 0) {
-            console.warn(logMessage);
+            console.log(colors.yellow(logMessage));
         } else {
-            console.error(logMessage);
+            console.log(colors.red(logMessage));
         }
     });
 }

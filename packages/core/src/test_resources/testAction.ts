@@ -1,8 +1,4 @@
-import {
-    IAgentRuntime,
-    type Action,
-    type Memory,
-} from "@ai16z/eliza/src/types.ts";
+import { IAgentRuntime, type Action, type Memory } from "../core/types.ts";
 
 export const TEST_ACTION = {
     name: "TEST_ACTION",

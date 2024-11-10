@@ -10,9 +10,9 @@ Represents an objective within a goal, detailing what needs to be achieved and w
 
 #### Defined in
 
-[packages/core/src/types.ts:51](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L51)
+[packages/core/src/core/types.ts:52](https://github.com/ai16z/eliza/blob/main/packages/core/src/core/types.ts#L52)
 
----
+***
 
 ### description
 
@@ -20,9 +20,9 @@ Represents an objective within a goal, detailing what needs to be achieved and w
 
 #### Defined in
 
-[packages/core/src/types.ts:52](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L52)
+[packages/core/src/core/types.ts:53](https://github.com/ai16z/eliza/blob/main/packages/core/src/core/types.ts#L53)
 
----
+***
 
 ### completed
 
@@ -30,4 +30,4 @@ Represents an objective within a goal, detailing what needs to be achieved and w
 
 #### Defined in
 
-[packages/core/src/types.ts:53](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L53)
+[packages/core/src/core/types.ts:54](https://github.com/ai16z/eliza/blob/main/packages/core/src/core/types.ts#L54)

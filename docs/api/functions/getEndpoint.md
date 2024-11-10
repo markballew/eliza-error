@@ -4,7 +4,7 @@
 
 ## Parameters
 
-• **provider**: [`ModelProviderName`](../enumerations/ModelProviderName.md)
+• **provider**: [`ModelProvider`](../enumerations/ModelProvider.md)
 
 ## Returns
 
@@ -12,4 +12,4 @@
 
 ## Defined in
 
-[packages/core/src/models.ts:198](https://github.com/ai16z/eliza/blob/main/packages/core/src/models.ts#L198)
+[packages/core/src/core/models.ts:183](https://github.com/ai16z/eliza/blob/main/packages/core/src/core/models.ts#L183)

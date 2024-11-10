@@ -3,7 +3,7 @@ import {
     IAgentRuntime,
     type Memory,
     type State,
-} from "@ai16z/eliza/src/types.ts";
+} from "../core/types.ts";
 
 async function handler(runtime: IAgentRuntime, message: Memory) {
     const state = (await runtime.composeState(message)) as State;
