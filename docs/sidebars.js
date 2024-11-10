@@ -53,9 +53,9 @@ const sidebars = {
       collapsed: false,
       items: [
         "community/creator-fund",
-        "community/stream-notes",
+        "community/notes",
         "community/changelog",
-	"community/faq",
+        "community/faq",
         "community/contributing",
       ],
     },
