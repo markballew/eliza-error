@@ -24,16 +24,13 @@ import { buildConversationThread, sendTweet, wait } from "./utils.ts";
 export const twitterMessageHandlerTemplate =
     `{{timeline}}
 
-# Knowledge
-{{knowledge}}
+{{providers}}
 
 # Task: Generate a post for the character {{agentName}}.
 About {{agentName}} (@{{twitterUserName}}):
 {{bio}}
 {{lore}}
 {{topics}}
-
-{{providers}}
 
 {{characterPostExamples}}
 

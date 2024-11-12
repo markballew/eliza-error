@@ -102,9 +102,6 @@ const telegramMessageHandlerTemplate =
 {{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
 
-# Knowledge
-{{knowledge}}
-
 # Task: Generate dialog and actions for the character {{agentName}}.
 About {{agentName}}:
 {{bio}}

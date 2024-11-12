@@ -30,7 +30,6 @@ export const messageHandlerTemplate =
 About {{agentName}}:
 {{bio}}
 {{lore}}
-{{knowledge}}
 
 {{providers}}
 

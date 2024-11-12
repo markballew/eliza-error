@@ -9,15 +9,12 @@ import { ClientBase } from "./base.ts";
 
 const twitterPostTemplate = `{{timeline}}
 
-# Knowledge
-{{knowledge}}
+{{providers}}
 
 About {{agentName}} (@{{twitterUserName}}):
 {{bio}}
 {{lore}}
 {{postDirections}}
-
-{{providers}}
 
 {{recentPosts}}
 
