@@ -100,43 +100,6 @@ const sidebars = {
     },
     {
       type: "category",
-      label: "📦 Packages",
-      collapsed: false,
-      items: [
-        {
-          type: "doc",
-          id: "packages/packages",
-          label: "📖 Overview"
-        },
-        {
-          type: "doc",
-          id: "packages/core",
-          label: "📦 Core Package"
-        },
-        {
-          type: "doc",
-          id: "packages/adapters", 
-          label: "🔧 Database Adapters"
-        },
-        {
-          type: "doc",
-          id: "packages/clients",
-          label: "🔌 Client Packages"
-        },
-        {
-          type: "doc", 
-          id: "packages/agent",
-          label: "🤖 Agent Package"
-        },
-        {
-          type: "doc",
-          id: "packages/plugins",
-          label: "🧩 Plugin System"
-        }
-      ],
-    },
-    {
-      type: "category",
       label: "👥 Community",
       collapsed: false,
       items: [
