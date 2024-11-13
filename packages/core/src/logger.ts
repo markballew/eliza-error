@@ -1,9 +1,4 @@
 class ElizaLogger {
-    constructor() {
-        this.verbose = process.env.verbose === "true" || false;
-    }
-
-    verbose = false;
     closeByNewLine = true;
     useIcons = true;
     logsTitle = "LOGS";
@@ -82,20 +77,12 @@ class ElizaLogger {
         const c = this.#getColor(foregroundColor, backgroundColor);
         // turns objects into printable strings
         strings = strings.map((item) => {
-            if (typeof item === "object") {
-                // Handle BigInt serialization
-                return JSON.stringify(item, (key, value) => 
-                    typeof value === 'bigint' 
-                        ? value.toString() 
-                        : value
-                );
-            }
+            if (typeof item === "object") item = JSON.stringify(item);
             return item;
         });
         console.log(c, strings.join(""), this.#getColorReset());
         if (this.closeByNewLine) console.log("");
     }
-    
     log(...strings) {
         const fg = "white";
         const bg = "";
@@ -227,7 +214,6 @@ class ElizaLogger {
         }
     }
     debug(...strings) {
-        if (!this.verbose) return;
         const fg = "magenta";
         const bg = "";
         const icon = "\u1367";
