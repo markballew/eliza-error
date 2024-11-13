@@ -9,13 +9,7 @@ const sidebars = {
     {
       type: "category",
       label: "🏁 Getting Started",
-      items: [
-        {
-          type: "doc",
-          id: "quickstart",
-          label: "⭐ Quick Start"
-        }
-      ],
+      items: ["quickstart"],  // Consolidated installation into quickstart
       collapsed: false,
     },
     {
@@ -26,27 +20,27 @@ const sidebars = {
         {
           type: "doc",
           id: "core/characterfile",
-          label: "Character Files"
+          label: "📝 Character Files"
         },
         {
           type: "doc",
           id: "core/agents",
-          label: "Agents"
+          label: "🤖 Agents"
         },
         {
           type: "doc",
           id: "core/providers",
-          label: "Providers"
+          label: "🔌 Providers"
         },
         {
           type: "doc",
           id: "core/actions",
-          label: "Actions"
+          label: "⚡ Actions"
         },
         {
           type: "doc",
           id: "core/evaluators",
-          label: "Evaluators"
+          label: "📊 Evaluators"
         },
       ],
     },
@@ -58,22 +52,22 @@ const sidebars = {
         {
           type: "doc",
           id: "guides/configuration",
-          label: "Configuration"
+          label: "⚙️ Configuration"
         },
         {
           type: "doc",
           id: "guides/advanced",
-          label: "Advanced Usage"
+          label: "🔧 Advanced Usage"
         },
         {
           type: "doc",
           id: "guides/secrets-management",
-          label: "Secrets Management"
+          label: "🔐 Secrets Management"
         },
         {
           type: "doc",
           id: "guides/local-development",
-          label: "Local Development"
+          label: "💻 Local Development"
         },
       ],
     },
@@ -85,60 +79,23 @@ const sidebars = {
         {
           type: "doc",
           id: "advanced/fine-tuning",
-          label: "Fine-tuning"
+          label: "🎯 Fine-tuning"
         },
         {
           type: "doc",
           id: "advanced/infrastructure",
-          label: "Infrastructure"
+          label: "🏗️ Infrastructure"
         },
         {
           type: "doc",
           id: "advanced/trust-engine",
-          label: "Trust Engine"
+          label: "🤝 Trust Engine"
         },
         {
           type: "doc",
           id: "advanced/autonomous-trading",
-          label: "Autonomous Trading"
+          label: "📈 Autonomous Trading"
         },
-      ],
-    },
-    {
-      type: "category",
-      label: "📦 Packages",
-      collapsed: false,
-      items: [
-        {
-          type: "doc",
-          id: "packages/packages",
-          label: "Overview"
-        },
-        {
-          type: "doc",
-          id: "packages/core",
-          label: "Core Package"
-        },
-        {
-          type: "doc",
-          id: "packages/adapters", 
-          label: "Database Adapters"
-        },
-        {
-          type: "doc",
-          id: "packages/clients",
-          label: "Client Packages"
-        },
-        {
-          type: "doc", 
-          id: "packages/agent",
-          label: "Agent Package"
-        },
-        {
-          type: "doc",
-          id: "packages/plugins",
-          label: "Plugin System"
-        }
       ],
     },
     {
@@ -152,52 +109,9 @@ const sidebars = {
           label: "💰 Creator Fund"
         },
         {
-          type: "category",
-          label: "📺 Stream Notes",
-          items: [
-            {
-              type: "doc",
-              id: "community/stream-notes",
-              label: "Overview"
-            },
-            {
-              type: "category",
-              label: "November 2024",
-              items: [
-                {
-                  type: "doc",
-                  id: "community/streams/2024-11-08",
-                  label: "X: Memes, AI Agents, and DAOs"
-                },
-                {
-                  type: "doc",
-                  id: "community/streams/2024-11-06",
-                  label: "Discord Development Stream"
-                }
-              ]
-            },
-            {
-              type: "category",
-              label: "October 2024",
-              items: [
-                {
-                  type: "doc",
-                  id: "community/streams/2024-10-29",
-                  label: "X: AI Agents & Crypto"
-                },
-                {
-                  type: "doc",
-                  id: "community/streams/2024-10-27",
-                  label: "X: Building Autonomous Agents"
-                },
-                {
-                  type: "doc",
-                  id: "community/streams/2024-10-25",
-                  label: "X: Eliza Framework"
-                }
-              ]
-            }
-          ]
+          type: "doc",
+          id: "community/stream-notes",
+          label: "📺 Stream Notes"
         },
         {
           type: "doc",
@@ -213,10 +127,10 @@ const sidebars = {
           type: "doc",
           id: "community/contributing",
           label: "🤝 Contributing"
-        }
-      ]
-    }
-  ]
+        },
+      ],
+    },
+  ],
 };
 
 export default sidebars;
