@@ -13,7 +13,6 @@ export const messageHandlerTemplate =
 - Include content and action in the response
 - Available actions are {{actionNames}}
 
-{{knowledge}}
 {{lore}}
 {{goals}}
 {{actors}}

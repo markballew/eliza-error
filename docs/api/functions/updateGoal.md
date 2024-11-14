@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / updateGoal
-
 # Function: updateGoal()
 
 > **updateGoal**(`__namedParameters`): `Promise`\<`void`\>

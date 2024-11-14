@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / Models
-
 # Type Alias: Models
 
 > **Models**: `object`
@@ -22,21 +20,21 @@
 
 > **groq**: [`Model`](Model.md)
 
-### llama_cloud
+### llama\_cloud
 
-> **llama_cloud**: [`Model`](Model.md)
+> **llama\_cloud**: [`Model`](Model.md)
 
-### llama_local
+### llama\_local
 
-> **llama_local**: [`Model`](Model.md)
+> **llama\_local**: [`Model`](Model.md)
 
 ### google
 
 > **google**: [`Model`](Model.md)
 
-### claude_vertex
+### claude\_vertex
 
-> **claude_vertex**: [`Model`](Model.md)
+> **claude\_vertex**: [`Model`](Model.md)
 
 ### redpill
 

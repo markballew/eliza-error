@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / splitChunks
-
 # Function: splitChunks()
 
 > **splitChunks**(`runtime`, `content`, `chunkSize`, `bleed`, `modelClass`): `Promise`\<`string`[]\>

@@ -2,7 +2,11 @@ import { EmbeddingModel, FlagEmbedding } from "fastembed";
 import path from "path";
 import { fileURLToPath } from "url";
 import models from "./models.ts";
-import { IAgentRuntime, ModelProviderName, ModelClass } from "./types.ts";
+import {
+    IAgentRuntime,
+    ModelProviderName,
+    ModelClass
+} from "./types.ts";
 import fs from "fs";
 import { trimTokens } from "./generation.ts";
 import settings from "./settings.ts";
@@ -27,14 +31,11 @@ interface EmbeddingOptions {
     isOllama?: boolean;
 }
 
-async function getRemoteEmbedding(
-    input: string,
-    options: EmbeddingOptions
-): Promise<number[]> {
+async function getRemoteEmbedding(input: string, options: EmbeddingOptions): Promise<number[]> {
     // Ensure endpoint ends with /v1 for OpenAI
-    const baseEndpoint = options.endpoint.endsWith("/v1")
-        ? options.endpoint
-        : `${options.endpoint}${options.isOllama ? "/v1" : ""}`;
+    const baseEndpoint = options.endpoint.endsWith('/v1') ?
+        options.endpoint :
+        `${options.endpoint}${options.isOllama ? '/v1' : ''}`;
 
     // Construct full URL
     const fullUrl = `${baseEndpoint}/embeddings`;
@@ -45,11 +46,9 @@ async function getRemoteEmbedding(
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            ...(options.apiKey
-                ? {
-                      Authorization: `Bearer ${options.apiKey}`,
-                  }
-                : {}),
+            ...(options.apiKey ? {
+                Authorization: `Bearer ${options.apiKey}`,
+            } : {}),
         },
         body: JSON.stringify({
             input,
@@ -80,6 +79,7 @@ async function getRemoteEmbedding(
     }
 }
 
+
 /**
  * Send a message to the OpenAI API for embedding.
  * @param input The input to be embedded.
@@ -88,16 +88,18 @@ async function getRemoteEmbedding(
 export async function embed(runtime: IAgentRuntime, input: string) {
     const modelProvider = models[runtime.character.modelProvider];
     //need to have env override for this to select what to use for embedding if provider doesnt provide or using openai
-    const embeddingModel = settings.USE_OPENAI_EMBEDDING
-        ? "text-embedding-3-small" // Use OpenAI if specified
-        : modelProvider.model?.[ModelClass.EMBEDDING] || // Use provider's embedding model if available
-          models[ModelProviderName.OPENAI].model[ModelClass.EMBEDDING]; // Fallback to OpenAI
+    const embeddingModel = (
+        settings.USE_OPENAI_EMBEDDING ? "text-embedding-3-small" : // Use OpenAI if specified
+            modelProvider.model?.[ModelClass.EMBEDDING] || // Use provider's embedding model if available
+            models[ModelProviderName.OPENAI].model[ModelClass.EMBEDDING] // Fallback to OpenAI
+    );
 
     if (!embeddingModel) {
-        throw new Error("No embedding model configured");
+        throw new Error('No embedding model configured');
     }
 
     console.log("embeddingModel", embeddingModel);
+
 
     // Try local embedding first
     if (
@@ -117,17 +119,16 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     // Get remote embedding
     return await getRemoteEmbedding(input, {
         model: embeddingModel,
-        endpoint: settings.USE_OPENAI_EMBEDDING
-            ? "https://api.openai.com/v1" // Always use OpenAI endpoint when USE_OPENAI_EMBEDDING is true
-            : runtime.character.modelEndpointOverride || modelProvider.endpoint,
-        apiKey: settings.USE_OPENAI_EMBEDDING
-            ? settings.OPENAI_API_KEY // Use OpenAI key from settings when USE_OPENAI_EMBEDDING is true
-            : runtime.token, // Use runtime token for other providers
-        isOllama:
-            runtime.character.modelProvider === ModelProviderName.OLLAMA &&
-            !settings.USE_OPENAI_EMBEDDING,
+        endpoint: settings.USE_OPENAI_EMBEDDING ?
+            'https://api.openai.com/v1' : // Always use OpenAI endpoint when USE_OPENAI_EMBEDDING is true
+            (runtime.character.modelEndpointOverride || modelProvider.endpoint),
+        apiKey: settings.USE_OPENAI_EMBEDDING ?
+            settings.OPENAI_API_KEY : // Use OpenAI key from settings when USE_OPENAI_EMBEDDING is true
+            runtime.token,            // Use runtime token for other providers
+        isOllama: runtime.character.modelProvider === ModelProviderName.OLLAMA && !settings.USE_OPENAI_EMBEDDING
     });
 }
+
 
 async function getLocalEmbedding(input: string): Promise<number[]> {
     const cacheDir = getRootPath() + "/cache/";
@@ -136,7 +137,7 @@ async function getLocalEmbedding(input: string): Promise<number[]> {
     }
 
     const embeddingModel = await FlagEmbedding.init({
-        cacheDir: cacheDir,
+        cacheDir: cacheDir
     });
 
     const trimmedInput = trimTokens(input, 8000, "gpt-4o-mini");
@@ -161,3 +162,4 @@ export async function retrieveCachedEmbedding(
     }
     return null;
 }
+

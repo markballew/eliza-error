@@ -102,9 +102,6 @@ const telegramMessageHandlerTemplate =
 {{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
 
-# Knowledge
-{{knowledge}}
-
 # Task: Generate dialog and actions for the character {{agentName}}.
 About {{agentName}}:
 {{bio}}
@@ -130,7 +127,7 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 ` + messageCompletionFooter;
 
 export class MessageManager {
-    public bot: Telegraf<Context>;
+    private bot: Telegraf<Context>;
     private runtime: IAgentRuntime;
     private imageService: IImageDescriptionService;
 
@@ -401,80 +398,79 @@ export class MessageManager {
             // Decide whether to respond
             const shouldRespond = await this._shouldRespond(message, state);
             if (shouldRespond) {
-                // Generate response
-                const context = composeContext({
-                    state,
-                    template:
-                        this.runtime.character.templates
-                            ?.telegramMessageHandlerTemplate ||
-                        this.runtime.character?.templates
-                            ?.messageHandlerTemplate ||
-                        telegramMessageHandlerTemplate,
-                });
+            // Generate response
+            const context = composeContext({
+                state,
+                template:
+                    this.runtime.character.templates
+                        ?.telegramMessageHandlerTemplate ||
+                    this.runtime.character?.templates?.messageHandlerTemplate ||
+                    telegramMessageHandlerTemplate,
+            });
 
-                const responseContent = await this._generateResponse(
-                    memory,
-                    state,
-                    context
+            const responseContent = await this._generateResponse(
+                memory,
+                state,
+                context
+            );
+
+            if (!responseContent || !responseContent.text) return;
+
+            // Send response in chunks
+            const callback: HandlerCallback = async (content: Content) => {
+                const sentMessages = await this.sendMessageInChunks(
+                    ctx,
+                    content.text,
+                    message.message_id
                 );
 
-                if (!responseContent || !responseContent.text) return;
+                const memories: Memory[] = [];
 
-                // Send response in chunks
-                const callback: HandlerCallback = async (content: Content) => {
-                    const sentMessages = await this.sendMessageInChunks(
-                        ctx,
-                        content.text,
-                        message.message_id
-                    );
+                // Create memories for each sent message
+                for (let i = 0; i < sentMessages.length; i++) {
+                    const sentMessage = sentMessages[i];
+                    const isLastMessage = i === sentMessages.length - 1;
 
-                    const memories: Memory[] = [];
+                    const memory: Memory = {
+                        id: stringToUuid(
+                            sentMessage.message_id.toString() +
+                                "-" +
+                                this.runtime.agentId
+                        ),
+                        agentId,
+                        userId,
+                        roomId,
+                        content: {
+                            ...content,
+                            text: sentMessage.text,
+                            action: !isLastMessage ? "CONTINUE" : undefined,
+                            inReplyTo: messageId,
+                        },
+                        createdAt: sentMessage.date * 1000,
+                        embedding: embeddingZeroVector,
+                    };
 
-                    // Create memories for each sent message
-                    for (let i = 0; i < sentMessages.length; i++) {
-                        const sentMessage = sentMessages[i];
-                        const isLastMessage = i === sentMessages.length - 1;
+                    await this.runtime.messageManager.createMemory(memory);
+                    memories.push(memory);
+                }
 
-                        const memory: Memory = {
-                            id: stringToUuid(
-                                sentMessage.message_id.toString() +
-                                    "-" +
-                                    this.runtime.agentId
-                            ),
-                            agentId,
-                            userId,
-                            roomId,
-                            content: {
-                                ...content,
-                                text: sentMessage.text,
-                                action: !isLastMessage ? "CONTINUE" : undefined,
-                                inReplyTo: messageId,
-                            },
-                            createdAt: sentMessage.date * 1000,
-                            embedding: embeddingZeroVector,
-                        };
+                return memories;
+            };
 
-                        await this.runtime.messageManager.createMemory(memory);
-                        memories.push(memory);
-                    }
+            // Execute callback to send messages and log memories
+            const responseMessages = await callback(responseContent);
 
-                    return memories;
-                };
+            // Update state after response
+            state = await this.runtime.updateRecentMessageState(state);
 
-                // Execute callback to send messages and log memories
-                const responseMessages = await callback(responseContent);
-
-                // Update state after response
-                state = await this.runtime.updateRecentMessageState(state);
-
-                // Handle any resulting actions
-                await this.runtime.processActions(
-                    memory,
-                    responseMessages,
-                    state,
-                    callback
-                );
-            }
+            // Handle any resulting actions
+            await this.runtime.processActions(
+                memory,
+                responseMessages,
+                state,
+                callback
+            );
+        }
 
             await this.runtime.evaluate(memory, state, shouldRespond);
         } catch (error) {

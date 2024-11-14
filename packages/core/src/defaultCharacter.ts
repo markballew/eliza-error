@@ -6,7 +6,8 @@ export const defaultCharacter: Character = {
     clients: [],
     modelProvider: ModelProviderName.OPENAI,
     settings: {
-        secrets: {},
+        secrets: {
+        },
         voice: {
             model: "en_US-hfc_female-medium",
         },

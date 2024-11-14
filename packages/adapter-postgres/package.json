@@ -12,7 +12,7 @@
         "tsup": "^8.3.5"
     },
     "scripts": {
-        "build": "tsup --format esm --dts",
+        "build": "echo 'No build step required'",
         "dev": "tsup --watch"
     }
 }

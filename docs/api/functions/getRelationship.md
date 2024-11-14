@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / getRelationship
-
 # Function: getRelationship()
 
 > **getRelationship**(`__namedParameters`): `Promise`\<[`Relationship`](../interfaces/Relationship.md)\>

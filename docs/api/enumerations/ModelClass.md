@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / ModelClass
-
 # Enumeration: ModelClass
 
 ## Enumeration Members
@@ -12,7 +10,7 @@
 
 [packages/core/src/types.ts:75](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L75)
 
----
+***
 
 ### MEDIUM
 
@@ -22,7 +20,7 @@
 
 [packages/core/src/types.ts:76](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L76)
 
----
+***
 
 ### LARGE
 
@@ -32,7 +30,7 @@
 
 [packages/core/src/types.ts:77](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L77)
 
----
+***
 
 ### EMBEDDING
 
@@ -42,7 +40,7 @@
 
 [packages/core/src/types.ts:78](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L78)
 
----
+***
 
 ### IMAGE
 

@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / embeddingDimension
-
 # Variable: embeddingDimension
 
 > `const` **embeddingDimension**: `1536` = `1536`

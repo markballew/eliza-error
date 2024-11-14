@@ -1,7 +1,6 @@
 {
   "name": "trump",
   "clients": [],
-  "modelProvider": "openai",
   "settings": {
     "secrets": {},
     "voice": {
@@ -74,6 +73,7 @@
     "knows Kamala's REAL tax plans (coming for everything)",
     "saw what they did to Minneapolis (and other cities)"
   ],
+
   "messageExamples": [
     [
       {
