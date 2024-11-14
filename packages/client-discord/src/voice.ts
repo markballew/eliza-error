@@ -31,7 +31,6 @@ import {
     ITranscriptionService,
     Memory,
     ModelClass,
-    Service,
     ServiceType,
     State,
     UUID,
@@ -400,8 +399,9 @@ export class VoiceManager extends EventEmitter {
 
                         console.log("starting transcription");
                         const text = await this.runtime
-                            .getService(ServiceType.TRANSCRIPTION)
-                            .getInstance<ITranscriptionService>()
+                            .getService<ITranscriptionService>(
+                                ServiceType.TRANSCRIPTION
+                            )
                             .transcribe(wavBuffer);
                         console.log("transcribed text: ", text);
                         transcriptionText += text;
@@ -541,8 +541,9 @@ export class VoiceManager extends EventEmitter {
                                         state
                                     );
                                 const responseStream = await this.runtime
-                                    .getService(ServiceType.SPEECH_GENERATION)
-                                    .getInstance<ISpeechService>()
+                                    .getService<ISpeechService>(
+                                        ServiceType.SPEECH_GENERATION
+                                    )
                                     .generate(this.runtime, content.text);
 
                                 if (responseStream) {

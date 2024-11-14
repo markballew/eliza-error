@@ -1,17 +1,17 @@
 # Function: getModel()
 
-> **getModel**(`provider`, `type`): `string`
+> **getModel**(`provider`, `type`): `any`
 
 ## Parameters
 
-• **provider**: [`ModelProviderName`](../enumerations/ModelProviderName.md)
+• **provider**: [`ModelProvider`](../enumerations/ModelProvider.md)
 
 • **type**: [`ModelClass`](../enumerations/ModelClass.md)
 
 ## Returns
 
-`string`
+`any`
 
 ## Defined in
 
-[packages/core/src/models.ts:222](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/models.ts#L222)
+[core/src/core/models.ts:174](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/models.ts#L174)

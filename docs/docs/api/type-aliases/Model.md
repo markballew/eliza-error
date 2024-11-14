@@ -8,14 +8,6 @@
 
 > `optional` **endpoint**: `string`
 
-### imageSettings?
-
-> `optional` **imageSettings**: `object`
-
-### imageSettings.steps?
-
-> `optional` **steps**: `number`
-
 ### model
 
 > **model**: `object`
@@ -23,10 +15,6 @@
 ### model.embedding?
 
 > `optional` **embedding**: `string`
-
-### model.image?
-
-> `optional` **image**: `string`
 
 ### model.large
 
@@ -44,9 +32,9 @@
 
 > **settings**: `object`
 
-### settings.frequency\_penalty?
+### settings.frequency_penalty?
 
-> `optional` **frequency\_penalty**: `number`
+> `optional` **frequency_penalty**: `number`
 
 ### settings.maxInputTokens
 
@@ -56,13 +44,13 @@
 
 > **maxOutputTokens**: `number`
 
-### settings.presence\_penalty?
+### settings.presence_penalty?
 
-> `optional` **presence\_penalty**: `number`
+> `optional` **presence_penalty**: `number`
 
-### settings.repetition\_penalty?
+### settings.repetition_penalty?
 
-> `optional` **repetition\_penalty**: `number`
+> `optional` **repetition_penalty**: `number`
 
 ### settings.stop
 
@@ -74,4 +62,4 @@
 
 ## Defined in
 
-[packages/core/src/types.ts:82](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L82)
+[core/src/core/types.ts:82](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/types.ts#L82)

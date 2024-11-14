@@ -130,7 +130,7 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 ` + messageCompletionFooter;
 
 export class MessageManager {
-    public bot: Telegraf<Context>;
+    private bot: Telegraf<Context>;
     private runtime: IAgentRuntime;
     private imageService: IImageDescriptionService;
 

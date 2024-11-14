@@ -4,25 +4,15 @@ Represents an evaluator, which is used to assess and guide the agent's responses
 
 ## Properties
 
-### alwaysRun?
-
-> `optional` **alwaysRun**: `boolean`
-
-#### Defined in
-
-[packages/core/src/types.ts:236](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L236)
-
-***
-
 ### description
 
 > **description**: `string`
 
 #### Defined in
 
-[packages/core/src/types.ts:237](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L237)
+[core/src/core/types.ts:221](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/types.ts#L221)
 
-***
+---
 
 ### examples
 
@@ -30,9 +20,9 @@ Represents an evaluator, which is used to assess and guide the agent's responses
 
 #### Defined in
 
-[packages/core/src/types.ts:239](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L239)
+[core/src/core/types.ts:223](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/types.ts#L223)
 
-***
+---
 
 ### handler
 
@@ -40,9 +30,9 @@ Represents an evaluator, which is used to assess and guide the agent's responses
 
 #### Defined in
 
-[packages/core/src/types.ts:240](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L240)
+[core/src/core/types.ts:224](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/types.ts#L224)
 
-***
+---
 
 ### name
 
@@ -50,9 +40,9 @@ Represents an evaluator, which is used to assess and guide the agent's responses
 
 #### Defined in
 
-[packages/core/src/types.ts:241](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L241)
+[core/src/core/types.ts:225](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/types.ts#L225)
 
-***
+---
 
 ### similes
 
@@ -60,9 +50,9 @@ Represents an evaluator, which is used to assess and guide the agent's responses
 
 #### Defined in
 
-[packages/core/src/types.ts:238](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L238)
+[core/src/core/types.ts:222](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/types.ts#L222)
 
-***
+---
 
 ### validate
 
@@ -70,4 +60,4 @@ Represents an evaluator, which is used to assess and guide the agent's responses
 
 #### Defined in
 
-[packages/core/src/types.ts:242](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/types.ts#L242)
+[core/src/core/types.ts:226](https://github.com/ai16z/eliza/blob/c96957e5a5d17e343b499dd4d46ce403856ac5bc/core/src/core/types.ts#L226)
