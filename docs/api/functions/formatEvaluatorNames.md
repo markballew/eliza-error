@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / formatEvaluatorNames
-
 # Function: formatEvaluatorNames()
 
 > **formatEvaluatorNames**(`evaluators`): `string`

@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / generateShouldRespond
-
 # Function: generateShouldRespond()
 
 > **generateShouldRespond**(`opts`): `Promise`\<`"RESPOND"` \| `"IGNORE"` \| `"STOP"` \| `null`\>

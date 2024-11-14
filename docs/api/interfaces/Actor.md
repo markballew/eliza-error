@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / Actor
-
 # Interface: Actor
 
 Represents an actor in the conversation, which could be a user or the agent itself, including their name, details (such as tagline, summary, and quote), and a unique identifier.
@@ -14,7 +12,7 @@ Represents an actor in the conversation, which could be a user or the agent itse
 
 [packages/core/src/types.ts:41](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L41)
 
----
+***
 
 ### username
 
@@ -24,7 +22,7 @@ Represents an actor in the conversation, which could be a user or the agent itse
 
 [packages/core/src/types.ts:42](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L42)
 
----
+***
 
 ### details
 
@@ -46,7 +44,7 @@ Represents an actor in the conversation, which could be a user or the agent itse
 
 [packages/core/src/types.ts:43](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L43)
 
----
+***
 
 ### id
 

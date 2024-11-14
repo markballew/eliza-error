@@ -30,7 +30,6 @@ export const messageHandlerTemplate =
 About {{agentName}}:
 {{bio}}
 {{lore}}
-{{knowledge}}
 
 {{providers}}
 
@@ -45,7 +44,7 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 
 {{actions}}
 
-# Instructions: Write the next message for {{agentName}}.
+# Instructions: Write the next message for {{agentName}}. Ignore "action".
 ` + messageCompletionFooter;
 
 export const shouldContinueTemplate =

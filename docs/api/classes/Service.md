@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / Service
-
 # Class: `abstract` Service
 
 ## Extended by
@@ -40,7 +38,7 @@
 
 #### Type Parameters
 
-• **T** _extends_ [`Service`](Service.md)
+• **T** *extends* [`Service`](Service.md)
 
 #### Returns
 

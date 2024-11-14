@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / addHeader
-
 # Function: addHeader()
 
 > **addHeader**(`header`, `body`): `string`

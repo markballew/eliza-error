@@ -126,7 +126,7 @@ export class AgentRuntime implements IAgentRuntime {
     /**
      * Searchable document fragments
      */
-    knowledgeManager: IMemoryManager;
+    fragmentsManager: IMemoryManager;
 
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
@@ -244,7 +244,7 @@ export class AgentRuntime implements IAgentRuntime {
             tableName: "documents",
         });
 
-        this.knowledgeManager = new MemoryManager({
+        this.fragmentsManager = new MemoryManager({
             runtime: this,
             tableName: "fragments",
         });
@@ -323,10 +323,8 @@ export class AgentRuntime implements IAgentRuntime {
 
         for (const knowledgeItem of knowledge) {
             const knowledgeId = stringToUuid(knowledgeItem);
-            console.log("knowledgeId", knowledgeId);
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
-            console.log("existingDocument", existingDocument);
             if (!existingDocument) {
                 console.log(
                     "Processing knowledge for ",
@@ -346,13 +344,15 @@ export class AgentRuntime implements IAgentRuntime {
                     },
                 });
                 const fragments = await splitChunks(
+                    this,
                     knowledgeItem,
                     1200,
-                    200
+                    200,
+                    "fast"
                 );
                 for (const fragment of fragments) {
                     const embedding = await embed(this, fragment);
-                    await this.knowledgeManager.createMemory({
+                    await this.fragmentsManager.createMemory({
                         id: stringToUuid(fragment),
                         roomId: this.agentId,
                         agentId: this.agentId,
@@ -894,34 +894,9 @@ Text: ${attachment.text}
                 .join(" ");
         }
 
-        async function getKnowledge(runtime: AgentRuntime, message: Memory): Promise<string[]> {
-            const embedding = await embed(runtime, message.content.text);
-
-            console.log("message.agentId", message.agentId)
-
-            const memories = await runtime.knowledgeManager.searchMemoriesByEmbedding(
-                embedding,
-                {
-                    roomId: message.agentId,
-                    agentId: message.agentId,
-                    count: 3,
-                }
-            );
-
-            const knowledge = memories.map(memory => memory.content.text);
-            return knowledge;
-        }
-
-        const formatKnowledge = (knowledge: string[]) => {
-            return knowledge.map(knowledge => `- ${knowledge}`).join("\n");
-        }
-
-        const formattedKnowledge = formatKnowledge(
-            await getKnowledge(this, message)
-        );
-
         const initialState = {
             agentId: this.agentId,
+            // Character file stuff
             agentName,
             bio,
             lore,
@@ -934,7 +909,6 @@ Text: ${attachment.text}
                           )
                       ]
                     : "",
-            knowledge: formattedKnowledge,
             // Recent interactions between the sender and receiver, formatted as messages
             recentMessageInteractions: formattedMessageInteractions,
             // Recent interactions between the sender and receiver, formatted as posts

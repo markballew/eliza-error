@@ -22,7 +22,10 @@ import {
 } from "@ai16z/eliza/src/types.ts";
 import { TokenProvider } from "../providers/token.ts";
 import { TrustScoreManager } from "../providers/trustScoreProvider.ts";
-import { walletProvider, WalletProvider } from "../providers/wallet.ts";
+import {
+    walletProvider,
+    WalletProvider,
+} from "../providers/wallet.ts";
 import { getTokenDecimals } from "./swapUtils.ts";
 
 async function swapToken(
@@ -73,7 +76,7 @@ async function swapToken(
             quoteResponse: quoteData,
             userPublicKey: walletPublicKey.toString(),
             wrapAndUnwrapSol: true,
-            computeUnitPriceMicroLamports: 2000000,
+            computeUnitPriceMicroLamports: 1000,
             dynamicComputeUnitLimit: true,
         };
 

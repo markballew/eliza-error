@@ -105,8 +105,8 @@ export async function generateText({
                 break;
             }
 
-            case ModelProviderName.GOOGLE: {
-                const google = createGoogleGenerativeAI();
+            case ModelProviderName.GOOGLE:
+                { const google = createGoogleGenerativeAI();
 
                 const { text: anthropicResponse } = await aiGenerateText({
                     model: google(model),
@@ -122,8 +122,7 @@ export async function generateText({
                 });
 
                 response = anthropicResponse;
-                break;
-            }
+                break; }
 
             case ModelProviderName.ANTHROPIC: {
                 elizaLogger.debug("Initializing Anthropic model.");
@@ -195,9 +194,7 @@ export async function generateText({
             }
 
             case ModelProviderName.LLAMALOCAL: {
-                elizaLogger.debug(
-                    "Using local Llama model for text completion."
-                );
+                elizaLogger.debug("Using local Llama model for text completion.");
                 response = await runtime
                     .getService<ITextGenerationService>(
                         ServiceType.TEXT_GENERATION
@@ -389,14 +386,24 @@ export async function generateShouldRespond({
  * @returns Promise resolving to array of text chunks with bleed sections
  */
 export async function splitChunks(
+    runtime,
     content: string,
     chunkSize: number,
     bleed: number = 100,
+    modelClass: string
 ): Promise<string[]> {
-    const encoding = tiktoken.encoding_for_model(
-        "gpt-4o-mini"
-    );
+    const model = models[runtime.modelProvider];
+    console.log("model", model);
 
+    console.log("model.model.embedding", model.model.embedding);
+    
+    if(!model.model.embedding) {
+        throw new Error("Model does not support embedding");
+    }
+
+    const encoding = tiktoken.encoding_for_model(
+        model.model.embedding as TiktokenModel
+    );
     const tokens = encoding.encode(content);
     const chunks: string[] = [];
     const textDecoder = new TextDecoder();

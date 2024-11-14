@@ -1,5 +1,3 @@
-[@ai16z/eliza v1.0.0](../index.md) / getActorDetails
-
 # Function: getActorDetails()
 
 > **getActorDetails**(`__namedParameters`): `Promise`\<[`Actor`](../interfaces/Actor.md)[]\>

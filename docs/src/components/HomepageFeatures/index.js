@@ -4,53 +4,48 @@ import styles from "./styles.module.css";
 
 const FeatureList = [
   {
-    title: "Made By Users",
+    title: "🤖 Multi-Agent Framework",
     description: (
       <>
-        eliza is open source, community developed and designed to be and easy to
-        use.
+        Build and deploy autonomous AI agents with consistent personalities across Discord, 
+        Twitter, and Telegram. Full support for voice, text, and media interactions.
       </>
     ),
   },
   {
-    title: "Just Works",
+    title: "🧠 Advanced Capabilities",
     description: (
       <>
-        Simple, tested, used in production. Configurable enough, batteries
-        included.
+        Built-in RAG memory system, document processing, media analysis, and autonomous 
+        trading capabilities. Supports multiple AI models including Llama, GPT-4, and Claude.
       </>
     ),
   },
   {
-    title: "For a Better World",
+    title: "🔌 Extensible Design",
     description: (
       <>
-        If you have ideas for how to make better agents for everyone,{" "}
-        <a href="https://discord.gg/jointhealliance">let's do it together</a>.
+        Create custom actions, add new platform integrations, and extend functionality 
+        through a modular plugin system. Full TypeScript support.
       </>
     ),
   },
 ];
 
-function Feature({ Svg, title, description }) {
+function Feature({ title, description }) {
   return (
     <div className={clsx("col col--4")}>
-      <div
-        /* white if the theme is light, black if the theme is dark */
-        style={{
-          // white background, rounded corners
-          backgroundColor: "#ffffff88",
-          borderRadius: "10px",
-          padding: "10px",
-          paddingTop: "20px",
-          margin: "5px",
-        }}
-      >
-        {/* <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
-      </div> */}
-        <div className="text--center padding-horiz--md">
-          <Heading as="h3">{title}</Heading>
+      <div className="card margin--md" style={{
+        height: "100%",
+        backgroundColor: "var(--ifm-card-background-color)",
+        backdropFilter: "blur(10px)",
+        borderRadius: "12px",
+        color: "var(--ifm-font-color-base)",
+      }}>
+        <div className="card__body text--center padding--md">
+          <Heading as="h3" style={{
+            color: "var(--ifm-heading-color)"
+          }}>{title}</Heading>
           <p>{description}</p>
         </div>
       </div>
