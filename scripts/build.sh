@@ -18,43 +18,17 @@ if [ ! -d "packages" ]; then
     exit 1
 fi
 
-# Define the core package path
-CORE_PACKAGE="packages/core"
-EXCLUDED_PACKAGE="packages/agent"
-
-# Build the core package first
-if [ -d "$CORE_PACKAGE" ]; then
-    echo -e "\033[1mBuilding core package: core\033[0m"
-    cd "$CORE_PACKAGE" || exit
-
-    # Check if a package.json file exists
-    if [ -f "package.json" ]; then
-        if npm run build; then
-            echo -e "\033[1;32mSuccessfully built core package\033[0m\n"
-        else
-            echo -e "\033[1mFailed to build core package\033[0m"
-            exit 1
-        fi
-    else
-        echo "No package.json found in core package, skipping..."
-    fi
-
-    # Return to the root directory
-    cd - > /dev/null || exit
-else
-    echo "Core package directory 'core' not found, skipping core build..."
-fi
-
-# Build other packages, excluding the "agent" package
+# Iterate over each directory in the packages directory
 for package in packages/*; do
-    if [ "$package" != "$CORE_PACKAGE" ] && [ "$package" != "$EXCLUDED_PACKAGE" ] && [ -d "$package" ]; then
-        echo -e "\033[1mBuilding package: $(basename "$package")\033[0m"
+    if [ -d "$package" ]; then
+        echo "Building package: $(basename "$package")"
         cd "$package" || continue
 
         # Check if a package.json file exists
         if [ -f "package.json" ]; then
+            # Run the build script defined in package.json
             if npm run build; then
-                echo -e "\033[1;32mSuccessfully built $(basename "$package")\033[0m\n"
+                echo "Successfully built $(basename "$package")"
             else
                 echo "Failed to build $(basename "$package")"
             fi
@@ -64,9 +38,7 @@ for package in packages/*; do
 
         # Return to the root directory
         cd - > /dev/null || exit
-    elif [ "$package" == "$EXCLUDED_PACKAGE" ]; then
-        echo -e "\033[1mSkipping package: agent\033[0m\n"
     fi
 done
 
-echo -e "\033[1mBuild process completed.😎\033[0m"
+echo "Build process completed."
