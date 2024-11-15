@@ -114,7 +114,6 @@ export type Models = {
     [ModelProviderName.REDPILL]: Model;
     [ModelProviderName.OPENROUTER]: Model;
     [ModelProviderName.OLLAMA]: Model;
-    [ModelProviderName.HEURIST]: Model;
 };
 
 export enum ModelProviderName {
@@ -129,7 +128,6 @@ export enum ModelProviderName {
     REDPILL = "redpill",
     OPENROUTER = "openrouter",
     OLLAMA = "ollama",
-    HEURIST = "heurist",
 }
 
 /**
