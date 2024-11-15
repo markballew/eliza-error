@@ -341,26 +341,9 @@ export class MessageManager {
         if (
             message.interaction ||
             message.author.id ===
-                this.client.user?.id /* || message.author?.bot*/
+            this.client.user?.id /* || message.author?.bot*/
         )
             return;
-
-        if (
-            this.runtime.character.clientConfig?.discord
-                ?.shouldIgnoreBotMessages &&
-            message.author?.bot
-        ) {
-            return;
-        }
-
-        if (
-            this.runtime.character.clientConfig?.discord
-                ?.shouldIgnoreDirectMessages &&
-            message.channel.type === ChannelType.DM
-        ) {
-            return;
-        }
-
         const userId = message.author.id as UUID;
         const userName = message.author.username;
         const name = message.author.displayName;
@@ -406,10 +389,10 @@ export class MessageManager {
                 url: message.url,
                 inReplyTo: message.reference?.messageId
                     ? stringToUuid(
-                          message.reference.messageId +
-                              "-" +
-                              this.runtime.agentId
-                      )
+                        message.reference.messageId +
+                        "-" +
+                        this.runtime.agentId
+                    )
                     : undefined,
             };
 
@@ -520,9 +503,11 @@ export class MessageManager {
                         }
                         if (message.channel.type === ChannelType.GuildVoice) {
                             // For voice channels, use text-to-speech
-                            const audioStream = await this.runtime
-                                .getService(ServiceType.SPEECH_GENERATION)
-                                .getInstance<ISpeechService>()
+                            const audioStream = await (
+                                this.runtime.getService(
+                                    ServiceType.SPEECH_GENERATION
+                                )
+                            ).getInstance<ISpeechService>()
                                 .generate(this.runtime, content.text);
                             await this.voiceManager.playAudioStream(
                                 userId,
@@ -674,15 +659,14 @@ export class MessageManager {
 
         for (const url of urls) {
             if (
-                this.runtime
-                    .getService(ServiceType.VIDEO)
+                this.runtime.getService(ServiceType.VIDEO)
                     .getInstance<IVideoService>()
                     .isVideoUrl(url)
             ) {
-                const videoInfo = await this.runtime
+                const videoInfo = await (this.runtime
                     .getService(ServiceType.VIDEO)
                     .getInstance<IVideoService>()
-                    .processVideo(url);
+                    .processVideo(url));
                 attachments.push({
                     id: `youtube-${Date.now()}`,
                     url: url,

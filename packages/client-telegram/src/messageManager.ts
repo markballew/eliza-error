@@ -318,20 +318,10 @@ export class MessageManager {
             return; // Exit if no message or sender info
         }
 
-        if (
-            this.runtime.character.clientConfig?.telegram
-                ?.shouldIgnoreBotMessages &&
-            ctx.from.is_bot
-        ) {
-            return;
-        }
-        if (
-            this.runtime.character.clientConfig?.telegram
-                ?.shouldIgnoreDirectMessages &&
-            ctx.chat?.type === "private"
-        ) {
-            return;
-        }
+        // TODO: Handle commands?
+        // if (ctx.message.text?.startsWith("/")) {
+        //     return;
+        // }
 
         const message = ctx.message;
 

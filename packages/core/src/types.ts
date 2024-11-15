@@ -352,16 +352,6 @@ export type Character = {
         model?: string;
         embeddingModel?: string;
     };
-    clientConfig?: {
-        discord?: {
-            shouldIgnoreBotMessages?: boolean;
-            shouldIgnoreDirectMessages?: boolean;
-        };
-        telegram?: {
-            shouldIgnoreBotMessages?: boolean;
-            shouldIgnoreDirectMessages?: boolean;
-        };
-    };
     style: {
         all: string[];
         chat: string[];
