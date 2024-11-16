@@ -1,7 +1,4 @@
-# Eliza - Multi-agent simulation framework
-# https://github.com/ai16z/eliza
-# Visit https://eliza.builders for support
-# dev branch
+# Eliza
 
 <img src="./docs/static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
 
