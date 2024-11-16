@@ -25,7 +25,10 @@ import {
     type Action,
 } from "@ai16z/eliza";
 
-import { walletProvider } from "../providers/wallet.ts";
+import {
+    walletProvider,
+    //WalletProvider,
+} from "../providers/wallet.ts";
 
 export interface CreateAndBuyContent extends Content {
     tokenMetadata: {

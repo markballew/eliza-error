@@ -7,7 +7,10 @@ import {
 } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import { v4 as uuidv4 } from "uuid";
-import { TrustScoreDatabase } from "@ai16z/plugin-trustdb";
+import { TrustScoreDatabase } from "../adapters/trustScoreDatabase.ts";
+import { composeContext } from "@ai16z/eliza";
+import { generateObject } from "@ai16z/eliza";
+import { settings } from "@ai16z/eliza";
 import {
     ActionExample,
     HandlerCallback,
@@ -16,9 +19,6 @@ import {
     ModelClass,
     State,
     type Action,
-    composeContext,
-    generateObject,
-    settings,
 } from "@ai16z/eliza";
 import { TokenProvider } from "../providers/token.ts";
 import { TrustScoreManager } from "../providers/trustScoreProvider.ts";
