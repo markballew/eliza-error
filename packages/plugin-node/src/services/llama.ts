@@ -1,5 +1,9 @@
-import { elizaLogger, ServiceType } from "@ai16z/eliza";
-import { Service } from "@ai16z/eliza";
+import {
+    elizaLogger,
+    IAgentRuntime,
+    ServiceType,
+} from "@ai16z/eliza/src/index.ts";
+import { Service } from "@ai16z/eliza/src/types.ts";
 import fs from "fs";
 import https from "https";
 import {

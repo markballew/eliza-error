@@ -1,7 +1,13 @@
-import { composeContext } from "@ai16z/eliza";
-import { generateMessageResponse, generateShouldRespond } from "@ai16z/eliza";
-import { embeddingZeroVector } from "@ai16z/eliza";
-import { messageCompletionFooter, shouldRespondFooter } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import {
+    generateMessageResponse,
+    generateShouldRespond,
+} from "@ai16z/eliza/src/generation.ts";
+import { embeddingZeroVector } from "@ai16z/eliza/src/memory.ts";
+import {
+    messageCompletionFooter,
+    shouldRespondFooter,
+} from "@ai16z/eliza/src/parsing.ts";
 import {
     Content,
     HandlerCallback,
@@ -15,10 +21,10 @@ import {
     ServiceType,
     State,
     UUID,
-} from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
-import { generateText, trimTokens } from "@ai16z/eliza";
-import { parseJSONObjectFromText } from "@ai16z/eliza";
+} from "@ai16z/eliza/src/types.ts";
+import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
+import { generateText, trimTokens } from "@ai16z/eliza/src/generation.ts";
+import { parseJSONObjectFromText } from "@ai16z/eliza/src/parsing.ts";
 import {
     ChannelType,
     Client,
@@ -30,6 +36,7 @@ import {
 import { elizaLogger } from "@ai16z/eliza/src/logger.ts";
 import { AttachmentManager } from "./attachments.ts";
 import { VoiceManager } from "./voice.ts";
+import { Service } from "@ai16z/eliza";
 
 const MAX_MESSAGE_LENGTH = 1900;
 async function generateSummary(
@@ -82,70 +89,68 @@ export type InterestChannels = {
 };
 
 const discordShouldRespondTemplate =
-    `# About {{agentName}}:
+    `# Task: Decide if {{agentName}} should respond.
+About {{agentName}}:
 {{bio}}
 
+# INSTRUCTIONS: Determine if {{agentName}} should respond to the message and participate in the conversation. Do not comment. Just respond with "RESPOND" or "IGNORE" or "STOP".
+
 # RESPONSE EXAMPLES
-{{user1}}: I just saw a really great movie
-{{user2}}: Oh? Which movie?
+<user 1>: I just saw a really great movie
+<user 2>: Oh? Which movie?
 Result: [IGNORE]
 
 {{agentName}}: Oh, this is my favorite scene
-{{user1}}: sick
-{{user2}}: wait, why is it your favorite scene
+<user 1>: sick
+<user 2>: wait, why is it your favorite scene
 Result: [RESPOND]
 
-{{user1}}: stfu bot
+<user>: stfu bot
 Result: [STOP]
 
-{{user1}}: Hey {{agent}}, can you help me with something
+<user>: Hey {{agent}}, can you help me with something
 Result: [RESPOND]
 
-{{user1}}: {{agentName}} stfu plz
+<user>: {{agentName}} stfu plz
 Result: [STOP]
 
-{{user1}}: i need help
+<user>: i need help
 {{agentName}}: how can I help you?
-{{user1}}: no. i need help from someone else
+<user>: no. i need help from someone else
 Result: [IGNORE]
 
-{{user1}}: Hey {{agent}}, can I ask you a question
+<user>: Hey {{agent}}, can I ask you a question
 {{agentName}}: Sure, what is it
-{{user1}}: can you ask claude to create a basic react module that demonstrates a counter
+<user>: can you ask claude to create a basic react module that demonstrates a counter
 Result: [RESPOND]
 
-{{user1}}: {{agentName}} can you tell me a story
-{{agentName}}: uhhh...
-{{user1}}: please do it
-{{agentName}}: okay
-{{agentName}}: once upon a time, in a quaint little village, there was a curious girl named elara
-{{user1}}: I'm loving it, keep going
+<user>: {{agentName}} can you tell me a story
+<user>: {about a girl named elara
+{{agentName}}: Sure.
+{{agentName}}: Once upon a time, in a quaint little village, there was a curious girl named Elara.
+{{agentName}}: Elara was known for her adventurous spirit and her knack for finding beauty in the mundane.
+<user>: I'm loving it, keep going
 Result: [RESPOND]
 
-{{user1}}: {{agentName}} stop responding plz
+<user>: {{agentName}} stop responding plz
 Result: [STOP]
 
-{{user1}}: okay, i want to test something. {{agentName}}, can you say marco?
+<user>: okay, i want to test something. can you say marco?
 {{agentName}}: marco
-{{user1}}: great. okay, now do it again
+<user>: great. okay, now do it again
 Result: [RESPOND]
 
 Response options are [RESPOND], [IGNORE] and [STOP].
 
-{{agentName}} is in a room with other users and should only respond when they are being addressed, and should not respond if they are continuing a conversation that is very long.
-
+{{agentName}} is in a room with other users and is very worried about being annoying and saying too much.
 Respond with [RESPOND] to messages that are directed at {{agentName}}, or participate in conversations that are interesting or relevant to their background.
-If a message is not interesting, relevant, or does not directly address {{agentName}}, respond with [IGNORE]
-
-Also, respond with [IGNORE] to messages that are very short or do not contain much information.
-
+If a message is not interesting or relevant, respond with [IGNORE]
+Unless directly responding to a user, respond with [IGNORE] to messages that are very short or do not contain much information.
 If a user asks {{agentName}} to be quiet, respond with [STOP]
 If {{agentName}} concludes a conversation and isn't part of the conversation anymore, respond with [STOP]
 
 IMPORTANT: {{agentName}} is particularly sensitive about being annoying, so if there is any doubt, it is better to respond with [IGNORE].
 If {{agentName}} is conversing with a user and they have not asked to stop, it is better to respond with [RESPOND].
-
-The goal is to decide whether {{agentName}} should respond to the last message.
 
 {{recentMessages}}
 

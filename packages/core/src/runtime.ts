@@ -345,7 +345,11 @@ export class AgentRuntime implements IAgentRuntime {
                         text: knowledgeItem,
                     },
                 });
-                const fragments = await splitChunks(knowledgeItem, 1200, 200);
+                const fragments = await splitChunks(
+                    knowledgeItem,
+                    1200,
+                    200
+                );
                 for (const fragment of fragments) {
                     const embedding = await embed(this, fragment);
                     await this.knowledgeManager.createMemory({
@@ -838,10 +842,10 @@ Text: ${attachment.text}
             recentInteractionsData: Memory[]
         ): Promise<string> => {
             // Format the recent messages
-            const formattedInteractions = await Promise.all(
-                recentInteractionsData.map(async (message) => {
+            const formattedInteractions = await recentInteractionsData
+                .map(async (message) => {
                     const isSelf = message.userId === this.agentId;
-                    let sender: string;
+                    let sender;
                     if (isSelf) {
                         sender = this.character.name;
                     } else {
@@ -853,9 +857,9 @@ Text: ${attachment.text}
                     }
                     return `${sender}: ${message.content.text}`;
                 })
-            );
+                .join("\n");
 
-            return formattedInteractions.join("\n");
+            return formattedInteractions;
         };
 
         const formattedMessageInteractions =
@@ -889,29 +893,25 @@ Text: ${attachment.text}
                 .join(" ");
         }
 
-        async function getKnowledge(
-            runtime: AgentRuntime,
-            message: Memory
-        ): Promise<string[]> {
+        async function getKnowledge(runtime: AgentRuntime, message: Memory): Promise<string[]> {
             const embedding = await embed(runtime, message.content.text);
 
-            const memories =
-                await runtime.knowledgeManager.searchMemoriesByEmbedding(
-                    embedding,
-                    {
-                        roomId: message.agentId,
-                        agentId: message.agentId,
-                        count: 3,
-                    }
-                );
+            const memories = await runtime.knowledgeManager.searchMemoriesByEmbedding(
+                embedding,
+                {
+                    roomId: message.agentId,
+                    agentId: message.agentId,
+                    count: 3,
+                }
+            );
 
-            const knowledge = memories.map((memory) => memory.content.text);
+            const knowledge = memories.map(memory => memory.content.text);
             return knowledge;
         }
 
         const formatKnowledge = (knowledge: string[]) => {
-            return knowledge.map((knowledge) => `- ${knowledge}`).join("\n");
-        };
+            return knowledge.map(knowledge => `- ${knowledge}`).join("\n");
+        }
 
         const formattedKnowledge = formatKnowledge(
             await getKnowledge(this, message)

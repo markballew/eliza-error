@@ -1,4 +1,4 @@
-import bs58 from "bs58";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes/index.js";
 import {
     Connection,
     Keypair,
@@ -7,7 +7,10 @@ import {
 } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import { v4 as uuidv4 } from "uuid";
-import { TrustScoreDatabase } from "@ai16z/plugin-trustdb";
+import { TrustScoreDatabase } from "../adapters/trustScoreDatabase.ts";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import { generateObject } from "@ai16z/eliza/src/generation.ts";
+import settings from "@ai16z/eliza/src/settings.ts";
 import {
     ActionExample,
     HandlerCallback,
@@ -16,10 +19,7 @@ import {
     ModelClass,
     State,
     type Action,
-    composeContext,
-    generateObject,
-    settings,
-} from "@ai16z/eliza";
+} from "@ai16z/eliza/src/types.ts";
 import { TokenProvider } from "../providers/token.ts";
 import { TrustScoreManager } from "../providers/trustScoreProvider.ts";
 import { walletProvider, WalletProvider } from "../providers/wallet.ts";
@@ -391,10 +391,7 @@ export const executeSwap: Action = {
             }
 
             if (type === "buy") {
-                const tokenProvider = new TokenProvider(
-                    response.outputTokenCA,
-                    await walletProvider.get(runtime, message, state)
-                );
+                const tokenProvider = new TokenProvider(response.outputTokenCA);
                 const module = await import("better-sqlite3");
                 const Database = module.default;
                 const trustScoreDb = new TrustScoreDatabase(
@@ -409,7 +406,6 @@ export const executeSwap: Action = {
                 });
 
                 const trustScoreDatabase = new TrustScoreManager(
-                    runtime,
                     tokenProvider,
                     trustScoreDb
                 );
@@ -425,10 +421,7 @@ export const executeSwap: Action = {
                     tradeData
                 );
             } else if (type === "sell") {
-                const tokenProvider = new TokenProvider(
-                    response.inputTokenCA,
-                    await walletProvider.get(runtime, message, state)
-                );
+                const tokenProvider = new TokenProvider(response.inputTokenCA);
                 const module = await import("better-sqlite3");
                 const Database = module.default;
                 const trustScoreDb = new TrustScoreDatabase(
@@ -443,7 +436,6 @@ export const executeSwap: Action = {
                 });
 
                 const trustScoreDatabase = new TrustScoreManager(
-                    runtime,
                     tokenProvider,
                     trustScoreDb
                 );

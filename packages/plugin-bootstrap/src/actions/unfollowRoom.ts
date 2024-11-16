@@ -8,7 +8,7 @@ import {
     Memory,
     ModelClass,
     State,
-} from "@ai16z/eliza";
+} from "@ai16z/eliza/src/types.ts";
 
 const shouldUnfollowTemplate =
     `Based on the conversation so far:

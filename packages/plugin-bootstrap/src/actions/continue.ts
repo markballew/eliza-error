@@ -16,7 +16,7 @@ import {
     Memory,
     ModelClass,
     State,
-} from "@ai16z/eliza";
+} from "@ai16z/eliza/src/types.ts";
 
 const maxContinuesInARow = 3;
 

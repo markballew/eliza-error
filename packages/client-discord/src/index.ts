@@ -1,7 +1,11 @@
-import { embeddingZeroVector } from "@ai16z/eliza";
-import { Character, Client as ElizaClient, IAgentRuntime } from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
-import { elizaLogger } from "@ai16z/eliza";
+import { embeddingZeroVector } from "@ai16z/eliza/src/memory.ts";
+import {
+    Character,
+    Client as ElizaClient,
+    IAgentRuntime,
+} from "@ai16z/eliza/src/types.ts";
+import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
+import { elizaLogger } from "@ai16z/eliza/src/logger.ts";
 import {
     Client,
     Events,
@@ -68,6 +72,7 @@ export class DiscordClient extends EventEmitter {
         this.runtime.registerAction(chat_with_attachments);
         this.runtime.registerAction(transcribe_media);
         this.runtime.registerAction(download_media);
+
 
         this.runtime.providers.push(channelStateProvider);
         this.runtime.providers.push(voiceStateProvider);

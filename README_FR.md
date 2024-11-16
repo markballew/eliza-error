@@ -4,20 +4,20 @@
 
 ## la fonctionnalité
 
--   🛠 soutenir la connexion discord/ twitter /telegram
--   👥 soutien aux agents multimodaux
--   📚 simple à importer des documents et interagir avec les documents
--   mémoire et stockage des documents accessibles
--   🚀 haute scalabilité, vous pouvez personnaliser les clients et les comportements pour une extension fonctionnelle
--   ☁ ️ plusieurs modèles, y compris Llama, OpenAI Grok Anthropic, etc.
--   📦 simple et facile à utiliser
+- 🛠 soutenir la connexion discord/ twitter /telegram
+- 👥 soutien aux agents multimodaux
+- 📚 simple à importer des documents et interagir avec les documents
+- mémoire et stockage des documents accessibles
+- 🚀 haute scalabilité, vous pouvez personnaliser les clients et les comportements pour une extension fonctionnelle
+- ☁ ️ plusieurs modèles, y compris Llama, OpenAI Grok Anthropic, etc.
+- 📦 simple et facile à utiliser
 
 Que pouvez-vous faire avec Eliza?
 
--   🤖 le chatbot
--   🕵 ️ Agents autonomes
--   📈 processus métier pour automatiser le traitement
--   🎮 jeux PNJ
+- 🤖 le chatbot
+- 🕵 ️ Agents autonomes
+- 📈 processus métier pour automatiser le traitement
+- 🎮 jeux PNJ
 
 # commencez à utiliser
 
@@ -30,15 +30,16 @@ Que pouvez-vous faire avec Eliza?
 
 ### éditer le fichier.env
 
--   copiez.env.example en.env et remplissez la valeur appropriée
--   modifier l’environnement twitter et entrer votre compte twitter et mot de passe
+- copiez.env.example en.env et remplissez la valeur appropriée
+- modifier l’environnement twitter et entrer votre compte twitter et mot de passe
 
 ### modifier les fichiers de rôles
 
--   voir le document `src/core/defaultCharacter ts` - vous pouvez le modifier
--   vous pouvez également utiliser `node --loader ts-node/esm src/index.ts --characters="path/to/your/character.json" ` et simultanément plusieurs robots.
+- voir le document ` src/core/defaultCharacter ts ` - vous pouvez le modifier
+- vous pouvez également utiliser `node --loader ts-node/esm src/index.ts --characters="path/to/your/character.json" ` et simultanément plusieurs robots.
 
 Après avoir terminé la configuration des fichiers de compte et de rôle, lancez votre bot en tapant la ligne de commande suivante:
+
 
 ```
 pnpm i
@@ -163,9 +164,9 @@ pnpm test:sqljs    # Run tests with SQL.js
 
 Les tests sont écrits en Jest et se trouvent dans le fichier SRC /\*_/_.test.ts. L’environnement de test est configuré comme suit:
 
--   chargement des variables d’environnement de.env.test
--   utilisez un temps d’attente de 2 minutes pour exécuter des tests de longue durée
--   support du module ESM
--   exécuter les tests dans l’ordre (--runInBand)
+- chargement des variables d’environnement de.env.test
+- utilisez un temps d’attente de 2 minutes pour exécuter des tests de longue durée
+- support du module ESM
+- exécuter les tests dans l’ordre (--runInBand)
 
 Pour créer un nouveau test, ajoutez un fichier.test.ts à côté du code à tester.

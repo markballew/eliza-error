@@ -18,9 +18,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:641](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L641)
+[packages/core/src/types.ts:629](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L629)
 
----
+***
 
 ### closeBrowser()
 
@@ -32,9 +32,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:642](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L642)
+[packages/core/src/types.ts:630](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L630)
 
----
+***
 
 ### getPageContent()
 
@@ -64,4 +64,4 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:643](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L643)
+[packages/core/src/types.ts:631](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L631)

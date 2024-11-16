@@ -17,7 +17,6 @@
 
 ## Interfaces
 
-- [GenerationOptions](interfaces/GenerationOptions.md)
 - [Content](interfaces/Content.md)
 - [ActionExample](interfaces/ActionExample.md)
 - [ConversationExample](interfaces/ConversationExample.md)
@@ -66,11 +65,6 @@
 - [elizaLogger](variables/elizaLogger.md)
 - [embeddingDimension](variables/embeddingDimension.md)
 - [embeddingZeroVector](variables/embeddingZeroVector.md)
-- [models](variables/models.md)
-- [messageCompletionFooter](variables/messageCompletionFooter.md)
-- [shouldRespondFooter](variables/shouldRespondFooter.md)
-- [booleanFooter](variables/booleanFooter.md)
-- [stringArrayFooter](variables/stringArrayFooter.md)
 - [settings](variables/settings.md)
 
 ## Functions
@@ -97,8 +91,6 @@
 - [generateMessageResponse](functions/generateMessageResponse.md)
 - [generateImage](functions/generateImage.md)
 - [generateCaption](functions/generateCaption.md)
-- [generateObjectV2](functions/generateObjectV2.md)
-- [handleProvider](functions/handleProvider.md)
 - [getGoals](functions/getGoals.md)
 - [formatGoalsAsString](functions/formatGoalsAsString.md)
 - [updateGoal](functions/updateGoal.md)
@@ -109,10 +101,6 @@
 - [formatTimestamp](functions/formatTimestamp.md)
 - [getModel](functions/getModel.md)
 - [getEndpoint](functions/getEndpoint.md)
-- [parseShouldRespondFromText](functions/parseShouldRespondFromText.md)
-- [parseBooleanFromText](functions/parseBooleanFromText.md)
-- [parseJsonArrayFromText](functions/parseJsonArrayFromText.md)
-- [parseJSONObjectFromText](functions/parseJSONObjectFromText.md)
 - [formatPosts](functions/formatPosts.md)
 - [getProviders](functions/getProviders.md)
 - [createRelationship](functions/createRelationship.md)
@@ -121,4 +109,3 @@
 - [formatRelationships](functions/formatRelationships.md)
 - [findNearestEnvFile](functions/findNearestEnvFile.md)
 - [loadEnvConfig](functions/loadEnvConfig.md)
-- [stringToUuid](functions/stringToUuid.md)

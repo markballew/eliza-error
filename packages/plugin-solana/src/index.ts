@@ -1,9 +1,4 @@
-export * from "./providers/token.ts";
-export * from "./providers/wallet.ts";
-export * from "./providers/trustScoreProvider.ts";
-export * from "./evaluators/trust.ts";
-
-import { Plugin } from "@ai16z/eliza";
+import { Plugin } from "@ai16z/eliza/src/types.ts";
 //import { executeSwap } from "./actions/swap.ts";
 //import take_order from "./actions/takeOrder";
 //import pumpfun from "./actions/pumpfun.ts";
@@ -23,7 +18,9 @@ export const solanaPlugin: Plugin = {
         //executeSwapForDAO,
         //take_order,
     ],
-    evaluators: [trustEvaluator],
+    evaluators: [
+        trustEvaluator
+    ],
     providers: [walletProvider, trustScoreProvider],
 };
 

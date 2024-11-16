@@ -1,20 +1,23 @@
+import { composeContext } from "@ai16z/eliza/src/context.ts";
 import {
-    composeContext,
     generateObjectArray,
     generateTrueOrFalse,
-    MemoryManager,
-    booleanFooter,
+} from "@ai16z/eliza/src/generation.ts";
+import { MemoryManager } from "@ai16z/eliza/src/memory.ts";
+import { booleanFooter } from "@ai16z/eliza/src/parsing.ts";
+import {
     ActionExample,
     Content,
     IAgentRuntime,
     Memory,
     ModelClass,
     Evaluator,
-} from "@ai16z/eliza";
+} from "@ai16z/eliza/src/types.ts";
+import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
 import { TrustScoreManager } from "../providers/trustScoreProvider.ts";
 import { TokenProvider } from "../providers/token.ts";
 import { WalletProvider } from "../providers/wallet.ts";
-import { TrustScoreDatabase } from "@ai16z/plugin-trustdb";
+import { TrustScoreDatabase } from "../adapters/trustScoreDatabase.ts";
 import { Connection, PublicKey } from "@solana/web3.js";
 
 const shouldProcessTemplate =
@@ -100,8 +103,6 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
         return [];
     }
 
-    console.log("Processing recommendations");
-
     // Get recent recommendations
     const recommendationsManager = new MemoryManager({
         runtime,
@@ -183,7 +184,6 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
 
         const trustScoreDb = new TrustScoreDatabase(runtime.databaseAdapter.db);
         const trustScoreManager = new TrustScoreManager(
-            runtime,
             tokenProvider,
             trustScoreDb
         );
@@ -221,13 +221,9 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
 
         await recommendationsManager.createMemory(recMemory, true);
 
-        console.log("recommendationsManager", rec);
-
-        // - from here we just need to make sure code is right
-
         // buy, dont buy, sell, dont sell
 
-        const buyAmounts = await tokenProvider.calculateBuyAmounts();
+        const buyAmounts = await this.tokenProvider.getBuyAmounts();
 
         let buyAmount = buyAmounts[rec.conviction.toLowerCase().trim()];
         if (!buyAmount) {
@@ -237,7 +233,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
         }
 
         // TODO: is this is a buy, sell, dont buy, or dont sell?
-        const shouldTrade = await tokenProvider.shouldTradeToken();
+        const shouldTrade = await this.tokenProvider.shouldTradeToken();
 
         if (!shouldTrade) {
             console.warn(

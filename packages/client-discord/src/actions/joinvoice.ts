@@ -9,14 +9,14 @@ import {
     Guild,
     GuildMember,
 } from "discord.js";
-import { composeContext } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
 import {
     Action,
     ActionExample,
     IAgentRuntime,
     Memory,
     State,
-} from "@ai16z/eliza";
+} from "@ai16z/eliza/src/types.ts";
 
 export default {
     name: "JOIN_VOICE",

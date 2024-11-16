@@ -20,9 +20,9 @@ import {
 import EventEmitter from "events";
 import prism from "prism-media";
 import { Readable, pipeline } from "stream";
-import { composeContext } from "@ai16z/eliza";
-import { generateMessageResponse } from "@ai16z/eliza";
-import { embeddingZeroVector } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import { generateMessageResponse } from "@ai16z/eliza/src/generation.ts";
+import { embeddingZeroVector } from "@ai16z/eliza/src/memory.ts";
 import {
     Content,
     HandlerCallback,
@@ -35,7 +35,7 @@ import {
     ServiceType,
     State,
     UUID,
-} from "@ai16z/eliza";
+} from "@ai16z/eliza/src/types.ts";
 import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
 
 export function getWavHeader(
