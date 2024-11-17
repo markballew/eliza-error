@@ -1,10 +1,12 @@
 import { Tweet } from "agent-twitter-client";
-import fs from "fs";
-import { composeContext } from "@ai16z/eliza/src/context.ts";
-import { generateText } from "@ai16z/eliza/src/generation.ts";
-import { embeddingZeroVector } from "@ai16z/eliza/src/memory.ts";
-import { IAgentRuntime, ModelClass } from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
+import {
+    composeContext,
+    generateText,
+    embeddingZeroVector,
+    IAgentRuntime,
+    ModelClass,
+    stringToUuid,
+} from "@ai16z/eliza";
 import { ClientBase } from "./base.ts";
 
 const twitterPostTemplate = `{{timeline}}
@@ -28,32 +30,19 @@ Write a single sentence post that is {{adjective}} about {{topic}} (without ment
 Your response should not contain any questions. Brief, concise statements only. No emojis. Use \\n\\n (double spaces) between statements.`;
 
 export class TwitterPostClient extends ClientBase {
-
-
-    onReady(postImmediately: boolean = true) { 
+    onReady() {
         const generateNewTweetLoop = () => {
-            const minMinutes = parseInt(this.runtime.getSetting("POST_INTERVAL_MIN")) || 90;
-            const maxMinutes = parseInt(this.runtime.getSetting("POST_INTERVAL_MAX")) || 180;
-            const randomMinutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;
-            const delay = randomMinutes * 60 * 1000;
-            
-            setTimeout(
-                () => {
-                    this.generateNewTweet();
-                    generateNewTweetLoop(); // Set up next iteration
-                },
-                delay
-            );
-            
-            console.log(`Next tweet scheduled in ${randomMinutes} minutes`);
-        };
-    
-        if (postImmediately) {
             this.generateNewTweet();
-        }
+            setTimeout(
+                generateNewTweetLoop,
+                (Math.floor(Math.random() * (4 - 1 + 1)) + 1) * 60 * 60 * 1000
+            ); // Random interval between 1 and 4 hours
+        };
+        // setTimeout(() => {
         generateNewTweetLoop();
+        // }, 5 * 60 * 1000); // Wait 5 minutes before starting the loop
     }
-    
+
     constructor(runtime: IAgentRuntime) {
         // Initialize the client and pass an optional callback to be called when the client is ready
         super({
@@ -73,18 +62,13 @@ export class TwitterPostClient extends ClientBase {
 
             let homeTimeline = [];
 
-            if (!fs.existsSync("tweetcache")) fs.mkdirSync("tweetcache");
-            // read the file if it exists
-            if (fs.existsSync("tweetcache/home_timeline.json")) {
-                homeTimeline = JSON.parse(
-                    fs.readFileSync("tweetcache/home_timeline.json", "utf-8")
-                );
+            const cachedTimeline = await this.getCachedTimeline();
+
+            if (cachedTimeline) {
+                homeTimeline = cachedTimeline;
             } else {
                 homeTimeline = await this.fetchHomeTimeline(50);
-                fs.writeFileSync(
-                    "tweetcache/home_timeline.json",
-                    JSON.stringify(homeTimeline, null, 2)
-                );
+                this.cacheTimeline(homeTimeline);
             }
 
             const formattedHomeTimeline =
@@ -140,6 +124,7 @@ export class TwitterPostClient extends ClientBase {
             if (content.length > contentLength) {
                 content = content.slice(0, content.lastIndexOf("."));
             }
+
             try {
                 const result = await this.requestQueue.add(
                     async () => await this.twitterClient.sendTweet(content)

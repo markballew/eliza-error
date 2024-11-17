@@ -767,13 +767,11 @@ export const generateImage = async (
                                 num_iterations: data.numIterations || 20,
                                 width: data.width || 512,
                                 height: data.height || 512,
-                                guidance_scale: data.guidanceScale || 3,
+                                guidance_scale: data.guidanceScale,
                                 seed: data.seed || -1,
                             },
                         },
                         model_id: data.modelId || "FLUX.1-dev",
-                        deadline: 60,
-                        priority: 1,
                     }),
                 }
             );
@@ -784,8 +782,8 @@ export const generateImage = async (
                 );
             }
 
-            const imageURL = await response.json();
-            return { success: true, data: [imageURL] };
+            const result = await response.json();
+            return { success: true, data: [result.url] };
         } else if (
             runtime.character.modelProvider === ModelProviderName.LLAMACLOUD
         ) {
