@@ -369,6 +369,12 @@ export type Character = {
         chat: string[];
         post: string[];
     };
+    twitterProfile?: {
+        username: string;
+        screenName: string;
+        bio: string;
+        nicknames?: string[];
+    };
 };
 
 export interface IDatabaseAdapter {
@@ -475,20 +481,6 @@ export interface IDatabaseAdapter {
     getRelationships(params: { userId: UUID }): Promise<Relationship[]>;
 }
 
-export interface IDatabaseCacheAdapter {
-    getCached(params: {
-        agentId: UUID;
-        key: string;
-    }): Promise<string | undefined>;
-    setCached(params: {
-        agentId: UUID;
-        key: string;
-        value: string;
-    }): Promise<boolean>;
-
-    delCached(params: { agentId: UUID; key: string }): Promise<boolean>;
-}
-
 export interface IMemoryManager {
     runtime: IAgentRuntime;
     tableName: string;
@@ -528,13 +520,6 @@ export interface IMemoryManager {
     countMemories(roomId: UUID, unique?: boolean): Promise<number>;
 }
 
-export interface ICacheManager {
-    get(key: string): Promise<string | undefined>;
-    set(key: string, value: string): Promise<void>;
-    del(key: string): Promise<void>;
-}
-
-
 export abstract class Service {
     private static instance: Service | null = null;
     static serviceType: ServiceType;
@@ -563,7 +548,6 @@ export interface IAgentRuntime {
     messageManager: IMemoryManager;
     descriptionManager: IMemoryManager;
     loreManager: IMemoryManager;
-    cacheManager: ICacheManager;
 
     services: Map<ServiceType, Service>;
     registerMemoryManager(manager: IMemoryManager): void;

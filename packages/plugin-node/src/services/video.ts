@@ -133,13 +133,14 @@ export class VideoService extends Service {
                 /(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^\/&?]+)/
             )?.[1] || "";
         const videoUuid = this.getVideoId(videoId);
-        const cacheKey = `${this.CONTENT_CACHE_DIR}/${videoUuid}`;
+        const cacheFilePath = path.join(
+            this.CONTENT_CACHE_DIR,
+            `${videoUuid}.json`
+        );
 
-        const cached = await runtime.cacheManager.get(cacheKey);
-
-        if (cached) {
+        if (fs.existsSync(cacheFilePath)) {
             console.log("Returning cached video file");
-            return JSON.parse(cached) as Media;
+            return JSON.parse(fs.readFileSync(cacheFilePath, "utf-8")) as Media;
         }
 
         console.log("Cache miss, processing video");
@@ -157,8 +158,7 @@ export class VideoService extends Service {
             text: transcript,
         };
 
-        await runtime.cacheManager.set(cacheKey, JSON.stringify(result));
-
+        fs.writeFileSync(cacheFilePath, JSON.stringify(result));
         return result;
     }
 

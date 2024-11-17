@@ -1,4 +1,4 @@
-import { ICacheManager, settings } from "@ai16z/eliza";
+import { settings } from "@ai16z/eliza";
 import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
 import {
     DexScreenerData,
@@ -10,6 +10,7 @@ import {
     CalculatedBuyAmounts,
     Prices,
 } from "../types/token.ts";
+import * as fs from "fs";
 import NodeCache from "node-cache";
 import * as path from "path";
 import { toBN } from "../bignumber.ts";
@@ -35,22 +36,37 @@ const PROVIDER_CONFIG = {
 
 export class TokenProvider {
     private cache: NodeCache;
-    private cacheDir: string = "solana/tokens";
+    private cacheDir: string;
 
     constructor(
         //  private connection: Connection,
         private tokenAddress: string,
-        private walletProvider: WalletProvider,
-        private cacheManager: ICacheManager
+        private walletProvider: WalletProvider
     ) {
         this.cache = new NodeCache({ stdTTL: 300 }); // 5 minutes cache
+        const __dirname = path.resolve();
+
+        // Find the 'eliza' folder in the filepath and adjust the cache directory path
+        const elizaIndex = __dirname.indexOf("eliza");
+        if (elizaIndex !== -1) {
+            const pathToEliza = __dirname.slice(0, elizaIndex + 5); // include 'eliza'
+            this.cacheDir = path.join(pathToEliza, "cache");
+        } else {
+            this.cacheDir = path.join(__dirname, "cache");
+        }
+
+        this.cacheDir = path.join(__dirname, "cache");
+        if (!fs.existsSync(this.cacheDir)) {
+            fs.mkdirSync(this.cacheDir);
+        }
     }
 
-    private async readFromCache<T>(cacheKey: string): Promise<T | null> {
+    private readCacheFromFile<T>(cacheKey: string): T | null {
         const filePath = path.join(this.cacheDir, `${cacheKey}.json`);
-        const cached = await this.cacheManager.get(filePath);
-        if (cached) {
-            const parsed = JSON.parse(cached);
+        console.log({ filePath });
+        if (fs.existsSync(filePath)) {
+            const fileContent = fs.readFileSync(filePath, "utf-8");
+            const parsed = JSON.parse(fileContent);
             const now = Date.now();
             if (now < parsed.expiry) {
                 console.log(
@@ -61,26 +77,23 @@ export class TokenProvider {
                 console.log(
                     `Cache expired for key: ${cacheKey}. Deleting file.`
                 );
-                this.cacheManager.del(cacheKey);
+                fs.unlinkSync(filePath);
             }
         }
         return null;
     }
 
-    private async writeCacheToFile<T>(
-        cacheKey: string,
-        data: T
-    ): Promise<void> {
+    private writeCacheToFile<T>(cacheKey: string, data: T): void {
         const filePath = path.join(this.cacheDir, `${cacheKey}.json`);
         const cacheData = {
             data: data,
             expiry: Date.now() + 300000, // 5 minutes in milliseconds
         };
-        this.cacheManager.set(filePath, JSON.stringify(cacheData));
-        console.log(`Cached data written to key: ${cacheKey}`);
+        fs.writeFileSync(filePath, JSON.stringify(cacheData), "utf-8");
+        console.log(`Cached data written to file for key: ${cacheKey}`);
     }
 
-    private async getCachedData<T>(cacheKey: string): Promise<T | null> {
+    private getCachedData<T>(cacheKey: string): T | null {
         // Check in-memory cache first
         const cachedData = this.cache.get<T>(cacheKey);
         if (cachedData) {
@@ -88,7 +101,7 @@ export class TokenProvider {
         }
 
         // Check file-based cache
-        const fileCachedData = await this.readFromCache<T>(cacheKey);
+        const fileCachedData = this.readCacheFromFile<T>(cacheKey);
         if (fileCachedData) {
             // Populate in-memory cache
             this.cache.set(cacheKey, fileCachedData);
@@ -98,12 +111,12 @@ export class TokenProvider {
         return null;
     }
 
-    private async setCachedData<T>(cacheKey: string, data: T): Promise<void> {
+    private setCachedData<T>(cacheKey: string, data: T): void {
         // Set in-memory cache
         this.cache.set(cacheKey, data);
 
         // Write to file-based cache
-        await this.writeCacheToFile(cacheKey, data);
+        this.writeCacheToFile(cacheKey, data);
     }
 
     private async fetchWithRetry(
@@ -585,7 +598,7 @@ export class TokenProvider {
         symbol: string
     ): Promise<DexScreenerPair | null> {
         const cacheKey = `dexScreenerData_search_${symbol}`;
-        const cachedData = await this.getCachedData<DexScreenerData>(cacheKey);
+        const cachedData = this.getCachedData<DexScreenerData>(cacheKey);
         if (cachedData) {
             console.log("Returning cached search DexScreener data.");
             return this.getHighestLiquidityPair(cachedData);
@@ -1052,13 +1065,7 @@ const tokenProvider: Provider = {
                 connection,
                 new PublicKey(PROVIDER_CONFIG.MAIN_WALLET)
             );
-
-            const provider = new TokenProvider(
-                tokenAddress,
-                walletProvider,
-                runtime.cacheManager
-            );
-
+            const provider = new TokenProvider(tokenAddress, walletProvider);
             return provider.getFormattedTokenReport();
         } catch (error) {
             console.error("Error fetching token data:", error);

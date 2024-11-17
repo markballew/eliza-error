@@ -393,8 +393,7 @@ export const executeSwap: Action = {
             if (type === "buy") {
                 const tokenProvider = new TokenProvider(
                     response.outputTokenCA,
-                    await walletProvider.get(runtime, message, state),
-                    runtime.cacheManager
+                    await walletProvider.get(runtime, message, state)
                 );
                 const module = await import("better-sqlite3");
                 const Database = module.default;
@@ -428,8 +427,7 @@ export const executeSwap: Action = {
             } else if (type === "sell") {
                 const tokenProvider = new TokenProvider(
                     response.inputTokenCA,
-                    await walletProvider.get(runtime, message, state),
-                    runtime.cacheManager
+                    await walletProvider.get(runtime, message, state)
                 );
                 const module = await import("better-sqlite3");
                 const Database = module.default;

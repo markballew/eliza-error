@@ -1,19 +1,12 @@
 import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 import { SqliteDatabaseAdapter } from "@ai16z/adapter-sqlite";
-import { DirectClient, DirectClientInterface } from "@ai16z/client-direct";
+import { DirectClientInterface } from "@ai16z/client-direct";
 import { DiscordClientInterface } from "@ai16z/client-discord";
 import { AutoClientInterface } from "@ai16z/client-auto";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
 import { TwitterClientInterface } from "@ai16z/client-twitter";
-import {
-    DatabaseAdapter,
-    DbCacheAdapter,
-    defaultCharacter,
-    FsCacheAdapter,
-    IDatabaseCacheAdapter,
-    stringToUuid,
-} from "@ai16z/eliza";
-import { AgentRuntime, CacheManager } from "@ai16z/eliza";
+import { defaultCharacter } from "@ai16z/eliza";
+import { AgentRuntime } from "@ai16z/eliza";
 import { settings } from "@ai16z/eliza";
 import {
     Character,
@@ -28,11 +21,6 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import readline from "readline";
 import yargs from "yargs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = path.dirname(__filename); // get the name of the directory
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     const waitTime =
@@ -173,13 +161,9 @@ export function getTokenForProvider(
 export async function createDirectRuntime(
     character: Character,
     db: IDatabaseAdapter,
-    token: string,
-    dataDir: string
+    token: string
 ) {
     console.log("Creating runtime for character", character.name);
-
-    character.id ??= stringToUuid(character.name);
-
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -191,18 +175,16 @@ export async function createDirectRuntime(
         actions: [],
         services: [],
         managers: [],
-        cacheManager: intializeFsCache(dataDir, character),
     });
 }
 
-function initializeDatabase(dataDir: string) {
+function initializeDatabase() {
     if (process.env.POSTGRES_URL) {
         return new PostgresDatabaseAdapter({
             connectionString: process.env.POSTGRES_URL,
         });
     } else {
-        const filePath = path.resolve(dataDir, "db.sqlite");
-        return new SqliteDatabaseAdapter(new Database(filePath));
+        return new SqliteDatabaseAdapter(new Database("./db.sqlite"));
     }
 }
 
@@ -236,17 +218,13 @@ export async function initializeClients(
     return clients;
 }
 
-export function createAgent(
+export async function createAgent(
     character: Character,
-    db: DatabaseAdapter,
-    cache: CacheManager,
+    db: any,
     token: string
 ) {
     console.log("Creating runtime for character", character.name);
-    console.log(
-        "character.settings.secrets?.WALLET_PUBLIC_KEY",
-        character.settings.secrets?.WALLET_PUBLIC_KEY
-    );
+    console.log("character.settings.secrets?.WALLET_PUBLIC_KEY", character.settings.secrets?.WALLET_PUBLIC_KEY)
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -262,40 +240,22 @@ export function createAgent(
         actions: [],
         services: [],
         managers: [],
-        cacheManager: cache,
     });
 }
 
-function intializeFsCache(baseDir: string, character: Character) {
-    const cacheDir = path.resolve(baseDir, character.id, "cache");
-
-    if (!fs.existsSync(cacheDir)) {
-        fs.mkdirSync(cacheDir, { recursive: true });
-    }
-
-    const cache = new CacheManager(new FsCacheAdapter(cacheDir));
-
-    return cache;
-}
-
-function intializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
-    const cache = new CacheManager(new DbCacheAdapter(db, character.id));
-    return cache;
-}
-
-async function startAgent(character: Character, directClient: DirectClient) {
+async function startAgent(character: Character, directClient: any) {
     try {
-        character.id ??= stringToUuid(character.name);
-
         const token = getTokenForProvider(character.modelProvider, character);
-        const dataDir = path.join(__dirname, "../../data");
-        const db = initializeDatabase(dataDir);
-        const cache = intializeFsCache(dataDir, character);
-        const runtime = createAgent(character, db, cache, token);
+        const db = initializeDatabase();
 
-        const clients = await initializeClients(character, runtime);
+        const runtime = await createAgent(character, db, token);
 
-        directClient.registerAgent(runtime);
+        const clients = await initializeClients(
+            character,
+            runtime as IAgentRuntime
+        );
+
+        directClient.registerAgent(await runtime);
 
         return clients;
     } catch (error) {
