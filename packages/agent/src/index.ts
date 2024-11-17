@@ -16,13 +16,11 @@ import {
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { starknetPlugin } from "@ai16z/plugin-starknet";
 import { nodePlugin } from "@ai16z/plugin-node";
 import Database from "better-sqlite3";
 import fs from "fs";
 import readline from "readline";
 import yargs from "yargs";
-import { blobert } from "./blobert.ts";
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     const waitTime =
@@ -160,6 +158,26 @@ export function getTokenForProvider(
     }
 }
 
+export async function createDirectRuntime(
+    character: Character,
+    db: IDatabaseAdapter,
+    token: string
+) {
+    console.log("Creating runtime for character", character.name);
+    return new AgentRuntime({
+        databaseAdapter: db,
+        token,
+        modelProvider: character.modelProvider,
+        evaluators: [],
+        character,
+        plugins: [],
+        providers: [],
+        actions: [],
+        services: [],
+        managers: [],
+    });
+}
+
 function initializeDatabase() {
     if (process.env.POSTGRES_URL) {
         return new PostgresDatabaseAdapter({
@@ -206,6 +224,7 @@ export async function createAgent(
     token: string
 ) {
     console.log("Creating runtime for character", character.name);
+    console.log("character.settings.secrets?.WALLET_PUBLIC_KEY", character.settings.secrets?.WALLET_PUBLIC_KEY)
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -244,7 +263,7 @@ async function startAgent(character: Character, directClient: any) {
             `Error starting agent for character ${character.name}:`,
             error
         );
-        throw error;
+        throw error; // Re-throw after logging
     }
 }
 
@@ -254,7 +273,7 @@ const startAgents = async () => {
 
     let charactersArg = args.characters || args.character;
 
-    let characters = [blobert];
+    let characters = [defaultCharacter];
 
     if (charactersArg) {
         characters = await loadCharacters(charactersArg);
