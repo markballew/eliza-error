@@ -131,6 +131,8 @@ export class AgentRuntime implements IAgentRuntime {
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
 
+    logging: boolean = false;
+
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
             throw new Error("Memory manager must have a tableName");
@@ -426,6 +428,7 @@ export class AgentRuntime implements IAgentRuntime {
         state?: State,
         callback?: HandlerCallback
     ): Promise<void> {
+        console.log("Processing actions", responses);
         if (!responses[0].content?.action) {
             elizaLogger.warn("No action found in the response content.");
             return;
@@ -496,7 +499,7 @@ export class AgentRuntime implements IAgentRuntime {
     async evaluate(message: Memory, state?: State, didRespond?: boolean) {
         const evaluatorPromises = this.evaluators.map(
             async (evaluator: Evaluator) => {
-                elizaLogger.log("Evaluating", evaluator.name);
+                console.log("Evaluating", evaluator.name);
                 if (!evaluator.handler) {
                     return null;
                 }
