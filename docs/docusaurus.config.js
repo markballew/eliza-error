@@ -2,7 +2,7 @@ import { themes as prismThemes } from "prism-react-renderer";
 
 const config = {
   title: "eliza",
-  tagline: "flexible, scalable AI agents for everyone",
+  tagline: "The flexible, scalable AI agent for everyone",
   favicon: "img/favicon.ico",
   url: "https://ai16z.github.io",
   baseUrl: "/eliza/",
