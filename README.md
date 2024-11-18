@@ -10,6 +10,9 @@
   
 </div>
 
+## 🌍 README Translations
+[中文说明](./README_CN.md) | [日本語の説明](./README_JA.md) | [한국어 설명](./README_KOR.md) | [Français](./README_FR.md) | [Português](./README_PTBR.md) | [Türkçe](./README_TR.md) | [Русский](./README_RU.md) | [Español](./README_ES.md)
+
 ## ✨ Features
 
 -   🛠️ Full-featured Discord, Twitter and Telegram connectors
@@ -28,19 +31,6 @@
 -   📈 Business Process Handling
 -   🎮 Video Game NPCs
 -   🧠 Trading
-
-## 🌍 Translations
-
-<details>
-<summary>Available Languages</summary>
-
--   [中文说明](./README_CN.md)
--   [日本語の説明](./README_JA.md)
--   [한국어 설명](./README_KOR.md)
--   [Instructions en français](./README_FR.md)
--   [Instruções em português](./README_PTBR.md)
-
-</details>
 
 ## 🚀 Quick Start
 

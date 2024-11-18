@@ -16,7 +16,6 @@ import {
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { evmPlugin } from "@ai16z/plugin-evm";
 import { nodePlugin } from "@ai16z/plugin-node";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -157,27 +156,12 @@ export function getTokenForProvider(
                 character.settings?.secrets?.HEURIST_API_KEY ||
                 settings.HEURIST_API_KEY
             );
+        case ModelProviderName.GROQ:
+            return (
+                character.settings?.secrets?.GROQ_API_KEY ||
+                settings.GROQ_API_KEY
+            );
     }
-}
-
-export async function createDirectRuntime(
-    character: Character,
-    db: IDatabaseAdapter,
-    token: string
-) {
-    console.log("Creating runtime for character", character.name);
-    return new AgentRuntime({
-        databaseAdapter: db,
-        token,
-        modelProvider: character.modelProvider,
-        evaluators: [],
-        character,
-        plugins: [],
-        providers: [],
-        actions: [],
-        services: [],
-        managers: [],
-    });
 }
 
 function initializeDatabase() {
@@ -217,39 +201,36 @@ export async function initializeClients(
         clients.push(twitterClients);
     }
 
-    if (character.plugins.length > 0) {
-        character.plugins.forEach(async (plugin) => {
+    if (character.plugins?.length > 0) {
+        for (const plugin of character.plugins) {
             if (plugin.clients) {
-                plugin.clients.forEach(async (client) => {
+                for (const client of plugin.clients) {
                     clients.push(await client.start(runtime));
-                });
+                }
             }
-        });
+        }
     }
 
     return clients;
 }
 
-export async function createAgent(character: Character, db: any, token: string) {
+export async function createAgent(
+    character: Character,
+    db: any,
+    token: string
+) {
     console.log("Creating runtime for character", character.name);
-    
-    const plugins = [bootstrapPlugin, nodePlugin];
-
-    if (character.settings.secrets?.SOLANA_PUBLIC_KEY) {
-        plugins.push(solanaPlugin);
-    }
-
-    if (character.settings.secrets?.EVM_PRIVATE_KEY) {
-        plugins.push(evmPlugin);
-    }
-
     return new AgentRuntime({
         databaseAdapter: db,
         token,
         modelProvider: character.modelProvider,
         evaluators: [],
         character,
-        plugins: plugins.filter(Boolean),
+        plugins: [
+            bootstrapPlugin,
+            nodePlugin,
+            character.settings.secrets?.WALLET_PUBLIC_KEY ? solanaPlugin : null,
+        ].filter(Boolean),
         providers: [],
         actions: [],
         services: [],
@@ -277,7 +258,7 @@ async function startAgent(character: Character, directClient: any) {
             `Error starting agent for character ${character.name}:`,
             error
         );
-        throw error; // Re-throw after logging
+        throw error;
     }
 }
 
