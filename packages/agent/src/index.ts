@@ -156,11 +156,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.HEURIST_API_KEY ||
                 settings.HEURIST_API_KEY
             );
-        case ModelProviderName.GROQ:
-            return (
-                character.settings?.secrets?.GROQ_API_KEY ||
-                settings.GROQ_API_KEY
-            );
     }
 }
 

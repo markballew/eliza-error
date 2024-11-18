@@ -2,7 +2,9 @@
 // It should just transfer tokens from the agent's wallet to the recipient.
 
 import {
+    settings,
     ActionExample,
+    Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -11,7 +13,6 @@ import {
     type Action,
     composeContext,
     generateObject,
-    elizaLogger,
 } from "@ai16z/eliza";
 import {
     getStarknetAccount,
@@ -69,7 +70,7 @@ export default {
         _options: { [key: string]: unknown },
         callback?: HandlerCallback
     ): Promise<boolean> => {
-        elizaLogger.log("Starting SEND_TOKEN handler...");
+        console.log("Starting TRANSFER_TOKEN handler...");
 
         // Initialize or update state
         if (!state) {
@@ -91,11 +92,11 @@ export default {
             modelClass: ModelClass.MEDIUM,
         });
 
-        elizaLogger.debug("Transfer content:", content);
+        console.log("Transfer content:", content);
 
         // Validate transfer content
         if (!isTransferContent(content)) {
-            elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
+            console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
                     text: "Not enough information to transfer tokens. Please respond with token address, recipient, and amount.",
@@ -119,7 +120,7 @@ export default {
                 amountWei
             );
 
-            elizaLogger.success(
+            console.log(
                 "Transferring",
                 amountWei,
                 "of",
@@ -130,7 +131,7 @@ export default {
 
             const tx = await account.execute(transferCall);
 
-            elizaLogger.success(
+            console.log(
                 "Transfer completed successfully! tx: " + tx.transaction_hash
             );
             if (callback) {
@@ -144,7 +145,7 @@ export default {
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token transfer:", error);
+            console.error("Error during token transfer:", error);
             if (callback) {
                 callback({
                     text: `Error transferring tokens: ${error.message}`,
@@ -160,41 +161,79 @@ export default {
             {
                 user: "{{user1}}",
                 content: {
-                    text: "Send 10 ETH to 0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+                    text: "Send 69 STRK to 0x1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF",
                 },
             },
             {
-                user: "{{agent}}",
+                user: "{{user2}}",
                 content: {
-                    text: "I'll transfer 10 ETH to that address right away. Let me process that for you.",
+                    text: "Transfer to 0x1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF 0.01 ETH",
                 },
             },
-        ],
-        [
+            {
+                user: "{{user3}}",
+                content: {
+                    text: "Please send 100 STRK tokens to 0x789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF012345",
+                },
+            },
+            {
+                user: "{{user4}}",
+                content: {
+                    text: "I'd like to transfer 0.5 ETH to 0xABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01234567",
+                },
+            },
+            {
+                user: "{{user5}}",
+                content: {
+                    text: "Can you send 25 STRK to wallet 0x456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF012",
+                },
+            },
             {
                 user: "{{user1}}",
                 content: {
-                    text: "Can you transfer 50 LORDS tokens to 0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49?",
+                    text: "Transfer 1.5 ETH -> 0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
                 },
             },
             {
-                user: "{{agent}}",
+                user: "{{user2}}",
                 content: {
-                    text: "Executing transfer of 50 LORDS tokens to the specified address. One moment please.",
+                    text: "Send 42.42 STRK tokens to address 0xDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
                 },
             },
-        ],
-        [
+            {
+                user: "{{user3}}",
+                content: {
+                    text: "Could you transfer 0.1 ETH to this address: 0xEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABC",
+                },
+            },
+            {
+                user: "{{user4}}",
+                content: {
+                    text: "I am requesting 777 STRK to be sent to this address: 0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+                },
+            },
+            {
+                user: "{{user5}}",
+                content: {
+                    text: "I really think i need 100 lords to be sent to this address: 0xBCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789A",
+                },
+            },
             {
                 user: "{{user1}}",
                 content: {
-                    text: "Please send 0.5 BTC to 0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac",
+                    text: "I am requesting 100 lords to be sent to this address: 0xCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB",
                 },
             },
             {
-                user: "{{agent}}",
+                user: "{{user2}}",
                 content: {
-                    text: "Got it, initiating transfer of 0.5 BTC to the provided address. I'll confirm once it's complete.",
+                    text: "Transfer lords to 0x90ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01234567",
+                },
+            },
+            {
+                user: "{{user3}}",
+                content: {
+                    text: "The repair of the squire blobert kingdom kitchen has been completed. Could you please send 100 LORDS tokens to 0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344",
                 },
             },
         ],

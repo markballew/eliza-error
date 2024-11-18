@@ -39,12 +39,10 @@ describe("Relationships Module", () => {
                 userB: mockUserB,
             });
 
-            expect(mockDatabaseAdapter.createRelationship).toHaveBeenCalledWith(
-                {
-                    userA: mockUserA,
-                    userB: mockUserB,
-                }
-            );
+            expect(mockDatabaseAdapter.createRelationship).toHaveBeenCalledWith({
+                userA: mockUserA,
+                userB: mockUserB,
+            });
             expect(result).toBe(true);
         });
 
@@ -71,11 +69,9 @@ describe("Relationships Module", () => {
                 id: generateRandomUUID(),
                 userId: generateRandomUUID(),
                 roomId: generateRandomUUID(),
-                status: "STATUS",
+                status: "STATUS"
             };
-            mockDatabaseAdapter.getRelationship.mockResolvedValue(
-                mockRelationship
-            );
+            mockDatabaseAdapter.getRelationship.mockResolvedValue(mockRelationship);
 
             const result = await getRelationship({
                 runtime: mockRuntime,
@@ -95,25 +91,21 @@ describe("Relationships Module", () => {
         it("should call getRelationships on the databaseAdapter with correct parameters", async () => {
             const mockRelationships: Relationship[] = [
                 {
-                    userA: mockUserA,
-                    userB: mockUserB,
+                    userA: mockUserA, userB: mockUserB,
                     id: generateRandomUUID(),
                     userId: generateRandomUUID(),
                     roomId: generateRandomUUID(),
-                    status: generateRandomUUID(),
+                    status: generateRandomUUID()
                 },
                 {
-                    userA: mockUserB,
-                    userB: mockUserId,
+                    userA: mockUserB, userB: mockUserId,
                     id: generateRandomUUID(),
                     userId: generateRandomUUID(),
                     roomId: generateRandomUUID(),
-                    status: "",
+                    status: ""
                 },
             ];
-            mockDatabaseAdapter.getRelationships.mockResolvedValue(
-                mockRelationships
-            );
+            mockDatabaseAdapter.getRelationships.mockResolvedValue(mockRelationships);
 
             const result = await getRelationships({
                 runtime: mockRuntime,
@@ -131,25 +123,21 @@ describe("Relationships Module", () => {
         it("should format relationships correctly", async () => {
             const mockRelationships: Relationship[] = [
                 {
-                    userA: mockUserA,
-                    userB: mockUserB,
+                    userA: mockUserA, userB: mockUserB,
                     id: generateRandomUUID(),
                     userId: generateRandomUUID(),
                     roomId: generateRandomUUID(),
-                    status: "STATUS",
+                    status: "STATUS"
                 },
                 {
-                    userA: mockUserB,
-                    userB: mockUserId,
+                    userA: mockUserB, userB: mockUserId,
                     id: generateRandomUUID(),
                     userId: generateRandomUUID(),
                     roomId: generateRandomUUID(),
-                    status: "STATUS",
+                    status: "STATUS"
                 },
             ];
-            mockDatabaseAdapter.getRelationships.mockResolvedValue(
-                mockRelationships
-            );
+            mockDatabaseAdapter.getRelationships.mockResolvedValue(mockRelationships);
 
             const result = await formatRelationships({
                 runtime: mockRuntime,

@@ -1,4 +1,6 @@
+
 import path from "node:path";
+
 
 import { models } from "./models.ts";
 import { IAgentRuntime, ModelProviderName, ModelClass } from "./types.ts";
@@ -27,6 +29,8 @@ async function getRemoteEmbedding(
     // Construct full URL
     const fullUrl = `${baseEndpoint}/embeddings`;
 
+    //console.log("Calling embedding API at:", fullUrl); // Debug log
+
     const requestOptions = {
         method: "POST",
         headers: {
@@ -48,7 +52,7 @@ async function getRemoteEmbedding(
         const response = await fetch(fullUrl, requestOptions);
 
         if (!response.ok) {
-            elizaLogger.error("API Response:", await response.text()); // Debug log
+            console.error("API Response:", await response.text()); // Debug log
             throw new Error(
                 `Embedding API Error: ${response.status} ${response.statusText}`
             );
@@ -61,7 +65,7 @@ async function getRemoteEmbedding(
         const data: EmbeddingResponse = await response.json();
         return data?.data?.[0].embedding;
     } catch (e) {
-        elizaLogger.error("Full error details:", e);
+        console.error("Full error details:", e);
         throw e;
     }
 }
@@ -172,7 +176,7 @@ export async function retrieveCachedEmbedding(
     input: string
 ) {
     if (!input) {
-        elizaLogger.log("No input to retrieve cached embedding for");
+        console.log("No input to retrieve cached embedding for");
         return null;
     }
 

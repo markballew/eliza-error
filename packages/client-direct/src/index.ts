@@ -2,7 +2,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import express, { Request as ExpressRequest } from "express";
 import multer, { File } from "multer";
-import { elizaLogger, generateCaption, generateImage } from "@ai16z/eliza";
+import { generateCaption, generateImage } from "@ai16z/eliza";
 import { composeContext } from "@ai16z/eliza";
 import { generateMessageResponse } from "@ai16z/eliza";
 import { messageCompletionFooter } from "@ai16z/eliza";
@@ -279,21 +279,21 @@ export class DirectClient {
 
     public start(port: number) {
         this.app.listen(port, () => {
-            elizaLogger.success(`Server running at http://localhost:${port}/`);
+            console.log(`Server running at http://localhost:${port}/`);
         });
     }
 }
 
 export const DirectClientInterface: Client = {
     start: async (runtime: IAgentRuntime) => {
-        elizaLogger.log("DirectClientInterface start");
+        console.log("DirectClientInterface start");
         const client = new DirectClient();
         const serverPort = parseInt(settings.SERVER_PORT || "3000");
         client.start(serverPort);
         return client;
     },
     stop: async (runtime: IAgentRuntime) => {
-        elizaLogger.warn("Direct client does not support stopping yet");
+        console.warn("Direct client does not support stopping yet");
     },
 };
 
