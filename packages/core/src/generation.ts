@@ -11,7 +11,7 @@ import { IImageDescriptionService, ModelClass, Service } from "./types.ts";
 import { Buffer } from "buffer";
 import { createOllama } from "ollama-ai-provider";
 import OpenAI from "openai";
-import { TiktokenModel, get_encoding, encoding_for_model } from "tiktoken";
+import { default as tiktoken, TiktokenModel } from "tiktoken";
 import Together from "together-ai";
 import { elizaLogger } from "./index.ts";
 import { models } from "./models.ts";
@@ -378,7 +378,7 @@ export async function generateText({
  */
 export function trimTokens(context, maxTokens, model) {
     // Count tokens and truncate context if necessary
-    const encoding = encoding_for_model(model as TiktokenModel);
+    const encoding = tiktoken.encoding_for_model(model as TiktokenModel);
     let tokens = encoding.encode(context);
     const textDecoder = new TextDecoder();
     if (tokens.length > maxTokens) {
@@ -463,7 +463,7 @@ export async function splitChunks(
     chunkSize: number,
     bleed: number = 100
 ): Promise<string[]> {
-    const encoding = encoding_for_model("gpt-4o-mini");
+    const encoding = tiktoken.encoding_for_model("gpt-4o-mini");
 
     const tokens = encoding.encode(content);
     const chunks: string[] = [];
@@ -767,13 +767,11 @@ export const generateImage = async (
                                 num_iterations: data.numIterations || 20,
                                 width: data.width || 512,
                                 height: data.height || 512,
-                                guidance_scale: data.guidanceScale || 3,
+                                guidance_scale: data.guidanceScale,
                                 seed: data.seed || -1,
                             },
                         },
                         model_id: data.modelId || "FLUX.1-dev",
-                        deadline: 60,
-                        priority: 1,
                     }),
                 }
             );
@@ -784,8 +782,8 @@ export const generateImage = async (
                 );
             }
 
-            const imageURL = await response.json();
-            return { success: true, data: [imageURL] };
+            const result = await response.json();
+            return { success: true, data: [result.url] };
         } else if (
             runtime.character.modelProvider === ModelProviderName.LLAMACLOUD
         ) {
