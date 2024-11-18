@@ -12,9 +12,9 @@ import {
     formatEvaluatorNames,
     formatEvaluators,
 } from "./evaluators.ts";
-import { generateText } from "./generation.ts";
+import { generateText, splitChunks } from "./generation.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { elizaLogger, embed, splitChunks } from "./index.ts";
+import { elizaLogger, embed } from "./utils.ts";
 import { embeddingZeroVector, MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { parseJsonArrayFromText } from "./parsing.ts";
@@ -137,7 +137,7 @@ export class AgentRuntime implements IAgentRuntime {
         }
 
         if (this.memoryManagers.has(manager.tableName)) {
-            elizaLogger.warn(
+            console.warn(
                 `Memory manager ${manager.tableName} is already registered. Skipping registration.`
             );
             return;
@@ -153,16 +153,16 @@ export class AgentRuntime implements IAgentRuntime {
     getService(service: ServiceType): typeof Service | null {
         const serviceInstance = this.services.get(service);
         if (!serviceInstance) {
-            elizaLogger.error(`Service ${service} not found`);
+            console.error(`Service ${service} not found`);
             return null;
         }
         return serviceInstance as typeof Service;
     }
     registerService(service: Service): void {
         const serviceType = (service as typeof Service).serviceType;
-        elizaLogger.log("Registering service:", serviceType);
+        console.log("Registering service:", serviceType);
         if (this.services.has(serviceType)) {
-            elizaLogger.warn(
+            console.warn(
                 `Service ${serviceType} is already registered. Skipping registration.`
             );
             return;
@@ -206,7 +206,6 @@ export class AgentRuntime implements IAgentRuntime {
         databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
-        logging?: boolean;
     }) {
         this.#conversationLength =
             opts.conversationLength ?? this.#conversationLength;
@@ -217,7 +216,7 @@ export class AgentRuntime implements IAgentRuntime {
             opts.agentId ??
             stringToUuid(opts.character.name);
 
-        elizaLogger.success("Agent ID", this.agentId);
+        console.log("Agent ID", this.agentId);
 
         this.fetch = (opts.fetch as typeof fetch) ?? this.fetch;
         this.character = opts.character || defaultCharacter;
@@ -250,10 +249,6 @@ export class AgentRuntime implements IAgentRuntime {
             tableName: "fragments",
         });
 
-        (opts.managers ?? []).forEach((manager: IMemoryManager) => {
-            this.registerMemoryManager(manager);
-        });
-
         (opts.services ?? []).forEach((service: Service) => {
             this.registerService(service);
         });
@@ -264,7 +259,7 @@ export class AgentRuntime implements IAgentRuntime {
             opts.modelProvider ??
             this.modelProvider;
         if (!this.serverUrl) {
-            elizaLogger.warn("No serverUrl provided, defaulting to localhost");
+            console.warn("No serverUrl provided, defaulting to localhost");
         }
 
         this.token = opts.token;
@@ -328,8 +323,10 @@ export class AgentRuntime implements IAgentRuntime {
 
         for (const knowledgeItem of knowledge) {
             const knowledgeId = stringToUuid(knowledgeItem);
+            console.log("knowledgeId", knowledgeId);
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
+            console.log("existingDocument", existingDocument);
             if (!existingDocument) {
                 console.log(
                     "Processing knowledge for ",
@@ -500,7 +497,7 @@ export class AgentRuntime implements IAgentRuntime {
     async evaluate(message: Memory, state?: State, didRespond?: boolean) {
         const evaluatorPromises = this.evaluators.map(
             async (evaluator: Evaluator) => {
-                elizaLogger.log("Evaluating", evaluator.name);
+                console.log("Evaluating", evaluator.name);
                 if (!evaluator.handler) {
                     return null;
                 }

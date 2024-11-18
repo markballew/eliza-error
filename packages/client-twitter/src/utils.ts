@@ -1,11 +1,11 @@
 // utils.ts
 
 import { Tweet } from "agent-twitter-client";
-import { embeddingZeroVector } from "@ai16z/eliza";
+import { embeddingZeroVector } from "@ai16z/eliza/src/memory.ts";
 import { Content, Memory, UUID } from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
 import { ClientBase } from "./base.ts";
-import { elizaLogger } from "@ai16z/eliza";
+import { elizaLogger } from "@ai16z/eliza/src/logger.ts";
 
 const MAX_TWEET_LENGTH = 280; // Updated to Twitter's current character limit
 

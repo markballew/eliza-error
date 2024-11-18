@@ -10,7 +10,7 @@ const PROVIDER_CONFIG = {
     DEFAULT_RPC: "https://api.mainnet-beta.solana.com",
     TOKEN_ADDRESSES: {
         SOL: "So11111111111111111111111111111111111111112",
-        BTC: "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+        BTC: "qfnqNqs3nCAHjnyCgLRDbBtq4p2MtHZxw8YjSyYhPoL",
         ETH: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
     },
 };
@@ -265,49 +265,28 @@ export class WalletProvider {
 }
 
 const walletProvider: Provider = {
-    get: async (
-        runtime: IAgentRuntime,
-        _message: Memory,
-        _state?: State
-    ): Promise<string> => {
+    get: async (runtime: IAgentRuntime, _message: Memory, _state?: State): Promise<string> => {
         try {
-            // Validate wallet configuration
-            if (!runtime.getSetting("WALLET_PUBLIC_KEY")) {
-                console.error(
-                    "Wallet public key is not configured in settings"
-                );
-                return "";
+            const publicKey = runtime.getSetting("SOLANA_PUBLIC_KEY");
+            if (!publicKey) {
+                throw new Error("SOLANA_PUBLIC_KEY not configured");
             }
 
-            // Validate public key format before creating instance
-            if (
-                typeof runtime.getSetting("WALLET_PUBLIC_KEY") !== "string" ||
-                runtime.getSetting("WALLET_PUBLIC_KEY").trim() === ""
-            ) {
-                console.error("Invalid wallet public key format");
-                return "";
-            }
+            const connection = new Connection(
+                runtime.getSetting("RPC_URL") || PROVIDER_CONFIG.DEFAULT_RPC
+            );
+            
+            const provider = new WalletProvider(
+                connection, 
+                new PublicKey(publicKey)
+            );
 
-            let publicKey: PublicKey;
-            try {
-                publicKey = new PublicKey(
-                    runtime.getSetting("WALLET_PUBLIC_KEY")
-                );
-            } catch (error) {
-                console.error("Error creating PublicKey:", error);
-                return "";
-            }
-
-            const connection = new Connection(PROVIDER_CONFIG.DEFAULT_RPC);
-            const provider = new WalletProvider(connection, publicKey);
-
-            const porfolio = await provider.getFormattedPortfolio(runtime);
-            return porfolio;
+            return await provider.getFormattedPortfolio(runtime);
         } catch (error) {
-            console.error("Error in wallet provider:", error.message);
-            return `Failed to fetch wallet information: ${error instanceof Error ? error.message : "Unknown error"}`;
+            console.error("Error in wallet provider:", error);
+            return "";
         }
-    },
+    }
 };
 
 // Module exports

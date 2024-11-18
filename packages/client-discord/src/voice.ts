@@ -31,11 +31,12 @@ import {
     ITranscriptionService,
     Memory,
     ModelClass,
+    Service,
     ServiceType,
     State,
     UUID,
 } from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
 
 export function getWavHeader(
     audioLength: number,

@@ -1,19 +1,20 @@
 {
-    "name": "@ai16z/plugin-starknet",
+    "name": "@ai16z/plugin-evm",
     "version": "0.0.1",
     "main": "dist/index.js",
     "type": "module",
     "types": "dist/index.d.ts",
     "dependencies": {
         "@ai16z/eliza": "workspace:*",
-        "@avnu/avnu-sdk": "^2.1.1",
-        "starknet": "^6.11.0",
+        "@ai16z/plugin-trustdb": "workspace:*",
+        "@lifi/data-types": "^5.15.3",
+        "@lifi/sdk": "^3.4.1",
+        "@lifi/types": "^16.2.2",
         "tsup": "^8.3.5",
-        "vitest": "^2.1.4"
+        "viem": "^2.21.45"
     },
     "scripts": {
-        "build": "tsup --format esm --dts",
-        "test": "vitest"
+        "build": "tsup --format esm --dts"
     },
     "peerDependencies": {
         "whatwg-url": "7.1.0"
