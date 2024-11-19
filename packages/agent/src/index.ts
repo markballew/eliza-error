@@ -76,25 +76,8 @@ export async function loadCharacters(
         for (const path of characterPaths) {
             try {
                 const character = JSON.parse(fs.readFileSync(path, "utf8"));
-                
-                const characterId = character.id || character.name;                
-                const characterPrefix = `CHARACTER.${characterId.toUpperCase().replace(/ /g, '_')}.`;
-                
-                const characterSettings = Object.entries(process.env)
-                    .filter(([key]) => key.startsWith(characterPrefix))
-                    .reduce((settings, [key, value]) => {
-                        const settingKey = key.slice(characterPrefix.length);
-                        return { ...settings, [settingKey]: value };
-                    }, {});
 
-                if (Object.keys(characterSettings).length > 0) {
-                    character.settings = character.settings || {};
-                    character.settings.secrets = {
-                        ...characterSettings,
-                        ...character.settings.secrets
-                    };
-                }
-
+                // is there a "plugins" field?
                 if (character.plugins) {
                     console.log("Plugins are: ", character.plugins);
 
@@ -116,10 +99,13 @@ export async function loadCharacters(
             }
         }
     }
-    loadedCharacters.length === 0 &&
-        console.log("No characters found, using default character");
 
-    return loadedCharacters.length > 0 ? loadedCharacters : [defaultCharacter];
+    if (loadedCharacters.length === 0) {
+        console.log("No characters found, using default character");
+        loadedCharacters.push(defaultCharacter);
+    }
+
+    return loadedCharacters;
 }
 
 export function getTokenForProvider(
