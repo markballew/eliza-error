@@ -15,19 +15,18 @@ import {
     Memory,
     ModelProviderName,
     Service,
-    ServiceType,
     State,
 } from "../types";
 
 // Mock the database adapter
-export const mockDatabaseAdapter = {
+const mockDatabaseAdapter = {
     getGoals: jest.fn(),
     updateGoal: jest.fn(),
     createGoal: jest.fn(),
 };
-const services = new Map<ServiceType, Service>();
+
 // Mock the runtime
-export const mockRuntime: IAgentRuntime = {
+const mockRuntime: IAgentRuntime = {
     databaseAdapter: mockDatabaseAdapter as any,
     agentId: "qweqew-qweqwe-qweqwe-qweqwe-qweeqw",
     serverUrl: "",
@@ -88,8 +87,8 @@ export const mockRuntime: IAgentRuntime = {
     getMemoryManager: function (_name: string): IMemoryManager | null {
         throw new Error("Function not implemented.");
     },
-    registerService: function (service: Service): void {
-        services.set(service.serviceType, service);
+    registerService: function (_service: Service): void {
+        throw new Error("Function not implemented.");
     },
     getSetting: function (_key: string): string | null {
         throw new Error("Function not implemented.");
@@ -156,10 +155,8 @@ export const mockRuntime: IAgentRuntime = {
     updateRecentMessageState: function (_state: State): Promise<State> {
         throw new Error("Function not implemented.");
     },
-    getService: function <T extends Service>(
-        serviceType: ServiceType
-    ): T | null {
-        return (services.get(serviceType) as T) || null;
+    getService: function (_service: string): typeof Service | null {
+        throw new Error("Function not implemented.");
     },
 };
 
