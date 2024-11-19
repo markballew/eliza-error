@@ -16,12 +16,12 @@ import {
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { zgPlugin } from "@ai16z/plugin-0g";
 import { nodePlugin } from "@ai16z/plugin-node";
 import Database from "better-sqlite3";
 import fs from "fs";
 import readline from "readline";
 import yargs from "yargs";
+import { character } from "./character.ts";
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     const waitTime =
@@ -159,26 +159,6 @@ export function getTokenForProvider(
     }
 }
 
-export async function createDirectRuntime(
-    character: Character,
-    db: IDatabaseAdapter,
-    token: string
-) {
-    console.log("Creating runtime for character", character.name);
-    return new AgentRuntime({
-        databaseAdapter: db,
-        token,
-        modelProvider: character.modelProvider,
-        evaluators: [],
-        character,
-        plugins: [],
-        providers: [],
-        actions: [],
-        services: [],
-        managers: [],
-    });
-}
-
 function initializeDatabase() {
     if (process.env.POSTGRES_URL) {
         return new PostgresDatabaseAdapter({
@@ -216,6 +196,16 @@ export async function initializeClients(
         clients.push(twitterClients);
     }
 
+    if (character.plugins?.length > 0) {
+        for (const plugin of character.plugins) {
+            if (plugin.clients) {
+                for (const client of plugin.clients) {
+                    clients.push(await client.start(runtime));
+                }
+            }
+        }
+    }
+
     return clients;
 }
 
@@ -235,7 +225,6 @@ export async function createAgent(
             bootstrapPlugin,
             nodePlugin,
             character.settings.secrets?.WALLET_PUBLIC_KEY ? solanaPlugin : null,
-            zgPlugin,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -264,7 +253,7 @@ async function startAgent(character: Character, directClient: any) {
             `Error starting agent for character ${character.name}:`,
             error
         );
-        throw error; // Re-throw after logging
+        throw error;
     }
 }
 
@@ -274,7 +263,7 @@ const startAgents = async () => {
 
     let charactersArg = args.characters || args.character;
 
-    let characters = [defaultCharacter];
+    let characters = [character];
 
     if (charactersArg) {
         characters = await loadCharacters(charactersArg);

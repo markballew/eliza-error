@@ -317,6 +317,7 @@ export type Plugin = {
     providers?: Provider[];
     evaluators?: Evaluator[];
     services?: Service[];
+    clients?: Client[];
 };
 
 export enum Clients {
@@ -368,6 +369,12 @@ export type Character = {
         all: string[];
         chat: string[];
         post: string[];
+    };
+    twitterProfile?: {
+        username: string;
+        screenName: string;
+        bio: string;
+        nicknames?: string[];
     };
 };
 
