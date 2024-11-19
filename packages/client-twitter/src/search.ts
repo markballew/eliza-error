@@ -1,8 +1,11 @@
 import { SearchMode } from "agent-twitter-client";
 import fs from "fs";
-import { composeContext } from "@ai16z/eliza";
-import { generateMessageResponse, generateText } from "@ai16z/eliza";
-import { messageCompletionFooter } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import {
+    generateMessageResponse,
+    generateText,
+} from "@ai16z/eliza/src/generation.ts";
+import { messageCompletionFooter } from "@ai16z/eliza/src/parsing.ts";
 import {
     Content,
     HandlerCallback,
@@ -12,7 +15,7 @@ import {
     ServiceType,
     State,
 } from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
 import { ClientBase } from "./base.ts";
 import { buildConversationThread, sendTweet, wait } from "./utils.ts";
 
@@ -234,10 +237,8 @@ export class TwitterSearchClient extends ClientBase {
             const imageDescriptions = [];
             for (const photo of selectedTweet.photos) {
                 const description = await this.runtime
-                    .getService<IImageDescriptionService>(
-                        ServiceType.IMAGE_DESCRIPTION
-                    )
-                    .getInstance()
+                    .getService(ServiceType.IMAGE_DESCRIPTION)
+                    .getInstance<IImageDescriptionService>()
                     .describeImage(photo.url);
                 imageDescriptions.push(description);
             }

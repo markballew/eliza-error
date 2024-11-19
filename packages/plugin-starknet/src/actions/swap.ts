@@ -1,6 +1,5 @@
 import {
     ActionExample,
-    elizaLogger,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -15,49 +14,15 @@ import {
     fetchQuotes,
     QuoteRequest,
 } from "@avnu/avnu-sdk";
-
-import { getStarknetAccount, validateSettings } from "../utils/index.ts";
-
-interface SwapContent {
-    sellTokenAddress: string;
-    buyTokenAddress: string;
-    sellAmount: string;
-}
-
-export function isSwapContent(content: SwapContent): content is SwapContent {
-    // Validate types
-    const validTypes =
-        typeof content.sellTokenAddress === "string" &&
-        typeof content.buyTokenAddress === "string" &&
-        typeof content.sellAmount === "string";
-    if (!validTypes) {
-        return false;
-    }
-
-    // Validate addresses (must be 32-bytes long with 0x prefix)
-    const validAddresses =
-        content.sellTokenAddress.startsWith("0x") &&
-        content.sellTokenAddress.length === 66 &&
-        content.buyTokenAddress.startsWith("0x") &&
-        content.buyTokenAddress.length === 66;
-
-    return validAddresses;
-}
+import { getStarknetAccount } from "../providers/wallet.ts";
 
 const swapTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
-
-These are known addresses you will get asked to swap, use these addresses for sellTokenAddress and buyTokenAddress:
-- BROTHER/brother/$brother: 0x03b405a98c9e795d427fe82cdeeeed803f221b52471e3a757574a2b4180793ee
-- BTC/btc: 0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac
-- ETH/eth: 0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
-- STRK/strk: 0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d
-- LORDS/lords: 0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49
 
 Example response:
 \`\`\`json
 {
     "sellTokenAddress": "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-    "buyTokenAddress": "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+    "buyTokenAddress": "0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
     "sellAmount": "1000000000000000000"
 }
 \`\`\`
@@ -80,10 +45,21 @@ export const executeSwap: Action = {
         "STARKNET_EXCHANGE_TOKENS",
     ],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
-        return validateSettings(runtime);
+        const requiredSettings = [
+            "STARKNET_ADDRESS",
+            "STARKNET_PRIVATE_KEY",
+            "STARKNET_RPC_URL",
+        ];
+
+        for (const setting of requiredSettings) {
+            if (!runtime.getSetting(setting)) {
+                return false;
+            }
+        }
+
+        return true;
     },
-    description:
-        "Perform a token swap on starknet. Use this action when a user asks you to swap tokens anything.",
+    description: "Perform a token swap using Avnu.",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -91,7 +67,6 @@ export const executeSwap: Action = {
         _options: { [key: string]: unknown },
         callback?: HandlerCallback
     ): Promise<boolean> => {
-        elizaLogger.log("Starting EXECUTE_STARKNET_SWAP handler...");
         if (!state) {
             state = (await runtime.composeState(message)) as State;
         } else {
@@ -106,15 +81,10 @@ export const executeSwap: Action = {
         const response = await generateObject({
             runtime,
             context: swapContext,
-            modelClass: ModelClass.MEDIUM,
+            modelClass: ModelClass.LARGE,
         });
 
-        elizaLogger.debug("Response:", response);
-
-        if (!isSwapContent(response)) {
-            callback?.({ text: "Invalid swap content, please try again." });
-            return false;
-        }
+        console.log("Response:", response);
 
         try {
             // Get quote
@@ -136,9 +106,7 @@ export const executeSwap: Action = {
                 }
             );
 
-            elizaLogger.log(
-                "Swap completed successfully! tx: " + swapResult.transactionHash
-            );
+            console.log("Swap completed successfully!");
             callback?.({
                 text:
                     "Swap completed successfully! tx: " +
@@ -147,8 +115,8 @@ export const executeSwap: Action = {
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token swap:", error);
-            callback?.({ text: `Error during swap:` });
+            console.error("Error during token swap:", error);
+            callback?.({ text: `Error during swap: ${error.message}` });
             return false;
         }
     },
@@ -157,41 +125,19 @@ export const executeSwap: Action = {
             {
                 user: "{{user1}}",
                 content: {
-                    text: "Swap 10 ETH for LORDS",
+                    text: "Swap 1 ETH for USDC on Starknet",
                 },
             },
             {
-                user: "{{agent}}",
+                user: "{{user2}}",
                 content: {
-                    text: "Ok, I'll swap 10 ETH for LORDS",
-                },
-            },
-        ],
-        [
-            {
-                user: "{{user1}}",
-                content: {
-                    text: "Swap 100 $lords on starknet",
+                    text: "Buy LORDS on Starknet",
                 },
             },
             {
-                user: "{{agent}}",
+                user: "{{user2}}",
                 content: {
-                    text: "Ok, I'll swap 100 $lords on starknet",
-                },
-            },
-        ],
-        [
-            {
-                user: "{{user1}}",
-                content: {
-                    text: "Swap 0.5 BTC for LORDS",
-                },
-            },
-            {
-                user: "{{agent}}",
-                content: {
-                    text: "Ok, I'll swap 0.5 BTC for LORDS",
+                    text: "Executing swap...",
                 },
             },
         ],

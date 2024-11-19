@@ -2,7 +2,7 @@ import { Context, Telegraf } from "telegraf";
 
 import { IAgentRuntime } from "@ai16z/eliza";
 import { MessageManager } from "./messageManager.ts";
-import { elizaLogger } from "@ai16z/eliza";
+import { elizaLogger } from "@ai16z/eliza/src/logger.ts";
 
 export class TelegramClient {
     private bot: Telegraf<Context>;
@@ -32,7 +32,7 @@ export class TelegramClient {
                 this.bot.botInfo = botInfo;
             });
 
-            elizaLogger.success(`Bot username: @${this.bot.botInfo?.username}`);
+            console.log(`Bot username: @${this.bot.botInfo?.username}`);
 
             this.messageManager.bot = this.bot;
 
@@ -43,7 +43,7 @@ export class TelegramClient {
 
             this.bot.on("message", async (ctx) => {
                 try {
-                    // console.log("📥 Received message:", ctx.message);
+                    console.log("📥 Received message:", ctx.message);
                     await this.messageManager.handleMessage(ctx);
                 } catch (error) {
                     elizaLogger.error("❌ Error handling message:", error);

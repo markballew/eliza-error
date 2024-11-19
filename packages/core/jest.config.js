@@ -4,6 +4,7 @@ export default {
     testEnvironment: "node",
     rootDir: "./src",
     testMatch: ["**/*.test.ts"],
+    setupFilesAfterEnv: ["<rootDir>/test_resources/testSetup.ts"],
     testTimeout: 120000,
     globals: {
         __DEV__: true,

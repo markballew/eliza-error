@@ -86,8 +86,8 @@ export default {
         callback: HandlerCallback
     ) => {
         const videoService = runtime
-            .getService<IVideoService>(ServiceType.VIDEO)
-            .getInstance();
+            .getService(ServiceType.VIDEO)
+            .getInstance<IVideoService>();
         if (!state) {
             state = (await runtime.composeState(message)) as State;
         }
