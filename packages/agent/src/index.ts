@@ -5,14 +5,14 @@ import { DiscordClientInterface } from "@ai16z/client-discord";
 import { AutoClientInterface } from "@ai16z/client-auto";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
 import { TwitterClientInterface } from "@ai16z/client-twitter";
-import { defaultCharacter } from "@ai16z/eliza";
-import { AgentRuntime } from "@ai16z/eliza";
-import { settings } from "@ai16z/eliza";
 import {
+    defaultCharacter,
+    AgentRuntime,
+    settings,
     Character,
     IAgentRuntime,
-    IDatabaseAdapter,
     ModelProviderName,
+    elizaLogger,
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { solanaPlugin } from "@ai16z/plugin-solana";
@@ -21,7 +21,7 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import readline from "readline";
 import yargs from "yargs";
-import { character } from "./character.ts";
+import blobert from "./blobert.ts";
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     const waitTime =
@@ -156,6 +156,11 @@ export function getTokenForProvider(
                 character.settings?.secrets?.HEURIST_API_KEY ||
                 settings.HEURIST_API_KEY
             );
+        case ModelProviderName.GROQ:
+            return (
+                character.settings?.secrets?.GROQ_API_KEY ||
+                settings.GROQ_API_KEY
+            );
     }
 }
 
@@ -214,7 +219,11 @@ export async function createAgent(
     db: any,
     token: string
 ) {
-    console.log("Creating runtime for character", character.name);
+    elizaLogger.success(
+        elizaLogger.successesTitle,
+        "Creating runtime for character",
+        character.name
+    );
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -263,7 +272,7 @@ const startAgents = async () => {
 
     let charactersArg = args.characters || args.character;
 
-    let characters = [character];
+    let characters = [blobert];
 
     if (charactersArg) {
         characters = await loadCharacters(charactersArg);
@@ -274,7 +283,7 @@ const startAgents = async () => {
             await startAgent(character, directClient);
         }
     } catch (error) {
-        console.error("Error starting agents:", error);
+        elizaLogger.error("Error starting agents:", error);
     }
 
     function chat() {
@@ -287,12 +296,12 @@ const startAgents = async () => {
         });
     }
 
-    console.log("Chat started. Type 'exit' to quit.");
+    elizaLogger.log("Chat started. Type 'exit' to quit.");
     chat();
 };
 
 startAgents().catch((error) => {
-    console.error("Unhandled error in startAgents:", error);
+    elizaLogger.error("Unhandled error in startAgents:", error);
     process.exit(1); // Exit the process after logging
 });
 
