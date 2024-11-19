@@ -8,7 +8,6 @@
         "start:service:all": "pnpm --filter \"@ai16z/agent\" start:service:all --isRoot",
         "stop:service:all": "pnpm --filter \"@ai16z/agent\" stop:service:all",
         "start": "pnpm --filter \"@ai16z/agent\" start --isRoot",
-        "start:client": "pnpm --dir client start --isRoot",
         "dev": "bash ./scripts/dev.sh",
         "lint": "pnpm --dir packages/core lint && pnpm --dir packages/agent lint",
         "prettier-check": "npx prettier --check .",
@@ -38,6 +37,7 @@
         "node": ">=22"
     },
     "dependencies": {
+        "@0glabs/0g-ts-sdk": "^0.2.1",
         "ollama-ai-provider": "^0.16.1",
         "optional": "^0.1.4",
         "sharp": "^0.33.5"

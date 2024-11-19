@@ -1,6 +1,6 @@
-import { composeContext } from "@ai16z/eliza";
-import { generateTrueOrFalse } from "@ai16z/eliza";
-import { booleanFooter } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import { generateTrueOrFalse } from "@ai16z/eliza/src/generation.ts";
+import { booleanFooter } from "@ai16z/eliza/src/parsing.ts";
 import {
     Action,
     ActionExample,
