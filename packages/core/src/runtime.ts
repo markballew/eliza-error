@@ -42,7 +42,6 @@ import {
     type Memory,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -228,9 +227,9 @@ export class AgentRuntime implements IAgentRuntime {
         this.databaseAdapter = opts.databaseAdapter;
         // use the character id if it exists, otherwise use the agentId if it is passed in, otherwise use the character name
         this.agentId =
-            opts.character?.id ??
-            opts?.agentId ??
-            stringToUuid(opts.character?.name ?? uuidv4());
+            opts.character.id ??
+            opts.agentId ??
+            stringToUuid(opts.character.name);
 
         elizaLogger.success("Agent ID", this.agentId);
 
@@ -284,7 +283,7 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.token = opts.token;
 
-        [...(opts.character?.plugins || []), ...(opts.plugins || [])].forEach(
+        [...(opts.character.plugins || []), ...(opts.plugins || [])].forEach(
             (plugin) => {
                 plugin.actions?.forEach((action) => {
                     this.registerAction(action);

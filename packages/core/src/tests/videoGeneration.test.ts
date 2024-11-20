@@ -1,36 +1,35 @@
 import { IAgentRuntime, Memory, State } from "@ai16z/eliza";
 import { videoGenerationPlugin } from "../index";
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock the fetch function
-global.fetch = vi.fn();
+global.fetch = jest.fn();
 
 // Mock the fs module
-vi.mock('fs', () => ({
-    writeFileSync: vi.fn(),
-    existsSync: vi.fn(),
-    mkdirSync: vi.fn(),
+jest.mock('fs', () => ({
+    writeFileSync: jest.fn(),
+    existsSync: jest.fn(),
+    mkdirSync: jest.fn(),
 }));
 
 describe('Video Generation Plugin', () => {
     let mockRuntime: IAgentRuntime;
-    let mockCallback: ReturnType<typeof vi.fn>;
+    let mockCallback: jest.Mock;
 
     beforeEach(() => {
         // Reset mocks
-        vi.clearAllMocks();
+        jest.clearAllMocks();
 
         // Setup mock runtime
         mockRuntime = {
-            getSetting: vi.fn().mockReturnValue('mock-api-key'),
+            getSetting: jest.fn().mockReturnValue('mock-api-key'),
             agentId: 'mock-agent-id',
-            composeState: vi.fn().mockResolvedValue({}),
+            composeState: jest.fn().mockResolvedValue({}),
         } as unknown as IAgentRuntime;
 
-        mockCallback = vi.fn();
+        mockCallback = jest.fn();
 
         // Setup fetch mock for successful response
-        (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(() =>
+        (global.fetch as jest.Mock).mockImplementation(() =>
             Promise.resolve({
                 ok: true,
                 json: () => Promise.resolve({
@@ -91,7 +90,7 @@ describe('Video Generation Plugin', () => {
 
     it('should handle API errors gracefully', async () => {
         // Mock API error
-        (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
+        (global.fetch as jest.Mock).mockImplementationOnce(() =>
             Promise.resolve({
                 ok: false,
                 status: 500,
