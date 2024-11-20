@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import pg, { type Pool } from "pg";
+import pg from "pg";
 import {
     Account,
     Actor,
@@ -8,21 +8,18 @@ import {
     type Memory,
     type Relationship,
     type UUID,
-    type IDatabaseCacheAdapter,
     Participant,
-    DatabaseAdapter,
 } from "@ai16z/eliza";
+import { DatabaseAdapter } from "@ai16z/eliza";
+const { Pool } = pg;
 
-export class PostgresDatabaseAdapter
-    extends DatabaseAdapter<Pool>
-    implements IDatabaseCacheAdapter
-{
-    private pool: Pool;
+export class PostgresDatabaseAdapter extends DatabaseAdapter {
+    private pool: typeof Pool;
 
     constructor(connectionConfig: any) {
         super();
 
-        this.pool = new pg.Pool({
+        this.pool = new Pool({
             ...connectionConfig,
             max: 20,
             idleTimeoutMillis: 30000,
@@ -293,42 +290,13 @@ export class PostgresDatabaseAdapter
         match_count: number;
         unique: boolean;
     }): Promise<Memory[]> {
-        const client = await this.pool.connect();
-        try {
-            let sql = `
-                SELECT *,
-                1 - (embedding <-> $3) as similarity
-                FROM memories
-                WHERE type = $1 AND "roomId" = $2
-            `;
-
-            if (params.unique) {
-                sql += ` AND "unique" = true`;
-            }
-
-            sql += ` AND 1 - (embedding <-> $3) >= $4
-                ORDER BY embedding <-> $3
-                LIMIT $5`;
-
-            const { rows } = await client.query(sql, [
-                params.tableName,
-                params.roomId,
-                params.embedding,
-                params.match_threshold,
-                params.match_count,
-            ]);
-
-            return rows.map((row) => ({
-                ...row,
-                content:
-                    typeof row.content === "string"
-                        ? JSON.parse(row.content)
-                        : row.content,
-                similarity: row.similarity,
-            }));
-        } finally {
-            client.release();
-        }
+        return await this.searchMemoriesByEmbedding(params.embedding, {
+            match_threshold: params.match_threshold,
+            count: params.match_count,
+            roomId: params.roomId,
+            unique: params.unique,
+            tableName: params.tableName,
+        });
     }
 
     async getMemories(params: {
@@ -850,65 +818,6 @@ export class PostgresDatabaseAdapter
         } catch (error) {
             console.error("Error fetching actor details:", error);
             throw new Error("Failed to fetch actor details");
-        }
-    }
-
-    async getCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<string | undefined> {
-        const client = await this.pool.connect();
-        try {
-            const sql = `SELECT "value"::TEXT FROM cache WHERE "key" = $1 AND "agentId" = $2`;
-            const { rows } = await this.pool.query<{ value: string }>(sql, [
-                params.key,
-                params.agentId,
-            ]);
-
-            return rows[0]?.value ?? undefined;
-        } catch (error) {
-            console.log("Error fetching cache", error);
-        } finally {
-            client.release();
-        }
-    }
-
-    async setCache(params: {
-        key: string;
-        agentId: UUID;
-        value: string;
-    }): Promise<boolean> {
-        const client = await this.pool.connect();
-        try {
-            await client.query(
-                `INSERT INTO cache ("key", "agentId", "value", "createdAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-                    ON CONFLICT ("key", "agentId")
-                    DO UPDATE SET "value" = EXCLUDED.value, "createdAt" = CURRENT_TIMESTAMP`,
-                [params.key, params.agentId, params.value]
-            );
-            return true;
-        } catch (error) {
-            console.log("Error adding cache", error);
-        } finally {
-            client.release();
-        }
-    }
-
-    async deleteCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<boolean> {
-        const client = await this.pool.connect();
-        try {
-            await client.query(
-                `DELETE FROM cache WHERE "key" = $1 AND "agentId" = $2`,
-                [params.key, params.agentId]
-            );
-            return true;
-        } catch (error) {
-            console.log("Error adding cache", error);
-        } finally {
-            client.release();
         }
     }
 }

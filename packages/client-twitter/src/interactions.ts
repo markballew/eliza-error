@@ -1,19 +1,17 @@
 import { SearchMode, Tweet } from "agent-twitter-client";
+import fs from "fs";
+import { composeContext, elizaLogger } from "@ai16z/eliza";
+import { generateMessageResponse, generateShouldRespond } from "@ai16z/eliza";
+import { messageCompletionFooter, shouldRespondFooter } from "@ai16z/eliza";
 import {
-    composeContext,
-    generateMessageResponse,
-    generateShouldRespond,
-    messageCompletionFooter,
-    shouldRespondFooter,
     Content,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     ModelClass,
     State,
-    stringToUuid,
-    elizaLogger,
 } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
 import { ClientBase } from "./base.ts";
 import { buildConversationThread, sendTweet, wait } from "./utils.ts";
 import { embeddingZeroVector } from "@ai16z/eliza";
@@ -159,11 +157,39 @@ export class TwitterInteractionClient extends ClientBase {
 
                     // Update the last checked tweet ID after processing each tweet
                     this.lastCheckedTweetId = parseInt(tweet.id);
+
+                    try {
+                        if (this.lastCheckedTweetId) {
+                            fs.writeFileSync(
+                                this.tweetCacheFilePath,
+                                this.lastCheckedTweetId.toString(),
+                                "utf-8"
+                            );
+                        }
+                    } catch (error) {
+                        elizaLogger.error(
+                            "Error saving latest checked tweet ID to file:",
+                            error
+                        );
+                    }
                 }
             }
 
             // Save the latest checked tweet ID to the file
-            await this.cacheLatestCheckedTweetId();
+            try {
+                if (this.lastCheckedTweetId) {
+                    fs.writeFileSync(
+                        this.tweetCacheFilePath,
+                        this.lastCheckedTweetId.toString(),
+                        "utf-8"
+                    );
+                }
+            } catch (error) {
+                elizaLogger.error(
+                    "Error saving latest checked tweet ID to file:",
+                    error
+                );
+            }
 
             elizaLogger.log("Finished checking Twitter interactions");
         } catch (error) {
@@ -198,15 +224,18 @@ export class TwitterInteractionClient extends ClientBase {
         };
         const currentPost = formatTweet(tweet);
 
-        let homeTimeline: Tweet[] = [];
+        let homeTimeline = [];
         // read the file if it exists
-
-        const cachedTimeline = await this.getCachedTimeline();
-        if (cachedTimeline) {
-            homeTimeline = cachedTimeline;
+        if (fs.existsSync("tweetcache/home_timeline.json")) {
+            homeTimeline = JSON.parse(
+                fs.readFileSync("tweetcache/home_timeline.json", "utf-8")
+            );
         } else {
             homeTimeline = await this.fetchHomeTimeline(50);
-            await this.cacheTimeline(homeTimeline);
+            fs.writeFileSync(
+                "tweetcache/home_timeline.json",
+                JSON.stringify(homeTimeline, null, 2)
+            );
         }
 
         elizaLogger.debug("Thread: ", thread);
@@ -281,8 +310,6 @@ export class TwitterInteractionClient extends ClientBase {
                 this.runtime.character?.templates?.shouldRespondTemplate ||
                 twitterShouldRespondTemplate,
         });
-
-        console.log("composeContext done");
 
         const shouldRespond = await generateShouldRespond({
             runtime: this.runtime,
@@ -360,13 +387,13 @@ export class TwitterInteractionClient extends ClientBase {
                     responseMessages,
                     state
                 );
-
                 const responseInfo = `Context:\n\n${context}\n\nSelected Post: ${tweet.id} - ${tweet.username}: ${tweet.text}\nAgent's Output:\n${response.text}`;
-
-                await this.runtime.cacheManager.set(
-                    `twitter/tweet_generation_${tweet.id}.txt`,
-                    responseInfo
-                );
+                // f tweets folder dont exist, create
+                if (!fs.existsSync("tweets")) {
+                    fs.mkdirSync("tweets");
+                }
+                const debugFileName = `tweets/tweet_generation_${tweet.id}.txt`;
+                fs.writeFileSync(debugFileName, responseInfo);
                 await wait();
             } catch (error) {
                 elizaLogger.error(`Error sending response tweet: ${error}`);
