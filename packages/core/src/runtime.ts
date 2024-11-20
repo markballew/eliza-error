@@ -363,11 +363,14 @@ export class AgentRuntime implements IAgentRuntime {
                         text: knowledgeItem,
                     },
                 });
+
                 const fragments = await splitChunks(knowledgeItem, 1200, 200);
                 for (const fragment of fragments) {
                     const embedding = await embed(this, fragment);
                     await this.knowledgeManager.createMemory({
-                        id: stringToUuid(fragment),
+                        // We namespace the knowledge base uuid to avoid id
+                        // collision with the document above.
+                        id: stringToUuid(knowledgeId + fragment),
                         roomId: this.agentId,
                         agentId: this.agentId,
                         userId: this.agentId,
@@ -1008,17 +1011,11 @@ Text: ${attachment.text}
                           (() => {
                               const all = this.character?.style?.all || [];
                               const chat = this.character?.style?.chat || [];
-                              const shuffled = [...all, ...chat].sort(
-                                  () => 0.5 - Math.random()
-                              );
-                              const allSliced = shuffled.slice(
-                                  0,
-                                  conversationLength / 2
-                              );
-                              return allSliced.concat(allSliced).join("\n");
+                              return [...all, ...chat].join("\n");
                           })()
                       )
                     : "",
+
             postDirections:
                 this.character?.style?.all?.length > 0 ||
                 this.character?.style?.post.length > 0
@@ -1027,15 +1024,31 @@ Text: ${attachment.text}
                           (() => {
                               const all = this.character?.style?.all || [];
                               const post = this.character?.style?.post || [];
-                              const shuffled = [...all, ...post].sort(
-                                  () => 0.5 - Math.random()
-                              );
-                              return shuffled
-                                  .slice(0, conversationLength / 2)
-                                  .join("\n");
+                              return [...all, ...post].join("\n");
                           })()
                       )
                     : "",
+
+            //old logic left in for reference
+            //food for thought. how could we dynamically decide what parts of the character to add to the prompt other than random? rag? prompt the llm to decide?
+            /*
+            postDirections:
+                this.character?.style?.all?.length > 0 ||
+                this.character?.style?.post.length > 0
+                    ? addHeader(
+                            "# Post Directions for " + this.character.name,
+                            (() => {
+                                const all = this.character?.style?.all || [];
+                                const post = this.character?.style?.post || [];
+                                const shuffled = [...all, ...post].sort(
+                                    () => 0.5 - Math.random()
+                                );
+                                return shuffled
+                                    .slice(0, conversationLength / 2)
+                                    .join("\n");
+                            })()
+                        )
+                    : "",*/
             // Agent runtime stuff
             senderName,
             actors:
