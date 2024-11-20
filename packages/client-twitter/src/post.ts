@@ -1,12 +1,4 @@
 import { Tweet } from "agent-twitter-client";
-import {
-    composeContext,
-    generateText,
-    embeddingZeroVector,
-    IAgentRuntime,
-    ModelClass,
-    stringToUuid,
-} from "@ai16z/eliza";
 import fs from "fs";
 import { composeContext, elizaLogger } from "@ai16z/eliza";
 import { generateText } from "@ai16z/eliza";
@@ -111,13 +103,17 @@ export class TwitterPostClient extends ClientBase {
 
             let homeTimeline = [];
 
-            const cachedTimeline = await this.getCachedTimeline();
-
-            if (cachedTimeline) {
-                homeTimeline = cachedTimeline;
+            if (!fs.existsSync("tweetcache")) fs.mkdirSync("tweetcache");
+            if (fs.existsSync("tweetcache/home_timeline.json")) {
+                homeTimeline = JSON.parse(
+                    fs.readFileSync("tweetcache/home_timeline.json", "utf-8")
+                );
             } else {
                 homeTimeline = await this.fetchHomeTimeline(50);
-                this.cacheTimeline(homeTimeline);
+                fs.writeFileSync(
+                    "tweetcache/home_timeline.json",
+                    JSON.stringify(homeTimeline, null, 2)
+                );
             }
 
             const formattedHomeTimeline =
