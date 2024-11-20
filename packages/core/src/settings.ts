@@ -69,12 +69,18 @@ export function loadEnvConfig(): Settings {
     // Node.js environment: load from .env file
     const envPath = findNearestEnvFile();
 
-    // attempt to Load the .env file into process.env
-    const result = config(envPath ? { path: envPath } : {});
-
-    if (!result.error) {
-        console.log(`Loaded .env file from: ${envPath}`);
+    if (!envPath) {
+        throw new Error("No .env file found in current or parent directories.");
     }
+
+    // Load the .env file
+    const result = config({ path: envPath });
+
+    if (result.error) {
+        throw new Error(`Error loading .env file: ${result.error}`);
+    }
+
+    console.log(`Loaded .env file from: ${envPath}`);
     return process.env as Settings;
 }
 

@@ -1,9 +1,8 @@
 {
     "name": "@ai16z/client-telegram",
-    "version": "0.1.3",
-    "main": "dist/index.js",
+    "version": "0.1.1",
+    "main": "src/index.ts",
     "type": "module",
-    "types": "dist/index.d.ts",
     "dependencies": {
         "@ai16z/eliza": "workspace:*",
         "@ai16z/plugin-node": "workspace:*",

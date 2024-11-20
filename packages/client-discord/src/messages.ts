@@ -27,7 +27,7 @@ import {
     TextChannel,
     ThreadChannel,
 } from "discord.js";
-import { elizaLogger } from "@ai16z/eliza";
+import { elizaLogger } from "@ai16z/eliza/src/logger.ts";
 import { AttachmentManager } from "./attachments.ts";
 import { VoiceManager } from "./voice.ts";
 
@@ -423,10 +423,10 @@ export class MessageManager {
                 roomId,
                 content,
                 createdAt: message.createdTimestamp,
+                embedding: embeddingZeroVector,
             };
 
             if (content.text) {
-                await this.runtime.messageManager.addEmbeddingToMemory(memory);
                 await this.runtime.messageManager.createMemory(memory);
             }
 

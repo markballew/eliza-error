@@ -1,8 +1,8 @@
 import {
-    createGoal,
-    formatGoalsAsString,
     getGoals,
+    formatGoalsAsString,
     updateGoal,
+    createGoal,
 } from "../goals";
 import {
     type Goal,
@@ -31,6 +31,7 @@ const services = new Map<ServiceType, Service>();
 // Mock the runtime
 export const mockRuntime: IAgentRuntime = {
     databaseAdapter: mockDatabaseAdapter as any,
+    cacheManager: new CacheManager(new MemoryCacheAdapter()),
     agentId: "qweqew-qweqwe-qweqwe-qweqwe-qweeqw",
     serverUrl: "",
     token: "",

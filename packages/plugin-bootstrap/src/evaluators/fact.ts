@@ -1,5 +1,5 @@
-import { composeContext } from "@ai16z/eliza";
-import { generateObjectArray } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import { generateObjectArray } from "@ai16z/eliza/src/generation.ts";
 import { MemoryManager } from "@ai16z/eliza";
 import {
     ActionExample,

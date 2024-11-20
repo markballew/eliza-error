@@ -1,6 +1,6 @@
-import { embed } from "@ai16z/eliza";
+import { embed } from "@ai16z/eliza/src/embedding.ts";
 import { MemoryManager } from "@ai16z/eliza";
-import { formatMessages } from "@ai16z/eliza";
+import { formatMessages } from "@ai16z/eliza/src/messages.ts";
 import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
 import { formatFacts } from "../evaluators/fact.ts";
 

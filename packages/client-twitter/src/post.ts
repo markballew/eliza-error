@@ -1,4 +1,12 @@
 import { Tweet } from "agent-twitter-client";
+import {
+    composeContext,
+    generateText,
+    embeddingZeroVector,
+    IAgentRuntime,
+    ModelClass,
+    stringToUuid,
+} from "@ai16z/eliza";
 import fs from "fs";
 import { composeContext, elizaLogger } from "@ai16z/eliza";
 import { generateText } from "@ai16z/eliza";
@@ -103,17 +111,13 @@ export class TwitterPostClient extends ClientBase {
 
             let homeTimeline = [];
 
-            if (!fs.existsSync("tweetcache")) fs.mkdirSync("tweetcache");
-            if (fs.existsSync("tweetcache/home_timeline.json")) {
-                homeTimeline = JSON.parse(
-                    fs.readFileSync("tweetcache/home_timeline.json", "utf-8")
-                );
+            const cachedTimeline = await this.getCachedTimeline();
+
+            if (cachedTimeline) {
+                homeTimeline = cachedTimeline;
             } else {
                 homeTimeline = await this.fetchHomeTimeline(50);
-                fs.writeFileSync(
-                    "tweetcache/home_timeline.json",
-                    JSON.stringify(homeTimeline, null, 2)
-                );
+                this.cacheTimeline(homeTimeline);
             }
 
             const formattedHomeTimeline =
@@ -158,11 +162,6 @@ export class TwitterPostClient extends ClientBase {
 
             // Use the helper function to truncate to complete sentence
             const content = truncateToCompleteSentence(formattedTweet);
-
-            if (this.runtime.getSetting("TWITTER_DRY_RUN") === 'true') {
-                elizaLogger.info(`Dry run: would have posted tweet: ${content}`);
-                return;
-            }
 
             try {
                 const result = await this.requestQueue.add(
