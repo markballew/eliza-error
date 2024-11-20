@@ -1,8 +1,9 @@
+import { CacheManager, MemoryCacheAdapter } from "../cache";
 import {
-    getGoals,
-    formatGoalsAsString,
-    updateGoal,
     createGoal,
+    formatGoalsAsString,
+    getGoals,
+    updateGoal,
 } from "../goals";
 import {
     type Goal,
@@ -19,7 +20,7 @@ import {
     State,
 } from "../types";
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, expect, vi } from "vitest";
 
 // Mock the database adapter
 export const mockDatabaseAdapter = {
@@ -31,6 +32,7 @@ const services = new Map<ServiceType, Service>();
 // Mock the runtime
 export const mockRuntime: IAgentRuntime = {
     databaseAdapter: mockDatabaseAdapter as any,
+    cacheManager: new CacheManager(new MemoryCacheAdapter()),
     agentId: "qweqew-qweqwe-qweqwe-qweqwe-qweeqw",
     serverUrl: "",
     token: "",
@@ -180,9 +182,7 @@ const sampleGoal: Goal = {
 
 describe("getGoals", () => {
     it("retrieves goals successfully", async () => {
-        (mockDatabaseAdapter.getGoals).mockResolvedValue([
-            sampleGoal,
-        ]);
+        mockDatabaseAdapter.getGoals.mockResolvedValue([sampleGoal]);
 
         const result = await getGoals({
             runtime: mockRuntime,
@@ -199,7 +199,7 @@ describe("getGoals", () => {
     });
 
     it("handles failure to retrieve goals", async () => {
-        (mockDatabaseAdapter.getGoals).mockRejectedValue(
+        mockDatabaseAdapter.getGoals.mockRejectedValue(
             new Error("Failed to retrieve goals")
         );
 
@@ -225,9 +225,7 @@ describe("formatGoalsAsString", () => {
 
 describe("updateGoal", () => {
     it("updates a goal successfully", async () => {
-        (mockDatabaseAdapter.updateGoal).mockResolvedValue(
-            undefined
-        );
+        mockDatabaseAdapter.updateGoal.mockResolvedValue(undefined);
 
         await expect(
             updateGoal({ runtime: mockRuntime, goal: sampleGoal })
@@ -236,7 +234,7 @@ describe("updateGoal", () => {
     });
 
     it("handles failure to update a goal", async () => {
-        (mockDatabaseAdapter.updateGoal).mockRejectedValue(
+        mockDatabaseAdapter.updateGoal.mockRejectedValue(
             new Error("Failed to update goal")
         );
 
@@ -248,9 +246,7 @@ describe("updateGoal", () => {
 
 describe("createGoal", () => {
     it("creates a goal successfully", async () => {
-        (mockDatabaseAdapter.createGoal).mockResolvedValue(
-            undefined
-        );
+        mockDatabaseAdapter.createGoal.mockResolvedValue(undefined);
 
         await expect(
             createGoal({ runtime: mockRuntime, goal: sampleGoal })
@@ -259,7 +255,7 @@ describe("createGoal", () => {
     });
 
     it("handles failure to create a goal", async () => {
-        (mockDatabaseAdapter.createGoal).mockRejectedValue(
+        mockDatabaseAdapter.createGoal.mockRejectedValue(
             new Error("Failed to create goal")
         );
 
