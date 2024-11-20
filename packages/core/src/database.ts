@@ -14,11 +14,11 @@ import {
  * An abstract class representing a database adapter for managing various entities
  * like accounts, memories, actors, goals, and rooms.
  */
-export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
+export abstract class DatabaseAdapter implements IDatabaseAdapter {
     /**
      * The database instance.
      */
-    db: DB;
+    db: any;
     /**
      * Retrieves an account by its ID.
      * @param userId The UUID of the user account to retrieve.

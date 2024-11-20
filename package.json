@@ -11,7 +11,7 @@
         "start": "pnpm --filter \"@ai16z/agent\" start --isRoot",
         "start:client": "pnpm --dir client start --isRoot",
         "dev": "bash ./scripts/dev.sh",
-        "lint": "bash ./scripts/lint.sh",
+        "lint": "pnpm --dir packages/core lint && pnpm --dir packages/agent lint",
         "prettier-check": "npx prettier --check .",
         "prettier": "npx prettier --write .",
         "release": "pnpm build && pnpm prettier && npx lerna publish --no-private --force-publish",
@@ -21,8 +21,7 @@
         "docker:bash": "bash ./scripts/docker.sh bash",
         "docker:start": "bash ./scripts/docker.sh start",
         "docker": "pnpm docker:build && pnpm docker:run && pnpm docker:bash",
-        "test": "bash ./scripts/test.sh",
-        "prepare": "husky install"
+        "test": "pnpm --dir packages/core test"
     },
     "devDependencies": {
         "concurrently": "^9.1.0",
@@ -33,9 +32,7 @@
         "typedoc": "^0.26.11",
         "typescript": "5.6.3",
         "vite": "^5.4.11",
-        "vitest": "^2.1.5",
-        "@commitlint/cli": "^18.4.4",
-        "@commitlint/config-conventional": "^18.4.4"
+        "vitest": "^2.1.5"
     },
     "pnpm": {
         "overrides": {

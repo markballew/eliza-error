@@ -2,10 +2,10 @@
 import { createRuntime } from "../test_resources/createRuntime";
 import { TokenProvider, WalletProvider } from "@ai16z/plugin-solana";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import NodeCache from "node-cache";
 
-describe("TokenProvider Tests", () => {
+describe("TokenProvider Tests", async () => {
     let tokenProvider: TokenProvider;
 
     beforeEach(async () => {
@@ -36,7 +36,7 @@ describe("TokenProvider Tests", () => {
         vi.spyOn(tokenProvider as any, "getCachedData").mockReturnValue(null);
     });
 
-    it.skip("should fetch token security data", async () => {
+    test("should fetch token security data", async () => {
         // Mock the response for the fetchTokenSecurity call
         const mockFetchResponse = {
             success: true,

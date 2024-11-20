@@ -153,8 +153,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
         );
         const tokenProvider = new TokenProvider(
             rec.contractAddress,
-            walletProvider,
-            runtime.cacheManager
+            walletProvider
         );
 
         // TODO: Check to make sure the contract address is valid, it's the right one, etc

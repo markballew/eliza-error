@@ -20,9 +20,10 @@ import {
 import { settings } from "@ai16z/eliza";
 import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
 import { getTokenBalance } from "../utils/index.ts";
+import { walletProvider } from "./walletProvider.ts";
 import { TokenProvider } from "./token.ts";
 
-const _Wallet = settings.MAIN_WALLET_ADDRESS;
+const Wallet = settings.MAIN_WALLET_ADDRESS;
 interface TradeData {
     buy_amount: number;
     is_simulation: boolean;
@@ -31,7 +32,7 @@ interface sellDetails {
     sell_amount: number;
     sell_recommender_id: string | null;
 }
-interface _RecommendationGroup {
+interface RecommendationGroup {
     recommendation: any;
     trustScore: number;
 }
@@ -604,7 +605,7 @@ export const trustScoreProvider: Provider = {
     async get(
         runtime: IAgentRuntime,
         message: Memory,
-        _state?: State
+        state?: State
     ): Promise<string> {
         try {
             const trustScoreDb = new TrustScoreDatabase(

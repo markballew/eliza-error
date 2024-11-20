@@ -29,7 +29,7 @@ interface sellDetails {
     sell_amount: number;
     sell_recommender_id: string | null;
 }
-interface _RecommendationGroup {
+interface RecommendationGroup {
     recommendation: any;
     trustScore: number;
 }
@@ -605,7 +605,7 @@ export const trustScoreProvider: Provider = {
     async get(
         runtime: IAgentRuntime,
         message: Memory,
-        _state?: State
+        state?: State
     ): Promise<string> {
         try {
             const trustScoreDb = new TrustScoreDatabase(

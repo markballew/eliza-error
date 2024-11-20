@@ -336,6 +336,8 @@ const boredomProvider: Provider = {
         );
         const selectedMessage = boredomLevel.statusMessages[randomIndex];
         return selectedMessage.replace("{{agentName}}", agentName);
+
+        return "";
     },
 };
 

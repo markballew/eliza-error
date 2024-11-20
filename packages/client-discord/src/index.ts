@@ -22,7 +22,6 @@ import { MessageManager } from "./messages.ts";
 import channelStateProvider from "./providers/channelState.ts";
 import voiceStateProvider from "./providers/voiceState.ts";
 import { VoiceManager } from "./voice.ts";
-import { validateDiscordConfig } from "./enviroment.ts";
 
 export class DiscordClient extends EventEmitter {
     apiToken: string;
@@ -298,12 +297,8 @@ export function startDiscord(runtime: IAgentRuntime) {
 }
 
 export const DiscordClientInterface: ElizaClient = {
-    start: async (runtime: IAgentRuntime) => {
-        await validateDiscordConfig(runtime);
-
-        return new DiscordClient(runtime);
-    },
-    stop: async (_runtime: IAgentRuntime) => {
+    start: async (runtime: IAgentRuntime) => new DiscordClient(runtime),
+    stop: async (runtime: IAgentRuntime) => {
         console.warn("Discord client does not support stopping yet");
     },
 };

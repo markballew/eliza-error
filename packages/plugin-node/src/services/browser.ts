@@ -1,4 +1,4 @@
-import { generateText, IBrowserService, trimTokens } from "@ai16z/eliza";
+import { generateText, trimTokens } from "@ai16z/eliza";
 import { parseJSONObjectFromText } from "@ai16z/eliza";
 import { Service } from "@ai16z/eliza";
 import { settings } from "@ai16z/eliza";
@@ -6,6 +6,8 @@ import { IAgentRuntime, ModelClass, ServiceType } from "@ai16z/eliza";
 import { stringToUuid } from "@ai16z/eliza";
 import { PlaywrightBlocker } from "@cliqz/adblocker-playwright";
 import CaptchaSolver from "capsolver-npm";
+import fs from "fs";
+import path from "path";
 import { Browser, BrowserContext, chromium, Page } from "playwright";
 
 async function generateSummary(
@@ -50,18 +52,12 @@ async function generateSummary(
     };
 }
 
-type PageContent = {
-    title: string;
-    description: string;
-    bodyContent: string;
-};
-
-export class BrowserService extends Service implements IBrowserService {
+export class BrowserService extends Service {
     private browser: Browser | undefined;
     private context: BrowserContext | undefined;
     private blocker: PlaywrightBlocker | undefined;
     private captchaSolver: CaptchaSolver;
-    private cacheKey = "content/browser";
+    private CONTENT_CACHE_DIR = "./content_cache";
 
     private queue: string[] = [];
     private processing: boolean = false;
@@ -73,10 +69,6 @@ export class BrowserService extends Service implements IBrowserService {
         return runtime;
     }
 
-    getInstance(): IBrowserService {
-        return BrowserService.getInstance();
-    }
-
     constructor() {
         super();
         this.browser = undefined;
@@ -85,6 +77,13 @@ export class BrowserService extends Service implements IBrowserService {
         this.captchaSolver = new CaptchaSolver(
             settings.CAPSOLVER_API_KEY || ""
         );
+        this.ensureCacheDirectoryExists();
+    }
+
+    private ensureCacheDirectoryExists() {
+        if (!fs.existsSync(this.CONTENT_CACHE_DIR)) {
+            fs.mkdirSync(this.CONTENT_CACHE_DIR);
+        }
     }
 
     async initialize() {
@@ -117,7 +116,7 @@ export class BrowserService extends Service implements IBrowserService {
     async getPageContent(
         url: string,
         runtime: IAgentRuntime
-    ): Promise<PageContent> {
+    ): Promise<{ title: string; description: string; bodyContent: string }> {
         await this.initialize();
         this.queue.push(url);
         this.processQueue(runtime);
@@ -165,15 +164,19 @@ export class BrowserService extends Service implements IBrowserService {
     private async fetchPageContent(
         url: string,
         runtime: IAgentRuntime
-    ): Promise<PageContent> {
+    ): Promise<{ title: string; description: string; bodyContent: string }> {
         const cacheKey = this.getCacheKey(url);
-        const cached = await runtime.cacheManager.get<{
-            url: string;
-            content: PageContent;
-        }>(`${this.cacheKey}/${cacheKey}`);
+        const cacheFilePath = path.join(
+            this.CONTENT_CACHE_DIR,
+            `${cacheKey}.json`
+        );
 
-        if (cached) {
-            return cached.content;
+        if (!fs.existsSync(this.CONTENT_CACHE_DIR)) {
+            fs.mkdirSync(this.CONTENT_CACHE_DIR, { recursive: true });
+        }
+
+        if (fs.existsSync(cacheFilePath)) {
+            return JSON.parse(fs.readFileSync(cacheFilePath, "utf-8")).content;
         }
 
         let page: Page | undefined;
@@ -221,10 +224,7 @@ export class BrowserService extends Service implements IBrowserService {
                 title + "\n" + bodyContent
             );
             const content = { title, description, bodyContent };
-            await runtime.cacheManager.set(`${this.cacheKey}/${cacheKey}`, {
-                url,
-                content,
-            });
+            fs.writeFileSync(cacheFilePath, JSON.stringify({ url, content }));
             return content;
         } catch (error) {
             console.error("Error:", error);
@@ -266,7 +266,6 @@ export class BrowserService extends Service implements IBrowserService {
                     websiteKey: hcaptchaKey,
                 });
                 await page.evaluate((token) => {
-                    // eslint-disable-next-line
                     // @ts-ignore
                     window.hcaptcha.setResponse(token);
                 }, solution.gRecaptchaResponse);
@@ -280,7 +279,6 @@ export class BrowserService extends Service implements IBrowserService {
                     websiteKey: recaptchaKey,
                 });
                 await page.evaluate((token) => {
-                    // eslint-disable-next-line
                     // @ts-ignore
                     document.getElementById("g-recaptcha-response").innerHTML =
                         token;

@@ -1,8 +1,10 @@
+// utils.ts
+
 import { Tweet } from "agent-twitter-client";
 import { embeddingZeroVector } from "@ai16z/eliza";
 import { Content, Memory, UUID } from "@ai16z/eliza";
 import { stringToUuid } from "@ai16z/eliza";
-import { ClientBase } from "./base";
+import { ClientBase } from "./base.ts";
 import { elizaLogger } from "@ai16z/eliza";
 
 const MAX_TWEET_LENGTH = 280; // Updated to Twitter's current character limit
@@ -92,7 +94,7 @@ export async function buildConversationThread(
                 createdAt: currentTweet.timestamp * 1000,
                 roomId,
                 userId:
-                    currentTweet.userId === client.profile.id
+                    currentTweet.userId === client.twitterUserId
                         ? client.runtime.agentId
                         : stringToUuid(currentTweet.userId),
                 embedding: embeddingZeroVector,
@@ -270,7 +272,6 @@ function splitTweetContent(content: string): string[] {
 }
 
 function splitParagraph(paragraph: string, maxLength: number): string[] {
-    // eslint-disable-next-line
     const sentences = paragraph.match(/[^\.!\?]+[\.!\?]+|[^\.!\?]+$/g) || [
         paragraph,
     ];

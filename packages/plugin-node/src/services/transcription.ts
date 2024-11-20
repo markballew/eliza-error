@@ -1,9 +1,4 @@
-import {
-    elizaLogger,
-    IAgentRuntime,
-    ITranscriptionService,
-    settings,
-} from "@ai16z/eliza";
+import { elizaLogger, IAgentRuntime, settings } from "@ai16z/eliza";
 import { Service, ServiceType } from "@ai16z/eliza";
 import { exec } from "child_process";
 import { File } from "formdata-node";
@@ -21,10 +16,7 @@ const __dirname = path.dirname(__filename);
 
 const execAsync = promisify(exec);
 
-export class TranscriptionService
-    extends Service
-    implements ITranscriptionService
-{
+export class TranscriptionService extends Service {
     static serviceType: ServiceType = ServiceType.TRANSCRIPTION;
     private CONTENT_CACHE_DIR: string;
     private DEBUG_AUDIO_DIR: string;
@@ -35,7 +27,7 @@ export class TranscriptionService
     private queue: { audioBuffer: ArrayBuffer; resolve: Function }[] = [];
     private processing: boolean = false;
 
-    async initialize(_runtime: IAgentRuntime): Promise<void> {}
+    async initialize(runtime: IAgentRuntime): Promise<void> {}
 
     constructor() {
         super();
@@ -76,8 +68,7 @@ export class TranscriptionService
                 console.log(
                     "CUDA detected. Transcription will use CUDA acceleration."
                 );
-                // eslint-disable-next-line
-            } catch (_error) {
+            } catch (error) {
                 console.log(
                     "CUDA not detected. Transcription will run on CPU."
                 );

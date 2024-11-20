@@ -52,12 +52,11 @@ export class AutoClient {
         );
 
         // get information for all tokens which were recommended
-        const _tokenInfos = highTrustRecommendations.map(
+        const tokenInfos = highTrustRecommendations.map(
             async (highTrustRecommendation) => {
                 const tokenProvider = new TokenProvider(
                     highTrustRecommendation.tokenAddress,
-                    this.walletProvider,
-                    this.runtime.cacheManager
+                    this.walletProvider
                 );
                 const tokenInfo = await tokenProvider.getProcessedTokenData();
                 const shouldTrade = await tokenProvider.shouldTradeToken();
@@ -87,7 +86,7 @@ export const AutoClientInterface: Client = {
         const client = new AutoClient(runtime);
         return client;
     },
-    stop: async (_runtime: IAgentRuntime) => {
+    stop: async (runtime: IAgentRuntime) => {
         console.warn("Direct client does not support stopping yet");
     },
 };

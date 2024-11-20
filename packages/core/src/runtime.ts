@@ -14,8 +14,8 @@ import {
 } from "./evaluators.ts";
 import { generateText } from "./generation.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { elizaLogger } from "./index.ts";
-import { MemoryManager } from "./memory.ts";
+import { elizaLogger, embed, splitChunks } from "./index.ts";
+import { embeddingZeroVector, MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { parseJsonArrayFromText } from "./parsing.ts";
 import { formatPosts } from "./posts.ts";
@@ -26,7 +26,6 @@ import {
     Goal,
     HandlerCallback,
     IAgentRuntime,
-    ICacheManager,
     IDatabaseAdapter,
     IMemoryManager,
     ModelClass,
@@ -44,7 +43,6 @@ import {
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { v4 as uuidv4 } from "uuid";
-import knowledge from "./knowledge.ts";
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -90,8 +88,6 @@ export class AgentRuntime implements IAgentRuntime {
      */
     providers: Provider[] = [];
 
-    plugins: Plugin[] = [];
-
     /**
      * The model to use for generateText.
      */
@@ -135,7 +131,6 @@ export class AgentRuntime implements IAgentRuntime {
 
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
-    cacheManager: ICacheManager;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -176,7 +171,19 @@ export class AgentRuntime implements IAgentRuntime {
             return;
         }
 
-        this.services.set(serviceType, service);
+        try {
+            await service.initialize(this);
+            this.services.set(serviceType, service);
+            elizaLogger.success(
+                `Service ${serviceType} initialized successfully`
+            );
+        } catch (error) {
+            elizaLogger.error(
+                `Failed to initialize service ${serviceType}:`,
+                error
+            );
+            throw error;
+        }
     }
 
     /**
@@ -214,7 +221,6 @@ export class AgentRuntime implements IAgentRuntime {
         databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
-        cacheManager: ICacheManager;
         logging?: boolean;
     }) {
         this.#conversationLength =
@@ -225,26 +231,14 @@ export class AgentRuntime implements IAgentRuntime {
             opts.character?.id ??
             opts?.agentId ??
             stringToUuid(opts.character?.name ?? uuidv4());
-        this.character = opts.character || defaultCharacter;
-
-        // By convention, we create a user and room using the agent id.
-        // Memories related to it are considered global context for the agent.
-        this.ensureRoomExists(this.agentId);
-        this.ensureUserExists(
-            this.agentId,
-            this.character.name,
-            this.character.name
-        );
-        this.ensureParticipantExists(this.agentId, this.agentId);
 
         elizaLogger.success("Agent ID", this.agentId);
 
         this.fetch = (opts.fetch as typeof fetch) ?? this.fetch;
+        this.character = opts.character || defaultCharacter;
         if (!opts.databaseAdapter) {
             throw new Error("No database adapter provided");
         }
-
-        this.cacheManager = opts.cacheManager;
 
         this.messageManager = new MemoryManager({
             runtime: this,
@@ -290,28 +284,25 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.token = opts.token;
 
-        this.plugins = [
-            ...(opts.character?.plugins ?? []),
-            ...(opts.plugins ?? []),
-        ];
+        [...(opts.character?.plugins || []), ...(opts.plugins || [])].forEach(
+            (plugin) => {
+                plugin.actions?.forEach((action) => {
+                    this.registerAction(action);
+                });
 
-        this.plugins.forEach((plugin) => {
-            plugin.actions?.forEach((action) => {
-                this.registerAction(action);
-            });
+                plugin.evaluators?.forEach((evaluator) => {
+                    this.registerEvaluator(evaluator);
+                });
 
-            plugin.evaluators?.forEach((evaluator) => {
-                this.registerEvaluator(evaluator);
-            });
+                plugin.providers?.forEach((provider) => {
+                    this.registerContextProvider(provider);
+                });
 
-            plugin.services?.forEach((service) => {
-                this.registerService(service);
-            });
-
-            plugin.providers?.forEach((provider) => {
-                this.registerContextProvider(provider);
-            });
-        });
+                plugin.services?.forEach((service) => {
+                    this.registerService(service);
+                });
+            }
+        );
 
         (opts.actions ?? []).forEach((action) => {
             this.registerAction(action);
@@ -324,38 +315,13 @@ export class AgentRuntime implements IAgentRuntime {
         (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
             this.registerEvaluator(evaluator);
         });
-    }
-
-    async initialize() {
-        for (const [serviceType, service] of this.services.entries()) {
-            try {
-                await service.initialize(this);
-                this.services.set(serviceType, service);
-                elizaLogger.success(
-                    `Service ${serviceType} initialized successfully`
-                );
-            } catch (error) {
-                elizaLogger.error(
-                    `Failed to initialize service ${serviceType}:`,
-                    error
-                );
-                throw error;
-            }
-        }
-
-        for (const plugin of this.plugins) {
-            if (plugin.services)
-                await Promise.all(
-                    plugin.services?.map((service) => service.initialize(this))
-                );
-        }
 
         if (
-            this.character &&
-            this.character.knowledge &&
-            this.character.knowledge.length > 0
+            opts.character &&
+            opts.character.knowledge &&
+            opts.character.knowledge.length > 0
         ) {
-            await this.processCharacterKnowledge(this.character.knowledge);
+            this.processCharacterKnowledge(opts.character.knowledge);
         }
     }
 
@@ -365,28 +331,58 @@ export class AgentRuntime implements IAgentRuntime {
      * then chunks the content into fragments, embeds each fragment, and creates fragment memories.
      * @param knowledge An array of knowledge items containing id, path, and content.
      */
-    private async processCharacterKnowledge(items: string[]) {
-        for (const item of items) {
-            const knowledgeId = stringToUuid(item);
+    private async processCharacterKnowledge(knowledge: string[]) {
+        // ensure the room exists and the agent exists in the room
+        this.ensureRoomExists(this.agentId);
+        this.ensureUserExists(
+            this.agentId,
+            this.character.name,
+            this.character.name
+        );
+        this.ensureParticipantExists(this.agentId, this.agentId);
+
+        for (const knowledgeItem of knowledge) {
+            const knowledgeId = stringToUuid(knowledgeItem);
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
-            if (existingDocument) {
-                return;
+            if (!existingDocument) {
+                console.log(
+                    "Processing knowledge for ",
+                    this.character.name,
+                    " - ",
+                    knowledgeItem.slice(0, 100)
+                );
+                await this.documentsManager.createMemory({
+                    embedding: embeddingZeroVector,
+                    id: knowledgeId,
+                    agentId: this.agentId,
+                    roomId: this.agentId,
+                    userId: this.agentId,
+                    createdAt: Date.now(),
+                    content: {
+                        text: knowledgeItem,
+                    },
+                });
+
+                const fragments = await splitChunks(knowledgeItem, 1200, 200);
+                for (const fragment of fragments) {
+                    const embedding = await embed(this, fragment);
+                    await this.knowledgeManager.createMemory({
+                        // We namespace the knowledge base uuid to avoid id
+                        // collision with the document above.
+                        id: stringToUuid(knowledgeId + fragment),
+                        roomId: this.agentId,
+                        agentId: this.agentId,
+                        userId: this.agentId,
+                        createdAt: Date.now(),
+                        content: {
+                            source: knowledgeId,
+                            text: fragment,
+                        },
+                        embedding,
+                    });
+                }
             }
-
-            console.log(
-                "Processing knowledge for ",
-                this.character.name,
-                " - ",
-                item.slice(0, 100)
-            );
-
-            await knowledge.set(this, {
-                id: knowledgeId,
-                content: {
-                    text: item,
-                },
-            });
         }
     }
 
@@ -630,15 +626,9 @@ export class AgentRuntime implements IAgentRuntime {
             await this.databaseAdapter.getParticipantsForRoom(roomId);
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
-            if (userId === this.agentId) {
-                elizaLogger.log(
-                    `Agent ${this.character.name} linked to room ${roomId} successfully.`
-                );
-            } else {
-                elizaLogger.log(
-                    `User ${userId} linked to room ${roomId} successfully.`
-                );
-            }
+            elizaLogger.log(
+                `User ${userId} linked to room ${roomId} successfully.`
+            );
         }
     }
 
@@ -920,8 +910,32 @@ Text: ${attachment.text}
                 .join(" ");
         }
 
+        async function getKnowledge(
+            runtime: AgentRuntime,
+            message: Memory
+        ): Promise<string[]> {
+            const embedding = await embed(runtime, message.content.text);
+
+            const memories =
+                await runtime.knowledgeManager.searchMemoriesByEmbedding(
+                    embedding,
+                    {
+                        roomId: message.agentId,
+                        agentId: message.agentId,
+                        count: 3,
+                    }
+                );
+
+            const knowledge = memories.map((memory) => memory.content.text);
+            return knowledge;
+        }
+
+        const formatKnowledge = (knowledge: string[]) => {
+            return knowledge.map((knowledge) => `- ${knowledge}`).join("\n");
+        };
+
         const formattedKnowledge = formatKnowledge(
-            await knowledge.get(this, message)
+            await getKnowledge(this, message)
         );
 
         const initialState = {
@@ -1203,7 +1217,3 @@ Text: ${attachment.text}
         } as State;
     }
 }
-
-const formatKnowledge = (knowledge: string[]) => {
-    return knowledge.map((knowledge) => `- ${knowledge}`).join("\n");
-};

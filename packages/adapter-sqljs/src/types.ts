@@ -126,6 +126,7 @@ export declare class Database {
 
     close(): void;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     create_function(name: string, func: (...args: any[]) => any): Database;
 
     each(
@@ -134,7 +135,7 @@ export declare class Database {
         callback: ParamsCallback,
         done: () => void
     ): Database;
-    each(sql: string, callback: ParamsCallback, done: () => void): Database; // eslint-disable-line
+    each(sql: string, callback: ParamsCallback, done: () => void): Database;
 
     /**
      * Execute an SQL query, and returns the result.

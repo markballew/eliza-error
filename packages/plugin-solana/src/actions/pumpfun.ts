@@ -2,7 +2,12 @@ import { AnchorProvider } from "@coral-xyz/anchor";
 import { Wallet } from "@coral-xyz/anchor";
 import { generateImage } from "@ai16z/eliza";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { CreateTokenMetadata, PriorityFee, PumpFunSDK } from "pumpdotfun-sdk";
+import {
+    CreateTokenMetadata,
+    DEFAULT_DECIMALS,
+    PriorityFee,
+    PumpFunSDK,
+} from "pumpdotfun-sdk";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import bs58 from "bs58";
@@ -227,14 +232,13 @@ export const sellToken = async ({
     }
 };
 
-// previous logic:
-// if (typeof window !== "undefined" && typeof window.confirm === "function") {
-//     return window.confirm(
-//         "Confirm the creation and purchase of the token?"
-//     );
-// }
-// return true;
 const promptConfirmation = async (): Promise<boolean> => {
+    return true;
+    if (typeof window !== "undefined" && typeof window.confirm === "function") {
+        return window.confirm(
+            "Confirm the creation and purchase of the token?"
+        );
+    }
     return true;
 };
 
@@ -271,7 +275,7 @@ Respond with a JSON markdown block containing only the extracted values.`;
 export default {
     name: "CREATE_AND_BUY_TOKEN",
     similes: ["CREATE_AND_PURCHASE_TOKEN", "DEPLOY_AND_BUY_TOKEN"],
-    validate: async (_runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         return true; //return isCreateAndBuyContent(runtime, message.content);
     },
     description:

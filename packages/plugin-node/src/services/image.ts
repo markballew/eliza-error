@@ -1,11 +1,6 @@
 import { elizaLogger, models } from "@ai16z/eliza";
 import { Service } from "@ai16z/eliza";
-import {
-    IAgentRuntime,
-    ModelProviderName,
-    ServiceType,
-    IImageDescriptionService,
-} from "@ai16z/eliza";
+import { IAgentRuntime, ModelProviderName, ServiceType } from "@ai16z/eliza";
 import {
     AutoProcessor,
     AutoTokenizer,
@@ -22,10 +17,7 @@ import gifFrames from "gif-frames";
 import os from "os";
 import path from "path";
 
-export class ImageDescriptionService
-    extends Service
-    implements IImageDescriptionService
-{
+export class ImageDescriptionService extends Service {
     static serviceType: ServiceType = ServiceType.IMAGE_DESCRIPTION;
 
     private modelId: string = "onnx-community/Florence-2-base-ft";
@@ -37,10 +29,6 @@ export class ImageDescriptionService
     private runtime: IAgentRuntime | null = null;
     private queue: string[] = [];
     private processing: boolean = false;
-
-    getInstance(): IImageDescriptionService {
-        return ImageDescriptionService.getInstance();
-    }
 
     async initialize(runtime: IAgentRuntime): Promise<void> {
         this.runtime = runtime;
@@ -106,7 +94,7 @@ export class ImageDescriptionService
         this.queue.push(imageUrl);
         this.processQueue();
 
-        return new Promise((resolve, _reject) => {
+        return new Promise((resolve, reject) => {
             const checkQueue = () => {
                 const index = this.queue.indexOf(imageUrl);
                 if (index !== -1) {
