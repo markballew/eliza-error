@@ -20,7 +20,7 @@ import {
 import EventEmitter from "events";
 import prism from "prism-media";
 import { Readable, pipeline } from "stream";
-import { composeContext, elizaLogger } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza";
 import { generateMessageResponse } from "@ai16z/eliza";
 import { embeddingZeroVector } from "@ai16z/eliza";
 import {
@@ -64,7 +64,6 @@ export function getWavHeader(
 }
 
 import { messageCompletionFooter } from "@ai16z/eliza/src/parsing.ts";
-import { DiscordClient } from ".";
 
 const discordVoiceHandlerTemplate =
     `# Task: Generate conversational voice dialog for {{agentName}}.
@@ -121,7 +120,7 @@ export class AudioMonitor {
             }
         });
         this.readable.on("end", () => {
-            elizaLogger.log("AudioMonitor ended");
+            console.log("AudioMonitor ended");
             this.ended = true;
             if (this.lastFlagged < 0) return;
             callback(this.getBufferFromStart());
@@ -129,13 +128,13 @@ export class AudioMonitor {
         });
         this.readable.on("speakingStopped", () => {
             if (this.ended) return;
-            elizaLogger.log("Speaking stopped");
+            console.log("Speaking stopped");
             if (this.lastFlagged < 0) return;
             callback(this.getBufferFromStart());
         });
         this.readable.on("speakingStarted", () => {
             if (this.ended) return;
-            elizaLogger.log("Speaking started");
+            console.log("Speaking started");
             this.reset();
         });
     }
@@ -184,7 +183,7 @@ export class VoiceManager extends EventEmitter {
         { channel: BaseGuildVoiceChannel; monitor: AudioMonitor }
     > = new Map();
 
-    constructor(client: DiscordClient) {
+    constructor(client: any) {
         super();
         this.client = client.client;
         this.runtime = client.runtime;
@@ -261,10 +260,10 @@ export class VoiceManager extends EventEmitter {
         member: GuildMember,
         channel: BaseGuildVoiceChannel
     ) {
-        const userId = member?.id;
-        const userName = member?.user?.username;
-        const name = member?.user?.displayName;
-        const connection = getVoiceConnection(member?.guild?.id);
+        const userId = member.id;
+        const userName = member.user.username;
+        const name = member.user.displayName;
+        const connection = getVoiceConnection(member.guild.id);
         const receiveStream = connection?.receiver.subscribe(userId, {
             autoDestroy: true,
             emitClose: true,
@@ -369,11 +368,13 @@ export class VoiceManager extends EventEmitter {
         let lastChunkTime = Date.now();
         let transcriptionStarted = false;
         let transcriptionText = "";
+        console.log("new audio monitor for: ", userId);
 
         const monitor = new AudioMonitor(
             audioStream,
             10000000,
             async (buffer) => {
+                console.log("buffer: ", buffer);
                 const currentTime = Date.now();
                 const silenceDuration = currentTime - lastChunkTime;
                 if (!buffer) {
@@ -396,20 +397,12 @@ export class VoiceManager extends EventEmitter {
                         const wavBuffer =
                             await this.convertOpusToWav(inputBuffer);
 
-                        const transcriptionService =
-                            this.runtime.getService<ITranscriptionService>(
-                                ServiceType.TRANSCRIPTION
-                            );
-
-                        if (!transcriptionService) {
-                            throw new Error(
-                                "Transcription generation service not found"
-                            );
-                        }
-
-                        const text =
-                            await transcriptionService.transcribe(wavBuffer);
-
+                        console.log("starting transcription");
+                        const text = await this.runtime
+                            .getService(ServiceType.TRANSCRIPTION)
+                            .getInstance<ITranscriptionService>()
+                            .transcribe(wavBuffer);
+                        console.log("transcribed text: ", text);
                         transcriptionText += text;
                     } catch (error) {
                         console.error("Error processing audio stream:", error);
@@ -546,22 +539,10 @@ export class VoiceManager extends EventEmitter {
                                     await this.runtime.updateRecentMessageState(
                                         state
                                     );
-
-                                const speechService =
-                                    this.runtime.getService<ISpeechService>(
-                                        ServiceType.SPEECH_GENERATION
-                                    );
-                                if (!speechService) {
-                                    throw new Error(
-                                        "Speech generation service not found"
-                                    );
-                                }
-
-                                const responseStream =
-                                    await speechService.generate(
-                                        this.runtime,
-                                        content.text
-                                    );
+                                const responseStream = await this.runtime
+                                    .getService(ServiceType.SPEECH_GENERATION)
+                                    .getInstance<ISpeechService>()
+                                    .generate(this.runtime, content.text);
 
                                 if (responseStream) {
                                     await this.playAudioStream(

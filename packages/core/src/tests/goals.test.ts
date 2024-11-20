@@ -15,21 +15,18 @@ import {
     Memory,
     ModelProviderName,
     Service,
-    ServiceType,
     State,
 } from "../types";
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-
 // Mock the database adapter
-export const mockDatabaseAdapter = {
-    getGoals: vi.fn(),
-    updateGoal: vi.fn(),
-    createGoal: vi.fn(),
+const mockDatabaseAdapter = {
+    getGoals: jest.fn(),
+    updateGoal: jest.fn(),
+    createGoal: jest.fn(),
 };
-const services = new Map<ServiceType, Service>();
+
 // Mock the runtime
-export const mockRuntime: IAgentRuntime = {
+const mockRuntime: IAgentRuntime = {
     databaseAdapter: mockDatabaseAdapter as any,
     agentId: "qweqew-qweqwe-qweqwe-qweqwe-qweeqw",
     serverUrl: "",
@@ -90,8 +87,8 @@ export const mockRuntime: IAgentRuntime = {
     getMemoryManager: function (_name: string): IMemoryManager | null {
         throw new Error("Function not implemented.");
     },
-    registerService: function (service: Service): void {
-        services.set(service.serviceType, service);
+    registerService: function (_service: Service): void {
+        throw new Error("Function not implemented.");
     },
     getSetting: function (_key: string): string | null {
         throw new Error("Function not implemented.");
@@ -158,10 +155,8 @@ export const mockRuntime: IAgentRuntime = {
     updateRecentMessageState: function (_state: State): Promise<State> {
         throw new Error("Function not implemented.");
     },
-    getService: function <T extends Service>(
-        serviceType: ServiceType
-    ): T | null {
-        return (services.get(serviceType) as T) || null;
+    getService: function (_service: string): typeof Service | null {
+        throw new Error("Function not implemented.");
     },
 };
 
@@ -180,7 +175,7 @@ const sampleGoal: Goal = {
 
 describe("getGoals", () => {
     it("retrieves goals successfully", async () => {
-        (mockDatabaseAdapter.getGoals).mockResolvedValue([
+        (mockDatabaseAdapter.getGoals as jest.Mock).mockResolvedValue([
             sampleGoal,
         ]);
 
@@ -199,7 +194,7 @@ describe("getGoals", () => {
     });
 
     it("handles failure to retrieve goals", async () => {
-        (mockDatabaseAdapter.getGoals).mockRejectedValue(
+        (mockDatabaseAdapter.getGoals as jest.Mock).mockRejectedValue(
             new Error("Failed to retrieve goals")
         );
 
@@ -225,7 +220,7 @@ describe("formatGoalsAsString", () => {
 
 describe("updateGoal", () => {
     it("updates a goal successfully", async () => {
-        (mockDatabaseAdapter.updateGoal).mockResolvedValue(
+        (mockDatabaseAdapter.updateGoal as jest.Mock).mockResolvedValue(
             undefined
         );
 
@@ -236,7 +231,7 @@ describe("updateGoal", () => {
     });
 
     it("handles failure to update a goal", async () => {
-        (mockDatabaseAdapter.updateGoal).mockRejectedValue(
+        (mockDatabaseAdapter.updateGoal as jest.Mock).mockRejectedValue(
             new Error("Failed to update goal")
         );
 
@@ -248,7 +243,7 @@ describe("updateGoal", () => {
 
 describe("createGoal", () => {
     it("creates a goal successfully", async () => {
-        (mockDatabaseAdapter.createGoal).mockResolvedValue(
+        (mockDatabaseAdapter.createGoal as jest.Mock).mockResolvedValue(
             undefined
         );
 
@@ -259,7 +254,7 @@ describe("createGoal", () => {
     });
 
     it("handles failure to create a goal", async () => {
-        (mockDatabaseAdapter.createGoal).mockRejectedValue(
+        (mockDatabaseAdapter.createGoal as jest.Mock).mockRejectedValue(
             new Error("Failed to create goal")
         );
 

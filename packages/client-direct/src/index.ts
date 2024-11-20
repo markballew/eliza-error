@@ -61,7 +61,7 @@ export class DirectClient {
     private agents: Map<string, AgentRuntime>;
 
     constructor() {
-        elizaLogger.log("DirectClient constructor");
+        console.log("DirectClient constructor");
         this.app = express();
         this.app.use(cors());
         this.agents = new Map();

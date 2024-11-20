@@ -42,7 +42,6 @@ import {
     type Memory,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -151,19 +150,17 @@ export class AgentRuntime implements IAgentRuntime {
         return this.memoryManagers.get(tableName) || null;
     }
 
-    getService<T extends Service>(service: ServiceType): T | null {
+    getService(service: ServiceType): typeof Service | null {
         const serviceInstance = this.services.get(service);
         if (!serviceInstance) {
             elizaLogger.error(`Service ${service} not found`);
             return null;
         }
-        return serviceInstance as T;
+        return serviceInstance as typeof Service;
     }
-
-    async registerService(service: Service): Promise<void> {
-        const serviceType = service.serviceType;
+    registerService(service: Service): void {
+        const serviceType = (service as typeof Service).serviceType;
         elizaLogger.log("Registering service:", serviceType);
-
         if (this.services.has(serviceType)) {
             elizaLogger.warn(
                 `Service ${serviceType} is already registered. Skipping registration.`
@@ -171,19 +168,7 @@ export class AgentRuntime implements IAgentRuntime {
             return;
         }
 
-        try {
-            await service.initialize(this);
-            this.services.set(serviceType, service);
-            elizaLogger.success(
-                `Service ${serviceType} initialized successfully`
-            );
-        } catch (error) {
-            elizaLogger.error(
-                `Failed to initialize service ${serviceType}:`,
-                error
-            );
-            throw error;
-        }
+        this.services.set((service as typeof Service).serviceType, service);
     }
 
     /**
@@ -228,9 +213,9 @@ export class AgentRuntime implements IAgentRuntime {
         this.databaseAdapter = opts.databaseAdapter;
         // use the character id if it exists, otherwise use the agentId if it is passed in, otherwise use the character name
         this.agentId =
-            opts.character?.id ??
-            opts?.agentId ??
-            stringToUuid(opts.character?.name ?? uuidv4());
+            opts.character.id ??
+            opts.agentId ??
+            stringToUuid(opts.character.name);
 
         elizaLogger.success("Agent ID", this.agentId);
 
@@ -284,7 +269,7 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.token = opts.token;
 
-        [...(opts.character?.plugins || []), ...(opts.plugins || [])].forEach(
+        [...(opts.character.plugins || []), ...(opts.plugins || [])].forEach(
             (plugin) => {
                 plugin.actions?.forEach((action) => {
                     this.registerAction(action);

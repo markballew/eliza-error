@@ -244,24 +244,17 @@ export async function generateText({
                 elizaLogger.debug(
                     "Using local Llama model for text completion."
                 );
-                const textGenerationService = runtime
-                    .getService<ITextGenerationService>(
-                        ServiceType.TEXT_GENERATION
-                    )
-                    .getInstance();
-
-                if (!textGenerationService) {
-                    throw new Error("Text generation service not found");
-                }
-
-                response = await textGenerationService.queueTextCompletion(
-                    context,
-                    temperature,
-                    _stop,
-                    frequency_penalty,
-                    presence_penalty,
-                    max_response_length
-                );
+                response = await runtime
+                    .getService(ServiceType.TEXT_GENERATION)
+                    .getInstance<ITextGenerationService>()
+                    .queueTextCompletion(
+                        context,
+                        temperature,
+                        _stop,
+                        frequency_penalty,
+                        presence_penalty,
+                        max_response_length
+                    );
                 elizaLogger.debug("Received response from local Llama model.");
                 break;
             }
@@ -859,20 +852,16 @@ export const generateCaption = async (
     description: string;
 }> => {
     const { imageUrl } = data;
-    const imageDescriptionService = runtime
-        .getService<IImageDescriptionService>(ServiceType.IMAGE_DESCRIPTION)
-        .getInstance();
-
-    if (!imageDescriptionService) {
-        throw new Error("Image description service not found");
-    }
-
-    const resp = await imageDescriptionService.describeImage(imageUrl);
+    const resp = await runtime
+        .getService(ServiceType.IMAGE_DESCRIPTION)
+        .getInstance<IImageDescriptionService>()
+        .describeImage(imageUrl);
     return {
         title: resp.title.trim(),
         description: resp.description.trim(),
     };
 };
+
 /**
  * Configuration options for generating objects with a model.
  */

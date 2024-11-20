@@ -5,14 +5,14 @@ import { DiscordClientInterface } from "@ai16z/client-discord";
 import { AutoClientInterface } from "@ai16z/client-auto";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
 import { TwitterClientInterface } from "@ai16z/client-twitter";
+import { defaultCharacter } from "@ai16z/eliza";
+import { AgentRuntime } from "@ai16z/eliza";
+import { settings } from "@ai16z/eliza";
 import {
-    defaultCharacter,
-    AgentRuntime,
-    settings,
     Character,
     IAgentRuntime,
+    IDatabaseAdapter,
     ModelProviderName,
-    elizaLogger,
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { solanaPlugin } from "@ai16z/plugin-solana";
@@ -219,11 +219,7 @@ export async function createAgent(
     db: any,
     token: string
 ) {
-    elizaLogger.success(
-        elizaLogger.successesTitle,
-        "Creating runtime for character",
-        character.name
-    );
+    console.log("Creating runtime for character", character.name);
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -283,7 +279,7 @@ const startAgents = async () => {
             await startAgent(character, directClient);
         }
     } catch (error) {
-        elizaLogger.error("Error starting agents:", error);
+        console.error("Error starting agents:", error);
     }
 
     function chat() {
@@ -296,12 +292,12 @@ const startAgents = async () => {
         });
     }
 
-    elizaLogger.log("Chat started. Type 'exit' to quit.");
+    console.log("Chat started. Type 'exit' to quit.");
     chat();
 };
 
 startAgents().catch((error) => {
-    elizaLogger.error("Unhandled error in startAgents:", error);
+    console.error("Unhandled error in startAgents:", error);
     process.exit(1); // Exit the process after logging
 });
 
