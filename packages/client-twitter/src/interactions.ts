@@ -311,6 +311,8 @@ export class TwitterInteractionClient extends ClientBase {
                 twitterShouldRespondTemplate,
         });
 
+        console.log("composeContext done");
+
         const shouldRespond = await generateShouldRespond({
             runtime: this.runtime,
             context: shouldRespondContext,

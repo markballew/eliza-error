@@ -1,10 +1,11 @@
 import path from "node:path";
 
-import { trimTokens } from "./generation.ts";
-import elizaLogger from "./logger.ts";
 import { models } from "./models.ts";
+import { IAgentRuntime, ModelProviderName, ModelClass } from "./types.ts";
+import fs from "fs";
+import { trimTokens } from "./generation.ts";
 import settings from "./settings.ts";
-import { IAgentRuntime, ModelClass, ModelProviderName } from "./types.ts";
+import elizaLogger from "./logger.ts";
 
 interface EmbeddingOptions {
     model: string;

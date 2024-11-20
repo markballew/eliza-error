@@ -164,7 +164,6 @@ export class MemoryManager implements IMemoryManager {
             elizaLogger.debug("Memory already exists, skipping");
             return;
         }
-
         await this.runtime.databaseAdapter.createMemory(
             memory,
             this.tableName,

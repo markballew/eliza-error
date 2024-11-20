@@ -1,4 +1,4 @@
-import { elizaLogger, IAgentRuntime, settings } from "@ai16z/eliza";
+import { IAgentRuntime, settings } from "@ai16z/eliza";
 import { Service, ServiceType } from "@ai16z/eliza";
 import { exec } from "child_process";
 import { File } from "formdata-node";
@@ -116,7 +116,7 @@ export class TranscriptionService extends Service {
             const probeResult = JSON.parse(stdout);
             const stream = probeResult.streams[0];
 
-            elizaLogger.log("Input audio info:", stream);
+            console.log("Input audio info:", stream);
 
             let ffmpegCommand = `ffmpeg -i "${inputPath}" -ar ${this.TARGET_SAMPLE_RATE} -ac 1`;
 
@@ -126,7 +126,7 @@ export class TranscriptionService extends Service {
 
             ffmpegCommand += ` "${outputPath}"`;
 
-            elizaLogger.log("FFmpeg command:", ffmpegCommand);
+            console.log("FFmpeg command:", ffmpegCommand);
 
             await execAsync(ffmpegCommand);
 
@@ -135,7 +135,7 @@ export class TranscriptionService extends Service {
             fs.unlinkSync(outputPath);
             return convertedBuffer;
         } catch (error) {
-            elizaLogger.error("Error converting audio:", error);
+            console.error("Error converting audio:", error);
             throw error;
         }
     }
@@ -147,7 +147,7 @@ export class TranscriptionService extends Service {
         const filePath = path.join(this.DEBUG_AUDIO_DIR, filename);
 
         fs.writeFileSync(filePath, Buffer.from(audioBuffer));
-        elizaLogger.log(`Debug audio saved: ${filePath}`);
+        console.log(`Debug audio saved: ${filePath}`);
     }
 
     public async transcribeAttachment(
@@ -201,7 +201,7 @@ export class TranscriptionService extends Service {
     private async transcribeWithOpenAI(
         audioBuffer: ArrayBuffer
     ): Promise<string | null> {
-        elizaLogger.log("Transcribing audio with OpenAI...");
+        console.log("Transcribing audio with OpenAI...");
 
         try {
             await this.saveDebugAudio(audioBuffer, "openai_input_original");
@@ -225,22 +225,19 @@ export class TranscriptionService extends Service {
             });
 
             const trimmedResult = (result as any).trim();
-            elizaLogger.log(`OpenAI speech to text result: "${trimmedResult}"`);
+            console.log(`OpenAI speech to text result: "${trimmedResult}"`);
 
             return trimmedResult;
         } catch (error) {
-            elizaLogger.error(
-                "Error in OpenAI speech-to-text conversion:",
-                error
-            );
+            console.error("Error in OpenAI speech-to-text conversion:", error);
             if (error.response) {
-                elizaLogger.error("Response data:", error.response.data);
-                elizaLogger.error("Response status:", error.response.status);
-                elizaLogger.error("Response headers:", error.response.headers);
+                console.error("Response data:", error.response.data);
+                console.error("Response status:", error.response.status);
+                console.error("Response headers:", error.response.headers);
             } else if (error.request) {
-                elizaLogger.error("No response received:", error.request);
+                console.error("No response received:", error.request);
             } else {
-                elizaLogger.error("Error setting up request:", error.message);
+                console.error("Error setting up request:", error.message);
             }
             return null;
         }
@@ -250,7 +247,7 @@ export class TranscriptionService extends Service {
         audioBuffer: ArrayBuffer
     ): Promise<string | null> {
         try {
-            elizaLogger.log("Transcribing audio locally...");
+            console.log("Transcribing audio locally...");
 
             await this.saveDebugAudio(audioBuffer, "local_input_original");
 
@@ -264,12 +261,12 @@ export class TranscriptionService extends Service {
             );
             fs.writeFileSync(tempWavFile, convertedBuffer);
 
-            elizaLogger.debug(`Temporary WAV file created: ${tempWavFile}`);
+            console.log(`Temporary WAV file created: ${tempWavFile}`);
 
             let output = await nodewhisper(tempWavFile, {
                 modelName: "base.en",
                 autoDownloadModelName: "base.en",
-                verbose: false,
+                verbose: true,
                 removeWavFileAfterTranscription: false,
                 withCuda: this.isCudaAvailable,
                 whisperOptions: {
@@ -284,6 +281,8 @@ export class TranscriptionService extends Service {
                 },
             });
 
+            console.log("Raw output from nodejs-whisper:", output);
+
             output = output
                 .split("\n")
                 .map((line) => {
@@ -295,18 +294,17 @@ export class TranscriptionService extends Service {
                 })
                 .join("\n");
 
+            console.log("Processed output:", output);
+
             fs.unlinkSync(tempWavFile);
 
             if (!output || output.length < 5) {
-                elizaLogger.log("Output is null or too short, returning null");
+                console.log("Output is null or too short, returning null");
                 return null;
             }
             return output;
         } catch (error) {
-            elizaLogger.error(
-                "Error in local speech-to-text conversion:",
-                error
-            );
+            console.error("Error in local speech-to-text conversion:", error);
             return null;
         }
     }

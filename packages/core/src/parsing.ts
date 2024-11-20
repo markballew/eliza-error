@@ -66,7 +66,6 @@ export function parseJsonArrayFromText(text: string) {
         try {
             jsonData = JSON.parse(jsonBlockMatch[1]);
         } catch (e) {
-            console.error("Error parsing JSON:", e);
             return null;
         }
     } else {
@@ -77,7 +76,6 @@ export function parseJsonArrayFromText(text: string) {
             try {
                 jsonData = JSON.parse(arrayMatch[0]);
             } catch (e) {
-                console.error("Error parsing JSON:", e);
                 return null;
             }
         }
@@ -111,7 +109,6 @@ export function parseJSONObjectFromText(
         try {
             jsonData = JSON.parse(jsonBlockMatch[1]);
         } catch (e) {
-            console.error("Error parsing JSON:", e);
             return null;
         }
     } else {
@@ -122,7 +119,6 @@ export function parseJSONObjectFromText(
             try {
                 jsonData = JSON.parse(objectMatch[0]);
             } catch (e) {
-                console.error("Error parsing JSON:", e);
                 return null;
             }
         }

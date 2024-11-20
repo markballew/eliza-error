@@ -5,7 +5,6 @@ import {
 import { SqlJsDatabaseAdapter } from "@ai16z/adapter-sqljs";
 import { SupabaseDatabaseAdapter } from "@ai16z/adapter-supabase";
 import { DatabaseAdapter } from "../database.ts";
-import { getEndpoint } from "../models.ts";
 import { AgentRuntime } from "../runtime.ts";
 import { Action, Evaluator, ModelProviderName, Provider } from "../types.ts";
 import {
@@ -16,6 +15,7 @@ import {
     zeroUuid,
 } from "./constants.ts";
 import { User } from "./types.ts";
+import { getEndpoint } from "../models.ts";
 
 export async function createRuntime({
     env,
@@ -104,7 +104,6 @@ export async function createRuntime({
                 env?.SUPABASE_URL ?? SUPABASE_URL,
                 env?.SUPABASE_SERVICE_API_KEY ?? SUPABASE_ANON_KEY
             );
-            break;
         }
         case "sqlite":
         default:
