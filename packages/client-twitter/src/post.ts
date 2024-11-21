@@ -7,7 +7,12 @@ import {
     ModelClass,
     stringToUuid,
 } from "@ai16z/eliza";
-import { elizaLogger } from "@ai16z/eliza";
+import fs from "fs";
+import { composeContext, elizaLogger } from "@ai16z/eliza";
+import { generateText } from "@ai16z/eliza";
+import { embeddingZeroVector } from "@ai16z/eliza";
+import { IAgentRuntime, ModelClass } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
 import { ClientBase } from "./base.ts";
 
 const twitterPostTemplate = `{{timeline}}
@@ -62,21 +67,9 @@ function truncateToCompleteSentence(text: string): string {
     return text.slice(0, MAX_TWEET_LENGTH - 3).trim() + "...";
 }
 
-export class TwitterPostClient {
-    client: ClientBase;
-    runtime: IAgentRuntime;
-
-    async start(postImmediately: boolean = false) {
-        const generateNewTweetLoop = async () => {
-            const lastPost = await this.runtime.cacheManager.get<{
-                timestamp: number;
-            }>(
-                "twitter/" +
-                    this.runtime.getSetting("TWITTER_USERNAME") +
-                    "/lastPost"
-            );
-
-            const lastPostTimestamp = lastPost?.timestamp ?? 0;
+export class TwitterPostClient extends ClientBase {
+    onReady(postImmediately: boolean = true) {
+        const generateNewTweetLoop = () => {
             const minMinutes =
                 parseInt(this.runtime.getSetting("POST_INTERVAL_MIN")) || 90;
             const maxMinutes =
@@ -86,11 +79,8 @@ export class TwitterPostClient {
                 minMinutes;
             const delay = randomMinutes * 60 * 1000;
 
-            if (Date.now() > lastPostTimestamp + delay) {
-                await this.generateNewTweet();
-            }
-
             setTimeout(() => {
+                this.generateNewTweet();
                 generateNewTweetLoop(); // Set up next iteration
             }, delay);
 
@@ -100,13 +90,13 @@ export class TwitterPostClient {
         if (postImmediately) {
             this.generateNewTweet();
         }
-
         generateNewTweetLoop();
     }
 
-    constructor(client: ClientBase, runtime: IAgentRuntime) {
-        this.client = client;
-        this.runtime = runtime;
+    constructor(runtime: IAgentRuntime) {
+        super({
+            runtime,
+        });
     }
 
     private async generateNewTweet() {
@@ -121,13 +111,13 @@ export class TwitterPostClient {
 
             let homeTimeline = [];
 
-            const cachedTimeline = await this.client.getCachedTimeline();
+            const cachedTimeline = await this.getCachedTimeline();
 
             if (cachedTimeline) {
                 homeTimeline = cachedTimeline;
             } else {
-                homeTimeline = await this.client.fetchHomeTimeline(50);
-                this.client.cacheTimeline(homeTimeline);
+                homeTimeline = await this.fetchHomeTimeline(50);
+                this.cacheTimeline(homeTimeline);
             }
 
             const formattedHomeTimeline =
@@ -173,19 +163,14 @@ export class TwitterPostClient {
             // Use the helper function to truncate to complete sentence
             const content = truncateToCompleteSentence(formattedTweet);
 
-            if (this.runtime.getSetting("TWITTER_DRY_RUN") === "true") {
-                elizaLogger.info(
-                    `Dry run: would have posted tweet: ${content}`
-                );
+            if (this.runtime.getSetting("TWITTER_DRY_RUN") === 'true') {
+                elizaLogger.info(`Dry run: would have posted tweet: ${content}`);
                 return;
             }
 
             try {
-                elizaLogger.log(`Posting new tweet:\n ${content}`);
-
-                const result = await this.client.requestQueue.add(
-                    async () =>
-                        await this.client.twitterClient.sendTweet(content)
+                const result = await this.requestQueue.add(
+                    async () => await this.twitterClient.sendTweet(content)
                 );
                 const body = await result.json();
                 const tweetResult = body.data.create_tweet.tweet_results.result;
@@ -207,25 +192,10 @@ export class TwitterPostClient {
                     videos: [],
                 } as Tweet;
 
-                await this.runtime.cacheManager.set(
-                    "twitter/" +
-                        this.runtime.getSetting("TWITTER_USERNAME") +
-                        "/lastPost",
-                    {
-                        id: tweet.id,
-                        timestamp: Date.now(),
-                    }
-                );
-
-                await this.client.cacheTweet(tweet);
-
-                homeTimeline.push(tweet);
-                await this.client.cacheTimeline(homeTimeline);
-                elizaLogger.log(`Tweet posted:\n ${tweet.permanentUrl}`);
-
-                const roomId = stringToUuid(
-                    tweet.conversationId + "-" + this.runtime.agentId
-                );
+                const postId = tweet.id;
+                const conversationId =
+                    tweet.conversationId + "-" + this.runtime.agentId;
+                const roomId = stringToUuid(conversationId);
 
                 await this.runtime.ensureRoomExists(roomId);
                 await this.runtime.ensureParticipantInRoom(
@@ -233,10 +203,10 @@ export class TwitterPostClient {
                     roomId
                 );
 
-                await this.client.cacheTweet(tweet);
+                await this.cacheTweet(tweet);
 
                 await this.runtime.messageManager.createMemory({
-                    id: stringToUuid(tweet.id + "-" + this.runtime.agentId),
+                    id: stringToUuid(postId + "-" + this.runtime.agentId),
                     userId: this.runtime.agentId,
                     agentId: this.runtime.agentId,
                     content: {
@@ -249,10 +219,10 @@ export class TwitterPostClient {
                     createdAt: tweet.timestamp * 1000,
                 });
             } catch (error) {
-                elizaLogger.error("Error sending tweet:", error);
+                console.error("Error sending tweet:", error);
             }
         } catch (error) {
-            elizaLogger.error("Error generating new tweet:", error);
+            console.error("Error generating new tweet:", error);
         }
     }
 }

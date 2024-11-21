@@ -61,8 +61,6 @@ export async function generateText({
         return "";
     }
 
-    elizaLogger.log("Genarating text...");
-
     const provider = runtime.modelProvider;
     const endpoint =
         runtime.character.modelEndpointOverride || models[provider].endpoint;
@@ -702,8 +700,6 @@ export async function generateMessageResponse({
     let retryLength = 1000; // exponential backoff
     while (true) {
         try {
-            elizaLogger.log("Genarating message response..");
-
             const response = await generateText({
                 runtime,
                 context,
@@ -1043,8 +1039,7 @@ async function handleOpenAI({
     mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    const baseURL = models.openai.endpoint || undefined
-    const openai = createOpenAI({ apiKey, baseURL });
+    const openai = createOpenAI({ apiKey });
     return await aiGenerateObject({
         model: openai.languageModel(model),
         schema,

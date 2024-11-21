@@ -19,7 +19,6 @@ import {
     validateSettings,
 } from "../utils";
 import { ERC20Token } from "../utils/ERC20Token";
-import { validateStarknetConfig } from "../enviroment";
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -59,8 +58,7 @@ export default {
         "PAY_ON_STARKNET",
     ],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
-        await validateStarknetConfig(runtime);
-        return true;
+        return validateSettings(runtime);
     },
     description:
         "MUST use this action if the user requests send a token or transfer a token, the request might be varied, but it will always be a token transfer. If the user requests a transfer of lords, use this action.",

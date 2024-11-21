@@ -1,6 +1,6 @@
 import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 import { SqliteDatabaseAdapter } from "@ai16z/adapter-sqlite";
-import { DirectClientInterface } from "@ai16z/client-direct";
+import { DirectClient, DirectClientInterface } from "@ai16z/client-direct";
 import { DiscordClientInterface } from "@ai16z/client-discord";
 import { AutoClientInterface } from "@ai16z/client-auto";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
@@ -20,10 +20,8 @@ import {
     elizaLogger,
     settings,
     IDatabaseAdapter,
-    validateCharacterConfig,
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
-import { confluxPlugin } from "@ai16z/plugin-conflux";
 import { solanaPlugin } from "@ai16z/plugin-solana";
 import { nodePlugin } from "@ai16z/plugin-node";
 import Database from "better-sqlite3";
@@ -32,8 +30,7 @@ import readline from "readline";
 import yargs from "yargs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { character } from "./character.ts";
-import { DirectClient } from "@ai16z/client-direct";
+import { character } from "./character";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -83,8 +80,6 @@ export async function loadCharacters(
         for (const path of characterPaths) {
             try {
                 const character = JSON.parse(fs.readFileSync(path, "utf8"));
-
-                validateCharacterConfig(character);
 
                 // is there a "plugins" field?
                 if (character.plugins) {
@@ -250,9 +245,6 @@ export function createAgent(
         character,
         plugins: [
             bootstrapPlugin,
-            character.settings.secrets?.CONFLUX_CORE_PRIVATE_KEY
-                ? confluxPlugin
-                : null,
             nodePlugin,
             character.settings.secrets?.WALLET_PUBLIC_KEY ? solanaPlugin : null,
         ].filter(Boolean),
@@ -323,7 +315,7 @@ const startAgents = async () => {
 
     try {
         for (const character of characters) {
-            await startAgent(character, directClient as DirectClient);
+            await startAgent(character, directClient);
         }
     } catch (error) {
         elizaLogger.error("Error starting agents:", error);

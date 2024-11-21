@@ -17,7 +17,6 @@ import {
     splitChunks,
     embed,
 } from "@ai16z/eliza";
-import { validateGithubConfig } from "./enviroment";
 
 export interface GitHubConfig {
     owner: string;
@@ -221,7 +220,6 @@ export class GitHubClient {
 
 export const GitHubClientInterface: Client = {
     start: async (runtime: IAgentRuntime) => {
-        await validateGithubConfig(runtime);
         elizaLogger.log("GitHubClientInterface start");
 
         const client = new GitHubClient(runtime as AgentRuntime);

@@ -351,7 +351,7 @@ export class AgentRuntime implements IAgentRuntime {
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
             if (!existingDocument) {
-                elizaLogger.success(
+                console.log(
                     "Processing knowledge for ",
                     this.character.name,
                     " - ",
@@ -631,15 +631,9 @@ export class AgentRuntime implements IAgentRuntime {
             await this.databaseAdapter.getParticipantsForRoom(roomId);
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
-            if (userId === this.agentId) {
-                elizaLogger.log(
-                    `Agent ${this.character.name} linked to room ${roomId} successfully.`
-                );
-            } else {
-                elizaLogger.log(
-                    `User ${userId} linked to room ${roomId} successfully.`
-                );
-            }
+            elizaLogger.log(
+                `User ${userId} linked to room ${roomId} successfully.`
+            );
         }
     }
 
