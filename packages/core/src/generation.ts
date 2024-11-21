@@ -24,12 +24,8 @@ import {
 import settings from "./settings.ts";
 import {
     Content,
-    IAgentRuntime,
-    IImageDescriptionService,
-    ITextGenerationService,
-    ModelClass,
-    ModelProviderName,
-    ServiceType,
+    IAgentRuntime, IImageDescriptionService, ITextGenerationService, ModelClass, ModelProviderName,
+    ServiceType
 } from "./types.ts";
 
 /**
@@ -60,8 +56,6 @@ export async function generateText({
         console.error("generateText context is empty");
         return "";
     }
-
-    elizaLogger.log("Genarating text...");
 
     const provider = runtime.modelProvider;
     const endpoint =
@@ -316,14 +310,14 @@ export async function generateText({
 
             case ModelProviderName.OLLAMA:
                 {
-                    elizaLogger.debug("Initializing Ollama model.");
+                    console.debug("Initializing Ollama model.");
 
                     const ollamaProvider = createOllama({
                         baseURL: models[provider].endpoint + "/api",
                     });
                     const ollama = ollamaProvider(model);
 
-                    elizaLogger.debug("****** MODEL\n", model);
+                    console.debug("****** MODEL\n", model);
 
                     const { text: ollamaResponse } = await aiGenerateText({
                         model: ollama,
@@ -336,7 +330,7 @@ export async function generateText({
 
                     response = ollamaResponse;
                 }
-                elizaLogger.debug("Received response from Ollama model.");
+                console.debug("Received response from Ollama model.");
                 break;
 
             case ModelProviderName.HEURIST: {
@@ -702,8 +696,6 @@ export async function generateMessageResponse({
     let retryLength = 1000; // exponential backoff
     while (true) {
         try {
-            elizaLogger.log("Genarating message response..");
-
             const response = await generateText({
                 runtime,
                 context,
@@ -1043,8 +1035,7 @@ async function handleOpenAI({
     mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    const baseURL = models.openai.endpoint || undefined
-    const openai = createOpenAI({ apiKey, baseURL });
+    const openai = createOpenAI({ apiKey });
     return await aiGenerateObject({
         model: openai.languageModel(model),
         schema,

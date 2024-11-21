@@ -26,7 +26,6 @@ import {
     Goal,
     HandlerCallback,
     IAgentRuntime,
-    ICacheManager,
     IDatabaseAdapter,
     IMemoryManager,
     ModelClass,
@@ -89,8 +88,6 @@ export class AgentRuntime implements IAgentRuntime {
      */
     providers: Provider[] = [];
 
-    plugins: Plugin[] = [];
-
     /**
      * The model to use for generateText.
      */
@@ -134,7 +131,6 @@ export class AgentRuntime implements IAgentRuntime {
 
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
-    cacheManager: ICacheManager;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -174,6 +170,20 @@ export class AgentRuntime implements IAgentRuntime {
             );
             return;
         }
+
+        try {
+            await service.initialize(this);
+            this.services.set(serviceType, service);
+            elizaLogger.success(
+                `Service ${serviceType} initialized successfully`
+            );
+        } catch (error) {
+            elizaLogger.error(
+                `Failed to initialize service ${serviceType}:`,
+                error
+            );
+            throw error;
+        }
     }
 
     /**
@@ -211,7 +221,6 @@ export class AgentRuntime implements IAgentRuntime {
         databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
-        cacheManager: ICacheManager;
         logging?: boolean;
     }) {
         this.#conversationLength =
@@ -230,8 +239,6 @@ export class AgentRuntime implements IAgentRuntime {
         if (!opts.databaseAdapter) {
             throw new Error("No database adapter provided");
         }
-
-        this.cacheManager = opts.cacheManager;
 
         this.messageManager = new MemoryManager({
             runtime: this,
@@ -277,24 +284,25 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.token = opts.token;
 
-        this.plugins = [
-            ...(opts.character?.plugins ?? []),
-            ...(opts.plugins ?? []),
-        ];
+        [...(opts.character?.plugins || []), ...(opts.plugins || [])].forEach(
+            (plugin) => {
+                plugin.actions?.forEach((action) => {
+                    this.registerAction(action);
+                });
 
-        this.plugins.forEach((plugin) => {
-            plugin.actions?.forEach((action) => {
-                this.registerAction(action);
-            });
+                plugin.evaluators?.forEach((evaluator) => {
+                    this.registerEvaluator(evaluator);
+                });
 
-            plugin.evaluators?.forEach((evaluator) => {
-                this.registerEvaluator(evaluator);
-            });
+                plugin.providers?.forEach((provider) => {
+                    this.registerContextProvider(provider);
+                });
 
-            plugin.providers?.forEach((provider) => {
-                this.registerContextProvider(provider);
-            });
-        });
+                plugin.services?.forEach((service) => {
+                    this.registerService(service);
+                });
+            }
+        );
 
         (opts.actions ?? []).forEach((action) => {
             this.registerAction(action);
@@ -307,38 +315,13 @@ export class AgentRuntime implements IAgentRuntime {
         (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
             this.registerEvaluator(evaluator);
         });
-    }
-
-    async initialize() {
-        for (const [serviceType, service] of this.services.entries()) {
-            try {
-                await service.initialize(this);
-                this.services.set(serviceType, service);
-                elizaLogger.success(
-                    `Service ${serviceType} initialized successfully`
-                );
-            } catch (error) {
-                elizaLogger.error(
-                    `Failed to initialize service ${serviceType}:`,
-                    error
-                );
-                throw error;
-            }
-        }
-
-        for (const plugin of this.plugins) {
-            if (plugin.services)
-                await Promise.all(
-                    plugin.services?.map((service) => service.initialize(this))
-                );
-        }
 
         if (
-            this.character &&
-            this.character.knowledge &&
-            this.character.knowledge.length > 0
+            opts.character &&
+            opts.character.knowledge &&
+            opts.character.knowledge.length > 0
         ) {
-            await this.processCharacterKnowledge(this.character.knowledge);
+            this.processCharacterKnowledge(opts.character.knowledge);
         }
     }
 
@@ -350,22 +333,20 @@ export class AgentRuntime implements IAgentRuntime {
      */
     private async processCharacterKnowledge(knowledge: string[]) {
         // ensure the room exists and the agent exists in the room
-        await this.ensureRoomExists(this.agentId);
-
-        await this.ensureUserExists(
+        this.ensureRoomExists(this.agentId);
+        this.ensureUserExists(
             this.agentId,
             this.character.name,
             this.character.name
         );
-
-        await this.ensureParticipantExists(this.agentId, this.agentId);
+        this.ensureParticipantExists(this.agentId, this.agentId);
 
         for (const knowledgeItem of knowledge) {
             const knowledgeId = stringToUuid(knowledgeItem);
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
             if (!existingDocument) {
-                elizaLogger.success(
+                console.log(
                     "Processing knowledge for ",
                     this.character.name,
                     " - ",
@@ -382,14 +363,11 @@ export class AgentRuntime implements IAgentRuntime {
                         text: knowledgeItem,
                     },
                 });
-
                 const fragments = await splitChunks(knowledgeItem, 1200, 200);
                 for (const fragment of fragments) {
                     const embedding = await embed(this, fragment);
                     await this.knowledgeManager.createMemory({
-                        // We namespace the knowledge base uuid to avoid id
-                        // collision with the document above.
-                        id: stringToUuid(knowledgeId + fragment),
+                        id: stringToUuid(fragment),
                         roomId: this.agentId,
                         agentId: this.agentId,
                         userId: this.agentId,
@@ -645,15 +623,9 @@ export class AgentRuntime implements IAgentRuntime {
             await this.databaseAdapter.getParticipantsForRoom(roomId);
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
-            if (userId === this.agentId) {
-                elizaLogger.log(
-                    `Agent ${this.character.name} linked to room ${roomId} successfully.`
-                );
-            } else {
-                elizaLogger.log(
-                    `User ${userId} linked to room ${roomId} successfully.`
-                );
-            }
+            elizaLogger.log(
+                `User ${userId} linked to room ${roomId} successfully.`
+            );
         }
     }
 
@@ -952,7 +924,6 @@ Text: ${attachment.text}
                 );
 
             const knowledge = memories.map((memory) => memory.content.text);
-
             return knowledge;
         }
 
@@ -1029,35 +1000,35 @@ Text: ${attachment.text}
                           formattedCharacterMessageExamples
                       )
                     : "",
-            messageDirections:
-                this.character?.style?.all?.length > 0 ||
-                this.character?.style?.chat.length > 0
-                    ? addHeader(
-                          "# Message Directions for " + this.character.name,
-                          (() => {
-                              const all = this.character?.style?.all || [];
-                              const chat = this.character?.style?.chat || [];
-                              return [...all, ...chat].join("\n");
-                          })()
-                      )
-                    : "",
-
+                    messageDirections:
+                    this.character?.style?.all?.length > 0 ||
+                    this.character?.style?.chat.length > 0
+                        ? addHeader(
+                            "# Message Directions for " + this.character.name,
+                            (() => {
+                                const all = this.character?.style?.all || [];
+                                const chat = this.character?.style?.chat || [];
+                                return [...all, ...chat].join("\n");
+                            })()
+                        )
+                        : "",
+                
             postDirections:
                 this.character?.style?.all?.length > 0 ||
                 this.character?.style?.post.length > 0
                     ? addHeader(
-                          "# Post Directions for " + this.character.name,
-                          (() => {
-                              const all = this.character?.style?.all || [];
-                              const post = this.character?.style?.post || [];
-                              return [...all, ...post].join("\n");
-                          })()
-                      )
+                        "# Post Directions for " + this.character.name,
+                        (() => {
+                            const all = this.character?.style?.all || [];
+                            const post = this.character?.style?.post || [];
+                            return [...all, ...post].join("\n");
+                        })()
+                    )
                     : "",
-
-            //old logic left in for reference
+                    
+            //old logic left in for reference 
             //food for thought. how could we dynamically decide what parts of the character to add to the prompt other than random? rag? prompt the llm to decide?
-            /*
+                    /*
             postDirections:
                 this.character?.style?.all?.length > 0 ||
                 this.character?.style?.post.length > 0

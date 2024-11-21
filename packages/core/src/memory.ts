@@ -133,13 +133,11 @@ export class MemoryManager implements IMemoryManager {
             count = defaultMatchCount,
             roomId,
             unique,
-            agentId,
         } = opts;
 
         const searchOpts = {
             tableName: this.tableName,
             roomId,
-            agentId,
             embedding: embedding,
             match_threshold: match_threshold,
             match_count: count,
@@ -166,8 +164,6 @@ export class MemoryManager implements IMemoryManager {
             elizaLogger.debug("Memory already exists, skipping");
             return;
         }
-
-        elizaLogger.log("Creating Memory", memory.id, memory.content.text);
         await this.runtime.databaseAdapter.createMemory(
             memory,
             this.tableName,
