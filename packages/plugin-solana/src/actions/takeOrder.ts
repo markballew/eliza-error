@@ -112,23 +112,18 @@ Determine if the user is trying to shill the ticker. if they are, respond with e
         };
 
         // Read the existing order book from the JSON file
-        const orderBookPath =
-            runtime.getSetting("orderBookPath") ?? "solana/orderBook.json";
-
-        const orderBook: Order[] = [];
-
-        const cachedOrderBook =
-            await runtime.cacheManager.get<Order[]>(orderBookPath);
-
-        if (cachedOrderBook) {
-            orderBook.push(...cachedOrderBook);
+        const orderBookPath = settings.orderBookPath;
+        let orderBook: Order[] = [];
+        if (fs.existsSync(orderBookPath)) {
+            const orderBookData = fs.readFileSync(orderBookPath, "utf-8");
+            orderBook = JSON.parse(orderBookData);
         }
 
         // Add the new order to the order book
         orderBook.push(order);
 
         // Write the updated order book back to the JSON file
-        await runtime.cacheManager.set(orderBookPath, orderBook);
+        fs.writeFileSync(orderBookPath, JSON.stringify(orderBook, null, 2));
 
         return {
             text: `Recorded a ${conviction} conviction buy order for ${ticker} (${contractAddress}) with an amount of ${buyAmount} at the price of ${currentPrice}.`,

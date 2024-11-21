@@ -26,7 +26,6 @@ import {
     Goal,
     HandlerCallback,
     IAgentRuntime,
-    ICacheManager,
     IDatabaseAdapter,
     IMemoryManager,
     ModelClass,
@@ -132,7 +131,6 @@ export class AgentRuntime implements IAgentRuntime {
 
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
-    cacheManager: ICacheManager;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -223,7 +221,6 @@ export class AgentRuntime implements IAgentRuntime {
         databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
-        cacheManager: ICacheManager;
         logging?: boolean;
     }) {
         this.#conversationLength =
@@ -242,8 +239,6 @@ export class AgentRuntime implements IAgentRuntime {
         if (!opts.databaseAdapter) {
             throw new Error("No database adapter provided");
         }
-
-        this.cacheManager = opts.cacheManager;
 
         this.messageManager = new MemoryManager({
             runtime: this,
@@ -351,7 +346,7 @@ export class AgentRuntime implements IAgentRuntime {
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
             if (!existingDocument) {
-                elizaLogger.success(
+                console.log(
                     "Processing knowledge for ",
                     this.character.name,
                     " - ",
@@ -631,15 +626,9 @@ export class AgentRuntime implements IAgentRuntime {
             await this.databaseAdapter.getParticipantsForRoom(roomId);
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
-            if (userId === this.agentId) {
-                elizaLogger.log(
-                    `Agent ${this.character.name} linked to room ${roomId} successfully.`
-                );
-            } else {
-                elizaLogger.log(
-                    `User ${userId} linked to room ${roomId} successfully.`
-                );
-            }
+            elizaLogger.log(
+                `User ${userId} linked to room ${roomId} successfully.`
+            );
         }
     }
 

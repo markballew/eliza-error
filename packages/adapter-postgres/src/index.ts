@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import pg, { type Pool } from "pg";
+import pg from "pg";
 import {
     Account,
     Actor,
@@ -8,27 +8,18 @@ import {
     type Memory,
     type Relationship,
     type UUID,
-    type IDatabaseCacheAdapter,
     Participant,
-    DatabaseAdapter,
 } from "@ai16z/eliza";
-import fs from "fs";
-import { fileURLToPath } from "url";
-import path from "path";
+import { DatabaseAdapter } from "@ai16z/eliza";
+const { Pool } = pg;
 
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = path.dirname(__filename); // get the name of the directory
-
-export class PostgresDatabaseAdapter
-    extends DatabaseAdapter<Pool>
-    implements IDatabaseCacheAdapter
-{
-    private pool: Pool;
+export class PostgresDatabaseAdapter extends DatabaseAdapter {
+    private pool: typeof Pool;
 
     constructor(connectionConfig: any) {
         super();
 
-        this.pool = new pg.Pool({
+        this.pool = new Pool({
             ...connectionConfig,
             max: 20,
             idleTimeoutMillis: 30000,
@@ -38,22 +29,8 @@ export class PostgresDatabaseAdapter
         this.pool.on("error", (err) => {
             console.error("Unexpected error on idle client", err);
         });
-    }
 
-    async init() {
-        await this.testConnection();
-
-        try {
-            const client = await this.pool.connect();
-            const schema = fs.readFileSync(
-                path.resolve(__dirname, "../schema.sql"),
-                "utf8"
-            );
-            await client.query(schema);
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
+        this.testConnection();
     }
 
     async testConnection(): Promise<boolean> {
@@ -841,65 +818,6 @@ export class PostgresDatabaseAdapter
         } catch (error) {
             console.error("Error fetching actor details:", error);
             throw new Error("Failed to fetch actor details");
-        }
-    }
-
-    async getCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<string | undefined> {
-        const client = await this.pool.connect();
-        try {
-            const sql = `SELECT "value"::TEXT FROM cache WHERE "key" = $1 AND "agentId" = $2`;
-            const { rows } = await this.pool.query<{ value: string }>(sql, [
-                params.key,
-                params.agentId,
-            ]);
-
-            return rows[0]?.value ?? undefined;
-        } catch (error) {
-            console.log("Error fetching cache", error);
-        } finally {
-            client.release();
-        }
-    }
-
-    async setCache(params: {
-        key: string;
-        agentId: UUID;
-        value: string;
-    }): Promise<boolean> {
-        const client = await this.pool.connect();
-        try {
-            await client.query(
-                `INSERT INTO cache ("key", "agentId", "value", "createdAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-                    ON CONFLICT ("key", "agentId")
-                    DO UPDATE SET "value" = EXCLUDED.value, "createdAt" = CURRENT_TIMESTAMP`,
-                [params.key, params.agentId, params.value]
-            );
-            return true;
-        } catch (error) {
-            console.log("Error adding cache", error);
-        } finally {
-            client.release();
-        }
-    }
-
-    async deleteCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<boolean> {
-        const client = await this.pool.connect();
-        try {
-            await client.query(
-                `DELETE FROM cache WHERE "key" = $1 AND "agentId" = $2`,
-                [params.key, params.agentId]
-            );
-            return true;
-        } catch (error) {
-            console.log("Error adding cache", error);
-        } finally {
-            client.release();
         }
     }
 }
