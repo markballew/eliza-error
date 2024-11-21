@@ -13,8 +13,7 @@
     },
     "scripts": {
         "build": "tsup --format esm --dts",
-        "test": "vitest run",
-        "test:watch": "vitest"
+        "test": "vitest"
     },
     "devDependencies": {
         "@types/dompurify": "^3.2.0"

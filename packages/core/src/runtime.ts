@@ -26,6 +26,7 @@ import {
     Goal,
     HandlerCallback,
     IAgentRuntime,
+    ICacheManager,
     IDatabaseAdapter,
     IMemoryManager,
     ModelClass,
@@ -88,6 +89,8 @@ export class AgentRuntime implements IAgentRuntime {
      */
     providers: Provider[] = [];
 
+    plugins: Plugin[] = [];
+
     /**
      * The model to use for generateText.
      */
@@ -131,6 +134,7 @@ export class AgentRuntime implements IAgentRuntime {
 
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
+    cacheManager: ICacheManager;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -170,20 +174,6 @@ export class AgentRuntime implements IAgentRuntime {
             );
             return;
         }
-
-        try {
-            await service.initialize(this);
-            this.services.set(serviceType, service);
-            elizaLogger.success(
-                `Service ${serviceType} initialized successfully`
-            );
-        } catch (error) {
-            elizaLogger.error(
-                `Failed to initialize service ${serviceType}:`,
-                error
-            );
-            throw error;
-        }
     }
 
     /**
@@ -221,6 +211,7 @@ export class AgentRuntime implements IAgentRuntime {
         databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
+        cacheManager: ICacheManager;
         logging?: boolean;
     }) {
         this.#conversationLength =
@@ -239,6 +230,8 @@ export class AgentRuntime implements IAgentRuntime {
         if (!opts.databaseAdapter) {
             throw new Error("No database adapter provided");
         }
+
+        this.cacheManager = opts.cacheManager;
 
         this.messageManager = new MemoryManager({
             runtime: this,
@@ -284,25 +277,24 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.token = opts.token;
 
-        [...(opts.character?.plugins || []), ...(opts.plugins || [])].forEach(
-            (plugin) => {
-                plugin.actions?.forEach((action) => {
-                    this.registerAction(action);
-                });
+        this.plugins = [
+            ...(opts.character?.plugins ?? []),
+            ...(opts.plugins ?? []),
+        ];
 
-                plugin.evaluators?.forEach((evaluator) => {
-                    this.registerEvaluator(evaluator);
-                });
+        this.plugins.forEach((plugin) => {
+            plugin.actions?.forEach((action) => {
+                this.registerAction(action);
+            });
 
-                plugin.providers?.forEach((provider) => {
-                    this.registerContextProvider(provider);
-                });
+            plugin.evaluators?.forEach((evaluator) => {
+                this.registerEvaluator(evaluator);
+            });
 
-                plugin.services?.forEach((service) => {
-                    this.registerService(service);
-                });
-            }
-        );
+            plugin.providers?.forEach((provider) => {
+                this.registerContextProvider(provider);
+            });
+        });
 
         (opts.actions ?? []).forEach((action) => {
             this.registerAction(action);
@@ -315,13 +307,38 @@ export class AgentRuntime implements IAgentRuntime {
         (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
             this.registerEvaluator(evaluator);
         });
+    }
+
+    async initialize() {
+        for (const [serviceType, service] of this.services.entries()) {
+            try {
+                await service.initialize(this);
+                this.services.set(serviceType, service);
+                elizaLogger.success(
+                    `Service ${serviceType} initialized successfully`
+                );
+            } catch (error) {
+                elizaLogger.error(
+                    `Failed to initialize service ${serviceType}:`,
+                    error
+                );
+                throw error;
+            }
+        }
+
+        for (const plugin of this.plugins) {
+            if (plugin.services)
+                await Promise.all(
+                    plugin.services?.map((service) => service.initialize(this))
+                );
+        }
 
         if (
-            opts.character &&
-            opts.character.knowledge &&
-            opts.character.knowledge.length > 0
+            this.character &&
+            this.character.knowledge &&
+            this.character.knowledge.length > 0
         ) {
-            this.processCharacterKnowledge(opts.character.knowledge);
+            await this.processCharacterKnowledge(this.character.knowledge);
         }
     }
 
@@ -333,20 +350,22 @@ export class AgentRuntime implements IAgentRuntime {
      */
     private async processCharacterKnowledge(knowledge: string[]) {
         // ensure the room exists and the agent exists in the room
-        this.ensureRoomExists(this.agentId);
-        this.ensureUserExists(
+        await this.ensureRoomExists(this.agentId);
+
+        await this.ensureUserExists(
             this.agentId,
             this.character.name,
             this.character.name
         );
-        this.ensureParticipantExists(this.agentId, this.agentId);
+
+        await this.ensureParticipantExists(this.agentId, this.agentId);
 
         for (const knowledgeItem of knowledge) {
             const knowledgeId = stringToUuid(knowledgeItem);
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
             if (!existingDocument) {
-                console.log(
+                elizaLogger.success(
                     "Processing knowledge for ",
                     this.character.name,
                     " - ",
@@ -626,9 +645,15 @@ export class AgentRuntime implements IAgentRuntime {
             await this.databaseAdapter.getParticipantsForRoom(roomId);
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
-            elizaLogger.log(
-                `User ${userId} linked to room ${roomId} successfully.`
-            );
+            if (userId === this.agentId) {
+                elizaLogger.log(
+                    `Agent ${this.character.name} linked to room ${roomId} successfully.`
+                );
+            } else {
+                elizaLogger.log(
+                    `User ${userId} linked to room ${roomId} successfully.`
+                );
+            }
         }
     }
 
@@ -927,6 +952,7 @@ Text: ${attachment.text}
                 );
 
             const knowledge = memories.map((memory) => memory.content.text);
+
             return knowledge;
         }
 
