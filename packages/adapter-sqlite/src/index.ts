@@ -153,7 +153,7 @@ export class SqliteDatabaseAdapter
         }
         const placeholders = params.roomIds.map(() => "?").join(", ");
         let sql = `SELECT * FROM memories WHERE type = ? AND roomId IN (${placeholders})`;
-        const queryParams = [params.tableName, ...params.roomIds];
+        let queryParams = [params.tableName, ...params.roomIds];
 
         if (params.agentId) {
             sql += ` AND agentId = ?`;

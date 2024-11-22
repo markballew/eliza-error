@@ -2,7 +2,6 @@ import eslint from "@eslint/js";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import typescript from "@typescript-eslint/parser";
 import prettier from "eslint-config-prettier";
-import vitest from "eslint-plugin-vitest"; // Add Vitest plugin
 
 export default [
     // JavaScript and TypeScript files
@@ -49,16 +48,6 @@ export default [
                     ignoreRestSiblings: true,
                 },
             ],
-        },
-    },
-    // Vitest configuration
-    {
-        files: ["src/**/*.test.js", "src/**/*.test.ts", "src/**/*.spec.js", "src/**/*.spec.ts"],
-        plugins: {
-            vitest, // Register Vitest plugin
-        },
-        rules: {
-            ...vitest.configs.recommended.rules,
         },
     },
     // Add prettier as the last config to override other formatting rules
