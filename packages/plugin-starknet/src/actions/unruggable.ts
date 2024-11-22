@@ -1,21 +1,22 @@
 import {
-    type Action,
     ActionExample,
-    composeContext,
     elizaLogger,
-    generateObject,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     ModelClass,
     State,
+    type Action,
 } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza";
+import { generateObject } from "@ai16z/eliza";
 import { Percent } from "@uniswap/sdk-core";
 import {
     getStarknetAccount,
     getStarknetProvider,
     parseFormatedAmount,
     parseFormatedPercentage,
+    validateSettings,
 } from "../utils/index.ts";
 import { DeployData, Factory } from "@unruggable_starknet/core";
 import {
@@ -68,7 +69,7 @@ Example response:
 
 Extract the following information about the requested token deployment:
 - Token Name
-- Token Symbol
+- Token Symbol  
 - Token Owner
 - Token initial supply
 
