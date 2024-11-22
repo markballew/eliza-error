@@ -11,9 +11,6 @@ importers:
 
   .:
     dependencies:
-      amqplib:
-        specifier: ^0.10.4
-        version: 0.10.4
       ollama-ai-provider:
         specifier: ^0.16.1
         version: 0.16.1(zod@3.23.8)
@@ -624,7 +621,7 @@ importers:
         version: 2.79.2
       ts-jest:
         specifier: 29.2.5
-        version: 29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(esbuild@0.24.0)(jest@29.7.0(@types/node@22.8.4)(ts-node@10.9.2(@swc/core@1.9.2(@swc/helpers@0.5.15))(@types/node@22.8.4)(typescript@5.6.3)))(typescript@5.6.3)
+        version: 29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(jest@29.7.0(@types/node@22.8.4)(ts-node@10.9.2(@swc/core@1.9.2(@swc/helpers@0.5.15))(@types/node@22.8.4)(typescript@5.6.3)))(typescript@5.6.3)
       ts-node:
         specifier: 10.9.2
         version: 10.9.2(@swc/core@1.9.2(@swc/helpers@0.5.15))(@types/node@22.8.4)(typescript@5.6.3)
@@ -649,6 +646,25 @@ importers:
       whatwg-url:
         specifier: 7.1.0
         version: 7.1.0
+
+  packages/plugin-coinbase:
+    dependencies:
+      '@ai16z/eliza':
+        specifier: ^0.1.3
+        version: 0.1.3(@google-cloud/vertexai@1.9.0(encoding@0.1.13))(encoding@0.1.13)(react@18.3.1)(sswr@2.1.0(svelte@5.2.4))(svelte@5.2.4)
+      coinbase-api:
+        specifier: ^1.0.5
+        version: 1.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      onnxruntime-node:
+        specifier: ^1.20.0
+        version: 1.20.0
+      whatwg-url:
+        specifier: 7.1.0
+        version: 7.1.0
+    devDependencies:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.3.5(@swc/core@1.9.2(@swc/helpers@0.5.15))(jiti@1.21.6)(postcss@8.4.49)(typescript@5.6.3)(yaml@2.6.1)
 
   packages/plugin-image-generation:
     dependencies:
@@ -936,10 +952,6 @@ importers:
 
 packages:
 
-  '@acuminous/bitsyntax@0.1.2':
-    resolution: {integrity: sha512-29lUK80d1muEQqiUsSo+3A0yP6CdspgC95EnKBMi22Xlwt79i/En4Vr67+cXhU+cZjbti3TgGGC5wy1stIywVQ==}
-    engines: {node: '>=0.8'}
-
   '@adraffy/ens-normalize@1.10.1':
     resolution: {integrity: sha512-96Z2IP3mYmF1Xg2cDm8f1gWGf/HUVedQ3FMifV4kG/PQ4yEP51xDtRAEfhVNt5f/uzpNkZHwWQuUcu6D6K+Ekw==}
 
@@ -1059,6 +1071,9 @@ packages:
     peerDependenciesMeta:
       vue:
         optional: true
+
+  '@ai16z/eliza@0.1.3':
+    resolution: {integrity: sha512-MeHvD44YKeYdnmI0k03RpS0COGPUsM5/nYoo7ih9vi7iXWFUWANEa3FReWr8rT51AOdHFXGdaLvTzngI527WjA==}
 
   '@algolia/autocomplete-core@1.17.7':
     resolution: {integrity: sha512-BjiPOW6ks90UKl7TwMv7oNQMnzU+t/wk9mgIDi6b1tXpUek7MW0lbNOUHpvam9pe3lVCf4xPFT+lK7s+e+fs7Q==}
@@ -2233,7 +2248,6 @@ packages:
     resolution: {integrity: sha512-hArn9FF5ZYi1IkxdJEVnJi+OxlwLV0NJYWpKXsmNOojtGtAZHxmsELA+MZlu2KW1F/K1/nt7lFOfcMXNYweq9w==}
     version: 0.17.0
     engines: {node: '>=16.11.0'}
-    deprecated: This version uses deprecated encryption modes. Please use a newer version.
 
   '@discordjs/ws@1.1.1':
     resolution: {integrity: sha512-PZ+vLpxGCRtmr2RMkqh8Zp+BenUaJqlS6xhgWKEZcgC/vfHLEzpHtKkB0sl3nZWpwtcKk6YWy+pU3okL2I97FA==}
@@ -5069,10 +5083,6 @@ packages:
   amp@0.3.1:
     resolution: {integrity: sha512-OwIuC4yZaRogHKiuU5WlMR5Xk/jAcpPtawWL05Gj8Lvm2F6mwoJt4O/bHI+DHwG79vWd+8OFYM4/BzYqyRd3qw==}
 
-  amqplib@0.10.4:
-    resolution: {integrity: sha512-DMZ4eCEjAVdX1II2TfIUpJhfKAuoCeDIo/YyETbfAqehHTXxxs7WOOd+N1Xxr4cKhx12y23zk8/os98FxlZHrw==}
-    engines: {node: '>=10'}
-
   ansi-align@3.0.1:
     resolution: {integrity: sha512-IOfwwBF5iczOjp/WeY4YxyjqAFMQoZufdQWDd19SEExbVLNXqvpzSJ/M7Za4/sCPmQ0+GRquoA7bGcINcxew6w==}
 
@@ -5488,9 +5498,6 @@ packages:
     resolution: {integrity: sha512-kWSuLN694+KTk8SrYvCqwP2WcgQjoRCiF5b4QDvkkz8EmgD+aWAIceGFKMIAdmF/pH+vpgNV3d3kAKorcdAmWA==}
     engines: {node: '>=4.5'}
 
-  buffer-more-ints@1.0.0:
-    resolution: {integrity: sha512-EMetuGFz5SLsT0QTnXzINh4Ksr+oo4i+UGTXEshiGCQWnsgSs7ZhJ8fzlwQ+OzEMs0MpDAMr1hxnblp5a4vcHg==}
-
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
 
@@ -5796,6 +5803,9 @@ packages:
   co@4.6.0:
     resolution: {integrity: sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==}
     engines: {iojs: '>= 1.0.0', node: '>= 0.12.0'}
+
+  coinbase-api@1.0.5:
+    resolution: {integrity: sha512-5Rq6hYKnJNc9v4diD8M6PStSc2hwMgfOlB+pb1LSyh5q2xg9ZKi3Gu8ZVxaDnKXmgQgrjI4xJLMpc3fiLgzsew==}
 
   collapse-white-space@2.1.0:
     resolution: {integrity: sha512-loKTxY1zCOuG4j9f6EPnuyyYkf58RnhhWTvRoZEokgB+WbdXehfjFviyOVYkqzEWz1Q5kRiZdBYS5SwxbQYwzw==}
@@ -8549,6 +8559,10 @@ packages:
     resolution: {integrity: sha512-POQXvpdL69+CluYsillJ7SUhKvytYjW9vG/GKpnf+xP8UWgYEM/RaMzHHofbALDiKbbP1W8UEYmgGl39WkPZsg==}
     engines: {'0': node >= 0.2.0}
 
+  jsonwebtoken@9.0.2:
+    resolution: {integrity: sha512-PRp66vJ865SSqOlgqS8hujT5U4AOgMfhrwYIuIhfKaoSCZcirrmASQr8CX7cUg+RMih+hgznrjp99o+W4pJLHQ==}
+    engines: {node: '>=12', npm: '>=6'}
+
   jsprim@1.4.2:
     resolution: {integrity: sha512-P2bSOMAc/ciLz6DzgjVlGJP9+BrJWu5UDGK70C2iweC5QBIeFf0ZXRvGjEj2uYgrY2MkAAhsSWHDWlFtEroZWw==}
     engines: {node: '>=0.6.0'}
@@ -8559,8 +8573,14 @@ packages:
   just-diff@6.0.2:
     resolution: {integrity: sha512-S59eriX5u3/QhMNq3v/gm8Kd0w8OS6Tz2FS1NG4blv+z0MuQcBRJyFWjdovM0Rad4/P4aUPFtnkNjMjyMlMSYA==}
 
+  jwa@1.4.1:
+    resolution: {integrity: sha512-qiLX/xhEEFKUAJ6FiBMbes3w9ATzyk5W7Hvzpa/SLYdxNtng+gcurvrI7TbACjIXlsJyr05/S1oUhZrc63evQA==}
+
   jwa@2.0.0:
     resolution: {integrity: sha512-jrZ2Qx916EA+fq9cEAeCROWPTfCwi1IVHqT2tapuqLEVVDKFDENFw1oL+MwrTvH6msKxsd1YTDVw6uKEcsrLEA==}
+
+  jws@3.2.2:
+    resolution: {integrity: sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==}
 
   jws@4.0.0:
     resolution: {integrity: sha512-KDncfTmOZoOMTFG4mBlG0qUIOlc03fmzH+ru6RgYVZhPkyiy/92Owlt/8UEN+a4TXR1FQetfIpJE8ApdvdVxTg==}
@@ -8743,17 +8763,35 @@ packages:
   lodash.debounce@4.0.8:
     resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
 
+  lodash.includes@4.3.0:
+    resolution: {integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==}
+
+  lodash.isboolean@3.0.3:
+    resolution: {integrity: sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==}
+
+  lodash.isinteger@4.0.4:
+    resolution: {integrity: sha512-DBwtEWN2caHQ9/imiNeEA5ys1JoRtRfY3d7V9wkqtbycnAmTvRRmbHKDV4a0EYc678/dia0jrte4tjYwVBaZUA==}
+
   lodash.ismatch@4.4.0:
     resolution: {integrity: sha512-fPMfXjGQEV9Xsq/8MTSgUf255gawYRbjwMyDbcvDhXgV7enSZA0hynz6vMPnpAb5iONEzBHBPsT+0zes5Z301g==}
 
+  lodash.isnumber@3.0.3:
+    resolution: {integrity: sha512-QYqzpfwO3/CWf3XP+Z+tkQsfaLL/EnUlXWVkIk5FUPc4sBdTehEqZONuyRt2P67PXAk+NXmTBcc97zw9t1FQrw==}
+
   lodash.isplainobject@4.0.6:
     resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}
+
+  lodash.isstring@4.0.1:
+    resolution: {integrity: sha512-0wJxfxH1wgO3GrbuP+dTTk7op+6L41QCXbGINEmD+ny/G/eCqGzxyCsh7159S+mgDDcoarnBw6PC1PS5+wUGgw==}
 
   lodash.memoize@4.1.2:
     resolution: {integrity: sha512-t7j+NzmgnQzTAYXcsHYLgimltOV1MXHtlOWf6GjL9Kj8GK5FInw5JotxvbOs+IvV1/Dzo04/fCGfLVs7aXb4Ag==}
 
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
+
+  lodash.once@4.1.1:
+    resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
 
   lodash.snakecase@4.1.1:
     resolution: {integrity: sha512-QZ1d4xoBHYUeuouhEq3lk3Uq7ldgyFXGBhg04+oRLnIz8o9T65Eh+8YdroUwn846zchkA9yDsDl5CVVaV2nqYw==}
@@ -12992,14 +13030,6 @@ packages:
 
 snapshots:
 
-  '@acuminous/bitsyntax@0.1.2':
-    dependencies:
-      buffer-more-ints: 1.0.0
-      debug: 4.3.7(supports-color@5.5.0)
-      safe-buffer: 5.1.2
-    transitivePeerDependencies:
-      - supports-color
-
   '@adraffy/ens-normalize@1.10.1': {}
 
   '@ai-sdk/anthropic@0.0.53(zod@3.23.8)':
@@ -13119,6 +13149,39 @@ snapshots:
       vue: 3.5.13(typescript@5.6.3)
     transitivePeerDependencies:
       - zod
+
+  '@ai16z/eliza@0.1.3(@google-cloud/vertexai@1.9.0(encoding@0.1.13))(encoding@0.1.13)(react@18.3.1)(sswr@2.1.0(svelte@5.2.4))(svelte@5.2.4)':
+    dependencies:
+      '@ai-sdk/anthropic': 0.0.53(zod@3.23.8)
+      '@ai-sdk/google': 0.0.55(zod@3.23.8)
+      '@ai-sdk/google-vertex': 0.0.42(@google-cloud/vertexai@1.9.0(encoding@0.1.13))(zod@3.23.8)
+      '@ai-sdk/groq': 0.0.3(zod@3.23.8)
+      '@ai-sdk/openai': 1.0.0-canary.3(zod@3.23.8)
+      '@anthropic-ai/sdk': 0.30.1(encoding@0.1.13)
+      '@types/uuid': 10.0.0
+      ai: 3.4.33(openai@4.69.0(encoding@0.1.13)(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@5.2.4))(svelte@5.2.4)(vue@3.5.13(typescript@5.6.3))(zod@3.23.8)
+      anthropic-vertex-ai: 1.0.0(encoding@0.1.13)(zod@3.23.8)
+      fastembed: 1.14.1
+      gaxios: 6.7.1(encoding@0.1.13)
+      glob: 11.0.0
+      js-sha1: 0.7.0
+      ollama-ai-provider: 0.16.1(zod@3.23.8)
+      openai: 4.69.0(encoding@0.1.13)(zod@3.23.8)
+      tiktoken: 1.0.17
+      tinyld: 1.3.4
+      together-ai: 0.7.0(encoding@0.1.13)
+      unique-names-generator: 4.7.1
+      uuid: 11.0.2
+      zod: 3.23.8
+    transitivePeerDependencies:
+      - '@google-cloud/vertexai'
+      - encoding
+      - react
+      - solid-js
+      - sswr
+      - supports-color
+      - svelte
+      - vue
 
   '@algolia/autocomplete-core@1.17.7(@algolia/client-search@5.15.0)(algoliasearch@5.15.0)(search-insights@2.17.3)':
     dependencies:
@@ -18567,15 +18630,6 @@ snapshots:
 
   amp@0.3.1: {}
 
-  amqplib@0.10.4:
-    dependencies:
-      '@acuminous/bitsyntax': 0.1.2
-      buffer-more-ints: 1.0.0
-      readable-stream: 1.1.14
-      url-parse: 1.5.10
-    transitivePeerDependencies:
-      - supports-color
-
   ansi-align@3.0.1:
     dependencies:
       string-width: 4.2.3
@@ -19033,8 +19087,6 @@ snapshots:
 
   buffer-layout@1.2.2: {}
 
-  buffer-more-ints@1.0.0: {}
-
   buffer@5.7.1:
     dependencies:
       base64-js: 1.5.1
@@ -19373,6 +19425,18 @@ snapshots:
   cmd-shim@6.0.3: {}
 
   co@4.6.0: {}
+
+  coinbase-api@1.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10):
+    dependencies:
+      axios: 1.7.7(debug@4.3.7)
+      isomorphic-ws: 4.0.1(ws@7.5.10(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+      jsonwebtoken: 9.0.2
+      nanoid: 3.3.7
+      ws: 7.5.10(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - utf-8-validate
 
   collapse-white-space@2.1.0: {}
 
@@ -22642,6 +22706,19 @@ snapshots:
 
   jsonparse@1.3.1: {}
 
+  jsonwebtoken@9.0.2:
+    dependencies:
+      jws: 3.2.2
+      lodash.includes: 4.3.0
+      lodash.isboolean: 3.0.3
+      lodash.isinteger: 4.0.4
+      lodash.isnumber: 3.0.3
+      lodash.isplainobject: 4.0.6
+      lodash.isstring: 4.0.1
+      lodash.once: 4.1.1
+      ms: 2.1.3
+      semver: 7.6.3
+
   jsprim@1.4.2:
     dependencies:
       assert-plus: 1.0.0
@@ -22653,10 +22730,21 @@ snapshots:
 
   just-diff@6.0.2: {}
 
+  jwa@1.4.1:
+    dependencies:
+      buffer-equal-constant-time: 1.0.1
+      ecdsa-sig-formatter: 1.0.11
+      safe-buffer: 5.2.1
+
   jwa@2.0.0:
     dependencies:
       buffer-equal-constant-time: 1.0.1
       ecdsa-sig-formatter: 1.0.11
+      safe-buffer: 5.2.1
+
+  jws@3.2.2:
+    dependencies:
+      jwa: 1.4.1
       safe-buffer: 5.2.1
 
   jws@4.0.0:
@@ -22945,13 +23033,25 @@ snapshots:
 
   lodash.debounce@4.0.8: {}
 
+  lodash.includes@4.3.0: {}
+
+  lodash.isboolean@3.0.3: {}
+
+  lodash.isinteger@4.0.4: {}
+
   lodash.ismatch@4.4.0: {}
 
+  lodash.isnumber@3.0.3: {}
+
   lodash.isplainobject@4.0.6: {}
+
+  lodash.isstring@4.0.1: {}
 
   lodash.memoize@4.1.2: {}
 
   lodash.merge@4.6.2: {}
+
+  lodash.once@4.1.1: {}
 
   lodash.snakecase@4.1.1: {}
 
@@ -27174,7 +27274,7 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  ts-jest@29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(esbuild@0.24.0)(jest@29.7.0(@types/node@22.8.4)(ts-node@10.9.2(@swc/core@1.9.2(@swc/helpers@0.5.15))(@types/node@22.8.4)(typescript@5.6.3)))(typescript@5.6.3):
+  ts-jest@29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(jest@29.7.0(@types/node@22.8.4)(ts-node@10.9.2(@swc/core@1.9.2(@swc/helpers@0.5.15))(@types/node@22.8.4)(typescript@5.6.3)))(typescript@5.6.3):
     dependencies:
       bs-logger: 0.2.6
       ejs: 3.1.10
@@ -27192,7 +27292,6 @@ snapshots:
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
       babel-jest: 29.7.0(@babel/core@7.26.0)
-      esbuild: 0.24.0
 
   ts-mixer@6.0.4: {}
 

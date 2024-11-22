@@ -1,5 +1,6 @@
 {
     "name": "eliza",
+    "type": "module",
     "scripts": {
         "preinstall": "npx only-allow pnpm",
         "build": "bash ./scripts/build.sh",
@@ -42,7 +43,6 @@
         "node": ">=22"
     },
     "dependencies": {
-        "amqplib": "^0.10.4",
         "ollama-ai-provider": "^0.16.1",
         "optional": "^0.1.4",
         "sharp": "^0.33.5"
