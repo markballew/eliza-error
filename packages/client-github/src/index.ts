@@ -10,10 +10,13 @@ import {
     AgentRuntime,
     Client,
     IAgentRuntime,
-    knowledge,
+    Content,
+    Memory,
     stringToUuid,
+    embeddingZeroVector,
+    splitChunks,
+    embed,
 } from "@ai16z/eliza";
-import { validateGithubConfig } from "./enviroment";
 
 export interface GitHubConfig {
     owner: string;
@@ -108,8 +111,11 @@ export class GitHubClient {
                 relativePath
             );
 
-            await knowledge.set(this.runtime, {
+            const memory: Memory = {
                 id: knowledgeId,
+                agentId: this.runtime.agentId,
+                userId: this.runtime.agentId,
+                roomId: this.runtime.agentId,
                 content: {
                     text: content,
                     hash: contentHash,
@@ -121,7 +127,39 @@ export class GitHubClient {
                         owner: this.config.owner,
                     },
                 },
-            });
+                embedding: embeddingZeroVector,
+            };
+
+            await this.runtime.documentsManager.createMemory(memory);
+
+            // Only split if content exceeds 4000 characters
+            const fragments =
+                content.length > 4000
+                    ? await splitChunks(content, 2000, 200)
+                    : [content];
+
+            for (const fragment of fragments) {
+                // Skip empty fragments
+                if (!fragment.trim()) continue;
+
+                // Add file path context to the fragment before embedding
+                const fragmentWithPath = `File: ${relativePath}\n\n${fragment}`;
+                const embedding = await embed(this.runtime, fragmentWithPath);
+
+                await this.runtime.knowledgeManager.createMemory({
+                    // We namespace the knowledge base uuid to avoid id
+                    // collision with the document above.
+                    id: stringToUuid(knowledgeId + fragment),
+                    roomId: this.runtime.agentId,
+                    agentId: this.runtime.agentId,
+                    userId: this.runtime.agentId,
+                    content: {
+                        source: knowledgeId,
+                        text: fragment,
+                    },
+                    embedding,
+                });
+            }
         }
     }
 
@@ -182,7 +220,6 @@ export class GitHubClient {
 
 export const GitHubClientInterface: Client = {
     start: async (runtime: IAgentRuntime) => {
-        await validateGithubConfig(runtime);
         elizaLogger.log("GitHubClientInterface start");
 
         const client = new GitHubClient(runtime as AgentRuntime);

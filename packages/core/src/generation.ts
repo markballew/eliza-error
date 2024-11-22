@@ -463,38 +463,34 @@ export async function generateShouldRespond({
  * Splits content into chunks of specified size with optional overlapping bleed sections
  * @param content - The text content to split into chunks
  * @param chunkSize - The maximum size of each chunk in tokens
- * @param model - The model name to use for tokenization (default: runtime.model)
  * @param bleed - Number of characters to overlap between chunks (default: 100)
+ * @param model - The model name to use for tokenization (default: runtime.model)
  * @returns Promise resolving to array of text chunks with bleed sections
  */
 export async function splitChunks(
     content: string,
     chunkSize: number,
-    model: string,
     bleed: number = 100
 ): Promise<string[]> {
-    const encoding = encoding_for_model(model as TiktokenModel);
+    const encoding = encoding_for_model("gpt-4o-mini");
+
     const tokens = encoding.encode(content);
     const chunks: string[] = [];
     const textDecoder = new TextDecoder();
 
     for (let i = 0; i < tokens.length; i += chunkSize) {
-        let chunk = tokens.slice(i, i + chunkSize);
+        const chunk = tokens.slice(i, i + chunkSize);
+        const decodedChunk = textDecoder.decode(encoding.decode(chunk));
 
         // Append bleed characters from the previous chunk
-        if (i > 0) {
-            chunk = new Uint32Array([...tokens.slice(i - bleed, i), ...chunk]);
-        }
-
+        const startBleed = i > 0 ? content.slice(i - bleed, i) : "";
         // Append bleed characters from the next chunk
-        if (i + chunkSize < tokens.length) {
-            chunk = new Uint32Array([
-                ...chunk,
-                ...tokens.slice(i + chunkSize, i + chunkSize + bleed),
-            ]);
-        }
+        const endBleed =
+            i + chunkSize < tokens.length
+                ? content.slice(i + chunkSize, i + chunkSize + bleed)
+                : "";
 
-        chunks.push(textDecoder.decode(encoding.decode(chunk)));
+        chunks.push(startBleed + decodedChunk + endBleed);
     }
 
     return chunks;
@@ -1047,8 +1043,7 @@ async function handleOpenAI({
     mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    const baseURL = models.openai.endpoint || undefined
-    const openai = createOpenAI({ apiKey, baseURL });
+    const openai = createOpenAI({ apiKey });
     return await aiGenerateObject({
         model: openai.languageModel(model),
         schema,

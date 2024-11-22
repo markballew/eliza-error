@@ -133,13 +133,11 @@ export class MemoryManager implements IMemoryManager {
             count = defaultMatchCount,
             roomId,
             unique,
-            agentId,
         } = opts;
 
         const searchOpts = {
             tableName: this.tableName,
             roomId,
-            agentId,
             embedding: embedding,
             match_threshold: match_threshold,
             match_count: count,

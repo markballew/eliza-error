@@ -4,7 +4,6 @@ import {
     ITranscriptionService,
     Media,
     ServiceType,
-    IVideoService,
 } from "@ai16z/eliza";
 import { stringToUuid } from "@ai16z/eliza";
 import ffmpeg from "fluent-ffmpeg";
@@ -13,7 +12,7 @@ import path from "path";
 import { tmpdir } from "os";
 import youtubeDl from "youtube-dl-exec";
 
-export class VideoService extends Service implements IVideoService {
+export class VideoService extends Service {
     static serviceType: ServiceType = ServiceType.VIDEO;
     private cacheKey = "content/video";
     private dataDir = "./content_cache";
@@ -24,10 +23,6 @@ export class VideoService extends Service implements IVideoService {
     constructor() {
         super();
         this.ensureDataDirectoryExists();
-    }
-
-    getInstance(): IVideoService {
-        return VideoService.getInstance();
     }
 
     async initialize(runtime: IAgentRuntime): Promise<void> {}
@@ -93,7 +88,7 @@ export class VideoService extends Service implements IVideoService {
 
     public async processVideo(
         url: string,
-        runtime?: IAgentRuntime
+        runtime: IAgentRuntime
     ): Promise<Media> {
         this.queue.push(url);
         this.processQueue(runtime);

@@ -1,6 +1,6 @@
 import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 import { SqliteDatabaseAdapter } from "@ai16z/adapter-sqlite";
-import { DirectClientInterface } from "@ai16z/client-direct";
+import { DirectClient, DirectClientInterface } from "@ai16z/client-direct";
 import { DiscordClientInterface } from "@ai16z/client-discord";
 import { AutoClientInterface } from "@ai16z/client-auto";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
@@ -20,11 +20,9 @@ import {
     elizaLogger,
     settings,
     IDatabaseAdapter,
-    validateCharacterConfig,
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { zgPlugin } from "@ai16z/plugin-0g";
 import { nodePlugin } from "@ai16z/plugin-node";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -33,7 +31,6 @@ import yargs from "yargs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { character } from "./character.ts";
-import type { DirectClient } from "@ai16z/client-direct";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -69,21 +66,20 @@ export function parseArguments(): {
 export async function loadCharacters(
     charactersArg: string
 ): Promise<Character[]> {
-    let characterPaths = charactersArg?.split(",").map((filePath) => {
-        if (path.basename(filePath) === filePath) {
-            filePath = "../characters/" + filePath;
-        }
-        return path.resolve(process.cwd(), filePath.trim());
-    });
-
+    let characterPaths = charactersArg
+        ?.split(",")
+        .map((path) => path.trim())
+        .map((path) => {
+            if (path[0] === "/") return path; // handle absolute paths
+            // assume relative to the project root where pnpm is ran
+            return `../${path}`;
+        });
     const loadedCharacters = [];
 
     if (characterPaths?.length > 0) {
         for (const path of characterPaths) {
             try {
                 const character = JSON.parse(fs.readFileSync(path, "utf8"));
-
-                validateCharacterConfig(character);
 
                 // is there a "plugins" field?
                 if (character.plugins) {
@@ -181,9 +177,10 @@ function initializeDatabase(dataDir: string) {
         });
         return db;
     } else {
-        const filePath =
-            process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
-        // ":memory:";
+        const filePath = path.resolve(
+            dataDir,
+            process.env.SQLITE_FILE ?? "db.sqlite"
+        );
         const db = new SqliteDatabaseAdapter(new Database(filePath));
         return db;
     }
@@ -250,7 +247,6 @@ export function createAgent(
             bootstrapPlugin,
             nodePlugin,
             character.settings.secrets?.WALLET_PUBLIC_KEY ? solanaPlugin : null,
-            zgPlugin,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -275,7 +271,6 @@ function intializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
 async function startAgent(character: Character, directClient: DirectClient) {
     try {
         character.id ??= stringToUuid(character.name);
-        character.username ??= character.name;
 
         const token = getTokenForProvider(character.modelProvider, character);
         const dataDir = path.join(__dirname, "../data");
@@ -290,8 +285,6 @@ async function startAgent(character: Character, directClient: DirectClient) {
 
         const cache = intializeDbCache(character, db);
         const runtime = createAgent(character, db, cache, token);
-
-        await runtime.initialize();
 
         const clients = await initializeClients(character, runtime);
 
@@ -352,15 +345,9 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-rl.on("SIGINT", () => {
-    rl.close();
-    process.exit(0);
-});
-
 async function handleUserInput(input, agentId) {
     if (input.toLowerCase() === "exit") {
         rl.close();
-        process.exit(0);
         return;
     }
 

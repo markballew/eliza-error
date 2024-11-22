@@ -1,16 +1,12 @@
-import { IAgentRuntime, IPdfService, Service, ServiceType } from "@ai16z/eliza";
+import { IAgentRuntime, Service, ServiceType } from "@ai16z/eliza";
 import { getDocument, PDFDocumentProxy } from "pdfjs-dist";
 import { TextItem, TextMarkedContent } from "pdfjs-dist/types/src/display/api";
 
-export class PdfService extends Service implements IPdfService {
+export class PdfService extends Service {
     static serviceType: ServiceType = ServiceType.PDF;
 
     constructor() {
         super();
-    }
-
-    getInstance(): IPdfService {
-        return PdfService.getInstance();
     }
 
     async initialize(runtime: IAgentRuntime): Promise<void> {}

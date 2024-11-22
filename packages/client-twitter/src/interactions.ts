@@ -313,8 +313,6 @@ export class TwitterInteractionClient {
                 twitterMessageHandlerTemplate,
         });
 
-        elizaLogger.debug("Interactions prompt:\n" + context);
-
         const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
