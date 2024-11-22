@@ -338,10 +338,9 @@ export class VideoService extends Service implements IVideoService {
 
         console.log("Starting transcription...");
         const startTime = Date.now();
-        const transcriptionService = runtime.getService<ITranscriptionService>(
-            ServiceType.TRANSCRIPTION
-        );
-
+        const transcriptionService = runtime
+            .getService<ITranscriptionService>(ServiceType.TRANSCRIPTION)
+            .getInstance();
         if (!transcriptionService) {
             throw new Error("Transcription service not found");
         }

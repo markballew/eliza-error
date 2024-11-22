@@ -11,7 +11,6 @@ import {
     type IDatabaseCacheAdapter,
     Participant,
     DatabaseAdapter,
-    elizaLogger,
 } from "@ai16z/eliza";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -29,50 +28,15 @@ export class PostgresDatabaseAdapter
     constructor(connectionConfig: any) {
         super();
 
-        const defaultConfig = {
+        this.pool = new pg.Pool({
+            ...connectionConfig,
             max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000,
-        };
-
-        this.pool = new pg.Pool({
-            ...defaultConfig,
-            ...connectionConfig, // Allow overriding defaults
         });
 
-        this.pool.on("error", async (err) => {
-            elizaLogger.error("Unexpected error on idle client", err);
-
-            // Attempt to reconnect with exponential backoff
-            let retryCount = 0;
-            const maxRetries = 5;
-            const baseDelay = 1000; // Start with 1 second delay
-
-            while (retryCount < maxRetries) {
-                try {
-                    const delay = baseDelay * Math.pow(2, retryCount);
-                    elizaLogger.log(`Attempting to reconnect in ${delay}ms...`);
-                    await new Promise((resolve) => setTimeout(resolve, delay));
-
-                    // Create new pool with same config
-                    this.pool = new pg.Pool(this.pool.options);
-                    await this.testConnection();
-
-                    elizaLogger.log("Successfully reconnected to database");
-                    return;
-                } catch (error) {
-                    retryCount++;
-                    elizaLogger.error(
-                        `Reconnection attempt ${retryCount} failed:`,
-                        error
-                    );
-                }
-            }
-
-            elizaLogger.error(
-                `Failed to reconnect after ${maxRetries} attempts`
-            );
-            throw new Error("Database connection lost and unable to reconnect");
+        this.pool.on("error", (err) => {
+            console.error("Unexpected error on idle client", err);
         });
     }
 
@@ -87,7 +51,7 @@ export class PostgresDatabaseAdapter
             );
             await client.query(schema);
         } catch (error) {
-            elizaLogger.error(error);
+            console.error(error);
             throw error;
         }
     }
@@ -97,13 +61,10 @@ export class PostgresDatabaseAdapter
         try {
             client = await this.pool.connect();
             const result = await client.query("SELECT NOW()");
-            elizaLogger.log(
-                "Database connection test successful:",
-                result.rows[0]
-            );
+            console.log("Database connection test successful:", result.rows[0]);
             return true;
         } catch (error) {
-            elizaLogger.error("Database connection test failed:", error);
+            console.error("Database connection test failed:", error);
             throw new Error(`Failed to connect to database: ${error.message}`);
         } finally {
             if (client) client.release();
@@ -226,7 +187,7 @@ export class PostgresDatabaseAdapter
             if (rows.length === 0) return null;
 
             const account = rows[0];
-            // elizaLogger.log("account", account);
+            console.log("account", account);
             return {
                 ...account,
                 details:
@@ -256,7 +217,7 @@ export class PostgresDatabaseAdapter
             );
             return true;
         } catch (error) {
-            elizaLogger.log("Error creating account", error);
+            console.log("Error creating account", error);
             return false;
         } finally {
             client.release();
@@ -408,6 +369,8 @@ export class PostgresDatabaseAdapter
                 sql += ` LIMIT $${paramCount}`;
                 values.push(params.count);
             }
+
+            console.log("sql", sql, values);
 
             const { rows } = await client.query(sql, values);
             return rows.map((row) => ({
