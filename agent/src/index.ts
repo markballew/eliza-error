@@ -24,6 +24,7 @@ import {
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { solanaPlugin } from "@ai16z/plugin-solana";
+import { buttplugPlugin } from "@ai16z/plugin-buttplug";
 import { nodePlugin } from "@ai16z/plugin-node";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -126,11 +127,6 @@ export function getTokenForProvider(
             return (
                 character.settings?.secrets?.OPENAI_API_KEY ||
                 settings.OPENAI_API_KEY
-            );
-        case ModelProviderName.ETERNALAI:
-            return (
-                character.settings?.secrets?.ETERNALAI_API_KEY ||
-                settings.ETERNALAI_API_KEY
             );
         case ModelProviderName.LLAMACLOUD:
             return (
@@ -254,6 +250,7 @@ export function createAgent(
             bootstrapPlugin,
             nodePlugin,
             character.settings.secrets?.WALLET_PUBLIC_KEY ? solanaPlugin : null,
+            character.settings.buttplug ? buttplugPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
