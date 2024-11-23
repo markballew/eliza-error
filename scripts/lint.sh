@@ -18,45 +18,33 @@ if [ ! -d "packages" ]; then
     exit 1
 fi
 
-# Define packages to build in order
-PACKAGES=(
-    "core"
-    "plugin-trustdb"
-    "plugin-solana"
-    "plugin-starknet"
-    "adapter-postgres"
-    "adapter-sqlite"
-    "adapter-sqljs"
-    "adapter-supabase"
-    "client-auto"
-    "client-direct"
-    "client-discord"
-    "client-telegram"
-    "client-twitter"
-    "plugin-node"
-    "plugin-bootstrap"
-    "plugin-image-generation"
-    "plugin-coinbase"
-)
+# Find all packages under the packages directory
+PACKAGES=( $(find packages -mindepth 1 -maxdepth 1 -type d -exec basename {} \;) )
 
-# Build packages in specified order
+# lint packages in specified order
 for package in "${PACKAGES[@]}"; do
     package_path="packages/$package"
-
+    
     if [ ! -d "$package_path" ]; then
         echo -e "\033[1mPackage directory '$package' not found, skipping...\033[0m"
         continue
     fi
 
-    echo -e "\033[1mBuilding package: $package\033[0m"
+    echo -e "\033[1mLinting package: $package\033[0m"
     cd "$package_path" || continue
 
     if [ -f "package.json" ]; then
-        if npm run build; then
-            echo -e "\033[1;32mSuccessfully built $package\033[0m\n"
+        # Run lint if available
+        if npm run | grep -q " lint"; then
+            echo -e "\033[1mRunning lint for package: $package\033[0m"
+            if npm run lint; then
+                echo -e "\033[1;32mSuccessfully linted $package\033[0m\n"
+            else
+                echo -e "\033[1;31mLint failed for $package\033[0m"
+                exit 1 # Exit immediately if lint fails
+            fi
         else
-            echo -e "\033[1;31mFailed to build $package\033[0m"
-            exit 1
+            echo "No lint script found in $package, skipping lint..."
         fi
     else
         echo "No package.json found in $package, skipping..."
@@ -65,4 +53,4 @@ for package in "${PACKAGES[@]}"; do
     cd - > /dev/null || exit
 done
 
-echo -e "\033[1mBuild process completed.😎\033[0m"
+echo -e "\033[1mLint process completed.😎\033[0m"
