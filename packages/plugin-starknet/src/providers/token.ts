@@ -9,6 +9,7 @@ import {
     HolderData,
     ProcessedTokenData,
     TokenSecurityData,
+    TokenTradeData,
     CalculatedBuyAmounts,
     Prices,
 } from "../types/trustDB.ts";
@@ -403,7 +404,7 @@ export class TokenProvider {
     }
 
     // TODO:
-    async analyzeHolderDistribution(_tradeData: TokenInfo): Promise<string> {
+    async analyzeHolderDistribution(tradeData: TokenInfo): Promise<string> {
         // Define the time intervals to consider (e.g., 30m, 1h, 2h)
 
         // TODO: Update to Starknet
@@ -467,6 +468,7 @@ export class TokenProvider {
         console.log({ url });
 
         try {
+            // eslint-disable-next-line no-constant-condition
             while (true) {
                 const params = {
                     limit: limit,
@@ -512,6 +514,7 @@ export class TokenProvider {
                     `Processing ${data.result.token_accounts.length} holders from page ${page}`
                 );
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data.result.token_accounts.forEach((account: any) => {
                     const owner = account.owner;
                     const balance = parseFloat(account.amount);

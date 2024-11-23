@@ -385,7 +385,7 @@ export class VoiceManager extends EventEmitter {
         let transcriptionStarted = false;
         let transcriptionText = "";
 
-        const _monitor = new AudioMonitor(
+        const monitor = new AudioMonitor(
             audioStream,
             10000000,
             async (buffer) => {
@@ -485,7 +485,7 @@ export class VoiceManager extends EventEmitter {
 
                         const memory = {
                             id: stringToUuid(
-                                roomId + "-voice-message-" + Date.now()
+                                channelId + "-voice-message-" + Date.now()
                             ),
                             agentId: this.runtime.agentId,
                             content: {
@@ -540,11 +540,7 @@ export class VoiceManager extends EventEmitter {
 
                             const responseMemory: Memory = {
                                 id: stringToUuid(
-                                    roomId +
-                                        "-" +
-                                        memory.id +
-                                        "-voice-response-" +
-                                        Date.now()
+                                    memory.id + "-voice-response-" + Date.now()
                                 ),
                                 agentId: this.runtime.agentId,
                                 userId: this.runtime.agentId,

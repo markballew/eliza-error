@@ -16,9 +16,16 @@ import {
     getStarknetProvider,
     parseFormatedAmount,
     parseFormatedPercentage,
+    validateSettings,
 } from "../utils/index.ts";
 import { DeployData, Factory } from "@unruggable_starknet/core";
-import { AMM, QUOTE_TOKEN_SYMBOL } from "@unruggable_starknet/core/constants";
+import {
+    AMM,
+    EKUBO_TICK_SPACING,
+    LiquidityType,
+    QUOTE_TOKEN_SYMBOL,
+    RECOMMENDED_EKUBO_FEES,
+} from "@unruggable_starknet/core/constants";
 import { ACCOUNTS, TOKENS } from "../utils/constants.ts";
 import { validateStarknetConfig } from "../enviroment.ts";
 
@@ -75,7 +82,7 @@ export const deployToken: Action = {
         "STARKNET_DEPLOY_MEMECOIN",
         "STARKNET_CREATE_MEMECOIN",
     ],
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateStarknetConfig(runtime);
         return true;
     },

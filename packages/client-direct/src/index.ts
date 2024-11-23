@@ -11,6 +11,7 @@ import {
     Content,
     Memory,
     ModelClass,
+    State,
     Client,
     IAgentRuntime,
 } from "@ai16z/eliza";
@@ -221,7 +222,7 @@ export class DirectClient {
 
                 await runtime.evaluate(memory, state);
 
-                const _result = await runtime.processActions(
+                const result = await runtime.processActions(
                     memory,
                     [responseMessage],
                     state,
@@ -284,14 +285,14 @@ export class DirectClient {
 }
 
 export const DirectClientInterface: Client = {
-    start: async (_runtime: IAgentRuntime) => {
+    start: async (runtime: IAgentRuntime) => {
         elizaLogger.log("DirectClientInterface start");
         const client = new DirectClient();
         const serverPort = parseInt(settings.SERVER_PORT || "3000");
         client.start(serverPort);
         return client;
     },
-    stop: async (_runtime: IAgentRuntime) => {
+    stop: async (runtime: IAgentRuntime) => {
         elizaLogger.warn("Direct client does not support stopping yet");
     },
 };

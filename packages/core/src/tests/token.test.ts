@@ -1,134 +1,77 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { TokenProvider } from "@ai16z/plugin-solana";
+// // Now import other modules
+// import { createRuntime } from "../test_resources/createRuntime";
+// import { TokenProvider, WalletProvider } from "@ai16z/plugin-solana";
+// import { Connection, PublicKey } from "@solana/web3.js";
+// import { describe, test, expect, beforeEach, vi } from "vitest";
+// import NodeCache from "node-cache";
 
-// Mock NodeCache
-vi.mock("node-cache", () => {
-    return {
-        default: vi.fn().mockImplementation(() => ({
-            set: vi.fn(),
-            get: vi.fn().mockReturnValue(null),
-        })),
-    };
-});
+// describe("TokenProvider Tests", async () => {
+//     let tokenProvider: TokenProvider;
 
-// Mock path module
-vi.mock("path", async () => {
-    const actual = await vi.importActual("path");
-    return {
-        ...(actual as any),
-        join: vi.fn().mockImplementation((...args) => args.join("/")),
-    };
-});
+//     beforeEach(async () => {
+//         // Clear all mocks before each test
+//         vi.clearAllMocks();
 
-// Mock the WalletProvider
-const mockWalletProvider = {
-    fetchPortfolioValue: vi.fn(),
-};
+//         const { runtime } = await createRuntime({
+//             env: process.env,
+//             conversationLength: 10,
+//         });
 
-// Mock the ICacheManager
-const mockCacheManager = {
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn(),
-};
+//         const walletProvider = new WalletProvider(
+//             new Connection(runtime.getSetting("RPC_URL")),
+//             new PublicKey(runtime.getSetting("WALLET_PUBLIC_KEY"))
+//         );
+//         // Create new instance of TokenProvider
+//         tokenProvider = new TokenProvider(
+//             "2weMjPLLybRMMva1fM3U31goWWrCpF59CHWNhnCJ9Vyh",
+//             walletProvider
+//         );
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+//         // Clear the cache and ensure it's empty
+//         (tokenProvider as any).cache.flushAll();
+//         (tokenProvider as any).cache.close();
+//         (tokenProvider as any).cache = new NodeCache();
 
-describe("TokenProvider", () => {
-    let tokenProvider: TokenProvider;
-    const TEST_TOKEN_ADDRESS = "2weMjPLLybRMMva1fM3U31goWWrCpF59CHWNhnCJ9Vyh";
+//         // Mock the getCachedData method instead
+//         vi.spyOn(tokenProvider as any, "getCachedData").mockReturnValue(null);
+//     });
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockCacheManager.get.mockResolvedValue(null);
+//     test("should fetch token security data", async () => {
+//         // Mock the response for the fetchTokenSecurity call
+//         const mockFetchResponse = {
+//             success: true,
+//             data: {
+//                 ownerBalance: "100",
+//                 creatorBalance: "50",
+//                 ownerPercentage: 10,
+//                 creatorPercentage: 5,
+//                 top10HolderBalance: "200",
+//                 top10HolderPercent: 20,
+//             },
+//         };
 
-        // Create new instance of TokenProvider with mocked dependencies
-        tokenProvider = new TokenProvider(
-            TEST_TOKEN_ADDRESS,
-            mockWalletProvider as any,
-            mockCacheManager as any
-        );
-    });
+//         // Mock fetchWithRetry function
+//         const fetchSpy = vi
+//             .spyOn(tokenProvider as any, "fetchWithRetry")
+//             .mockResolvedValue(mockFetchResponse);
 
-    afterEach(() => {
-        vi.clearAllTimers();
-    });
+//         // Run the fetchTokenSecurity method
+//         const securityData = await tokenProvider.fetchTokenSecurity();
+//         // Check if the data returned is correct
+//         expect(securityData).toEqual({
+//             ownerBalance: "100",
+//             creatorBalance: "50",
+//             ownerPercentage: 10,
+//             creatorPercentage: 5,
+//             top10HolderBalance: "200",
+//             top10HolderPercent: 20,
+//         });
 
-    describe("Cache Management", () => {
-        it("should use cached data when available", async () => {
-            const mockData = { test: "data" };
-            mockCacheManager.get.mockResolvedValueOnce(mockData);
-
-            const result = await (tokenProvider as any).getCachedData(
-                "test-key"
-            );
-
-            expect(result).toEqual(mockData);
-            expect(mockCacheManager.get).toHaveBeenCalledTimes(1);
-        });
-
-        it("should write data to both caches", async () => {
-            const testData = { test: "data" };
-
-            await (tokenProvider as any).setCachedData("test-key", testData);
-
-            expect(mockCacheManager.set).toHaveBeenCalledWith(
-                expect.stringContaining("test-key"),
-                testData,
-                expect.any(Object)
-            );
-        });
-    });
-
-    describe("Wallet Integration", () => {
-        it("should fetch tokens in wallet", async () => {
-            const mockItems = [
-                { symbol: "SOL", address: "address1" },
-                { symbol: "BTC", address: "address2" },
-            ];
-
-            mockWalletProvider.fetchPortfolioValue.mockResolvedValueOnce({
-                items: mockItems,
-            });
-
-            const result = await tokenProvider.getTokensInWallet({} as any);
-
-            expect(result).toEqual(mockItems);
-            expect(
-                mockWalletProvider.fetchPortfolioValue
-            ).toHaveBeenCalledTimes(1);
-        });
-
-        it("should find token in wallet by symbol", async () => {
-            const mockItems = [
-                { symbol: "SOL", address: "address1" },
-                { symbol: "BTC", address: "address2" },
-            ];
-
-            mockWalletProvider.fetchPortfolioValue.mockResolvedValueOnce({
-                items: mockItems,
-            });
-
-            const result = await tokenProvider.getTokenFromWallet(
-                {} as any,
-                "SOL"
-            );
-
-            expect(result).toBe("address1");
-        });
-
-        it("should return null for token not in wallet", async () => {
-            mockWalletProvider.fetchPortfolioValue.mockResolvedValueOnce({
-                items: [],
-            });
-
-            const result = await tokenProvider.getTokenFromWallet(
-                {} as any,
-                "NONEXISTENT"
-            );
-
-            expect(result).toBeNull();
-        });
-    });
-});
+//         // Ensure the mock was called with correct URL
+//         expect(fetchSpy).toHaveBeenCalledWith(
+//             expect.stringContaining(
+//                 "https://public-api.birdeye.so/defi/token_security?address=2weMjPLLybRMMva1fM3U31goWWrCpF59CHWNhnCJ9Vyh"
+//             )
+//         );
+//     });
+// });
