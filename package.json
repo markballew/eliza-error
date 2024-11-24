@@ -24,8 +24,6 @@
         "prepare": "husky install"
     },
     "devDependencies": {
-        "@commitlint/cli": "^18.4.4",
-        "@commitlint/config-conventional": "^18.4.4",
         "concurrently": "^9.1.0",
         "husky": "^9.1.6",
         "lerna": "^8.1.5",
@@ -34,7 +32,9 @@
         "typedoc": "^0.26.11",
         "typescript": "5.6.3",
         "vite": "^5.4.11",
-        "vitest": "^2.1.5"
+        "vitest": "^2.1.5",
+        "@commitlint/cli": "^18.4.4",
+        "@commitlint/config-conventional": "^18.4.4"
     },
     "pnpm": {
         "overrides": {
@@ -45,8 +45,6 @@
         "node": ">=22"
     },
     "dependencies": {
-        "@coinbase/coinbase-sdk": "^0.10.0",
-        "csv-parse": "^5.6.0",
         "ollama-ai-provider": "^0.16.1",
         "optional": "^0.1.4",
         "sharp": "^0.33.5",
