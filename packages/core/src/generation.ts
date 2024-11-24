@@ -113,7 +113,6 @@ export async function generateText({
         );
 
         switch (provider) {
-            // OPENAI & LLAMACLOUD shared same structure.
             case ModelProviderName.OPENAI:
             case ModelProviderName.LLAMACLOUD: {
                 elizaLogger.debug("Initializing OpenAI model.");
@@ -140,7 +139,7 @@ export async function generateText({
             case ModelProviderName.GOOGLE: {
                 const google = createGoogleGenerativeAI();
 
-                const { text: googleResponse } = await aiGenerateText({
+                const { text: anthropicResponse } = await aiGenerateText({
                     model: google(model),
                     prompt: context,
                     system:
@@ -153,8 +152,7 @@ export async function generateText({
                     presencePenalty: presence_penalty,
                 });
 
-                response = googleResponse;
-                elizaLogger.debug("Received response from Google model.");
+                response = anthropicResponse;
                 break;
             }
 
@@ -282,7 +280,7 @@ export async function generateText({
                 const serverUrl = models[provider].endpoint;
                 const openai = createOpenAI({ apiKey, baseURL: serverUrl });
 
-                const { text: redpillResponse } = await aiGenerateText({
+                const { text: openaiResponse } = await aiGenerateText({
                     model: openai.languageModel(model),
                     prompt: context,
                     temperature: temperature,
@@ -295,8 +293,8 @@ export async function generateText({
                     presencePenalty: presence_penalty,
                 });
 
-                response = redpillResponse;
-                elizaLogger.debug("Received response from redpill model.");
+                response = openaiResponse;
+                elizaLogger.debug("Received response from OpenAI model.");
                 break;
             }
 
