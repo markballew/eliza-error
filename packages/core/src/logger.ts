@@ -1,6 +1,11 @@
 import settings from "./settings.ts";
+import { Logger } from "tslog";
 
-class ElizaLogger {
+interface IElizaLogger extends Logger<IElizaLogger> {
+    progress(message: string): void;
+}
+
+class ElizaLogger implements IElizaLogger {
     constructor() {
         // Check if we're in Node.js environment
         this.isNode =
@@ -175,6 +180,7 @@ class ElizaLogger {
         }
     }
 
+    // @ts-expect-error- custom implementation
     log(...strings) {
         this.#logWithStyle(strings, {
             fg: "white",
@@ -184,6 +190,7 @@ class ElizaLogger {
         });
     }
 
+    // @ts-expect-error- custom implementation
     warn(...strings) {
         this.#logWithStyle(strings, {
             fg: "yellow",
@@ -193,6 +200,7 @@ class ElizaLogger {
         });
     }
 
+    // @ts-expect-error- custom implementation
     error(...strings) {
         this.#logWithStyle(strings, {
             fg: "red",
@@ -202,6 +210,7 @@ class ElizaLogger {
         });
     }
 
+    // @ts-expect-error- custom implementation
     info(...strings) {
         this.#logWithStyle(strings, {
             fg: "blue",
@@ -211,6 +220,7 @@ class ElizaLogger {
         });
     }
 
+    // @ts-expect-error- custom implementation
     debug(...strings) {
         if (!this.verbose) return;
         this.#logWithStyle(strings, {
