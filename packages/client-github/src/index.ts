@@ -191,7 +191,7 @@ export const GitHubClientInterface: Client = {
 
         return client;
     },
-    stop: async (_runtime: IAgentRuntime) => {
+    stop: async (runtime: IAgentRuntime) => {
         elizaLogger.log("GitHubClientInterface stop");
     },
 };

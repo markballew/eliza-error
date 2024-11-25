@@ -1,31 +1,27 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / trimTokens
+[@ai16z/eliza v1.0.0](../index.md) / trimTokens
 
 # Function: trimTokens()
 
-> **trimTokens**(`context`, `maxTokens`, `model`): `string`
+> **trimTokens**(`context`, `maxTokens`, `model`): `any`
 
 Truncate the context to the maximum length allowed by the model.
 
 ## Parameters
 
-• **context**: `string`
+• **context**: `any`
 
-The text to truncate
+The context of the message to be completed.
 
-• **maxTokens**: `number`
+• **maxTokens**: `any`
 
-Maximum number of tokens to keep
+• **model**: `any`
 
-• **model**: `TiktokenModel`
-
-The tokenizer model to use
+The model to use for generateText.
 
 ## Returns
 
-`string`
-
-The truncated text
+`any`
 
 ## Defined in
 
-[packages/core/src/generation.ts:397](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L397)
+[packages/core/src/generation.ts:379](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L379)

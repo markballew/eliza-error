@@ -72,7 +72,7 @@ export async function buildConversationThread(
                 "twitter"
             );
 
-            await client.runtime.messageManager.createMemory({
+            client.runtime.messageManager.createMemory({
                 id: stringToUuid(
                     currentTweet.id + "-" + client.runtime.agentId
                 ),
@@ -270,7 +270,6 @@ function splitTweetContent(content: string): string[] {
 }
 
 function splitParagraph(paragraph: string, maxLength: number): string[] {
-    // eslint-disable-next-line
     const sentences = paragraph.match(/[^\.!\?]+[\.!\?]+|[^\.!\?]+$/g) || [
         paragraph,
     ];

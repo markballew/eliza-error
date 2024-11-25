@@ -88,6 +88,7 @@ export class TokenProvider {
     private async fetchWithRetry(
         url: string,
         options: RequestInit = {}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ): Promise<any> {
         let lastError: Error;
 
@@ -604,13 +605,21 @@ export class TokenProvider {
         }
 
         // Sort pairs by both liquidity and market cap to get the highest one
-        return dexData.pairs.sort((a, b) => {
-            const liquidityDiff = b.liquidity.usd - a.liquidity.usd;
-            if (liquidityDiff !== 0) {
-                return liquidityDiff; // Higher liquidity comes first
+        return dexData.pairs.reduce((highestPair, currentPair) => {
+            const currentLiquidity = currentPair.liquidity.usd;
+            const currentMarketCap = currentPair.marketCap;
+            const highestLiquidity = highestPair.liquidity.usd;
+            const highestMarketCap = highestPair.marketCap;
+
+            if (
+                currentLiquidity > highestLiquidity ||
+                (currentLiquidity === highestLiquidity &&
+                    currentMarketCap > highestMarketCap)
+            ) {
+                return currentPair;
             }
-            return b.marketCap - a.marketCap; // If liquidity is equal, higher market cap comes first
-        })[0];
+            return highestPair;
+        });
     }
 
     async analyzeHolderDistribution(
@@ -676,6 +685,7 @@ export class TokenProvider {
         console.log({ url });
 
         try {
+            // eslint-disable-next-line no-constant-condition
             while (true) {
                 const params = {
                     limit: limit,
@@ -721,6 +731,7 @@ export class TokenProvider {
                     `Processing ${data.result.token_accounts.length} holders from page ${page}`
                 );
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data.result.token_accounts.forEach((account: any) => {
                     const owner = account.owner;
                     const balance = parseFloat(account.amount);
@@ -881,8 +892,8 @@ export class TokenProvider {
             const liquidityUsd = toBN(liquidity.usd);
             const marketCapUsd = toBN(marketCap);
             const totalSupply = toBN(ownerBalance).plus(creatorBalance);
-            const _ownerPercentage = toBN(ownerBalance).dividedBy(totalSupply);
-            const _creatorPercentage =
+            const ownerPercentage = toBN(ownerBalance).dividedBy(totalSupply);
+            const creatorPercentage =
                 toBN(creatorBalance).dividedBy(totalSupply);
             const top10HolderPercent = toBN(tradeData.volume_24h_usd).dividedBy(
                 totalSupply
@@ -1006,10 +1017,11 @@ export class TokenProvider {
 }
 
 const tokenAddress = PROVIDER_CONFIG.TOKEN_ADDRESSES.Example;
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const connection = new Connection(PROVIDER_CONFIG.DEFAULT_RPC);
 const tokenProvider: Provider = {
     get: async (
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         runtime: IAgentRuntime,
         _message: Memory,
         _state?: State

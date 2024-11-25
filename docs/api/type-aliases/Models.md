@@ -1,10 +1,8 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / Models
+[@ai16z/eliza v1.0.0](../index.md) / Models
 
 # Type Alias: Models
 
 > **Models**: `object`
-
-Model configurations by provider
 
 ## Type declaration
 
@@ -24,21 +22,21 @@ Model configurations by provider
 
 > **groq**: [`Model`](Model.md)
 
-### llama\_cloud
+### llama_cloud
 
-> **llama\_cloud**: [`Model`](Model.md)
+> **llama_cloud**: [`Model`](Model.md)
 
-### llama\_local
+### llama_local
 
-> **llama\_local**: [`Model`](Model.md)
+> **llama_local**: [`Model`](Model.md)
 
 ### google
 
 > **google**: [`Model`](Model.md)
 
-### claude\_vertex
+### claude_vertex
 
-> **claude\_vertex**: [`Model`](Model.md)
+> **claude_vertex**: [`Model`](Model.md)
 
 ### redpill
 
@@ -58,4 +56,4 @@ Model configurations by provider
 
 ## Defined in
 
-[packages/core/src/types.ts:188](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L188)
+[packages/core/src/types.ts:105](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L105)

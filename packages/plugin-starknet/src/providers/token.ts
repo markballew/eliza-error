@@ -9,6 +9,7 @@ import {
     HolderData,
     ProcessedTokenData,
     TokenSecurityData,
+    TokenTradeData,
     CalculatedBuyAmounts,
     Prices,
 } from "../types/trustDB.ts";
@@ -52,7 +53,9 @@ export class TokenProvider {
 
                 if (!response.ok) {
                     throw new Error(
-                        `HTTP error! status: ${response.status}, message: ${await response.text()}`
+                        `HTTP error! status: ${
+                            response.status
+                        }, message: ${await response.text()}`
                     );
                 }
 
@@ -73,8 +76,9 @@ export class TokenProvider {
 
     // TODO: Update to Starknet
     async getTokensInWallet(runtime: IAgentRuntime): Promise<Item[]> {
-        const walletInfo =
-            await this.walletProvider.fetchPortfolioValue(runtime);
+        const walletInfo = await this.walletProvider.fetchPortfolioValue(
+            runtime
+        );
         const items = walletInfo.items;
         return items;
     }
@@ -135,8 +139,8 @@ export class TokenProvider {
                     token === STRK
                         ? "starknet"
                         : token === BTC
-                          ? "bitcoin"
-                          : "ethereum";
+                        ? "bitcoin"
+                        : "ethereum";
 
                 prices[priceKey].usd = tokenInfo.market.currentPrice.toString();
             });
@@ -385,17 +389,25 @@ export class TokenProvider {
         }
 
         // Sort pairs by both liquidity and market cap to get the highest one
-        return dexData.pairs.sort((a, b) => {
-            const liquidityDiff = b.liquidity.usd - a.liquidity.usd;
-            if (liquidityDiff !== 0) {
-                return liquidityDiff; // Higher liquidity comes first
+        return dexData.pairs.reduce((highestPair, currentPair) => {
+            const currentLiquidity = currentPair.liquidity.usd;
+            const currentMarketCap = currentPair.marketCap;
+            const highestLiquidity = highestPair.liquidity.usd;
+            const highestMarketCap = highestPair.marketCap;
+
+            if (
+                currentLiquidity > highestLiquidity ||
+                (currentLiquidity === highestLiquidity &&
+                    currentMarketCap > highestMarketCap)
+            ) {
+                return currentPair;
             }
-            return b.marketCap - a.marketCap; // If liquidity is equal, higher market cap comes first
-        })[0];
+            return highestPair;
+        });
     }
 
     // TODO:
-    async analyzeHolderDistribution(_tradeData: TokenInfo): Promise<string> {
+    async analyzeHolderDistribution(tradeData: TokenInfo): Promise<string> {
         // Define the time intervals to consider (e.g., 30m, 1h, 2h)
 
         // TODO: Update to Starknet
@@ -455,10 +467,13 @@ export class TokenProvider {
         const limit = 1000;
         let cursor;
         //HELIOUS_API_KEY needs to be added
-        const url = `https://mainnet.helius-rpc.com/?api-key=${settings.HELIUS_API_KEY || ""}`;
+        const url = `https://mainnet.helius-rpc.com/?api-key=${
+            settings.HELIUS_API_KEY || ""
+        }`;
         console.log({ url });
 
         try {
+            // eslint-disable-next-line no-constant-condition
             while (true) {
                 const params = {
                     limit: limit,
@@ -495,7 +510,9 @@ export class TokenProvider {
                     data.result.token_accounts.length === 0
                 ) {
                     console.log(
-                        `No more holders found. Total pages fetched: ${page - 1}`
+                        `No more holders found. Total pages fetched: ${
+                            page - 1
+                        }`
                     );
                     break;
                 }
@@ -504,6 +521,7 @@ export class TokenProvider {
                     `Processing ${data.result.token_accounts.length} holders from page ${page}`
                 );
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data.result.token_accounts.forEach((account: any) => {
                     const owner = account.owner;
                     const balance = parseFloat(account.amount);
@@ -608,8 +626,9 @@ export class TokenProvider {
             console.log(
                 `Filtering high-value holders for token: ${this.tokenAddress}`
             );
-            const highValueHolders =
-                await this.filterHighValueHolders(tradeData);
+            const highValueHolders = await this.filterHighValueHolders(
+                tradeData
+            );
 
             console.log(
                 `Checking recent trades for token: ${this.tokenAddress}`
@@ -621,8 +640,9 @@ export class TokenProvider {
             console.log(
                 `Counting high-supply holders for token: ${this.tokenAddress}`
             );
-            const highSupplyHoldersCount =
-                await this.countHighSupplyHolders(security);
+            const highSupplyHoldersCount = await this.countHighSupplyHolders(
+                security
+            );
 
             console.log(
                 `Determining DexScreener listing status for token: ${this.tokenAddress}`
@@ -737,25 +757,39 @@ export class TokenProvider {
         output += `\n`;
 
         // Recent Trades
-        output += `**Recent Trades (Last 24h):** ${data.recentTrades ? "Yes" : "No"}\n\n`;
+        output += `**Recent Trades (Last 24h):** ${
+            data.recentTrades ? "Yes" : "No"
+        }\n\n`;
 
         // High-Supply Holders
         output += `**Holders with >2% Supply:** ${data.highSupplyHoldersCount}\n\n`;
 
         // DexScreener Status
-        output += `**DexScreener Listing:** ${data.isDexScreenerListed ? "Yes" : "No"}\n`;
+        output += `**DexScreener Listing:** ${
+            data.isDexScreenerListed ? "Yes" : "No"
+        }\n`;
         if (data.isDexScreenerListed) {
-            output += `- Listing Type: ${data.isDexScreenerPaid ? "Paid" : "Free"}\n`;
+            output += `- Listing Type: ${
+                data.isDexScreenerPaid ? "Paid" : "Free"
+            }\n`;
             output += `- Number of DexPairs: ${data.dexScreenerData.pairs.length}\n\n`;
             output += `**DexScreener Pairs:**\n`;
             data.dexScreenerData.pairs.forEach((pair, index) => {
                 output += `\n**Pair ${index + 1}:**\n`;
                 output += `- DEX: ${pair.dexId}\n`;
                 output += `- URL: ${pair.url}\n`;
-                output += `- Price USD: $${num.toBigInt(pair.priceUsd).toString()}\n`;
-                output += `- Volume (24h USD): $${num.toBigInt(pair.volume.h24).toString()}\n`;
-                output += `- Boosts Active: ${pair.boosts && pair.boosts.active}\n`;
-                output += `- Liquidity USD: $${num.toBigInt(pair.liquidity.usd).toString()}\n`;
+                output += `- Price USD: $${num
+                    .toBigInt(pair.priceUsd)
+                    .toString()}\n`;
+                output += `- Volume (24h USD): $${num
+                    .toBigInt(pair.volume.h24)
+                    .toString()}\n`;
+                output += `- Boosts Active: ${
+                    pair.boosts && pair.boosts.active
+                }\n`;
+                output += `- Liquidity USD: $${num
+                    .toBigInt(pair.liquidity.usd)
+                    .toString()}\n`;
             });
         }
         output += `\n`;

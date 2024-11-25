@@ -35,7 +35,7 @@ export class TranscriptionService
     private queue: { audioBuffer: ArrayBuffer; resolve: Function }[] = [];
     private processing: boolean = false;
 
-    async initialize(_runtime: IAgentRuntime): Promise<void> {}
+    async initialize(runtime: IAgentRuntime): Promise<void> {}
 
     constructor() {
         super();
@@ -76,8 +76,7 @@ export class TranscriptionService
                 console.log(
                     "CUDA detected. Transcription will use CUDA acceleration."
                 );
-                // eslint-disable-next-line
-            } catch (_error) {
+            } catch (error) {
                 console.log(
                     "CUDA not detected. Transcription will run on CPU."
                 );
