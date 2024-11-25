@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import pg, { type Pool } from "pg";
+import pg from "pg";
 import {
     Account,
     Actor,
@@ -8,88 +8,29 @@ import {
     type Memory,
     type Relationship,
     type UUID,
-    type IDatabaseCacheAdapter,
     Participant,
-    DatabaseAdapter,
-    elizaLogger,
 } from "@ai16z/eliza";
-import fs from "fs";
-import { fileURLToPath } from "url";
-import path from "path";
+import { DatabaseAdapter } from "@ai16z/eliza";
+const { Pool } = pg;
 
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = path.dirname(__filename); // get the name of the directory
-
-export class PostgresDatabaseAdapter
-    extends DatabaseAdapter<Pool>
-    implements IDatabaseCacheAdapter
-{
-    private pool: Pool;
+export class PostgresDatabaseAdapter extends DatabaseAdapter {
+    private pool: typeof Pool;
 
     constructor(connectionConfig: any) {
         super();
 
-        const defaultConfig = {
+        this.pool = new Pool({
+            ...connectionConfig,
             max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000,
-        };
-
-        this.pool = new pg.Pool({
-            ...defaultConfig,
-            ...connectionConfig, // Allow overriding defaults
         });
 
-        this.pool.on("error", async (err) => {
-            elizaLogger.error("Unexpected error on idle client", err);
-
-            // Attempt to reconnect with exponential backoff
-            let retryCount = 0;
-            const maxRetries = 5;
-            const baseDelay = 1000; // Start with 1 second delay
-
-            while (retryCount < maxRetries) {
-                try {
-                    const delay = baseDelay * Math.pow(2, retryCount);
-                    elizaLogger.log(`Attempting to reconnect in ${delay}ms...`);
-                    await new Promise((resolve) => setTimeout(resolve, delay));
-
-                    // Create new pool with same config
-                    this.pool = new pg.Pool(this.pool.options);
-                    await this.testConnection();
-
-                    elizaLogger.log("Successfully reconnected to database");
-                    return;
-                } catch (error) {
-                    retryCount++;
-                    elizaLogger.error(
-                        `Reconnection attempt ${retryCount} failed:`,
-                        error
-                    );
-                }
-            }
-
-            elizaLogger.error(
-                `Failed to reconnect after ${maxRetries} attempts`
-            );
-            throw new Error("Database connection lost and unable to reconnect");
+        this.pool.on("error", (err) => {
+            console.error("Unexpected error on idle client", err);
         });
-    }
 
-    async init() {
-        await this.testConnection();
-
-        try {
-            const client = await this.pool.connect();
-            const schema = fs.readFileSync(
-                path.resolve(__dirname, "../schema.sql"),
-                "utf8"
-            );
-            await client.query(schema);
-        } catch (error) {
-            elizaLogger.error(error);
-            throw error;
-        }
+        this.testConnection();
     }
 
     async testConnection(): Promise<boolean> {
@@ -97,13 +38,10 @@ export class PostgresDatabaseAdapter
         try {
             client = await this.pool.connect();
             const result = await client.query("SELECT NOW()");
-            elizaLogger.log(
-                "Database connection test successful:",
-                result.rows[0]
-            );
+            console.log("Database connection test successful:", result.rows[0]);
             return true;
         } catch (error) {
-            elizaLogger.error("Database connection test failed:", error);
+            console.error("Database connection test failed:", error);
             throw new Error(`Failed to connect to database: ${error.message}`);
         } finally {
             if (client) client.release();
@@ -226,7 +164,7 @@ export class PostgresDatabaseAdapter
             if (rows.length === 0) return null;
 
             const account = rows[0];
-            // elizaLogger.log("account", account);
+            console.log("account", account);
             return {
                 ...account,
                 details:
@@ -256,7 +194,7 @@ export class PostgresDatabaseAdapter
             );
             return true;
         } catch (error) {
-            elizaLogger.log("Error creating account", error);
+            console.log("Error creating account", error);
             return false;
         } finally {
             client.release();
@@ -352,13 +290,42 @@ export class PostgresDatabaseAdapter
         match_count: number;
         unique: boolean;
     }): Promise<Memory[]> {
-        return await this.searchMemoriesByEmbedding(params.embedding, {
-            match_threshold: params.match_threshold,
-            count: params.match_count,
-            roomId: params.roomId,
-            unique: params.unique,
-            tableName: params.tableName,
-        });
+        const client = await this.pool.connect();
+        try {
+            let sql = `
+                SELECT *,
+                1 - (embedding <-> $3) as similarity
+                FROM memories
+                WHERE type = $1 AND "roomId" = $2
+            `;
+
+            if (params.unique) {
+                sql += ` AND "unique" = true`;
+            }
+
+            sql += ` AND 1 - (embedding <-> $3) >= $4
+                ORDER BY embedding <-> $3
+                LIMIT $5`;
+
+            const { rows } = await client.query(sql, [
+                params.tableName,
+                params.roomId,
+                params.embedding,
+                params.match_threshold,
+                params.match_count,
+            ]);
+
+            return rows.map((row) => ({
+                ...row,
+                content:
+                    typeof row.content === "string"
+                        ? JSON.parse(row.content)
+                        : row.content,
+                similarity: row.similarity,
+            }));
+        } finally {
+            client.release();
+        }
     }
 
     async getMemories(params: {
@@ -408,6 +375,8 @@ export class PostgresDatabaseAdapter
                 sql += ` LIMIT $${paramCount}`;
                 values.push(params.count);
             }
+
+            console.log("sql", sql, values);
 
             const { rows } = await client.query(sql, values);
             return rows.map((row) => ({
@@ -878,65 +847,6 @@ export class PostgresDatabaseAdapter
         } catch (error) {
             console.error("Error fetching actor details:", error);
             throw new Error("Failed to fetch actor details");
-        }
-    }
-
-    async getCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<string | undefined> {
-        const client = await this.pool.connect();
-        try {
-            const sql = `SELECT "value"::TEXT FROM cache WHERE "key" = $1 AND "agentId" = $2`;
-            const { rows } = await this.pool.query<{ value: string }>(sql, [
-                params.key,
-                params.agentId,
-            ]);
-
-            return rows[0]?.value ?? undefined;
-        } catch (error) {
-            console.log("Error fetching cache", error);
-        } finally {
-            client.release();
-        }
-    }
-
-    async setCache(params: {
-        key: string;
-        agentId: UUID;
-        value: string;
-    }): Promise<boolean> {
-        const client = await this.pool.connect();
-        try {
-            await client.query(
-                `INSERT INTO cache ("key", "agentId", "value", "createdAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-                    ON CONFLICT ("key", "agentId")
-                    DO UPDATE SET "value" = EXCLUDED.value, "createdAt" = CURRENT_TIMESTAMP`,
-                [params.key, params.agentId, params.value]
-            );
-            return true;
-        } catch (error) {
-            console.log("Error adding cache", error);
-        } finally {
-            client.release();
-        }
-    }
-
-    async deleteCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<boolean> {
-        const client = await this.pool.connect();
-        try {
-            await client.query(
-                `DELETE FROM cache WHERE "key" = $1 AND "agentId" = $2`,
-                [params.key, params.agentId]
-            );
-            return true;
-        } catch (error) {
-            console.log("Error adding cache", error);
-        } finally {
-            client.release();
         }
     }
 }

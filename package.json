@@ -20,8 +20,7 @@
         "docker:bash": "bash ./scripts/docker.sh bash",
         "docker:start": "bash ./scripts/docker.sh start",
         "docker": "pnpm docker:build && pnpm docker:run && pnpm docker:bash",
-        "test": "bash ./scripts/test.sh",
-        "prepare": "husky install"
+        "test": "pnpm --dir packages/core test"
     },
     "devDependencies": {
         "concurrently": "^9.1.0",
@@ -32,9 +31,7 @@
         "typedoc": "^0.26.11",
         "typescript": "5.6.3",
         "vite": "^5.4.11",
-        "vitest": "^2.1.5",
-        "@commitlint/cli": "^18.4.4",
-        "@commitlint/config-conventional": "^18.4.4"
+        "vitest": "^2.1.5"
     },
     "pnpm": {
         "overrides": {
@@ -45,6 +42,7 @@
         "node": ">=22"
     },
     "dependencies": {
+        "amqplib": "^0.10.4",
         "ollama-ai-provider": "^0.16.1",
         "optional": "^0.1.4",
         "sharp": "^0.33.5"

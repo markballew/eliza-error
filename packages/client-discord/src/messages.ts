@@ -423,20 +423,20 @@ export class MessageManager {
                 roomId,
                 content,
                 createdAt: message.createdTimestamp,
+                embedding: embeddingZeroVector,
             };
 
             if (content.text) {
-                await this.runtime.messageManager.addEmbeddingToMemory(memory);
                 await this.runtime.messageManager.createMemory(memory);
             }
 
-            let state = await this.runtime.composeState(userMessage, {
+            let state = (await this.runtime.composeState(userMessage, {
                 discordClient: this.client,
                 discordMessage: message,
                 agentName:
                     this.runtime.character.name ||
                     this.client.user?.displayName,
-            });
+            })) as State;
 
             if (!canSendMessage(message.channel).canSend) {
                 return elizaLogger.warn(
@@ -649,7 +649,6 @@ export class MessageManager {
         message: DiscordMessage
     ): Promise<{ processedContent: string; attachments: Media[] }> {
         let processedContent = message.content;
-
         let attachments: Media[] = [];
 
         // Process code blocks in the message content
