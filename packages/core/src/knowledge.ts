@@ -6,7 +6,7 @@ import { embeddingZeroVector } from "./memory.ts";
 import { splitChunks } from "./generation.ts";
 import elizaLogger from "./logger.ts";
 
-async function get(runtime: AgentRuntime, message: Memory): Promise<KnowledgeItem[]> {
+async function get(runtime: AgentRuntime, message: Memory): Promise<string[]> {
     const processed = preprocess(message.content.text);
     elizaLogger.log(`Querying knowledge for: ${processed}`);
     const embedding = await embed(runtime, processed);
@@ -36,9 +36,10 @@ async function get(runtime: AgentRuntime, message: Memory): Promise<KnowledgeIte
         )
     );
 
-    return knowledgeDocuments
+    const knowledge = knowledgeDocuments
         .filter((memory) => memory !== null)
-        .map((memory) => ({ id: memory.id, content: memory.content }));
+        .map((memory) => memory.content.text);
+    return knowledge;
 }
 
 async function set(
