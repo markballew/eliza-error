@@ -86,7 +86,7 @@ export class ClientBase extends EventEmitter {
     twitterClient: Scraper;
     runtime: IAgentRuntime;
     directions: string;
-    lastCheckedTweetId: bigint | null = null;
+    lastCheckedTweetId: number | null = null;
     imageDescriptionService: IImageDescriptionService;
     temperature: number = 0.5;
 
@@ -319,6 +319,7 @@ export class ClientBase extends EventEmitter {
             // Get the existing memories from the database
             const existingMemories =
                 await this.runtime.messageManager.getMemoriesByRoomIds({
+                    agentId: this.runtime.agentId,
                     roomIds: cachedTimeline.map((tweet) =>
                         stringToUuid(
                             tweet.conversationId + "-" + this.runtime.agentId
@@ -461,6 +462,7 @@ export class ClientBase extends EventEmitter {
         // Check the existing memories in the database
         const existingMemories =
             await this.runtime.messageManager.getMemoriesByRoomIds({
+                agentId: this.runtime.agentId,
                 roomIds: Array.from(roomIds),
             });
 
@@ -562,6 +564,7 @@ export class ClientBase extends EventEmitter {
             const recentMessage = await this.runtime.messageManager.getMemories(
                 {
                     roomId: message.roomId,
+                    agentId: this.runtime.agentId,
                     count: 1,
                     unique: false,
                 }
@@ -588,12 +591,12 @@ export class ClientBase extends EventEmitter {
 
     async loadLatestCheckedTweetId(): Promise<void> {
         const latestCheckedTweetId =
-            await this.runtime.cacheManager.get<string>(
+            await this.runtime.cacheManager.get<number>(
                 `twitter/${this.profile.username}/latest_checked_tweet_id`
             );
 
         if (latestCheckedTweetId) {
-            this.lastCheckedTweetId = BigInt(latestCheckedTweetId);
+            this.lastCheckedTweetId = latestCheckedTweetId;
         }
     }
 
@@ -601,7 +604,7 @@ export class ClientBase extends EventEmitter {
         if (this.lastCheckedTweetId) {
             await this.runtime.cacheManager.set(
                 `twitter/${this.profile.username}/latest_checked_tweet_id`,
-                this.lastCheckedTweetId.toString()
+                this.lastCheckedTweetId
             );
         }
     }

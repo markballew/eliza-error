@@ -303,7 +303,7 @@ export const DiscordClientInterface: ElizaClient = {
 
         return new DiscordClient(runtime);
     },
-    stop: async (_runtime: IAgentRuntime) => {
+    stop: async (runtime: IAgentRuntime) => {
         console.warn("Discord client does not support stopping yet");
     },
 };

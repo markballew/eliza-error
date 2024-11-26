@@ -23,14 +23,8 @@ import {
     validateCharacterConfig,
 } from "@ai16z/eliza";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
-import { confluxPlugin } from "@ai16z/plugin-conflux";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { zgPlugin } from "@ai16z/plugin-0g";
 import { nodePlugin } from "@ai16z/plugin-node";
-import {
-    coinbaseCommercePlugin,
-    coinbaseMassPaymentsPlugin,
-} from "@ai16z/plugin-coinbase";
 import Database from "better-sqlite3";
 import fs from "fs";
 import readline from "readline";
@@ -183,7 +177,6 @@ function initializeDatabase(dataDir: string) {
     if (process.env.POSTGRES_URL) {
         const db = new PostgresDatabaseAdapter({
             connectionString: process.env.POSTGRES_URL,
-            parseInputs: true,
         });
         return db;
     } else {
@@ -235,10 +228,6 @@ export async function initializeClients(
     return clients;
 }
 
-function getSecret(character: Character, secret: string) {
-    return character.settings.secrets?.[secret] || process.env[secret];
-}
-
 export function createAgent(
     character: Character,
     db: IDatabaseAdapter,
@@ -258,19 +247,8 @@ export function createAgent(
         character,
         plugins: [
             bootstrapPlugin,
-            getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
-                ? confluxPlugin
-                : null,
             nodePlugin,
-            getSecret(character, "WALLET_PUBLIC_KEY") ? solanaPlugin : null,
-            getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
-            getSecret(character, "COINBASE_COMMERCE_KEY")
-                ? coinbaseCommercePlugin
-                : null,
-            getSecret(character, "COINBASE_API_KEY") &&
-                getSecret(character, "COINBASE_PRIVATE_KEY")
-                ? coinbaseMassPaymentsPlugin
-                : null,
+            character.settings.secrets?.WALLET_PUBLIC_KEY ? solanaPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -292,7 +270,7 @@ function intializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
     return cache;
 }
 
-async function startAgent(character: Character, directClient: any) {
+async function startAgent(character: Character, directClient: DirectClient) {
     try {
         character.id ??= stringToUuid(character.name);
         character.username ??= character.name;
@@ -342,7 +320,7 @@ const startAgents = async () => {
 
     try {
         for (const character of characters) {
-            await startAgent(character, directClient as any);
+            await startAgent(character, directClient as DirectClient);
         }
     } catch (error) {
         elizaLogger.error("Error starting agents:", error);

@@ -73,11 +73,7 @@ const transcribeMediaAction = {
     ],
     description:
         "Transcribe the full text of an audio or video file that the user has attached.",
-    validate: async (
-        _runtime: IAgentRuntime,
-        message: Memory,
-        _state: State
-    ) => {
+    validate: async (runtime: IAgentRuntime, message: Memory, state: State) => {
         if (message.content.source !== "discord") {
             return false;
         }

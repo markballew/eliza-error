@@ -9,6 +9,7 @@ import {
     HolderData,
     ProcessedTokenData,
     TokenSecurityData,
+    TokenTradeData,
     CalculatedBuyAmounts,
     Prices,
 } from "../types/trustDB.ts";
@@ -385,17 +386,25 @@ export class TokenProvider {
         }
 
         // Sort pairs by both liquidity and market cap to get the highest one
-        return dexData.pairs.sort((a, b) => {
-            const liquidityDiff = b.liquidity.usd - a.liquidity.usd;
-            if (liquidityDiff !== 0) {
-                return liquidityDiff; // Higher liquidity comes first
+        return dexData.pairs.reduce((highestPair, currentPair) => {
+            const currentLiquidity = currentPair.liquidity.usd;
+            const currentMarketCap = currentPair.marketCap;
+            const highestLiquidity = highestPair.liquidity.usd;
+            const highestMarketCap = highestPair.marketCap;
+
+            if (
+                currentLiquidity > highestLiquidity ||
+                (currentLiquidity === highestLiquidity &&
+                    currentMarketCap > highestMarketCap)
+            ) {
+                return currentPair;
             }
-            return b.marketCap - a.marketCap; // If liquidity is equal, higher market cap comes first
-        })[0];
+            return highestPair;
+        });
     }
 
     // TODO:
-    async analyzeHolderDistribution(_tradeData: TokenInfo): Promise<string> {
+    async analyzeHolderDistribution(tradeData: TokenInfo): Promise<string> {
         // Define the time intervals to consider (e.g., 30m, 1h, 2h)
 
         // TODO: Update to Starknet
@@ -459,6 +468,7 @@ export class TokenProvider {
         console.log({ url });
 
         try {
+            // eslint-disable-next-line no-constant-condition
             while (true) {
                 const params = {
                     limit: limit,
@@ -504,6 +514,7 @@ export class TokenProvider {
                     `Processing ${data.result.token_accounts.length} holders from page ${page}`
                 );
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data.result.token_accounts.forEach((account: any) => {
                     const owner = account.owner;
                     const balance = parseFloat(account.amount);

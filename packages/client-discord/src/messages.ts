@@ -261,13 +261,6 @@ function splitMessage(content: string): string[] {
 }
 
 function canSendMessage(channel) {
-    // validate input
-    if (!channel) {
-        return {
-            canSend: false,
-            reason: "No channel given",
-        }
-    }
     // if it is a DM channel, we can always send messages
     if (channel.type === ChannelType.DM) {
         return {
@@ -445,11 +438,10 @@ export class MessageManager {
                     this.client.user?.displayName,
             });
 
-            const canSendResult = canSendMessage(message.channel)
-            if (!canSendResult.canSend) {
+            if (!canSendMessage(message.channel).canSend) {
                 return elizaLogger.warn(
                     `Cannot send message to channel ${message.channel}`,
-                    canSendResult
+                    canSendMessage(message.channel)
                 );
             }
 
@@ -701,7 +693,7 @@ export class MessageManager {
             if (
                 this.runtime
                     .getService<IVideoService>(ServiceType.VIDEO)
-                    ?.isVideoUrl(url)
+                    .isVideoUrl(url)
             ) {
                 const videoService = this.runtime.getService<IVideoService>(
                     ServiceType.VIDEO
@@ -709,10 +701,7 @@ export class MessageManager {
                 if (!videoService) {
                     throw new Error("Video service not found");
                 }
-                const videoInfo = await videoService.processVideo(
-                    url,
-                    this.runtime
-                );
+                const videoInfo = await videoService.processVideo(url);
 
                 attachments.push({
                     id: `youtube-${Date.now()}`,

@@ -13,7 +13,7 @@ export class PdfService extends Service implements IPdfService {
         return PdfService.getInstance();
     }
 
-    async initialize(_runtime: IAgentRuntime): Promise<void> {}
+    async initialize(runtime: IAgentRuntime): Promise<void> {}
 
     async convertPdfToText(pdfBuffer: Buffer): Promise<string> {
         // Convert Buffer to Uint8Array

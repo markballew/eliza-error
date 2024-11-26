@@ -43,8 +43,17 @@ export class ImageDescriptionService
     }
 
     async initialize(runtime: IAgentRuntime): Promise<void> {
-        console.log("Initializing ImageDescriptionService");
         this.runtime = runtime;
+        const model = models[runtime?.character?.modelProvider];
+
+        if (model === models[ModelProviderName.LLAMALOCAL]) {
+            await this.initializeLocalModel();
+        } else {
+            this.modelId = "gpt-4o-mini";
+            this.device = "cloud";
+        }
+
+        this.initialized = true;
     }
 
     private async initializeLocalModel(): Promise<void> {
@@ -54,7 +63,7 @@ export class ImageDescriptionService
         env.backends.onnx.wasm.proxy = false;
         env.backends.onnx.wasm.numThreads = 1;
 
-        elizaLogger.info("Downloading Florence model...");
+        elizaLogger.log("Downloading Florence model...");
 
         this.model = await Florence2ForConditionalGeneration.from_pretrained(
             this.modelId,
@@ -62,15 +71,8 @@ export class ImageDescriptionService
                 device: "gpu",
                 progress_callback: (progress) => {
                     if (progress.status === "downloading") {
-                        const percent = (
-                            (progress.loaded / progress.total) *
-                            100
-                        ).toFixed(1);
-                        const dots = ".".repeat(
-                            Math.floor(Number(percent) / 5)
-                        );
-                        elizaLogger.info(
-                            `Downloading Florence model: [${dots.padEnd(20, " ")}] ${percent}%`
+                        elizaLogger.log(
+                            `Model download progress: ${JSON.stringify(progress)}`
                         );
                     }
                 },
@@ -79,30 +81,17 @@ export class ImageDescriptionService
 
         elizaLogger.success("Florence model downloaded successfully");
 
-        elizaLogger.info("Downloading processor...");
         this.processor = (await AutoProcessor.from_pretrained(
             this.modelId
         )) as Florence2Processor;
-
-        elizaLogger.info("Downloading tokenizer...");
         this.tokenizer = await AutoTokenizer.from_pretrained(this.modelId);
-        elizaLogger.success("Image service initialization complete");
     }
 
     async describeImage(
         imageUrl: string
     ): Promise<{ title: string; description: string }> {
         if (!this.initialized) {
-            const model = models[this.runtime?.character?.modelProvider];
-
-            if (model === models[ModelProviderName.LLAMALOCAL]) {
-                await this.initializeLocalModel();
-            } else {
-                this.modelId = "gpt-4o-mini";
-                this.device = "cloud";
-            }
-    
-            this.initialized = true;
+            throw new Error("ImageDescriptionService not initialized");
         }
 
         if (this.device === "cloud") {
@@ -117,7 +106,7 @@ export class ImageDescriptionService
         this.queue.push(imageUrl);
         this.processQueue();
 
-        return new Promise((resolve, _reject) => {
+        return new Promise((resolve, reject) => {
             const checkQueue = () => {
                 const index = this.queue.indexOf(imageUrl);
                 if (index !== -1) {

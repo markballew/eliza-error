@@ -62,12 +62,7 @@ export async function generateText({
         return "";
     }
 
-    elizaLogger.log("Generating text...");
-
-    elizaLogger.info("Generating text with options:", {
-        modelProvider: runtime.modelProvider,
-        model: modelClass,
-    });
+    elizaLogger.log("Genarating text...");
 
     const provider = runtime.modelProvider;
     const endpoint =
@@ -88,8 +83,6 @@ export async function generateText({
     ) {
         model = runtime.getSetting("LLAMACLOUD_MODEL_SMALL");
     }
-
-    elizaLogger.info("Selected model:", model);
 
     const temperature = models[provider].settings.temperature;
     const frequency_penalty = models[provider].settings.frequency_penalty;
@@ -113,7 +106,6 @@ export async function generateText({
         );
 
         switch (provider) {
-            // OPENAI & LLAMACLOUD shared same structure.
             case ModelProviderName.OPENAI:
             case ModelProviderName.LLAMACLOUD: {
                 elizaLogger.debug("Initializing OpenAI model.");
@@ -140,7 +132,7 @@ export async function generateText({
             case ModelProviderName.GOOGLE: {
                 const google = createGoogleGenerativeAI();
 
-                const { text: googleResponse } = await aiGenerateText({
+                const { text: anthropicResponse } = await aiGenerateText({
                     model: google(model),
                     prompt: context,
                     system:
@@ -153,8 +145,7 @@ export async function generateText({
                     presencePenalty: presence_penalty,
                 });
 
-                response = googleResponse;
-                elizaLogger.debug("Received response from Google model.");
+                response = anthropicResponse;
                 break;
             }
 
@@ -282,7 +273,7 @@ export async function generateText({
                 const serverUrl = models[provider].endpoint;
                 const openai = createOpenAI({ apiKey, baseURL: serverUrl });
 
-                const { text: redpillResponse } = await aiGenerateText({
+                const { text: openaiResponse } = await aiGenerateText({
                     model: openai.languageModel(model),
                     prompt: context,
                     temperature: temperature,
@@ -295,8 +286,8 @@ export async function generateText({
                     presencePenalty: presence_penalty,
                 });
 
-                response = redpillResponse;
-                elizaLogger.debug("Received response from redpill model.");
+                response = openaiResponse;
+                elizaLogger.debug("Received response from OpenAI model.");
                 break;
             }
 
@@ -718,7 +709,7 @@ export async function generateMessageResponse({
     let retryLength = 1000; // exponential backoff
     while (true) {
         try {
-            elizaLogger.log("Generating message response..");
+            elizaLogger.log("Genarating message response..");
 
             const response = await generateText({
                 runtime,
@@ -946,9 +937,6 @@ export const generateObjectV2 = async ({
 
     const provider = runtime.modelProvider;
     const model = models[provider].model[modelClass];
-    if (!model) {
-        throw new Error(`Unsupported model class: ${modelClass}`);
-    }
     const temperature = models[provider].settings.temperature;
     const frequency_penalty = models[provider].settings.frequency_penalty;
     const presence_penalty = models[provider].settings.presence_penalty;
@@ -957,7 +945,7 @@ export const generateObjectV2 = async ({
     const apiKey = runtime.token;
 
     try {
-        context = await trimTokens(context, max_context_length, "gpt-4o");
+        context = await trimTokens(context, max_context_length, modelClass);
 
         const modelOptions: ModelSettings = {
             prompt: context,

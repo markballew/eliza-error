@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / IImageDescriptionService
+[@ai16z/eliza v1.0.0](../index.md) / IImageDescriptionService
 
 # Interface: IImageDescriptionService
 
@@ -6,51 +6,41 @@
 
 - [`Service`](../classes/Service.md)
 
-## Accessors
+## Methods
 
-### serviceType
+### getInstance()
 
-#### Get Signature
+> **getInstance**(): [`IImageDescriptionService`](IImageDescriptionService.md)
 
-> **get** **serviceType**(): [`ServiceType`](../enumerations/ServiceType.md)
+#### Returns
 
-##### Returns
-
-[`ServiceType`](../enumerations/ServiceType.md)
-
-#### Inherited from
-
-[`Service`](../classes/Service.md).[`serviceType`](../classes/Service.md#serviceType-1)
+[`IImageDescriptionService`](IImageDescriptionService.md)
 
 #### Defined in
 
-[packages/core/src/types.ts:927](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L927)
+[packages/core/src/types.ts:595](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L595)
 
-## Methods
+---
 
 ### initialize()
 
-> `abstract` **initialize**(`runtime`): `Promise`\<`void`\>
-
-Add abstract initialize method that must be implemented by derived classes
+> **initialize**(`modelId`?, `device`?): `Promise`\<`void`\>
 
 #### Parameters
 
-• **runtime**: [`IAgentRuntime`](IAgentRuntime.md)
+• **modelId?**: `string`
+
+• **device?**: `string`
 
 #### Returns
 
 `Promise`\<`void`\>
 
-#### Inherited from
-
-[`Service`](../classes/Service.md).[`initialize`](../classes/Service.md#initialize)
-
 #### Defined in
 
-[packages/core/src/types.ts:932](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L932)
+[packages/core/src/types.ts:596](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L596)
 
-***
+---
 
 ### describeImage()
 
@@ -74,4 +64,4 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:1018](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1018)
+[packages/core/src/types.ts:597](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L597)
