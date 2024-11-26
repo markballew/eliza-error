@@ -6,7 +6,7 @@ import { embeddingZeroVector } from "./memory.ts";
 import { splitChunks } from "./generation.ts";
 import elizaLogger from "./logger.ts";
 
-async function get(runtime: AgentRuntime, message: Memory): Promise<string[]> {
+async function get(runtime: AgentRuntime, message: Memory): Promise<KnowledgeItem[]> {
     const processed = preprocess(message.content.text);
     elizaLogger.log(`Querying knowledge for: ${processed}`);
     const embedding = await embed(runtime, processed);
@@ -14,7 +14,6 @@ async function get(runtime: AgentRuntime, message: Memory): Promise<string[]> {
         embedding,
         {
             roomId: message.agentId,
-            agentId: message.agentId,
             count: 3,
             match_threshold: 0.1,
         }
@@ -37,10 +36,9 @@ async function get(runtime: AgentRuntime, message: Memory): Promise<string[]> {
         )
     );
 
-    const knowledge = knowledgeDocuments
+    return knowledgeDocuments
         .filter((memory) => memory !== null)
-        .map((memory) => memory.content.text);
-    return knowledge;
+        .map((memory) => ({ id: memory.id, content: memory.content }));
 }
 
 async function set(
@@ -50,13 +48,13 @@ async function set(
     bleed: number = 20
 ) {
     await runtime.documentsManager.createMemory({
-        embedding: embeddingZeroVector,
         id: item.id,
         agentId: runtime.agentId,
         roomId: runtime.agentId,
         userId: runtime.agentId,
         createdAt: Date.now(),
         content: item.content,
+        embedding: embeddingZeroVector,
     });
 
     const preprocessed = preprocess(item.content.text);

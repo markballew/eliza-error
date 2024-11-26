@@ -21,20 +21,10 @@ RUN pnpm i
 ADD packages /app/packages
 RUN pnpm i
 
-# Add agent
-ADD agent /app/agent
-RUN pnpm i
-
-# Add the scripts and characters
+# Add the environment variables
 ADD scripts /app/scripts
 ADD characters /app/characters
-
-# Build the project
-RUN pnpm build
-
-EXPOSE 3000
-
-ENV PORT=3000
+ADD .env /app/.env
 
 # Command to run the container
 CMD ["tail", "-f", "/dev/null"]
