@@ -220,6 +220,7 @@ const summarizeAction = {
         // 2. get these memories from the database
         const memories = await runtime.messageManager.getMemories({
             roomId,
+            agentId: runtime.agentId,
             // subtract start from current time
             start: parseInt(start as string),
             end: parseInt(end as string),
@@ -250,9 +251,14 @@ const summarizeAction = {
         const model = models[runtime.character.settings.model];
         const chunkSize = model.settings.maxContextLength - 1000;
 
-        const chunks = await splitChunks(formattedMemories, chunkSize, 0);
+        const chunks = await splitChunks(
+            formattedMemories,
+            chunkSize,
+            "gpt-4o-mini",
+            0
+        );
 
-        const _datestr = new Date().toUTCString().replace(/:/g, "-");
+        const datestr = new Date().toUTCString().replace(/:/g, "-");
 
         state.memoriesWithAttachments = formattedMemories;
         state.objective = objective;

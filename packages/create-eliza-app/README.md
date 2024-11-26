@@ -32,6 +32,7 @@ deno run -A npm:create-eliza-app@latest path
 
 <!-- /automd -->
 
+
 ## Command Line Arguments
 
 -   `--name`: Name of the template to use (default: "eliza")

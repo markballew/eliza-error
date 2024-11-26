@@ -1,4 +1,5 @@
 import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
+import { Connection, PublicKey } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
 import { validateSettings } from "../utils";
@@ -33,7 +34,7 @@ interface WalletPortfolio {
     items: Array<Item>;
 }
 
-interface _BirdEyePriceData {
+interface BirdEyePriceData {
     data: {
         [key: string]: {
             price: number;
@@ -105,7 +106,7 @@ export class WalletProvider {
         throw lastError;
     }
 
-    async fetchPortfolioValue(_runtime): Promise<WalletPortfolio> {
+    async fetchPortfolioValue(runtime): Promise<WalletPortfolio> {
         try {
             const cacheKey = `portfolio-${this.runtime.getSetting("STARKNET_WALLET_ADDRESS")}`;
             const cachedValue = this.cache.get<WalletPortfolio>(cacheKey);
@@ -162,7 +163,7 @@ export class WalletProvider {
         }
     }
 
-    async fetchPrices(_runtime): Promise<Prices> {
+    async fetchPrices(runtime): Promise<Prices> {
         try {
             const cacheKey = "prices";
             const cachedValue = this.cache.get<Prices>(cacheKey);
@@ -174,7 +175,7 @@ export class WalletProvider {
             console.log("Cache miss for fetchPrices");
 
             const { SOL, BTC, ETH } = PROVIDER_CONFIG.TOKEN_ADDRESSES;
-            const _tokens = [SOL, BTC, ETH];
+            const tokens = [SOL, BTC, ETH];
             const prices: Prices = {
                 solana: { usd: "0" },
                 bitcoin: { usd: "0" },
