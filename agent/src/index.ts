@@ -26,12 +26,11 @@ import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 import { confluxPlugin } from "@ai16z/plugin-conflux";
 import { solanaPlugin } from "@ai16z/plugin-solana";
 import { zgPlugin } from "@ai16z/plugin-0g";
-import { nodePlugin, type NodePlugin, createNodePlugin } from "@ai16z/plugin-node";
+import { nodePlugin } from "@ai16z/plugin-node";
 import {
     coinbaseCommercePlugin,
     coinbaseMassPaymentsPlugin,
 } from "@ai16z/plugin-coinbase";
-import { buttplugPlugin } from "@ai16z/plugin-buttplug";
 import Database from "better-sqlite3";
 import fs from "fs";
 import readline from "readline";
@@ -39,6 +38,7 @@ import yargs from "yargs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { character } from "./character.ts";
+import type { DirectClient } from "@ai16z/client-direct";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -239,8 +239,6 @@ function getSecret(character: Character, secret: string) {
     return character.settings.secrets?.[secret] || process.env[secret];
 }
 
-let nodePlugin: NodePlugin | undefined;
-
 export function createAgent(
     character: Character,
     db: IDatabaseAdapter,
@@ -252,9 +250,6 @@ export function createAgent(
         "Creating runtime for character",
         character.name
     );
-
-    nodePlugin ??= createNodePlugin();
-
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -276,7 +271,6 @@ export function createAgent(
                 getSecret(character, "COINBASE_PRIVATE_KEY")
                 ? coinbaseMassPaymentsPlugin
                 : null,
-            getSecret(character, "BUTTPLUG_API_KEY") ? buttplugPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -298,7 +292,7 @@ function intializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
     return cache;
 }
 
-async function startAgent(character: Character, directClient) {
+async function startAgent(character: Character, directClient: any) {
     try {
         character.id ??= stringToUuid(character.name);
         character.username ??= character.name;
@@ -348,7 +342,7 @@ const startAgents = async () => {
 
     try {
         for (const character of characters) {
-            await startAgent(character, directClient);
+            await startAgent(character, directClient as any);
         }
     } catch (error) {
         elizaLogger.error("Error starting agents:", error);

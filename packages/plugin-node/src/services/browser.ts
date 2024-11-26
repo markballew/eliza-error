@@ -87,9 +87,7 @@ export class BrowserService extends Service implements IBrowserService {
         );
     }
 
-    async initialize() { }
-
-    async initializeBrowser() {
+    async initialize() {
         if (!this.browser) {
             this.browser = await chromium.launch({
                 args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -120,7 +118,7 @@ export class BrowserService extends Service implements IBrowserService {
         url: string,
         runtime: IAgentRuntime
     ): Promise<PageContent> {
-        await this.initializeBrowser();
+        await this.initialize();
         this.queue.push(url);
         this.processQueue(runtime);
 
@@ -183,7 +181,7 @@ export class BrowserService extends Service implements IBrowserService {
         try {
             if (!this.context) {
                 console.log(
-                    "Browser context not initialized. Call initializeBrowser() first."
+                    "Browser context not initialized. Call initialize() first."
                 );
             }
 
