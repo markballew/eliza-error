@@ -41,7 +41,6 @@ The database schema includes several key tables:
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ```
 
 2. **Initialize Core Tables**
@@ -49,37 +48,30 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ```sql
 -- Create base tables
 CREATE TABLE accounts (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id" UUID PRIMARY KEY,
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "name" TEXT,
-    "username" TEXT UNIQUE,
-    "email" TEXT NOT NULL UNIQUE,
+    "username" TEXT,
+    "email" TEXT NOT NULL,
     "avatarUrl" TEXT,
     "details" JSONB DEFAULT '{}'::jsonb
 );
 
 CREATE TABLE rooms (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "id" UUID PRIMARY KEY,
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE memories (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "id" UUID PRIMARY KEY,
     "type" TEXT NOT NULL,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "content" JSONB NOT NULL,
     "embedding" vector(1536),
     "userId" UUID REFERENCES accounts("id"),
     "agentId" UUID REFERENCES accounts("id"),
     "roomId" UUID REFERENCES rooms("id"),
-    "isUnique" BOOLEAN DEFAULT true NOT NULL
-);
-
-CREATE TABLE participants (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "userId" UUID REFERENCES accounts("id"),
-    "roomId" UUID REFERENCES rooms("id"),
-    "joinedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "unique" BOOLEAN DEFAULT true NOT NULL
 );
 ```
 
@@ -88,12 +80,9 @@ CREATE TABLE participants (
 ```sql
 CREATE INDEX idx_memories_embedding ON memories
     USING hnsw ("embedding" vector_cosine_ops);
-
 CREATE INDEX idx_memories_type_room ON memories("type", "roomId");
-
 CREATE INDEX idx_participants_user ON participants("userId");
 CREATE INDEX idx_participants_room ON participants("roomId");
-
 ```
 
 ### Connection Configuration
