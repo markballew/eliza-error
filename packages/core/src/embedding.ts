@@ -86,10 +86,8 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     // 3. Fallback to OpenAI embedding model
     const embeddingModel = settings.USE_OPENAI_EMBEDDING
         ? "text-embedding-3-small"
-        : runtime.character.modelProvider === ModelProviderName.OLLAMA
-          ? settings.OLLAMA_EMBEDDING_MODEL || "mxbai-embed-large"
-          : modelProvider.model?.[ModelClass.EMBEDDING] ||
-            models[ModelProviderName.OPENAI].model[ModelClass.EMBEDDING];
+        : modelProvider.model?.[ModelClass.EMBEDDING] ||
+          models[ModelProviderName.OPENAI].model[ModelClass.EMBEDDING];
 
     if (!embeddingModel) {
         throw new Error("No embedding model configured");
@@ -160,8 +158,7 @@ async function getLocalEmbedding(input: string): Promise<number[]> {
             (async () => {
                 try {
                     return await import("fastembed");
-                    // eslint-disable-next-line
-                } catch (_error) {
+                } catch (error) {
                     elizaLogger.error("Failed to load fastembed.");
                     throw new Error(
                         "fastembed import failed, falling back to remote embedding"
@@ -198,8 +195,7 @@ async function getLocalEmbedding(input: string): Promise<number[]> {
         const trimmedInput = trimTokens(input, 8000, "gpt-4o-mini");
         const embedding = await embeddingModel.queryEmbed(trimmedInput);
         return embedding;
-        // eslint-disable-next-line
-    } catch (_error) {
+    } catch (error) {
         elizaLogger.warn(
             "Local embedding not supported in browser, falling back to remote embedding."
         );

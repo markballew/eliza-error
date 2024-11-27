@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / ITranscriptionService
+[@ai16z/eliza v1.0.0](../index.md) / ITranscriptionService
 
 # Interface: ITranscriptionService
 
@@ -6,51 +6,7 @@
 
 - [`Service`](../classes/Service.md)
 
-## Accessors
-
-### serviceType
-
-#### Get Signature
-
-> **get** **serviceType**(): [`ServiceType`](../enumerations/ServiceType.md)
-
-##### Returns
-
-[`ServiceType`](../enumerations/ServiceType.md)
-
-#### Inherited from
-
-[`Service`](../classes/Service.md).[`serviceType`](../classes/Service.md#serviceType-1)
-
-#### Defined in
-
-[packages/core/src/types.ts:927](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L927)
-
 ## Methods
-
-### initialize()
-
-> `abstract` **initialize**(`runtime`): `Promise`\<`void`\>
-
-Add abstract initialize method that must be implemented by derived classes
-
-#### Parameters
-
-• **runtime**: [`IAgentRuntime`](IAgentRuntime.md)
-
-#### Returns
-
-`Promise`\<`void`\>
-
-#### Inherited from
-
-[`Service`](../classes/Service.md).[`initialize`](../classes/Service.md#initialize)
-
-#### Defined in
-
-[packages/core/src/types.ts:932](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L932)
-
-***
 
 ### transcribeAttachment()
 
@@ -66,9 +22,9 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:1024](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1024)
+[packages/core/src/types.ts:603](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L603)
 
-***
+---
 
 ### transcribeAttachmentLocally()
 
@@ -84,9 +40,9 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:1025](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1025)
+[packages/core/src/types.ts:604](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L604)
 
-***
+---
 
 ### transcribe()
 
@@ -102,9 +58,9 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:1028](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1028)
+[packages/core/src/types.ts:607](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L607)
 
-***
+---
 
 ### transcribeLocally()
 
@@ -120,4 +76,4 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:1029](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1029)
+[packages/core/src/types.ts:608](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L608)

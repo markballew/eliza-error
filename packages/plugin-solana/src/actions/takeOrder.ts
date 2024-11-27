@@ -3,8 +3,11 @@ import {
     IAgentRuntime,
     Memory,
     Content,
+    ActionExample,
     ModelClass,
 } from "@ai16z/eliza";
+import * as fs from "fs";
+import { settings } from "@ai16z/eliza";
 import { composeContext } from "@ai16z/eliza";
 import { generateText } from "@ai16z/eliza";
 
@@ -29,7 +32,7 @@ const take_order: Action = {
         return tickerRegex.test(text);
     },
     handler: async (runtime: IAgentRuntime, message: Memory) => {
-        const _text = (message.content as Content).text;
+        const text = (message.content as Content).text;
         const userId = message.userId;
 
         const template = `
