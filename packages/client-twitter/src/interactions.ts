@@ -127,18 +127,8 @@ export class TwitterInteractionClient {
             for (const tweet of uniqueTweetCandidates) {
                 if (
                     !this.client.lastCheckedTweetId ||
-                    BigInt(tweet.id) > this.client.lastCheckedTweetId
+                    parseInt(tweet.id) > this.client.lastCheckedTweetId
                 ) {
-                    // Generate the tweetId UUID the same way it's done in handleTweet
-                    const tweetId = stringToUuid(tweet.id + "-" + this.runtime.agentId);
-
-                    // Check if we've already processed this tweet
-                    const existingResponse = await this.runtime.messageManager.getMemoryById(tweetId);
-
-                    if (existingResponse) {
-                        elizaLogger.log(`Already responded to tweet ${tweet.id}, skipping`);
-                        continue;
-                    }
                     elizaLogger.log("New Tweet found", tweet.permanentUrl);
 
                     const roomId = stringToUuid(
@@ -177,7 +167,7 @@ export class TwitterInteractionClient {
                     });
 
                     // Update the last checked tweet ID after processing each tweet
-                    this.client.lastCheckedTweetId = BigInt(tweet.id);
+                    this.client.lastCheckedTweetId = parseInt(tweet.id);
                 }
             }
 
@@ -280,10 +270,10 @@ export class TwitterInteractionClient {
                     url: tweet.permanentUrl,
                     inReplyTo: tweet.inReplyToStatusId
                         ? stringToUuid(
-                            tweet.inReplyToStatusId +
-                            "-" +
-                            this.runtime.agentId
-                        )
+                              tweet.inReplyToStatusId +
+                                  "-" +
+                                  this.runtime.agentId
+                          )
                         : undefined,
                 },
                 userId: userIdUUID,
@@ -447,10 +437,10 @@ export class TwitterInteractionClient {
                         url: currentTweet.permanentUrl,
                         inReplyTo: currentTweet.inReplyToStatusId
                             ? stringToUuid(
-                                currentTweet.inReplyToStatusId +
-                                "-" +
-                                this.runtime.agentId
-                            )
+                                  currentTweet.inReplyToStatusId +
+                                      "-" +
+                                      this.runtime.agentId
+                              )
                             : undefined,
                     },
                     createdAt: currentTweet.timestamp * 1000,

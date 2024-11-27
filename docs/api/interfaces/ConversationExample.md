@@ -1,8 +1,8 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / ConversationExample
+[@ai16z/eliza v1.0.0](../index.md) / ConversationExample
 
 # Interface: ConversationExample
 
-Example conversation content with user ID
+Represents an example of content, typically used for demonstrating or testing purposes. Includes user, content, optional action, and optional source.
 
 ## Properties
 
@@ -10,20 +10,16 @@ Example conversation content with user ID
 
 > **userId**: \`$\{string\}-$\{string\}-$\{string\}-$\{string\}-$\{string\}\`
 
-UUID of user in conversation
-
 #### Defined in
 
-[packages/core/src/types.ts:50](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L50)
+[packages/core/src/types.ts:33](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L33)
 
-***
+---
 
 ### content
 
 > **content**: [`Content`](Content.md)
 
-Content of the conversation
-
 #### Defined in
 
-[packages/core/src/types.ts:53](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L53)
+[packages/core/src/types.ts:34](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L34)

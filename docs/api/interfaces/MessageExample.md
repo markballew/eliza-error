@@ -1,8 +1,8 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / MessageExample
+[@ai16z/eliza v1.0.0](../index.md) / MessageExample
 
 # Interface: MessageExample
 
-Example message for demonstration
+Represents an example of a message, typically used for demonstrating or testing purposes, including optional content and action.
 
 ## Properties
 
@@ -10,20 +10,16 @@ Example message for demonstration
 
 > **user**: `string`
 
-Associated user
-
 #### Defined in
 
-[packages/core/src/types.ts:338](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L338)
+[packages/core/src/types.ts:183](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L183)
 
-***
+---
 
 ### content
 
 > **content**: [`Content`](Content.md)
 
-Message content
-
 #### Defined in
 
-[packages/core/src/types.ts:341](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L341)
+[packages/core/src/types.ts:184](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L184)

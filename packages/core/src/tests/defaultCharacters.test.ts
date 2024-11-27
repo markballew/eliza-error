@@ -14,8 +14,8 @@ describe("defaultCharacter", () => {
         expect(defaultCharacter.clients).toEqual([]);
     });
 
-    it.skip("should have the correct modelProvider", () => {
-        expect(defaultCharacter.modelProvider).toBe(ModelProviderName.OLLAMA);
+    it("should have the correct modelProvider", () => {
+        expect(defaultCharacter.modelProvider).toBe(ModelProviderName.OPENAI);
     });
 
     it("should have the correct voice model", () => {
