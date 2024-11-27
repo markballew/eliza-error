@@ -30,7 +30,9 @@ import {
     coinbaseMassPaymentsPlugin,
 } from "@ai16z/plugin-coinbase";
 import { confluxPlugin } from "@ai16z/plugin-conflux";
-import { createNodePlugin } from "@ai16z/plugin-node";
+import {
+    createNodePlugin,
+} from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -277,7 +279,7 @@ export function createAgent(
                 ? coinbaseCommercePlugin
                 : null,
             getSecret(character, "COINBASE_API_KEY") &&
-            getSecret(character, "COINBASE_PRIVATE_KEY")
+                getSecret(character, "COINBASE_PRIVATE_KEY")
                 ? coinbaseMassPaymentsPlugin
                 : null,
             getSecret(character, "BUTTPLUG_API_KEY") ? buttplugPlugin : null,
@@ -382,9 +384,16 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
+rl.on("SIGINT", () => {
+    rl.close();
+    process.exit(0);
+});
+
 async function handleUserInput(input, agentId) {
     if (input.toLowerCase() === "exit") {
-        gracefulExit();
+        rl.close();
+        process.exit(0);
+        return;
     }
 
     try {
@@ -409,12 +418,3 @@ async function handleUserInput(input, agentId) {
         console.error("Error fetching response:", error);
     }
 }
-
-async function gracefulExit() {
-    elizaLogger.log("Terminating and cleaning up resources...");
-    rl.close();
-    process.exit(0);
-}
-
-rl.on("SIGINT", gracefulExit);
-rl.on("SIGTERM", gracefulExit);
