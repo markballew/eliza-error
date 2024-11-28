@@ -122,7 +122,7 @@ export class MemoryManager implements IMemoryManager {
             query_threshold: 2,
             query_input: content,
             query_field_name: "content",
-            query_field_sub_name: "content",
+            query_field_sub_name: "text",
             query_match_count: 10,
         });
     }
@@ -194,6 +194,7 @@ export class MemoryManager implements IMemoryManager {
 
     async getMemoriesByRoomIds(params: { roomIds: UUID[] }): Promise<Memory[]> {
         return await this.runtime.databaseAdapter.getMemoriesByRoomIds({
+            tableName: this.tableName,
             agentId: this.runtime.agentId,
             roomIds: params.roomIds,
         });

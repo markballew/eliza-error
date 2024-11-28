@@ -187,6 +187,7 @@ export type Model = {
  */
 export type Models = {
     [ModelProviderName.OPENAI]: Model;
+    [ModelProviderName.ETERNALAI]: Model;
     [ModelProviderName.ANTHROPIC]: Model;
     [ModelProviderName.GROK]: Model;
     [ModelProviderName.GROQ]: Model;
@@ -198,6 +199,7 @@ export type Models = {
     [ModelProviderName.OPENROUTER]: Model;
     [ModelProviderName.OLLAMA]: Model;
     [ModelProviderName.HEURIST]: Model;
+    [ModelProviderName.GALADRIEL]: Model;
 };
 
 /**
@@ -205,6 +207,7 @@ export type Models = {
  */
 export enum ModelProviderName {
     OPENAI = "openai",
+    ETERNALAI = "eternalai",
     ANTHROPIC = "anthropic",
     GROK = "grok",
     GROQ = "groq",
@@ -216,6 +219,7 @@ export enum ModelProviderName {
     OPENROUTER = "openrouter",
     OLLAMA = "ollama",
     HEURIST = "heurist",
+    GALADRIEL = "galadriel"
 }
 
 /**
@@ -293,6 +297,11 @@ export interface State {
 
     /** Optional formatted conversation */
     formattedConversation?: string;
+
+    /** Optional formatted knowledge */
+    knowledge?: string;
+    /** Optional knowledge data */
+    knowledgeData?: KnowledgeItem[];
 
     /** Additional dynamic properties */
     [key: string]: unknown;
@@ -618,6 +627,9 @@ export type Character = {
         twitterPostTemplate?: string;
         twitterMessageHandlerTemplate?: string;
         twitterShouldRespondTemplate?: string;
+        farcasterPostTemplate?: string;
+        farcasterMessageHandlerTemplate?: string;
+        farcasterShouldRespondTemplate?: string;
         telegramMessageHandlerTemplate?: string;
         telegramShouldRespondTemplate?: string;
         discordVoiceHandlerTemplate?: string;
@@ -658,12 +670,18 @@ export type Character = {
     /** Optional configuration */
     settings?: {
         secrets?: { [key: string]: string };
+        buttplug?: boolean;
         voice?: {
             model?: string;
             url?: string;
         };
         model?: string;
         embeddingModel?: string;
+        chains?: {
+            evm?: any[];
+            solana?: any[];
+            [key: string]: any[];
+        };
     };
 
     /** Optional client-specific config */
@@ -703,7 +721,10 @@ export interface IDatabaseAdapter {
     db: any;
 
     /** Optional initialization */
-    init?(): Promise<void>;
+    init(): Promise<void>;
+
+    /** Close database connection */
+    close(): Promise<void>;
 
     /** Get account by ID */
     getAccountById(userId: UUID): Promise<Account | null>;
@@ -725,6 +746,7 @@ export interface IDatabaseAdapter {
     getMemoryById(id: UUID): Promise<Memory | null>;
 
     getMemoriesByRoomIds(params: {
+        tableName: string;
         agentId: UUID;
         roomIds: UUID[];
     }): Promise<Memory[]>;
@@ -1083,6 +1105,7 @@ export enum ServiceType {
     BROWSER = "browser",
     SPEECH_GENERATION = "speech_generation",
     PDF = "pdf",
+    BUTTPLUG = "buttplug",
 }
 
 export enum LoggingLevel {

@@ -20,6 +20,27 @@ export const models: Models = {
             [ModelClass.IMAGE]: "dall-e-3",
         },
     },
+    [ModelProviderName.ETERNALAI]: {
+        endpoint: settings.ETERNALAI_URL,
+        settings: {
+            stop: [],
+            maxInputTokens: 128000,
+            maxOutputTokens: 8192,
+            frequency_penalty: 0.0,
+            presence_penalty: 0.0,
+            temperature: 0.6,
+        },
+        model: {
+            [ModelClass.SMALL]:
+                "neuralmagic/Meta-Llama-3.1-405B-Instruct-quantized.w4a16",
+            [ModelClass.MEDIUM]:
+                "neuralmagic/Meta-Llama-3.1-405B-Instruct-quantized.w4a16",
+            [ModelClass.LARGE]:
+                "neuralmagic/Meta-Llama-3.1-405B-Instruct-quantized.w4a16",
+            [ModelClass.EMBEDDING]: "",
+            [ModelClass.IMAGE]: "",
+        },
+    },
     [ModelProviderName.ANTHROPIC]: {
         settings: {
             stop: [],
@@ -235,6 +256,23 @@ export const models: Models = {
             [ModelClass.LARGE]: "meta-llama/llama-3.1-405b-instruct",
             [ModelClass.EMBEDDING]: "", //Add later,
             [ModelClass.IMAGE]: "PepeXL",
+        },
+    },
+    [ModelProviderName.GALADRIEL]: {
+        endpoint: "https://api.galadriel.com/v1",
+        settings: {
+            stop: [],
+            maxInputTokens: 128000,
+            maxOutputTokens: 8192, 
+            frequency_penalty: 0.5,
+            presence_penalty: 0.5,
+            temperature: 0.8,
+        },
+        model: {
+            [ModelClass.SMALL]: "llama3.1:70b",
+            [ModelClass.MEDIUM]: "llama3.1:70b",
+            [ModelClass.LARGE]: "llama3.1:405b",
+            [ModelClass.EMBEDDING]: "gte-large-en-v1.5",
         },
     },
 };
