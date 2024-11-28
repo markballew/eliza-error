@@ -15,7 +15,7 @@ type CoingeckoPrices = {
 };
 
 type TokenBalances = {
-    [tokenAddress: string]: bigint;
+    [tokenAddress: string]: BigInt;
 };
 
 export class WalletProvider {

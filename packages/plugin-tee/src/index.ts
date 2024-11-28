@@ -1,6 +1,7 @@
 import { Plugin } from "@ai16z/eliza";
 import { remoteAttestationProvider } from "./providers/remoteAttestationProvider";
 import { deriveKeyProvider } from "./providers/deriveKeyProvider";
+import { walletProvider } from "./providers/walletProvider";
 
 export const teePlugin: Plugin = {
     name: "tee",
@@ -16,6 +17,7 @@ export const teePlugin: Plugin = {
         /* custom providers */
         remoteAttestationProvider,
         deriveKeyProvider,
+        walletProvider,
     ],
     services: [
         /* custom services */

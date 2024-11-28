@@ -27,7 +27,6 @@ export interface RecommenderMetrics {
 
 export interface TokenPerformance {
     tokenAddress: string;
-    symbol: string;
     priceChange24h: number;
     volumeChange24h: number;
     trade_24h_change: number;
@@ -110,7 +109,6 @@ interface RecommenderMetricsRow {
 
 interface TokenPerformanceRow {
     token_address: string;
-    symbol: string;
     price_change_24h: number;
     volume_change_24h: number;
     trade_24h_change: number;
@@ -195,7 +193,6 @@ export class TrustScoreDatabase {
         this.db.exec(`
             CREATE TABLE IF NOT EXISTS token_performance (
                 token_address TEXT PRIMARY KEY,
-                symbol TEXT,
                 price_change_24h REAL,
                 volume_change_24h REAL,
                 trade_24h_change REAL,
@@ -821,7 +818,6 @@ export class TrustScoreDatabase {
 
         return {
             tokenAddress: row.token_address,
-            symbol: row.symbol,
             priceChange24h: row.price_change_24h,
             volumeChange24h: row.volume_change_24h,
             trade_24h_change: row.trade_24h_change,
@@ -856,7 +852,6 @@ export class TrustScoreDatabase {
 
         return rows.map((row) => ({
             tokenAddress: row.token_address,
-            symbol: row.symbol,
             priceChange24h: row.price_change_24h,
             volumeChange24h: row.volume_change_24h,
             trade_24h_change: row.trade_24h_change,

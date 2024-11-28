@@ -13,8 +13,6 @@ import {
     generateMessageResponse,
     stringToUuid,
     generateShouldRespond,
-    ITranscriptionService,
-    ISpeechService,
 } from "@ai16z/eliza";
 import {
     AudioPlayer,
@@ -500,7 +498,7 @@ export class VoiceManager extends EventEmitter {
             }
         };
 
-        new AudioMonitor(
+        const monitor = new AudioMonitor(
             audioStream,
             10000000,
             async (buffer) => {
@@ -533,8 +531,8 @@ export class VoiceManager extends EventEmitter {
             console.log("Starting transcription...");
 
             const transcriptionText = await this.runtime
-                .getService<ITranscriptionService>(ServiceType.TRANSCRIPTION)
-            .transcribe(wavBuffer);
+                .getService(ServiceType.TRANSCRIPTION)
+                .transcribe(wavBuffer);
 
             function isValidTranscription(text: string): boolean {
                 if (!text || text.includes("[BLANK_AUDIO]")) return false;
@@ -684,7 +682,7 @@ export class VoiceManager extends EventEmitter {
                     state = await this.runtime.updateRecentMessageState(state);
 
                     const responseStream = await this.runtime
-                        .getService<ISpeechService>(ServiceType.SPEECH_GENERATION)
+                        .getService(ServiceType.SPEECH_GENERATION)
                         .generate(this.runtime, content.text);
 
                     if (responseStream) {

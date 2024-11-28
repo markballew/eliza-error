@@ -2,7 +2,8 @@ import {
     TrustScoreDatabase,
     TokenPerformance,
     // TradePerformance,
-    TokenRecommendation,
+    // TokenRecommendation,
+    ProcessedTokenData,
 } from "@ai16z/plugin-trustdb";
 import { Connection, PublicKey } from "@solana/web3.js";
 // Assuming TokenProvider and IAgentRuntime are available
@@ -11,7 +12,6 @@ import { TokenProvider } from "./token.ts";
 import { IAgentRuntime } from "@ai16z/eliza";
 import { WalletProvider } from "./wallet.ts";
 import * as amqp from "amqplib";
-import { ProcessedTokenData } from "../types/token.ts";
 
 interface SellDetails {
     sell_amount: number;
@@ -41,10 +41,7 @@ export class SimulationSellingService {
         this.connection = new Connection(runtime.getSetting("RPC_URL"));
         this.walletProvider = new WalletProvider(
             this.connection,
-            new PublicKey(
-                runtime.getSetting("SOLANA_PUBLIC_KEY") ??
-                runtime.getSetting("WALLET_PUBLIC_KEY")
-            )
+            new PublicKey(runtime.getSetting("WALLET_PUBLIC_KEY"))
         );
         this.baseMint = new PublicKey(
             runtime.getSetting("BASE_MINT") ||
@@ -133,7 +130,7 @@ export class SimulationSellingService {
 
         try {
             console.log(
-                `Executing sell for token ${tokenPerformance.symbol}: ${amountToSell}`
+                `Executing sell for token ${tokenPerformance.tokenSymbol}: ${amountToSell}`
             );
 
             // Update the sell details
@@ -151,7 +148,7 @@ export class SimulationSellingService {
             // Update sell details in the database
             const sellDetailsData = await this.updateSellDetails(
                 tokenAddress,
-                sell_recommender_id,
+                tokenPerformance.recommenderId,
                 sellTimeStamp,
                 sellDetails,
                 true, // isSimulation
@@ -209,21 +206,15 @@ export class SimulationSellingService {
             );
             // const shouldTrade = await tokenProvider.shouldTradeToken();
             // if (shouldTrade) {
-            const tokenRecommendations: TokenRecommendation[] =
-                this.trustScoreDb.getRecommendationsByToken(
-                    tokenPerformance.tokenAddress
-                );
-            const tokenRecommendation: TokenRecommendation =
-                tokenRecommendations[0];
             const balance = tokenPerformance.balance;
-            const sell_recommender_id = tokenRecommendation.recommenderId;
+            const sell_recommender_id = tokenPerformance.recommenderId;
             const tokenAddress = tokenPerformance.tokenAddress;
             const process = await this.startProcessInTheSonarBackend(
                 tokenAddress,
                 balance,
                 true,
                 sell_recommender_id,
-                tokenPerformance.initialMarketCap
+                tokenPerformance.initial_mc
             );
             if (process) {
                 this.runningProcesses.add(tokenAddress);
@@ -232,10 +223,7 @@ export class SimulationSellingService {
         });
     }
 
-    public processTokenPerformance(
-        tokenAddress: string,
-        recommenderId: string
-    ) {
+    public processTokenPerformance(tokenAddress: string) {
         try {
             const runningProcesses = this.runningProcesses;
             // check if token is already being processed
@@ -245,7 +233,6 @@ export class SimulationSellingService {
             }
             const tokenPerformance =
                 this.trustScoreDb.getTokenPerformance(tokenAddress);
-
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const tokenProvider = new TokenProvider(
                 tokenPerformance.tokenAddress,
@@ -253,13 +240,13 @@ export class SimulationSellingService {
                 this.runtime.cacheManager
             );
             const balance = tokenPerformance.balance;
-            const sell_recommender_id = recommenderId;
+            const sell_recommender_id = tokenPerformance.recommenderId;
             const process = this.startProcessInTheSonarBackend(
                 tokenAddress,
                 balance,
                 true,
                 sell_recommender_id,
-                tokenPerformance.initialMarketCap
+                tokenPerformance.initial_mc
             );
             if (process) {
                 this.runningProcesses.add(tokenAddress);

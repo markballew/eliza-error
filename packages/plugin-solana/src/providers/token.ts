@@ -16,6 +16,7 @@ import * as path from "path";
 import { toBN } from "../bignumber.ts";
 import { WalletProvider, Item } from "./wallet.ts";
 import { Connection, PublicKey } from "@solana/web3.js";
+import axios from "axios";
 
 const PROVIDER_CONFIG = {
     BIRDEYE_API: "https://public-api.birdeye.so",
@@ -197,17 +198,19 @@ export class TokenProvider {
                 networkId: this.NETWORK_ID, // Replace with your network ID
             };
 
-            const response = await fetch(this.GRAPHQL_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': settings.CODEX_API_KEY
-                },
-                body: JSON.stringify({
+            const response = await axios.post(
+                this.GRAPHQL_ENDPOINT,
+                {
                     query,
-                    variables
-                })
-            }).then(res => res.json());
+                    variables,
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: settings.CODEX_API_KEY,
+                    },
+                }
+            );
 
             const token = response.data?.data?.token;
 
