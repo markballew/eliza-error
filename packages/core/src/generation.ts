@@ -115,7 +115,6 @@ export async function generateText({
         switch (provider) {
             // OPENAI & LLAMACLOUD shared same structure.
             case ModelProviderName.OPENAI:
-            case ModelProviderName.ETERNALAI:
             case ModelProviderName.LLAMACLOUD: {
                 elizaLogger.debug("Initializing OpenAI model.");
                 const openai = createOpenAI({ apiKey, baseURL: endpoint });
@@ -958,7 +957,7 @@ export const generateObjectV2 = async ({
     const apiKey = runtime.token;
 
     try {
-        context = await trimTokens(context, max_context_length, "gpt-4o");
+        context = trimTokens(context, max_context_length, "gpt-4o");
 
         const modelOptions: ModelSettings = {
             prompt: context,
@@ -1020,7 +1019,6 @@ export async function handleProvider(
     const { provider, runtime, context, modelClass } = options;
     switch (provider) {
         case ModelProviderName.OPENAI:
-        case ModelProviderName.ETERNALAI:
         case ModelProviderName.LLAMACLOUD:
             return await handleOpenAI(options);
         case ModelProviderName.ANTHROPIC:

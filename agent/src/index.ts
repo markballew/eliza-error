@@ -1,45 +1,44 @@
 import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 import { SqliteDatabaseAdapter } from "@ai16z/adapter-sqlite";
-import { AutoClientInterface } from "@ai16z/client-auto";
 import { DirectClientInterface } from "@ai16z/client-direct";
 import { DiscordClientInterface } from "@ai16z/client-discord";
+import { AutoClientInterface } from "@ai16z/client-auto";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
 import { TwitterClientInterface } from "@ai16z/client-twitter";
 import {
+    DbCacheAdapter,
+    defaultCharacter,
+    FsCacheAdapter,
+    ICacheManager,
+    IDatabaseCacheAdapter,
+    stringToUuid,
     AgentRuntime,
     CacheManager,
     Character,
-    DbCacheAdapter,
-    FsCacheAdapter,
     IAgentRuntime,
-    ICacheManager,
-    IDatabaseAdapter,
-    IDatabaseCacheAdapter,
     ModelProviderName,
-    defaultCharacter,
     elizaLogger,
     settings,
-    stringToUuid,
+    IDatabaseAdapter,
     validateCharacterConfig,
 } from "@ai16z/eliza";
-import { zgPlugin } from "@ai16z/plugin-0g";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
-import { buttplugPlugin } from "@ai16z/plugin-buttplug";
+import { confluxPlugin } from "@ai16z/plugin-conflux";
+import { solanaPlugin } from "@ai16z/plugin-solana";
+import { zgPlugin } from "@ai16z/plugin-0g";
+import { nodePlugin } from "@ai16z/plugin-node";
 import {
     coinbaseCommercePlugin,
     coinbaseMassPaymentsPlugin,
+    tradePlugin,
 } from "@ai16z/plugin-coinbase";
-import { confluxPlugin } from "@ai16z/plugin-conflux";
-import {
-    createNodePlugin,
-} from "@ai16z/plugin-node";
-import { solanaPlugin } from "@ai16z/plugin-solana";
 import Database from "better-sqlite3";
 import fs from "fs";
-import path from "path";
 import readline from "readline";
-import { fileURLToPath } from "url";
 import yargs from "yargs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { character } from "./character.ts";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -133,11 +132,6 @@ export function getTokenForProvider(
             return (
                 character.settings?.secrets?.OPENAI_API_KEY ||
                 settings.OPENAI_API_KEY
-            );
-        case ModelProviderName.ETERNALAI:
-            return (
-                character.settings?.secrets?.ETERNALAI_API_KEY ||
-                settings.ETERNALAI_API_KEY
             );
         case ModelProviderName.LLAMACLOUD:
             return (
@@ -245,8 +239,6 @@ function getSecret(character: Character, secret: string) {
     return character.settings.secrets?.[secret] || process.env[secret];
 }
 
-let nodePlugin: any | undefined;
-
 export function createAgent(
     character: Character,
     db: IDatabaseAdapter,
@@ -258,9 +250,6 @@ export function createAgent(
         "Creating runtime for character",
         character.name
     );
-
-    nodePlugin ??= createNodePlugin();
-
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -278,11 +267,10 @@ export function createAgent(
             getSecret(character, "COINBASE_COMMERCE_KEY")
                 ? coinbaseCommercePlugin
                 : null,
-            getSecret(character, "COINBASE_API_KEY") &&
-                getSecret(character, "COINBASE_PRIVATE_KEY")
-                ? coinbaseMassPaymentsPlugin
-                : null,
-            getSecret(character, "BUTTPLUG_API_KEY") ? buttplugPlugin : null,
+            ...(getSecret(character, "COINBASE_API_KEY") &&
+            getSecret(character, "COINBASE_PRIVATE_KEY")
+                ? [coinbaseMassPaymentsPlugin, tradePlugin]
+                : []),
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -346,7 +334,7 @@ const startAgents = async () => {
 
     let charactersArg = args.characters || args.character;
 
-    let characters = [defaultCharacter];
+    let characters = [character];
 
     if (charactersArg) {
         characters = await loadCharacters(charactersArg);
