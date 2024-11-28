@@ -30,9 +30,11 @@ import {
     coinbaseMassPaymentsPlugin,
 } from "@ai16z/plugin-coinbase";
 import { confluxPlugin } from "@ai16z/plugin-conflux";
-import { evmPlugin } from "@ai16z/plugin-evm";
-import { createNodePlugin, nodePlugin } from "@ai16z/plugin-node";
+import { createNodePlugin } from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
+import { nodePlugin } from "@ai16z/plugin-node";
+import { teePlugin } from "@ai16z/plugin-tee";
+
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -258,7 +260,7 @@ export function createAgent(
         character.name
     );
 
-    nodePlugin ??= createNodePlugin()
+    nodePlugin ??= createNodePlugin();
 
     return new AgentRuntime({
         databaseAdapter: db,
@@ -272,16 +274,7 @@ export function createAgent(
                 ? confluxPlugin
                 : null,
             nodePlugin,
-            getSecret(character, "SOLANA_PUBLIC_KEY") ||
-                getSecret(character, "WALLET_PUBLIC_KEY") &&
-                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x")
-                ? solanaPlugin
-                : null,
-            getSecret(character, "EVM_PUBLIC_KEY") ||
-                getSecret(character, "WALLET_PUBLIC_KEY") &&
-                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x")
-                ? evmPlugin
-                : null,
+            getSecret(character, "WALLET_PUBLIC_KEY") ? solanaPlugin : null,
             getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
             getSecret(character, "COINBASE_COMMERCE_KEY")
                 ? coinbaseCommercePlugin
@@ -291,6 +284,7 @@ export function createAgent(
                 ? coinbaseMassPaymentsPlugin
                 : null,
             getSecret(character, "BUTTPLUG_API_KEY") ? buttplugPlugin : null,
+            getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],

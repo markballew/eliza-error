@@ -12,10 +12,6 @@ Model configurations by provider
 
 > **openai**: [`Model`](Model.md)
 
-### eternalai
-
-> **eternalai**: [`Model`](Model.md)
-
 ### anthropic
 
 > **anthropic**: [`Model`](Model.md)

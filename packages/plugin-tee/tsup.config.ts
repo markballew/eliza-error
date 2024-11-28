@@ -15,7 +15,14 @@ export default defineConfig({
         "https",
         "http",
         "agentkeepalive",
-        "viem",
-        "@lifi/sdk"
+        // Add other modules you want to externalize
+        "@phala/dstack-sdk",
+        "safe-buffer",
+        "base-x",
+        "bs58",
+        "borsh",
+        "@solana/buffer-layout",
+        "stream",
+        "buffer",
     ],
 });

@@ -35,15 +35,12 @@ PACKAGES=(
     "plugin-bootstrap"
     "plugin-image-generation"
     "plugin-coinbase"
+    "plugin-tee"
     "client-auto"
     "client-direct"
     "client-discord"
     "client-telegram"
     "client-twitter"
-    "plugin-node"
-    "plugin-bootstrap"
-    "plugin-evm"
-    "plugin-image-generation"
 )
 
 # Build packages in specified order
