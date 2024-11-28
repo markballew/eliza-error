@@ -10,7 +10,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1096](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1096)
+[packages/core/src/types.ts:1079](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1079)
 
 ***
 
@@ -20,7 +20,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1097](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1097)
+[packages/core/src/types.ts:1080](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1080)
 
 ***
 
@@ -30,7 +30,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1098](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1098)
+[packages/core/src/types.ts:1081](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1081)
 
 ***
 
@@ -40,7 +40,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1099](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1099)
+[packages/core/src/types.ts:1082](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1082)
 
 ***
 
@@ -50,7 +50,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1100](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1100)
+[packages/core/src/types.ts:1083](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1083)
 
 ***
 
@@ -60,7 +60,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1101](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1101)
+[packages/core/src/types.ts:1084](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1084)
 
 ***
 
@@ -70,14 +70,4 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1102](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1102)
-
-***
-
-### BUTTPLUG
-
-> **BUTTPLUG**: `"buttplug"`
-
-#### Defined in
-
-[packages/core/src/types.ts:1103](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1103)
+[packages/core/src/types.ts:1085](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1085)

@@ -166,11 +166,6 @@ const sidebars = {
               items: [
                 {
                   type: "doc",
-                  id: "community/streams/2024-11-24",
-                  label: "Hats Protocol Presentation",
-                },
-                {
-                  type: "doc",
                   id: "community/streams/2024-11-22",
                   label: "What Did You Get Done This Week 2",
                 },

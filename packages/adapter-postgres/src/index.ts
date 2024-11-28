@@ -113,10 +113,6 @@ export class PostgresDatabaseAdapter
         await this.query(schema);
     }
 
-    async close() {
-        await this.pool.end();
-    }
-
     async testConnection(): Promise<boolean> {
         let client;
         try {

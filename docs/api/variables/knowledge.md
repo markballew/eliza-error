@@ -8,7 +8,7 @@
 
 ### get()
 
-> **get**: (`runtime`, `message`) => `Promise`\<[`KnowledgeItem`](../type-aliases/KnowledgeItem.md)[]\>
+> **get**: (`runtime`, `message`) => `Promise`\<`string`[]\>
 
 #### Parameters
 
@@ -18,7 +18,7 @@
 
 #### Returns
 
-`Promise`\<[`KnowledgeItem`](../type-aliases/KnowledgeItem.md)[]\>
+`Promise`\<`string`[]\>
 
 ### set()
 
@@ -38,18 +38,10 @@
 
 `Promise`\<`void`\>
 
-### preprocess()
+### process
 
-> **preprocess**: (`content`) => `string`
-
-#### Parameters
-
-• **content**: `string`
-
-#### Returns
-
-`string`
+> **process**: `Process`
 
 ## Defined in
 
-[packages/core/src/knowledge.ts:115](https://github.com/ai16z/eliza/blob/main/packages/core/src/knowledge.ts#L115)
+[packages/core/src/knowledge.ts:116](https://github.com/ai16z/eliza/blob/main/packages/core/src/knowledge.ts#L116)
