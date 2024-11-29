@@ -31,12 +31,11 @@ import {
     tradePlugin,
 } from "@ai16z/plugin-coinbase";
 import { confluxPlugin } from "@ai16z/plugin-conflux";
+import { imageGenerationPlugin } from "@ai16z/plugin-image-generation";
 import { evmPlugin } from "@ai16z/plugin-evm";
 import { createNodePlugin } from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { teePlugin } from "@ai16z/plugin-tee";
 
-import buttplugPlugin from "@ai16z/plugin-buttplug";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -58,7 +57,7 @@ export function parseArguments(): {
     characters?: string;
 } {
     try {
-        return yargs(process.argv.slice(2))
+        return yargs(process.argv.slice(3))
             .option("character", {
                 type: "string",
                 description: "Path to the character JSON file",
@@ -230,6 +229,11 @@ export function getTokenForProvider(
                 character.settings?.secrets?.GALADRIEL_API_KEY ||
                 settings.GALADRIEL_API_KEY
             );
+        case ModelProviderName.FAL:
+            return (
+                character.settings?.secrets?.FAL_API_KEY ||
+                settings.FAL_API_KEY
+            );
     }
 }
 
@@ -335,6 +339,11 @@ export function createAgent(
             getSecret(character, "COINBASE_COMMERCE_KEY")
                 ? coinbaseCommercePlugin
                 : null,
+            getSecret(character, "FAL_API_KEY") ||
+                getSecret(character, "OPENAI_API_KEY") ||
+                getSecret(character, "HEURIST_API_KEY")
+                ? imageGenerationPlugin
+                : null,
             ...(getSecret(character, "COINBASE_API_KEY") &&
             getSecret(character, "COINBASE_PRIVATE_KEY")
                 ? [coinbaseMassPaymentsPlugin, tradePlugin]
@@ -373,7 +382,8 @@ async function startAgent(character: Character, directClient) {
             fs.mkdirSync(dataDir, { recursive: true });
         }
 
-        db = initializeDatabase(dataDir);
+        db = initializeDatabase(dataDir) as IDatabaseAdapter &
+            IDatabaseCacheAdapter;
 
         await db.init();
 
@@ -466,7 +476,7 @@ async function handleUserInput(input, agentId) {
         );
 
         const data = await response.json();
-        data.forEach((message) => console.log(`${"Agent"}: ${message.text}`));
+        data.forEach((message) => elizaLogger.log(`${"Agent"}: ${message.text}`));
     } catch (error) {
         console.error("Error fetching response:", error);
     }

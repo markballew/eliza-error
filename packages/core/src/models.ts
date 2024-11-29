@@ -177,9 +177,18 @@ export const models: Models = {
         // Available models: https://docs.red-pill.ai/get-started/supported-models
         // To test other models, change the models below
         model: {
-            [ModelClass.SMALL]: "gpt-4o-mini", // [ModelClass.SMALL]: "claude-3-5-sonnet-20241022",
-            [ModelClass.MEDIUM]: "gpt-4o", // [ModelClass.MEDIUM]: "claude-3-5-sonnet-20241022",
-            [ModelClass.LARGE]: "gpt-4o", // [ModelClass.LARGE]: "claude-3-opus-20240229",
+            [ModelClass.SMALL]:
+                settings.SMALL_REDPILL_MODEL ||
+                settings.REDPILL_MODEL ||
+                "gpt-4o-mini",
+            [ModelClass.MEDIUM]:
+                settings.MEDIUM_REDPILL_MODEL ||
+                settings.REDPILL_MODEL ||
+                "gpt-4o",
+            [ModelClass.LARGE]:
+                settings.LARGE_REDPILL_MODEL ||
+                settings.REDPILL_MODEL ||
+                "gpt-4o",
             [ModelClass.EMBEDDING]: "text-embedding-3-small",
         },
     },
@@ -273,6 +282,26 @@ export const models: Models = {
             [ModelClass.MEDIUM]: "llama3.1:70b",
             [ModelClass.LARGE]: "llama3.1:405b",
             [ModelClass.EMBEDDING]: "gte-large-en-v1.5",
+        },
+    },
+    [ModelProviderName.FAL]: {
+        settings: {
+            stop: [],
+            maxInputTokens: 128000,
+            maxOutputTokens: 8192,
+            repetition_penalty: 0.4,
+            temperature: 0.7,
+        },
+        imageSettings: {
+            steps: 28,            
+        },
+        endpoint: "https://api.fal.ai/v1",
+        model: {
+            [ModelClass.SMALL]: "",  // FAL doesn't provide text models
+            [ModelClass.MEDIUM]: "",
+            [ModelClass.LARGE]: "",
+            [ModelClass.EMBEDDING]: "",
+            [ModelClass.IMAGE]: "fal-ai/flux-lora",
         },
     },
 };
