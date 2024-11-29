@@ -1,9 +1,8 @@
 import { v4 } from "uuid";
 
-// Import the entire module as default
-import pg from "pg";
-const { Pool } = pg;
-type Pool = pg.Pool;
+import postgres from "pg";
+const { Pool } = postgres;
+type PoolType = typeof postgres.Pool;
 
 import {
     QueryConfig,
@@ -29,16 +28,14 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 
-const { DatabaseError } = pg;
-
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
 export class PostgresDatabaseAdapter
-    extends DatabaseAdapter<Pool>
+    extends DatabaseAdapter<PoolType>
     implements IDatabaseCacheAdapter
 {
-    private pool: Pool;
+    private pool: InstanceType<PoolType>;
     private readonly maxRetries: number = 3;
     private readonly baseDelay: number = 1000; // 1 second
     private readonly maxDelay: number = 10000; // 10 seconds
@@ -54,7 +51,7 @@ export class PostgresDatabaseAdapter
             connectionTimeoutMillis: this.connectionTimeout,
         };
 
-        this.pool = new pg.Pool({
+        this.pool = new Pool({
             ...defaultConfig,
             ...connectionConfig, // Allow overriding defaults
         });
@@ -758,7 +755,7 @@ export class PostgresDatabaseAdapter
         return this.withRetry(async () => {
             try {
                 const relationshipId = v4();
-                const result = await this.pool.query(
+                await this.pool.query(
                     `INSERT INTO relationships (id, "userA", "userB", "userId")
                     VALUES ($1, $2, $3, $4)
                     RETURNING id`,

@@ -1,5 +1,3 @@
-import settings from "./settings.ts";
-
 class ElizaLogger {
     constructor() {
         // Check if we're in Node.js environment
@@ -221,10 +219,11 @@ class ElizaLogger {
 
     debug(...strings) {
         if (!this.verbose) {
-            console.log(
-                "[ElizaLogger] Debug message suppressed (verbose=false):",
-                ...strings
-            );
+            // for diagnosing verbose logging issues
+            // console.log(
+            //     "[ElizaLogger] Debug message suppressed (verbose=false):",
+            //     ...strings
+            // );
             return;
         }
         this.#logWithStyle(strings, {
