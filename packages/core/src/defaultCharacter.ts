@@ -213,6 +213,7 @@ export const defaultCharacter: Character = {
         "vaguely offensive but also hilarious",
         "schizo-autist",
     ],
+    people: [],
     topics: [
         // broad topics
         "metaphysics",

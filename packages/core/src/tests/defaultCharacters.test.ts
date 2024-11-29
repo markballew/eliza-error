@@ -14,7 +14,7 @@ describe("defaultCharacter", () => {
         expect(defaultCharacter.clients).toEqual([]);
     });
 
-    it.skip("should have the correct modelProvider", () => {
+    it("should have the correct modelProvider", () => {
         expect(defaultCharacter.modelProvider).toBe(ModelProviderName.OLLAMA);
     });
 

@@ -1,5 +1,4 @@
 import { names, uniqueNamesGenerator } from "unique-names-generator";
-import { v4 as uuidv4 } from "uuid";
 import {
     composeActionExamples,
     formatActionNames,
@@ -16,7 +15,6 @@ import {
 import { generateText } from "./generation.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
 import { elizaLogger } from "./index.ts";
-import knowledge from "./knowledge.ts";
 import { MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { parseJsonArrayFromText } from "./parsing.ts";
@@ -31,7 +29,6 @@ import {
     ICacheManager,
     IDatabaseAdapter,
     IMemoryManager,
-    KnowledgeItem,
     ModelClass,
     ModelProviderName,
     Plugin,
@@ -46,6 +43,8 @@ import {
     type Memory,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
+import { v4 as uuidv4 } from "uuid";
+import knowledge from "./knowledge.ts";
 
 /**
  * Represents the runtime environment for an agent, handling message processing,
@@ -97,11 +96,6 @@ export class AgentRuntime implements IAgentRuntime {
      * The model to use for generateText.
      */
     modelProvider: ModelProviderName;
-
-    /**
-     * The model to use for generateImage.
-     */
-    imageModelProvider: ModelProviderName;
 
     /**
      * Fetch function to use
@@ -296,29 +290,19 @@ export class AgentRuntime implements IAgentRuntime {
         this.serverUrl = opts.serverUrl ?? this.serverUrl;
 
         elizaLogger.info("Setting model provider...");
-        elizaLogger.info("Model Provider Selection:", {
-            characterModelProvider: this.character.modelProvider,
-            optsModelProvider: opts.modelProvider,
-            currentModelProvider: this.modelProvider,
-            finalSelection:
-                this.character.modelProvider ??
-                opts.modelProvider ??
-                this.modelProvider,
-        });
+        elizaLogger.info(
+            "- Character model provider:",
+            this.character.modelProvider
+        );
+        elizaLogger.info("- Opts model provider:", opts.modelProvider);
+        elizaLogger.info("- Current model provider:", this.modelProvider);
 
         this.modelProvider =
             this.character.modelProvider ??
             opts.modelProvider ??
             this.modelProvider;
 
-        this.imageModelProvider =
-            this.character.imageModelProvider ?? this.modelProvider;
-
         elizaLogger.info("Selected model provider:", this.modelProvider);
-        elizaLogger.info(
-            "Selected image model provider:",
-            this.imageModelProvider
-        );
 
         // Validate model provider
         if (!Object.values(ModelProviderName).includes(this.modelProvider)) {
@@ -417,10 +401,10 @@ export class AgentRuntime implements IAgentRuntime {
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
             if (existingDocument) {
-                continue;
+                return;
             }
 
-            elizaLogger.info(
+            console.log(
                 "Processing knowledge for ",
                 this.character.name,
                 " - ",
@@ -830,7 +814,7 @@ export class AgentRuntime implements IAgentRuntime {
             .map(
                 (attachment) =>
                     `ID: ${attachment.id}
-Name: ${attachment.title}
+Name: ${attachment.title} 
 URL: ${attachment.url}
 Type: ${attachment.source}
 Description: ${attachment.description}
@@ -968,9 +952,9 @@ Text: ${attachment.text}
                 .join(" ");
         }
 
-        const knowledegeData = await knowledge.get(this, message);
-
-        const formattedKnowledge = formatKnowledge(knowledegeData);
+        const formattedKnowledge = formatKnowledge(
+            await knowledge.get(this, message)
+        );
 
         const initialState = {
             agentId: this.agentId,
@@ -987,7 +971,6 @@ Text: ${attachment.text}
                       ]
                     : "",
             knowledge: formattedKnowledge,
-            knowledgeData: knowledegeData,
             // Recent interactions between the sender and receiver, formatted as messages
             recentMessageInteractions: formattedMessageInteractions,
             // Recent interactions between the sender and receiver, formatted as posts
@@ -1114,7 +1097,7 @@ Text: ${attachment.text}
                     ? addHeader("# Attachments", formattedAttachments)
                     : "",
             ...additionalKeys,
-        } as State;
+        };
 
         const actionPromises = this.actions.map(async (action: Action) => {
             const result = await action.validate(this, message, initialState);
@@ -1232,7 +1215,7 @@ Text: ${attachment.text}
                 (attachment) =>
                     `ID: ${attachment.id}
 Name: ${attachment.title}
-URL: ${attachment.url}
+URL: ${attachment.url} 
 Type: ${attachment.source}
 Description: ${attachment.description}
 Text: ${attachment.text}
@@ -1252,8 +1235,6 @@ Text: ${attachment.text}
     }
 }
 
-const formatKnowledge = (knowledge: KnowledgeItem[]) => {
-    return knowledge
-        .map((knowledge) => `- ${knowledge.content.text}`)
-        .join("\n");
+const formatKnowledge = (knowledge: string[]) => {
+    return knowledge.map((knowledge) => `- ${knowledge}`).join("\n");
 };

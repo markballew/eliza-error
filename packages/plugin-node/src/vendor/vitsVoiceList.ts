@@ -1,12 +1,4 @@
-type SynthesisVoice = {
-    name: string;
-    languages: string[];
-    gender: string;
-    speakerCount?: number;
-    localService?: boolean;
-    voiceURI?: string;
-    default?: boolean;
-};
+import { SynthesisVoice } from "./vits";
 
 export const vitsVoiceList: SynthesisVoice[] = [
     {

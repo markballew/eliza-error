@@ -5,7 +5,7 @@ import {
     Memory,
     State,
     UUID,
-    getEmbeddingZeroVector,
+    embeddingZeroVector,
     elizaLogger,
     stringToUuid,
 } from "@ai16z/eliza";
@@ -178,7 +178,7 @@ export class ClientBase extends EventEmitter {
                 username,
                 this.runtime.getSetting("TWITTER_PASSWORD"),
                 this.runtime.getSetting("TWITTER_EMAIL"),
-                this.runtime.getSetting("TWITTER_2FA_SECRET") || undefined
+                this.runtime.getSetting("TWITTER_2FA_SECRET")
             );
 
             if (await this.twitterClient.isLoggedIn()) {
@@ -420,7 +420,7 @@ export class ClientBase extends EventEmitter {
                         content: content,
                         agentId: this.runtime.agentId,
                         roomId,
-                        embedding: getEmbeddingZeroVector(),
+                        embedding: embeddingZeroVector,
                         createdAt: tweet.timestamp * 1000,
                     });
 
@@ -533,7 +533,7 @@ export class ClientBase extends EventEmitter {
                 content: content,
                 agentId: this.runtime.agentId,
                 roomId,
-                embedding: getEmbeddingZeroVector(),
+                embedding: embeddingZeroVector,
                 createdAt: tweet.timestamp * 1000,
             });
 
@@ -575,7 +575,7 @@ export class ClientBase extends EventEmitter {
             } else {
                 await this.runtime.messageManager.createMemory({
                     ...message,
-                    embedding: getEmbeddingZeroVector(),
+                    embedding: embeddingZeroVector,
                 });
             }
 

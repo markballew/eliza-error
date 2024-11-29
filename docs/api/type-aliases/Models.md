@@ -12,10 +12,6 @@ Model configurations by provider
 
 > **openai**: [`Model`](Model.md)
 
-### eternalai
-
-> **eternalai**: [`Model`](Model.md)
-
 ### anthropic
 
 > **anthropic**: [`Model`](Model.md)
@@ -59,14 +55,6 @@ Model configurations by provider
 ### heurist
 
 > **heurist**: [`Model`](Model.md)
-
-### galadriel
-
-> **galadriel**: [`Model`](Model.md)
-
-### falai
-
-> **falai**: [`Model`](Model.md)
 
 ## Defined in
 

@@ -249,8 +249,7 @@ async function executeSwap(
 
   // Sign transaction
   const keypair = getKeypairFromPrivateKey(
-    runtime.getSetting("SOLANA_PRIVATE_KEY") ??
-      runtime.getSetting("WALLET_PRIVATE_KEY"),
+    runtime.getSetting("WALLET_PRIVATE_KEY"),
   );
   transaction.sign([keypair]);
 

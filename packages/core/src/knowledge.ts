@@ -1,37 +1,14 @@
 import { AgentRuntime } from "./runtime.ts";
-import { embed, getEmbeddingZeroVector } from "./embedding.ts";
+import { embed } from "./embedding.ts";
 import { KnowledgeItem, UUID, type Memory } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
+import { embeddingZeroVector } from "./memory.ts";
 import { splitChunks } from "./generation.ts";
 import elizaLogger from "./logger.ts";
 
-async function get(
-    runtime: AgentRuntime,
-    message: Memory
-): Promise<KnowledgeItem[]> {
-    // Add validation for message
-    if (!message?.content?.text) {
-        elizaLogger.warn("Invalid message for knowledge query:", {
-            message,
-            content: message?.content,
-            text: message?.content?.text,
-        });
-        return [];
-    }
-
+async function get(runtime: AgentRuntime, message: Memory): Promise<string[]> {
     const processed = preprocess(message.content.text);
-    elizaLogger.debug("Knowledge query:", {
-        original: message.content.text,
-        processed,
-        length: processed?.length,
-    });
-
-    // Validate processed text
-    if (!processed || processed.trim().length === 0) {
-        elizaLogger.warn("Empty processed text for knowledge query");
-        return [];
-    }
-
+    elizaLogger.log(`Querying knowledge for: ${processed}`);
     const embedding = await embed(runtime, processed);
     const fragments = await runtime.knowledgeManager.searchMemoriesByEmbedding(
         embedding,
@@ -46,7 +23,7 @@ async function get(
         ...new Set(
             fragments.map((memory) => {
                 elizaLogger.log(
-                    `Matched fragment: ${memory.content.text} with similarity: ${memory.similarity}`
+                    `Matched fragment: ${memory.content.text} with similarity: ${message.similarity}`
                 );
                 return memory.content.source;
             })
@@ -59,9 +36,10 @@ async function get(
         )
     );
 
-    return knowledgeDocuments
+    const knowledge = knowledgeDocuments
         .filter((memory) => memory !== null)
-        .map((memory) => ({ id: memory.id, content: memory.content }));
+        .map((memory) => memory.content.text);
+    return knowledge;
 }
 
 async function set(
@@ -77,7 +55,7 @@ async function set(
         userId: runtime.agentId,
         createdAt: Date.now(),
         content: item.content,
-        embedding: getEmbeddingZeroVector(),
+        embedding: embeddingZeroVector,
     });
 
     const preprocessed = preprocess(item.content.text);
@@ -103,16 +81,6 @@ async function set(
 }
 
 export function preprocess(content: string): string {
-    elizaLogger.debug("Preprocessing text:", {
-        input: content,
-        length: content?.length,
-    });
-
-    if (!content || typeof content !== "string") {
-        elizaLogger.warn("Invalid input for preprocessing");
-        return "";
-    }
-
     return (
         content
             // Remove code blocks and their content
@@ -125,10 +93,6 @@ export function preprocess(content: string): string {
             .replace(/!\[(.*?)\]\(.*?\)/g, "$1")
             // Remove links but keep text
             .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-            // Simplify URLs: remove protocol and simplify to domain+path
-            .replace(/(https?:\/\/)?(www\.)?([^\s]+\.[^\s]+)/g, "$3")
-            // Remove Discord mentions specifically
-            .replace(/<@[!&]?\d+>/g, "")
             // Remove HTML tags
             .replace(/<[^>]*>/g, "")
             // Remove horizontal rules
@@ -140,8 +104,10 @@ export function preprocess(content: string): string {
             .replace(/\s+/g, " ")
             // Remove multiple newlines
             .replace(/\n{3,}/g, "\n\n")
-            // Remove special characters except those common in URLs
-            .replace(/[^a-zA-Z0-9\s\-_./:?=&]/g, "")
+            // strip all special characters
+            .replace(/[^a-zA-Z0-9\s]/g, "")
+            // Remove Discord mentions
+            .replace(/<@!?\d+>/g, "")
             .trim()
             .toLowerCase()
     );
@@ -150,5 +116,5 @@ export function preprocess(content: string): string {
 export default {
     get,
     set,
-    preprocess,
+    process,
 };

@@ -63,6 +63,9 @@ export class BrowserService extends Service implements IBrowserService {
     private captchaSolver: CaptchaSolver;
     private cacheKey = "content/browser";
 
+    private queue: string[] = [];
+    private processing: boolean = false;
+
     static serviceType: ServiceType = ServiceType.BROWSER;
 
     static register(runtime: IAgentRuntime): IAgentRuntime {
@@ -84,43 +87,15 @@ export class BrowserService extends Service implements IBrowserService {
         );
     }
 
-    async initialize() {}
-
-    async initializeBrowser() {
+    async initialize() {
         if (!this.browser) {
             this.browser = await chromium.launch({
-                headless: true,
-                args: [
-                    "--disable-dev-shm-usage", // Uses /tmp instead of /dev/shm. Prevents memory issues on low-memory systems
-                    "--block-new-web-contents", // Prevents creation of new windows/tabs
-                ],
+                args: ["--no-sandbox", "--disable-setuid-sandbox"],
             });
 
-            const platform = process.platform;
-            let userAgent = "";
-
-            // Change the user agent to match the platform to reduce bot detection
-            switch (platform) {
-                case "darwin":
-                    userAgent =
-                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-                    break;
-                case "win32":
-                    userAgent =
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-                    break;
-                case "linux":
-                    userAgent =
-                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-                    break;
-                default:
-                    userAgent =
-                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-            }
-
             this.context = await this.browser.newContext({
-                userAgent,
-                acceptDownloads: false,
+                userAgent:
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             });
 
             this.blocker =
@@ -143,12 +118,48 @@ export class BrowserService extends Service implements IBrowserService {
         url: string,
         runtime: IAgentRuntime
     ): Promise<PageContent> {
-        await this.initializeBrowser();
-        return await this.fetchPageContent(url, runtime);
+        await this.initialize();
+        this.queue.push(url);
+        this.processQueue(runtime);
+
+        return new Promise((resolve, reject) => {
+            const checkQueue = async () => {
+                const index = this.queue.indexOf(url);
+                if (index !== -1) {
+                    setTimeout(checkQueue, 100);
+                } else {
+                    try {
+                        const result = await this.fetchPageContent(
+                            url,
+                            runtime
+                        );
+                        resolve(result);
+                    } catch (error) {
+                        reject(error);
+                    }
+                }
+            };
+            checkQueue();
+        });
     }
 
     private getCacheKey(url: string): string {
         return stringToUuid(url);
+    }
+
+    private async processQueue(runtime: IAgentRuntime): Promise<void> {
+        if (this.processing || this.queue.length === 0) {
+            return;
+        }
+
+        this.processing = true;
+
+        while (this.queue.length > 0) {
+            const url = this.queue.shift();
+            await this.fetchPageContent(url, runtime);
+        }
+
+        this.processing = false;
     }
 
     private async fetchPageContent(
@@ -170,7 +181,7 @@ export class BrowserService extends Service implements IBrowserService {
         try {
             if (!this.context) {
                 console.log(
-                    "Browser context not initialized. Call initializeBrowser() first."
+                    "Browser context not initialized. Call initialize() first."
                 );
             }
 
@@ -201,15 +212,15 @@ export class BrowserService extends Service implements IBrowserService {
             if (captchaDetected) {
                 await this.solveCaptcha(page, url);
             }
-            const documentTitle = await page.evaluate(() => document.title);
+            const title = await page.evaluate(() => document.title);
             const bodyContent = await page.evaluate(
                 () => document.body.innerText
             );
-            const { title: parsedTitle, description } = await generateSummary(
+            const { description } = await generateSummary(
                 runtime,
-                documentTitle + "\n" + bodyContent
+                title + "\n" + bodyContent
             );
-            const content = { title: parsedTitle, description, bodyContent };
+            const content = { title, description, bodyContent };
             await runtime.cacheManager.set(`${this.cacheKey}/${cacheKey}`, {
                 url,
                 content,
