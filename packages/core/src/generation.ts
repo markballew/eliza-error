@@ -901,7 +901,7 @@ export const generateCaption = async (
 export interface GenerationOptions {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: TiktokenModel;
     schema?: ZodSchema;
     schemaName?: string;
     schemaDescription?: string;
@@ -946,7 +946,7 @@ export const generateObjectV2 = async ({
     }
 
     const provider = runtime.modelProvider;
-    const model = models[provider].model[modelClass] as TiktokenModel;
+    const model = models[provider].model[modelClass];
     if (!model) {
         throw new Error(`Unsupported model class: ${modelClass}`);
     }
@@ -958,7 +958,7 @@ export const generateObjectV2 = async ({
     const apiKey = runtime.token;
 
     try {
-        context = trimTokens(context, max_context_length, model);
+        context = await trimTokens(context, max_context_length, "gpt-4o");
 
         const modelOptions: ModelSettings = {
             prompt: context,
