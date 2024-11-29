@@ -374,6 +374,31 @@ export async function generateText({
                 break;
             }
 
+            case ModelProviderName.GALADRIEL: {
+                elizaLogger.debug("Initializing Galadriel model.");
+                const galadriel = createOpenAI({
+                    apiKey: apiKey,
+                    baseURL: endpoint,
+                });
+
+                const { text: galadrielResponse } = await aiGenerateText({
+                    model: galadriel.languageModel(model),
+                    prompt: context,
+                    system:
+                        runtime.character.system ??
+                        settings.SYSTEM_PROMPT ??
+                        undefined,
+                    temperature: temperature,
+                    maxTokens: max_response_length,
+                    frequencyPenalty: frequency_penalty,
+                    presencePenalty: presence_penalty,
+                });
+
+                response = galadrielResponse;
+                elizaLogger.debug("Received response from Galadriel model.");
+                break;
+            }
+
             default: {
                 const errorMessage = `Unsupported provider: ${provider}`;
                 elizaLogger.error(errorMessage);
@@ -901,7 +926,7 @@ export const generateCaption = async (
 export interface GenerationOptions {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: TiktokenModel;
+    modelClass: ModelClass;
     schema?: ZodSchema;
     schemaName?: string;
     schemaDescription?: string;
@@ -946,7 +971,7 @@ export const generateObjectV2 = async ({
     }
 
     const provider = runtime.modelProvider;
-    const model = models[provider].model[modelClass];
+    const model = models[provider].model[modelClass] as TiktokenModel;
     if (!model) {
         throw new Error(`Unsupported model class: ${modelClass}`);
     }
@@ -958,7 +983,7 @@ export const generateObjectV2 = async ({
     const apiKey = runtime.token;
 
     try {
-        context = await trimTokens(context, max_context_length, "gpt-4o");
+        context = trimTokens(context, max_context_length, model);
 
         const modelOptions: ModelSettings = {
             prompt: context,
