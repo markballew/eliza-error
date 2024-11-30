@@ -82,7 +82,7 @@ class RequestQueue {
 }
 
 export class ClientBase extends EventEmitter {
-    static _twitterClient: Scraper;
+    static _twitterClients: { [accountIdentifier: string]: Scraper } = {};
     twitterClient: Scraper;
     runtime: IAgentRuntime;
     directions: string;
@@ -137,11 +137,15 @@ export class ClientBase extends EventEmitter {
     constructor(runtime: IAgentRuntime) {
         super();
         this.runtime = runtime;
-        if (ClientBase._twitterClient) {
-            this.twitterClient = ClientBase._twitterClient;
+        if (!ClientBase._twitterClients) {
+            ClientBase._twitterClients = {};
+        }
+        const username = this.runtime.getSetting("TWITTER_USERNAME");
+        if (ClientBase._twitterClients[username]) {
+            this.twitterClient = ClientBase._twitterClients[username];
         } else {
             this.twitterClient = new Scraper();
-            ClientBase._twitterClient = this.twitterClient;
+            ClientBase._twitterClients[username] = this.twitterClient;
         }
 
         this.directions =
@@ -178,7 +182,7 @@ export class ClientBase extends EventEmitter {
                 username,
                 this.runtime.getSetting("TWITTER_PASSWORD"),
                 this.runtime.getSetting("TWITTER_EMAIL"),
-                this.runtime.getSetting("TWITTER_2FA_SECRET") || undefined
+                this.runtime.getSetting("TWITTER_2FA_SECRET")
             );
 
             if (await this.twitterClient.isLoggedIn()) {

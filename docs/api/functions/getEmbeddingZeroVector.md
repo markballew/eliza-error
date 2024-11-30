@@ -2,7 +2,11 @@
 
 # Function: getEmbeddingZeroVector()
 
-> **getEmbeddingZeroVector**(): `number`[]
+> **getEmbeddingZeroVector**(`runtime`): `number`[]
+
+## Parameters
+
+• **runtime**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
 
 ## Returns
 
@@ -10,4 +14,4 @@
 
 ## Defined in
 
-[packages/core/src/embedding.ts:111](https://github.com/ai16z/eliza/blob/main/packages/core/src/embedding.ts#L111)
+[packages/core/src/embedding.ts:86](https://github.com/ai16z/eliza/blob/main/packages/core/src/embedding.ts#L86)

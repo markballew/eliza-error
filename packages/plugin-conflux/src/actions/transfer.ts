@@ -5,12 +5,7 @@ import {
     State,
     HandlerCallback,
 } from "@ai16z/eliza";
-import {
-    generateObjectV2,
-    composeContext,
-    ModelClass,
-    Content,
-} from "@ai16z/eliza";
+import { generateObjectV2, composeContext, ModelClass, Content } from "@ai16z/eliza";
 import { createPublicClient, createWalletClient, http, parseCFX } from "cive";
 import { privateKeyToAccount } from "cive/accounts";
 import { testnet } from "cive/chains";
@@ -105,20 +100,13 @@ export const transfer: Action = {
             throw new Error("Invalid content");
         }
 
-        const secretKey = runtime.getSetting(
-            "CONFLUX_CORE_PRIVATE_KEY"
-        ) as `0x${string}`;
+        const secretKey = runtime.getSetting("CONFLUX_CORE_PRIVATE_KEY") as `0x${string}`;
         const rpcUrl = runtime.getSetting("CONFLUX_CORE_SPACE_RPC_URL");
 
         let success = false;
 
         try {
-            const hash = await sendCFX(
-                secretKey,
-                rpcUrl,
-                content.object.to,
-                content.object.amount.toString()
-            );
+            const hash = await sendCFX(secretKey, rpcUrl, content.object.to, content.object.amount.toString());
             success = true;
             if (!callback) {
                 return success;

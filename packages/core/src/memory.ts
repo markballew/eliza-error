@@ -70,7 +70,7 @@ export class MemoryManager implements IMemoryManager {
         } catch (error) {
             elizaLogger.error("Failed to generate embedding:", error);
             // Fallback to zero vector if embedding fails
-            memory.embedding = getEmbeddingZeroVector().slice();
+            memory.embedding = getEmbeddingZeroVector(this.runtime).slice();
         }
 
         return memory;

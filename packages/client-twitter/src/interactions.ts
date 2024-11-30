@@ -96,10 +96,8 @@ export class TwitterInteractionClient {
             this.handleTwitterInteractions();
             setTimeout(
                 handleTwitterInteractionsLoop,
-                Number(
-                    this.runtime.getSetting("TWITTER_POLL_INTERVAL") || 120
-                ) * 1000 // Default to 2 minutes
-            );
+                (Math.floor(Math.random() * (5 - 2 + 1)) + 2) * 60 * 1000
+            ); // Random interval between 2-5 minutes
         };
         handleTwitterInteractionsLoop();
     }
@@ -468,7 +466,7 @@ export class TwitterInteractionClient {
                         currentTweet.userId === this.twitterUserId
                             ? this.runtime.agentId
                             : stringToUuid(currentTweet.userId),
-                    embedding: getEmbeddingZeroVector(),
+                    embedding: getEmbeddingZeroVector(this.runtime),
                 });
             }
 

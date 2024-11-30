@@ -95,7 +95,7 @@ export async function buildConversationThread(
                     currentTweet.userId === client.profile.id
                         ? client.runtime.agentId
                         : stringToUuid(currentTweet.userId),
-                embedding: getEmbeddingZeroVector(),
+                embedding: getEmbeddingZeroVector(client.runtime),
             });
         }
 
@@ -229,7 +229,7 @@ export async function sendTweet(
                 : undefined,
         },
         roomId,
-        embedding: getEmbeddingZeroVector(),
+        embedding: getEmbeddingZeroVector(client.runtime),
         createdAt: tweet.timestamp * 1000,
     }));
 

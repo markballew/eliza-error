@@ -69,8 +69,6 @@
 - [Plugin](type-aliases/Plugin.md)
 - [Character](type-aliases/Character.md)
 - [CacheOptions](type-aliases/CacheOptions.md)
-- [SearchResult](type-aliases/SearchResult.md)
-- [SearchResponse](type-aliases/SearchResponse.md)
 - [KnowledgeItem](type-aliases/KnowledgeItem.md)
 
 ## Variables
@@ -95,10 +93,10 @@
 - [formatActions](functions/formatActions.md)
 - [composeContext](functions/composeContext.md)
 - [addHeader](functions/addHeader.md)
-- [getEmbeddingConfig](functions/getEmbeddingConfig.md)
 - [getEmbeddingType](functions/getEmbeddingType.md)
 - [getEmbeddingZeroVector](functions/getEmbeddingZeroVector.md)
 - [embed](functions/embed.md)
+- [retrieveCachedEmbedding](functions/retrieveCachedEmbedding.md)
 - [validateEnv](functions/validateEnv.md)
 - [validateCharacterConfig](functions/validateCharacterConfig.md)
 - [formatEvaluatorNames](functions/formatEvaluatorNames.md)
@@ -116,7 +114,6 @@
 - [generateMessageResponse](functions/generateMessageResponse.md)
 - [generateImage](functions/generateImage.md)
 - [generateCaption](functions/generateCaption.md)
-- [generateWebSearch](functions/generateWebSearch.md)
 - [generateObjectV2](functions/generateObjectV2.md)
 - [handleProvider](functions/handleProvider.md)
 - [getGoals](functions/getGoals.md)

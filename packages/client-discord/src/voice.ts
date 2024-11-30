@@ -610,7 +610,7 @@ export class VoiceManager extends EventEmitter {
                 },
                 userId: userIdUUID,
                 roomId,
-                embedding: getEmbeddingZeroVector(),
+                embedding: getEmbeddingZeroVector(this.runtime),
                 createdAt: Date.now(),
             };
 
@@ -670,7 +670,7 @@ export class VoiceManager extends EventEmitter {
                         inReplyTo: memory.id,
                     },
                     roomId,
-                    embedding: getEmbeddingZeroVector(),
+                    embedding: getEmbeddingZeroVector(this.runtime),
                 };
 
                 if (responseMemory.content.text?.trim()) {

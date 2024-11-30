@@ -8,6 +8,7 @@ A plugin for integrating WhatsApp Cloud API with your application.
 
 npm install @eliza/plugin-whatsapp
 
+
 ## Configuration
 
 typescript
@@ -18,6 +19,7 @@ phoneNumberId: 'your_phone_number_id',
 webhookVerifyToken: 'your_webhook_verify_token',
 businessAccountId: 'your_business_account_id'
 });
+
 
 ## Usage
 
@@ -42,8 +44,8 @@ code: 'en'
 }
 });
 
-### Handling Webhooks
 
+### Handling Webhooks
 typescript
 // Verify webhook
 app.get('/webhook', (req, res) => {
@@ -60,27 +62,26 @@ await whatsappPlugin.handleWebhook(req.body);
 res.sendStatus(200);
 });
 
+
 ## Features
 
--   Send text messages
--   Send template messages
--   Webhook verification
--   Webhook event handling
--   Message status updates
+- Send text messages
+- Send template messages
+- Webhook verification
+- Webhook event handling
+- Message status updates
 
 ## API Reference
 
 ### WhatsAppPlugin
 
 #### Constructor
-
--   `config: WhatsAppConfig` - Configuration object for the plugin
+- `config: WhatsAppConfig` - Configuration object for the plugin
 
 #### Methods
-
--   `sendMessage(message: WhatsAppMessage): Promise<any>` - Send a WhatsApp message
--   `handleWebhook(event: WhatsAppWebhookEvent): Promise<void>` - Process incoming webhook events
--   `verifyWebhook(token: string): Promise<boolean>` - Verify webhook token
+- `sendMessage(message: WhatsAppMessage): Promise<any>` - Send a WhatsApp message
+- `handleWebhook(event: WhatsAppWebhookEvent): Promise<void>` - Process incoming webhook events
+- `verifyWebhook(token: string): Promise<boolean>` - Verify webhook token
 
 ### Types
 
@@ -110,14 +111,14 @@ text?: string;
 }>;
 }
 
+
 ## Error Handling
 
 The plugin throws errors in the following cases:
-
--   Invalid configuration
--   Failed message sending
--   Webhook verification failure
--   Invalid webhook payload
+- Invalid configuration
+- Failed message sending
+- Webhook verification failure
+- Invalid webhook payload
 
 Example error handling:
 
@@ -131,6 +132,7 @@ content: 'Hello!'
 } catch (error) {
 console.error('Failed to send message:', error.message);
 }
+
 
 ## Best Practices
 
@@ -152,3 +154,4 @@ console.error('Failed to send message:', error.message);
 ## License
 
 MIT
+
