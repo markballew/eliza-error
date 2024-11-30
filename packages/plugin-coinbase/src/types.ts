@@ -58,7 +58,7 @@ export const TradeSchema = z.object({
     amount: z.number(),
     sourceAsset: z.enum(assetValues),
     targetAsset: z.enum(assetValues),
-    side: z.enum(["BUY", "SELL"]),
+    leverage: z.number().optional(), // Optional leverage for leveraged trades
 });
 
 export interface TradeContent {
@@ -66,8 +66,6 @@ export interface TradeContent {
     amount: number;
     sourceAsset: string;
     targetAsset: string;
-    side: "BUY" | "SELL";
-
 }
 
 export const isTradeContent = (object: any): object is TradeContent => {
