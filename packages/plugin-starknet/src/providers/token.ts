@@ -130,8 +130,9 @@ export class TokenProvider {
 
     // TODO: Update to Starknet
     async getTokensInWallet(runtime: IAgentRuntime): Promise<Item[]> {
-        const walletInfo =
-            await this.walletProvider.fetchPortfolioValue(runtime);
+        const walletInfo = await this.walletProvider.fetchPortfolioValue(
+            runtime
+        );
         const items = walletInfo.items;
         return items;
     }
@@ -192,8 +193,8 @@ export class TokenProvider {
                     token === STRK
                         ? "starknet"
                         : token === BTC
-                          ? "bitcoin"
-                          : "ethereum";
+                        ? "bitcoin"
+                        : "ethereum";
 
                 prices[priceKey].usd = tokenInfo.market.currentPrice.toString();
             });
@@ -669,8 +670,9 @@ export class TokenProvider {
             console.log(
                 `Filtering high-value holders for token: ${this.tokenAddress}`
             );
-            const highValueHolders =
-                await this.filterHighValueHolders(tradeData);
+            const highValueHolders = await this.filterHighValueHolders(
+                tradeData
+            );
 
             console.log(
                 `Checking recent trades for token: ${this.tokenAddress}`
@@ -682,8 +684,9 @@ export class TokenProvider {
             console.log(
                 `Counting high-supply holders for token: ${this.tokenAddress}`
             );
-            const highSupplyHoldersCount =
-                await this.countHighSupplyHolders(security);
+            const highSupplyHoldersCount = await this.countHighSupplyHolders(
+                security
+            );
 
             console.log(
                 `Determining DexScreener listing status for token: ${this.tokenAddress}`

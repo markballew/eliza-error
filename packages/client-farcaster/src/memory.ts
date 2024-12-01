@@ -1,7 +1,7 @@
 import { isCastAddMessage } from "@farcaster/hub-nodejs";
 import {
     elizaLogger,
-    getEmbeddingZeroVector,
+    embeddingZeroVector,
     IAgentRuntime,
     stringToUuid,
     type Memory,
@@ -14,27 +14,29 @@ import { FarcasterClient } from "./client";
 
 export function createCastMemory({
     roomId,
-    runtime,
+    agentId,
+    userId,
     cast,
 }: {
     roomId: UUID;
-    runtime: IAgentRuntime;
+    agentId: UUID;
+    userId: UUID;
     cast: Cast;
 }): Memory {
     const inReplyTo = cast.message.data.castAddBody.parentCastId
         ? castUuid({
               hash: toHex(cast.message.data.castAddBody.parentCastId.hash),
-              agentId: runtime.agentId,
+              agentId,
           })
         : undefined;
 
     return {
         id: castUuid({
             hash: cast.id,
-            agentId: runtime.agentId,
+            agentId,
         }),
-        agentId: runtime.agentId,
-        userId: runtime.agentId,
+        agentId,
+        userId,
         content: {
             text: cast.text,
             source: "farcaster",
@@ -43,7 +45,7 @@ export function createCastMemory({
             hash: cast.id,
         },
         roomId,
-        embedding: getEmbeddingZeroVector(),
+        embedding: embeddingZeroVector,
         createdAt: cast.message.data.timestamp * 1000,
     };
 }
@@ -91,7 +93,8 @@ export async function buildConversationThread({
             await runtime.messageManager.createMemory(
                 createCastMemory({
                     roomId,
-                    runtime,
+                    agentId: runtime.agentId,
+                    userId,
                     cast: currentCast,
                 })
             );

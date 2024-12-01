@@ -71,7 +71,8 @@ export async function sendCast({
         cast,
         memory: createCastMemory({
             roomId,
-            runtime,
+            agentId: runtime.agentId,
+            userId: runtime.agentId,
             cast,
         }),
     }));
