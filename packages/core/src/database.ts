@@ -14,24 +14,11 @@ import {
  * An abstract class representing a database adapter for managing various entities
  * like accounts, memories, actors, goals, and rooms.
  */
-export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
+export abstract class DatabaseAdapter implements IDatabaseAdapter {
     /**
      * The database instance.
      */
-    db: DB;
-
-    /**
-     * Optional initialization method for the database adapter.
-     * @returns A Promise that resolves when initialization is complete.
-     */
-    abstract init(): Promise<void>;
-
-    /**
-     * Optional close method for the database adapter.
-     * @returns A Promise that resolves when closing is complete.
-     */
-    abstract close(): Promise<void>;
-
+    db: any;
     /**
      * Retrieves an account by its ID.
      * @param userId The UUID of the user account to retrieve.
@@ -52,7 +39,6 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
      * @returns A Promise that resolves to an array of Memory objects.
      */
     abstract getMemories(params: {
-        agentId: UUID;
         roomId: UUID;
         count?: number;
         unique?: boolean;
@@ -60,7 +46,7 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
     }): Promise<Memory[]>;
 
     abstract getMemoriesByRoomIds(params: {
-        agentId: UUID;
+        agentId?: UUID;
         roomIds: UUID[];
         tableName: string;
     }): Promise<Memory[]>;
@@ -119,7 +105,6 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
      */
     abstract searchMemories(params: {
         tableName: string;
-        agentId: UUID;
         roomId: UUID;
         embedding: number[];
         match_threshold: number;
@@ -203,7 +188,6 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
      * @returns A Promise that resolves to an array of Goal objects.
      */
     abstract getGoals(params: {
-        agentId: UUID;
         roomId: UUID;
         userId?: UUID | null;
         onlyInProgress?: boolean;

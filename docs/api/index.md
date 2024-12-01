@@ -1,4 +1,4 @@
-# @ai16z/eliza v0.1.4-alpha.3
+# @ai16z/eliza v1.0.0
 
 ## Enumerations
 
@@ -7,14 +7,9 @@
 - [ModelProviderName](enumerations/ModelProviderName.md)
 - [Clients](enumerations/Clients.md)
 - [ServiceType](enumerations/ServiceType.md)
-- [LoggingLevel](enumerations/LoggingLevel.md)
 
 ## Classes
 
-- [MemoryCacheAdapter](classes/MemoryCacheAdapter.md)
-- [FsCacheAdapter](classes/FsCacheAdapter.md)
-- [DbCacheAdapter](classes/DbCacheAdapter.md)
-- [CacheManager](classes/CacheManager.md)
 - [DatabaseAdapter](classes/DatabaseAdapter.md)
 - [MemoryManager](classes/MemoryManager.md)
 - [AgentRuntime](classes/AgentRuntime.md)
@@ -22,7 +17,6 @@
 
 ## Interfaces
 
-- [ICacheAdapter](interfaces/ICacheAdapter.md)
 - [GenerationOptions](interfaces/GenerationOptions.md)
 - [Content](interfaces/Content.md)
 - [ActionExample](interfaces/ActionExample.md)
@@ -42,9 +36,7 @@
 - [Participant](interfaces/Participant.md)
 - [Room](interfaces/Room.md)
 - [IDatabaseAdapter](interfaces/IDatabaseAdapter.md)
-- [IDatabaseCacheAdapter](interfaces/IDatabaseCacheAdapter.md)
 - [IMemoryManager](interfaces/IMemoryManager.md)
-- [ICacheManager](interfaces/ICacheManager.md)
 - [IAgentRuntime](interfaces/IAgentRuntime.md)
 - [IImageDescriptionService](interfaces/IImageDescriptionService.md)
 - [ITranscriptionService](interfaces/ITranscriptionService.md)
@@ -56,8 +48,6 @@
 
 ## Type Aliases
 
-- [EnvConfig](type-aliases/EnvConfig.md)
-- [CharacterConfig](type-aliases/CharacterConfig.md)
 - [UUID](type-aliases/UUID.md)
 - [Model](type-aliases/Model.md)
 - [Models](type-aliases/Models.md)
@@ -68,19 +58,14 @@
 - [Client](type-aliases/Client.md)
 - [Plugin](type-aliases/Plugin.md)
 - [Character](type-aliases/Character.md)
-- [CacheOptions](type-aliases/CacheOptions.md)
-- [SearchResult](type-aliases/SearchResult.md)
-- [SearchResponse](type-aliases/SearchResponse.md)
-- [KnowledgeItem](type-aliases/KnowledgeItem.md)
 
 ## Variables
 
 - [defaultCharacter](variables/defaultCharacter.md)
-- [envSchema](variables/envSchema.md)
-- [CharacterSchema](variables/CharacterSchema.md)
 - [evaluationTemplate](variables/evaluationTemplate.md)
-- [knowledge](variables/knowledge.md)
 - [elizaLogger](variables/elizaLogger.md)
+- [embeddingDimension](variables/embeddingDimension.md)
+- [embeddingZeroVector](variables/embeddingZeroVector.md)
 - [models](variables/models.md)
 - [messageCompletionFooter](variables/messageCompletionFooter.md)
 - [shouldRespondFooter](variables/shouldRespondFooter.md)
@@ -95,12 +80,8 @@
 - [formatActions](functions/formatActions.md)
 - [composeContext](functions/composeContext.md)
 - [addHeader](functions/addHeader.md)
-- [getEmbeddingConfig](functions/getEmbeddingConfig.md)
-- [getEmbeddingType](functions/getEmbeddingType.md)
-- [getEmbeddingZeroVector](functions/getEmbeddingZeroVector.md)
 - [embed](functions/embed.md)
-- [validateEnv](functions/validateEnv.md)
-- [validateCharacterConfig](functions/validateCharacterConfig.md)
+- [retrieveCachedEmbedding](functions/retrieveCachedEmbedding.md)
 - [formatEvaluatorNames](functions/formatEvaluatorNames.md)
 - [formatEvaluators](functions/formatEvaluators.md)
 - [formatEvaluatorExamples](functions/formatEvaluatorExamples.md)
@@ -116,7 +97,6 @@
 - [generateMessageResponse](functions/generateMessageResponse.md)
 - [generateImage](functions/generateImage.md)
 - [generateCaption](functions/generateCaption.md)
-- [generateWebSearch](functions/generateWebSearch.md)
 - [generateObjectV2](functions/generateObjectV2.md)
 - [handleProvider](functions/handleProvider.md)
 - [getGoals](functions/getGoals.md)
@@ -140,8 +120,5 @@
 - [getRelationships](functions/getRelationships.md)
 - [formatRelationships](functions/formatRelationships.md)
 - [findNearestEnvFile](functions/findNearestEnvFile.md)
-- [configureSettings](functions/configureSettings.md)
 - [loadEnvConfig](functions/loadEnvConfig.md)
-- [getEnvVariable](functions/getEnvVariable.md)
-- [hasEnvVariable](functions/hasEnvVariable.md)
 - [stringToUuid](functions/stringToUuid.md)

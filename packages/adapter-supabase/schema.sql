@@ -30,8 +30,7 @@ CREATE TABLE rooms (
     "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create tables for both vector sizes
-CREATE TABLE memories_1536 (
+CREATE TABLE memories (
     "id" UUID PRIMARY KEY,
     "type" TEXT NOT NULL,
     "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -45,45 +44,6 @@ CREATE TABLE memories_1536 (
     CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES accounts("id") ON DELETE CASCADE,
     CONSTRAINT fk_agent FOREIGN KEY ("agentId") REFERENCES accounts("id") ON DELETE CASCADE
 );
-
-CREATE TABLE memories_1024 (
-    "id" UUID PRIMARY KEY,
-    "type" TEXT NOT NULL,
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    "content" JSONB NOT NULL,
-    "embedding" vector(1024),  -- Ollama mxbai-embed-large
-    "userId" UUID REFERENCES accounts("id"),
-    "agentId" UUID REFERENCES accounts("id"),
-    "roomId" UUID REFERENCES rooms("id"),
-    "unique" BOOLEAN DEFAULT true NOT NULL,
-    CONSTRAINT fk_room FOREIGN KEY ("roomId") REFERENCES rooms("id") ON DELETE CASCADE,
-    CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES accounts("id") ON DELETE CASCADE,
-    CONSTRAINT fk_agent FOREIGN KEY ("agentId") REFERENCES accounts("id") ON DELETE CASCADE
-);
-
-CREATE TABLE memories_384 (
-    "id" UUID PRIMARY KEY,
-    "type" TEXT NOT NULL,
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    "content" JSONB NOT NULL,
-    "embedding" vector(384),
-    "userId" UUID REFERENCES accounts("id"),
-    "agentId" UUID REFERENCES accounts("id"),
-    "roomId" UUID REFERENCES rooms("id"),
-    "unique" BOOLEAN DEFAULT true NOT NULL,
-    CONSTRAINT fk_room FOREIGN KEY ("roomId") REFERENCES rooms("id") ON DELETE CASCADE,
-    CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES accounts("id") ON DELETE CASCADE,
-    CONSTRAINT fk_agent FOREIGN KEY ("agentId") REFERENCES accounts("id") ON DELETE CASCADE
-);
-
--- Update view to include Ollama table
-CREATE VIEW memories AS
-    SELECT * FROM memories_1536
-    UNION ALL
-    SELECT * FROM memories_1024
-    UNION ALL
-    SELECT * FROM memories_384;
-
 
 CREATE TABLE goals (
     "id" UUID PRIMARY KEY,
@@ -133,13 +93,9 @@ CREATE TABLE relationships (
     CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES accounts("id") ON DELETE CASCADE
 );
 
--- Add index for Ollama table
-CREATE INDEX idx_memories_1024_embedding ON memories_1024 USING hnsw ("embedding" vector_cosine_ops);
-CREATE INDEX idx_memories_1024_type_room ON memories_1024("type", "roomId");
-CREATE INDEX idx_memories_1536_embedding ON memories_1536 USING hnsw ("embedding" vector_cosine_ops);
-CREATE INDEX idx_memories_384_embedding ON memories_384 USING hnsw ("embedding" vector_cosine_ops);
-CREATE INDEX idx_memories_1536_type_room ON memories_1536("type", "roomId");
-CREATE INDEX idx_memories_384_type_room ON memories_384("type", "roomId");
+-- Indexes
+CREATE INDEX idx_memories_embedding ON memories USING hnsw ("embedding" vector_cosine_ops);
+CREATE INDEX idx_memories_type_room ON memories("type", "roomId");
 CREATE INDEX idx_participants_user ON participants("userId");
 CREATE INDEX idx_participants_room ON participants("roomId");
 CREATE INDEX idx_relationships_users ON relationships("userA", "userB");

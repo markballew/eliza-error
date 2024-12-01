@@ -1,31 +1,25 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / embed
+[@ai16z/eliza v1.0.0](../index.md) / embed
 
 # Function: embed()
 
 > **embed**(`runtime`, `input`): `Promise`\<`number`[]\>
 
-Gets embeddings from a remote API endpoint.  Falls back to local BGE/384
+Send a message to the OpenAI API for embedding.
 
 ## Parameters
 
 • **runtime**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
 
-The agent runtime context
-
 • **input**: `string`
 
-The text to generate embeddings for
+The input to be embedded.
 
 ## Returns
 
 `Promise`\<`number`[]\>
 
-Array of embedding values
-
-## Throws
-
-If the API request fails
+The embedding of the input.
 
 ## Defined in
 
-[packages/core/src/embedding.ts:138](https://github.com/ai16z/eliza/blob/main/packages/core/src/embedding.ts#L138)
+[packages/core/src/embedding.ts:88](https://github.com/ai16z/eliza/blob/main/packages/core/src/embedding.ts#L88)

@@ -1,22 +1,21 @@
-[@ai16z/eliza v0.1.4-alpha.3](../index.md) / loadEnvConfig
+[@ai16z/eliza v1.0.0](../index.md) / loadEnvConfig
 
 # Function: loadEnvConfig()
 
-> **loadEnvConfig**(): `Settings`
+> **loadEnvConfig**(): `ProcessEnv`
 
-Loads environment variables from the nearest .env file in Node.js
-or returns configured settings in browser
+Loads environment variables from the nearest .env file
 
 ## Returns
 
-`Settings`
+`ProcessEnv`
 
 Environment variables object
 
 ## Throws
 
-If no .env file is found in Node.js environment
+If no .env file is found
 
 ## Defined in
 
-[packages/core/src/settings.ts:79](https://github.com/ai16z/eliza/blob/main/packages/core/src/settings.ts#L79)
+[packages/core/src/settings.ts:36](https://github.com/ai16z/eliza/blob/main/packages/core/src/settings.ts#L36)

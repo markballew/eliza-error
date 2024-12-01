@@ -1,9 +1,11 @@
+// utils.ts
+
 import { Tweet } from "agent-twitter-client";
-import { getEmbeddingZeroVector } from "@ai16z/eliza";
+import { embeddingZeroVector } from "@ai16z/eliza/src/memory.ts";
 import { Content, Memory, UUID } from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
-import { ClientBase } from "./base";
-import { elizaLogger } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza/src/uuid.ts";
+import { ClientBase } from "./base.ts";
+import { elizaLogger } from "@ai16z/eliza/src/logger.ts";
 
 const MAX_TWEET_LENGTH = 280; // Updated to Twitter's current character limit
 
@@ -30,39 +32,29 @@ export const isValidTweet = (tweet: Tweet): boolean => {
 
 export async function buildConversationThread(
     tweet: Tweet,
-    client: ClientBase,
-    maxReplies: number = 10
-): Promise<Tweet[]> {
+    client: ClientBase
+): Promise<void> {
     const thread: Tweet[] = [];
     const visited: Set<string> = new Set();
 
-    async function processThread(currentTweet: Tweet, depth: number = 0) {
-        elizaLogger.debug("Processing tweet:", {
-            id: currentTweet.id,
-            inReplyToStatusId: currentTweet.inReplyToStatusId,
-            depth: depth,
-        });
-
+    async function processThread(currentTweet: Tweet) {
         if (!currentTweet) {
-            elizaLogger.debug("No current tweet found for thread building");
+            elizaLogger.log("No current tweet found");
             return;
         }
-
-        // Stop if we've reached our reply limit
-        if (depth >= maxReplies) {
-            elizaLogger.debug("Reached maximum reply depth", depth);
-            return;
-        }
-
-        // Handle memory storage
+        // Check if the current tweet has already been saved
         const memory = await client.runtime.messageManager.getMemoryById(
             stringToUuid(currentTweet.id + "-" + client.runtime.agentId)
         );
         if (!memory) {
+            elizaLogger.log("Creating memory for tweet", currentTweet.id);
             const roomId = stringToUuid(
                 currentTweet.conversationId + "-" + client.runtime.agentId
             );
-            const userId = stringToUuid(currentTweet.userId);
+            const userId =
+                currentTweet.userId === client.twitterUserId
+                    ? client.runtime.agentId
+                    : stringToUuid(currentTweet.userId);
 
             await client.runtime.ensureConnection(
                 userId,
@@ -77,6 +69,7 @@ export async function buildConversationThread(
                     currentTweet.id + "-" + client.runtime.agentId
                 ),
                 agentId: client.runtime.agentId,
+                userId: userId,
                 content: {
                     text: currentTweet.text,
                     source: "twitter",
@@ -91,76 +84,22 @@ export async function buildConversationThread(
                 },
                 createdAt: currentTweet.timestamp * 1000,
                 roomId,
-                userId:
-                    currentTweet.userId === client.profile.id
-                        ? client.runtime.agentId
-                        : stringToUuid(currentTweet.userId),
-                embedding: getEmbeddingZeroVector(),
+                embedding: embeddingZeroVector,
             });
         }
-
         if (visited.has(currentTweet.id)) {
-            elizaLogger.debug("Already visited tweet:", currentTweet.id);
             return;
         }
-
         visited.add(currentTweet.id);
+
         thread.unshift(currentTweet);
 
-        elizaLogger.debug("Current thread state:", {
-            length: thread.length,
-            currentDepth: depth,
-            tweetId: currentTweet.id,
-        });
-
-        // If there's a parent tweet, fetch and process it
-        if (currentTweet.inReplyToStatusId) {
-            elizaLogger.debug(
-                "Fetching parent tweet:",
-                currentTweet.inReplyToStatusId
-            );
-            try {
-                const parentTweet = await client.twitterClient.getTweet(
-                    currentTweet.inReplyToStatusId
-                );
-
-                if (parentTweet) {
-                    elizaLogger.debug("Found parent tweet:", {
-                        id: parentTweet.id,
-                        text: parentTweet.text?.slice(0, 50),
-                    });
-                    await processThread(parentTweet, depth + 1);
-                } else {
-                    elizaLogger.debug(
-                        "No parent tweet found for:",
-                        currentTweet.inReplyToStatusId
-                    );
-                }
-            } catch (error) {
-                elizaLogger.error("Error fetching parent tweet:", {
-                    tweetId: currentTweet.inReplyToStatusId,
-                    error,
-                });
-            }
-        } else {
-            elizaLogger.debug(
-                "Reached end of reply chain at:",
-                currentTweet.id
-            );
+        if (currentTweet.inReplyToStatus) {
+            await processThread(currentTweet.inReplyToStatus);
         }
     }
 
-    await processThread(tweet, 0);
-
-    elizaLogger.debug("Final thread built:", {
-        totalTweets: thread.length,
-        tweetIds: thread.map((t) => ({
-            id: t.id,
-            text: t.text?.slice(0, 50),
-        })),
-    });
-
-    return thread;
+    await processThread(tweet);
 }
 
 export async function sendTweet(
@@ -182,33 +121,29 @@ export async function sendTweet(
                     previousTweetId
                 )
         );
+        // Parse the response
         const body = await result.json();
+        const tweetResult = body.data.create_tweet.tweet_results.result;
 
-        // if we have a response
-        if (body?.data?.create_tweet?.tweet_results?.result) {
-            // Parse the response
-            const tweetResult = body.data.create_tweet.tweet_results.result;
-            const finalTweet: Tweet = {
-                id: tweetResult.rest_id,
-                text: tweetResult.legacy.full_text,
-                conversationId: tweetResult.legacy.conversation_id_str,
-                timestamp:
-                    new Date(tweetResult.legacy.created_at).getTime() / 1000,
-                userId: tweetResult.legacy.user_id_str,
-                inReplyToStatusId: tweetResult.legacy.in_reply_to_status_id_str,
-                permanentUrl: `https://twitter.com/${twitterUsername}/status/${tweetResult.rest_id}`,
-                hashtags: [],
-                mentions: [],
-                photos: [],
-                thread: [],
-                urls: [],
-                videos: [],
-            };
-            sentTweets.push(finalTweet);
-            previousTweetId = finalTweet.id;
-        } else {
-            console.error("Error sending chunk", chunk, "repsonse:", body);
-        }
+        const finalTweet: Tweet = {
+            id: tweetResult.rest_id,
+            text: tweetResult.legacy.full_text,
+            conversationId: tweetResult.legacy.conversation_id_str,
+            //createdAt:
+            timestamp: tweetResult.timestamp * 1000,
+            userId: tweetResult.legacy.user_id_str,
+            inReplyToStatusId: tweetResult.legacy.in_reply_to_status_id_str,
+            permanentUrl: `https://twitter.com/${twitterUsername}/status/${tweetResult.rest_id}`,
+            hashtags: [],
+            mentions: [],
+            photos: [],
+            thread: [],
+            urls: [],
+            videos: [],
+        };
+
+        sentTweets.push(finalTweet);
+        previousTweetId = finalTweet.id;
 
         // Wait a bit between tweets to avoid rate limiting issues
         await wait(1000, 2000);
@@ -229,7 +164,7 @@ export async function sendTweet(
                 : undefined,
         },
         roomId,
-        embedding: getEmbeddingZeroVector(),
+        embedding: embeddingZeroVector,
         createdAt: tweet.timestamp * 1000,
     }));
 
@@ -274,7 +209,6 @@ function splitTweetContent(content: string): string[] {
 }
 
 function splitParagraph(paragraph: string, maxLength: number): string[] {
-    // eslint-disable-next-line
     const sentences = paragraph.match(/[^\.!\?]+[\.!\?]+|[^\.!\?]+$/g) || [
         paragraph,
     ];

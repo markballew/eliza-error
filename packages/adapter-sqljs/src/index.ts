@@ -1,33 +1,22 @@
 export * from "./sqliteTables.ts";
 export * from "./types.ts";
 
+import { v4 } from "uuid";
+import { DatabaseAdapter } from "@ai16z/eliza";
 import {
     Account,
-    Actor, DatabaseAdapter, GoalStatus, IDatabaseCacheAdapter, Participant, type Goal,
+    Actor,
+    GoalStatus,
+    type Goal,
     type Memory,
     type Relationship,
-    type UUID
+    type UUID,
+    Participant,
 } from "@ai16z/eliza";
-import { v4 } from "uuid";
 import { sqliteTables } from "./sqliteTables.ts";
 import { Database } from "./types.ts";
 
-export class SqlJsDatabaseAdapter
-    extends DatabaseAdapter<Database>
-    implements IDatabaseCacheAdapter {
-    constructor(db: Database) {
-        super();
-        this.db = db;
-    }
-
-    async init() {
-        this.db.exec(sqliteTables);
-    }
-
-    async close() {
-        this.db.close();
-    }
-
+export class SqlJsDatabaseAdapter extends DatabaseAdapter {
     async getRoom(roomId: UUID): Promise<UUID | null> {
         const sql = "SELECT id FROM rooms WHERE id = ?";
         const stmt = this.db.prepare(sql);
@@ -70,21 +59,19 @@ export class SqlJsDatabaseAdapter
     }
 
     async getMemoriesByRoomIds(params: {
-        agentId: UUID;
         roomIds: UUID[];
         tableName: string;
+        agentId?: UUID;
     }): Promise<Memory[]> {
         const placeholders = params.roomIds.map(() => "?").join(", ");
-        const sql = `SELECT * FROM memories WHERE 'type' = ? AND agentId = ? AND roomId IN (${placeholders})`;
+        let sql = `SELECT * FROM memories WHERE type = ? AND roomId IN (${placeholders})`;
         const stmt = this.db.prepare(sql);
-        const queryParams = [
-            params.tableName,
-            params.agentId,
-            ...params.roomIds,
-        ];
-        console.log({ queryParams });
+        const queryParams = [params.tableName, ...params.roomIds];
+        if (params.agentId) {
+            sql += " AND userId = ?";
+            queryParams.push(params.agentId);
+        }
         stmt.bind(queryParams);
-        console.log({ queryParams });
 
         const memories: Memory[] = [];
         while (stmt.step()) {
@@ -122,6 +109,21 @@ export class SqlJsDatabaseAdapter
         }
         stmt.free();
         return userIds;
+    }
+
+    constructor(db: Database) {
+        super();
+        this.db = db;
+
+        // Check if the 'accounts' table exists as a representative table
+        const tableExists = this.db.exec(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='accounts'"
+        )[0];
+
+        if (!tableExists) {
+            // If the 'accounts' table doesn't exist, create all the tables
+            this.db.exec(sqliteTables);
+        }
     }
 
     async getAccountById(userId: UUID): Promise<Account | null> {
@@ -225,7 +227,6 @@ export class SqlJsDatabaseAdapter
             const similarMemories = await this.searchMemoriesByEmbedding(
                 memory.embedding,
                 {
-                    agentId: memory.agentId,
                     tableName,
                     roomId: memory.roomId,
                     match_threshold: 0.95, // 5% similarity threshold
@@ -258,7 +259,6 @@ export class SqlJsDatabaseAdapter
 
     async searchMemories(params: {
         tableName: string;
-        agentId: UUID;
         roomId: UUID;
         embedding: number[];
         match_threshold: number;
@@ -271,7 +271,7 @@ export class SqlJsDatabaseAdapter
             // TODO: Uncomment when we compile sql.js with vss
             // `, (1 - vss_distance_l2(embedding, ?)) AS similarity` +
             ` FROM memories
-  WHERE type = ? AND agentId = ?
+  WHERE type = ?
   AND roomId = ?`;
 
         if (params.unique) {
@@ -283,7 +283,6 @@ export class SqlJsDatabaseAdapter
         stmt.bind([
             // JSON.stringify(params.embedding),
             params.tableName,
-            params.agentId,
             params.roomId,
             // params.match_count,
         ]);
@@ -304,10 +303,10 @@ export class SqlJsDatabaseAdapter
     async searchMemoriesByEmbedding(
         _embedding: number[],
         params: {
-            agentId: UUID;
             match_threshold?: number;
             count?: number;
             roomId?: UUID;
+            agentId?: UUID;
             unique?: boolean;
             tableName: string;
         }
@@ -317,7 +316,7 @@ export class SqlJsDatabaseAdapter
             // TODO: Uncomment when we compile sql.js with vss
             // `, (1 - vss_distance_l2(embedding, ?)) AS similarity`+
             ` FROM memories
-        WHERE type = ? AND agentId = ?`;
+        WHERE type = ?`;
 
         if (params.unique) {
             sql += " AND `unique` = 1";
@@ -340,7 +339,6 @@ export class SqlJsDatabaseAdapter
         const bindings = [
             // JSON.stringify(embedding),
             params.tableName,
-            params.agentId,
         ];
         if (params.roomId) {
             bindings.push(params.roomId);
@@ -746,54 +744,5 @@ export class SqlJsDatabaseAdapter
         }
         stmt.free();
         return relationships;
-    }
-
-    async getCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<string | undefined> {
-        const sql = "SELECT value FROM cache WHERE (key = ? AND agentId = ?)";
-        const stmt = this.db.prepare(sql);
-
-        stmt.bind([params.key, params.agentId]);
-
-        let cached: { value: string } | undefined = undefined;
-        if (stmt.step()) {
-            cached = stmt.getAsObject() as unknown as { value: string };
-        }
-        stmt.free();
-
-        return cached?.value ?? undefined;
-    }
-
-    async setCache(params: {
-        key: string;
-        agentId: UUID;
-        value: string;
-    }): Promise<boolean> {
-        const sql =
-            "INSERT OR REPLACE INTO cache (key, agentId, value, createdAt) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
-        const stmt = this.db.prepare(sql);
-
-        stmt.run([params.key, params.agentId, params.value]);
-        stmt.free();
-
-        return true;
-    }
-
-    async deleteCache(params: {
-        key: string;
-        agentId: UUID;
-    }): Promise<boolean> {
-        try {
-            const sql = "DELETE FROM cache WHERE key = ? AND agentId = ?";
-            const stmt = this.db.prepare(sql);
-            stmt.run([params.key, params.agentId]);
-            stmt.free();
-            return true;
-        } catch (error) {
-            console.log("Error removing cache", error);
-            return false;
-        }
     }
 }

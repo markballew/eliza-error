@@ -22,8 +22,6 @@ export default defineConfig({
         "@solana/buffer-layout",
         "stream",
         "buffer",
-        "querystring",
-        "amqplib",
         // Add other modules you want to externalize
     ],
 });

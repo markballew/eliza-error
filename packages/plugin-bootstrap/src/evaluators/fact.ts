@@ -1,8 +1,9 @@
-import { composeContext } from "@ai16z/eliza";
-import { generateObjectArray } from "@ai16z/eliza";
-import { MemoryManager } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import { generateObjectArray } from "@ai16z/eliza/src/generation.ts";
+import { MemoryManager } from "@ai16z/eliza/src/memory.ts";
 import {
     ActionExample,
+    Content,
     IAgentRuntime,
     Memory,
     ModelClass,
@@ -12,7 +13,7 @@ import {
 export const formatFacts = (facts: Memory[]) => {
     const messageStrings = facts
         .reverse()
-        .map((fact: Memory) => fact.content.text);
+        .map((fact: Memory) => `${(fact.content as Content)?.content}`);
     const finalMessageStrings = messageStrings.join("\n");
     return finalMessageStrings;
 };

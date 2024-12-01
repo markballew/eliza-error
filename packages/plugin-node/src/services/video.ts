@@ -4,37 +4,27 @@ import {
     ITranscriptionService,
     Media,
     ServiceType,
-    IVideoService,
 } from "@ai16z/eliza";
 import { stringToUuid } from "@ai16z/eliza";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
-import { tmpdir } from "os";
 import youtubeDl from "youtube-dl-exec";
-
-export class VideoService extends Service implements IVideoService {
+export class VideoService extends Service {
     static serviceType: ServiceType = ServiceType.VIDEO;
-    private cacheKey = "content/video";
-    private dataDir = "./content_cache";
+    private CONTENT_CACHE_DIR = "./content_cache";
 
     private queue: string[] = [];
     private processing: boolean = false;
 
     constructor() {
         super();
-        this.ensureDataDirectoryExists();
+        this.ensureCacheDirectoryExists();
     }
 
-    getInstance(): IVideoService {
-        return VideoService.getInstance();
-    }
-
-    async initialize(_runtime: IAgentRuntime): Promise<void> {}
-
-    private ensureDataDirectoryExists() {
-        if (!fs.existsSync(this.dataDir)) {
-            fs.mkdirSync(this.dataDir);
+    private ensureCacheDirectoryExists() {
+        if (!fs.existsSync(this.CONTENT_CACHE_DIR)) {
+            fs.mkdirSync(this.CONTENT_CACHE_DIR);
         }
     }
 
@@ -48,7 +38,7 @@ export class VideoService extends Service implements IVideoService {
 
     public async downloadMedia(url: string): Promise<string> {
         const videoId = this.getVideoId(url);
-        const outputFile = path.join(this.dataDir, `${videoId}.mp4`);
+        const outputFile = path.join(this.CONTENT_CACHE_DIR, `${videoId}.mp4`);
 
         // if it already exists, return it
         if (fs.existsSync(outputFile)) {
@@ -70,7 +60,7 @@ export class VideoService extends Service implements IVideoService {
 
     public async downloadVideo(videoInfo: any): Promise<string> {
         const videoId = this.getVideoId(videoInfo.webpage_url);
-        const outputFile = path.join(this.dataDir, `${videoId}.mp4`);
+        const outputFile = path.join(this.CONTENT_CACHE_DIR, `${videoId}.mp4`);
 
         // if it already exists, return it
         if (fs.existsSync(outputFile)) {
@@ -140,16 +130,17 @@ export class VideoService extends Service implements IVideoService {
     ): Promise<Media> {
         const videoId =
             url.match(
-                /(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^\/&?]+)/ // eslint-disable-line
+                /(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^\/&?]+)/
             )?.[1] || "";
         const videoUuid = this.getVideoId(videoId);
-        const cacheKey = `${this.cacheKey}/${videoUuid}`;
+        const cacheFilePath = path.join(
+            this.CONTENT_CACHE_DIR,
+            `${videoUuid}.json`
+        );
 
-        const cached = await runtime.cacheManager.get<Media>(cacheKey);
-
-        if (cached) {
+        if (fs.existsSync(cacheFilePath)) {
             console.log("Returning cached video file");
-            return cached;
+            return JSON.parse(fs.readFileSync(cacheFilePath, "utf-8")) as Media;
         }
 
         console.log("Cache miss, processing video");
@@ -167,8 +158,7 @@ export class VideoService extends Service implements IVideoService {
             text: transcript,
         };
 
-        await runtime.cacheManager.set(cacheKey, result);
-
+        fs.writeFileSync(cacheFilePath, JSON.stringify(result));
         return result;
     }
 
@@ -312,12 +302,11 @@ export class VideoService extends Service implements IVideoService {
     ): Promise<string> {
         console.log("Preparing audio for transcription...");
         const mp4FilePath = path.join(
-            this.dataDir,
+            this.CONTENT_CACHE_DIR,
             `${this.getVideoId(url)}.mp4`
         );
-
         const mp3FilePath = path.join(
-            this.dataDir,
+            this.CONTENT_CACHE_DIR,
             `${this.getVideoId(url)}.mp3`
         );
 
@@ -338,16 +327,10 @@ export class VideoService extends Service implements IVideoService {
 
         console.log("Starting transcription...");
         const startTime = Date.now();
-        const transcriptionService = runtime.getService<ITranscriptionService>(
-            ServiceType.TRANSCRIPTION
-        );
-
-        if (!transcriptionService) {
-            throw new Error("Transcription service not found");
-        }
-
-        const transcript = await transcriptionService.transcribe(audioBuffer);
-
+        const transcript = await runtime
+            .getService(ServiceType.TRANSCRIPTION)
+            .getInstance<ITranscriptionService>()
+            .transcribe(audioBuffer);
         const endTime = Date.now();
         console.log(
             `Transcription completed in ${(endTime - startTime) / 1000} seconds`
@@ -385,7 +368,7 @@ export class VideoService extends Service implements IVideoService {
         console.log("Downloading audio");
         outputFile =
             outputFile ??
-            path.join(this.dataDir, `${this.getVideoId(url)}.mp3`);
+            path.join(this.CONTENT_CACHE_DIR, `${this.getVideoId(url)}.mp3`);
 
         try {
             if (url.endsWith(".mp4") || url.includes(".mp4?")) {
@@ -393,7 +376,7 @@ export class VideoService extends Service implements IVideoService {
                     "Direct MP4 file detected, downloading and converting to MP3"
                 );
                 const tempMp4File = path.join(
-                    tmpdir(),
+                    this.CONTENT_CACHE_DIR,
                     `${this.getVideoId(url)}.mp4`
                 );
                 const response = await fetch(url);

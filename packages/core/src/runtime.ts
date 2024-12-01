@@ -1,5 +1,4 @@
 import { names, uniqueNamesGenerator } from "unique-names-generator";
-import { v4 as uuidv4 } from "uuid";
 import {
     composeActionExamples,
     formatActionNames,
@@ -15,9 +14,8 @@ import {
 } from "./evaluators.ts";
 import { generateText } from "./generation.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { elizaLogger } from "./index.ts";
-import knowledge from "./knowledge.ts";
-import { MemoryManager } from "./memory.ts";
+import { elizaLogger, embed, splitChunks } from "./index.ts";
+import { embeddingZeroVector, MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { parseJsonArrayFromText } from "./parsing.ts";
 import { formatPosts } from "./posts.ts";
@@ -28,10 +26,8 @@ import {
     Goal,
     HandlerCallback,
     IAgentRuntime,
-    ICacheManager,
     IDatabaseAdapter,
     IMemoryManager,
-    KnowledgeItem,
     ModelClass,
     ModelProviderName,
     Plugin,
@@ -91,17 +87,10 @@ export class AgentRuntime implements IAgentRuntime {
      */
     providers: Provider[] = [];
 
-    plugins: Plugin[] = [];
-
     /**
      * The model to use for generateText.
      */
     modelProvider: ModelProviderName;
-
-    /**
-     * The model to use for generateImage.
-     */
-    imageModelProvider: ModelProviderName;
 
     /**
      * Fetch function to use
@@ -141,7 +130,6 @@ export class AgentRuntime implements IAgentRuntime {
 
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
-    cacheManager: ICacheManager;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -149,7 +137,7 @@ export class AgentRuntime implements IAgentRuntime {
         }
 
         if (this.memoryManagers.has(manager.tableName)) {
-            elizaLogger.warn(
+            console.warn(
                 `Memory manager ${manager.tableName} is already registered. Skipping registration.`
             );
             return;
@@ -162,29 +150,25 @@ export class AgentRuntime implements IAgentRuntime {
         return this.memoryManagers.get(tableName) || null;
     }
 
-    getService<T extends Service>(service: ServiceType): T | null {
+    getService(service: ServiceType): typeof Service | null {
         const serviceInstance = this.services.get(service);
         if (!serviceInstance) {
-            elizaLogger.error(`Service ${service} not found`);
+            console.error(`Service ${service} not found`);
             return null;
         }
-        return serviceInstance as T;
+        return serviceInstance as typeof Service;
     }
-
-    async registerService(service: Service): Promise<void> {
-        const serviceType = service.serviceType;
-        elizaLogger.log("Registering service:", serviceType);
-
+    registerService(service: Service): void {
+        const serviceType = (service as typeof Service).serviceType;
+        console.log("Registering service:", serviceType);
         if (this.services.has(serviceType)) {
-            elizaLogger.warn(
+            console.warn(
                 `Service ${serviceType} is already registered. Skipping registration.`
             );
             return;
         }
 
-        // Add the service to the services map
-        this.services.set(serviceType, service);
-        elizaLogger.success(`Service ${serviceType} registered successfully`);
+        this.services.set((service as typeof Service).serviceType, service);
     }
 
     /**
@@ -222,43 +206,23 @@ export class AgentRuntime implements IAgentRuntime {
         databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
-        cacheManager: ICacheManager;
-        logging?: boolean;
     }) {
-        elizaLogger.info("Initializing AgentRuntime with options:", {
-            character: opts.character?.name,
-            modelProvider: opts.modelProvider,
-            characterModelProvider: opts.character?.modelProvider,
-        });
-
         this.#conversationLength =
             opts.conversationLength ?? this.#conversationLength;
         this.databaseAdapter = opts.databaseAdapter;
         // use the character id if it exists, otherwise use the agentId if it is passed in, otherwise use the character name
         this.agentId =
-            opts.character?.id ??
-            opts?.agentId ??
-            stringToUuid(opts.character?.name ?? uuidv4());
-        this.character = opts.character || defaultCharacter;
+            opts.character.id ??
+            opts.agentId ??
+            stringToUuid(opts.character.name);
 
-        // By convention, we create a user and room using the agent id.
-        // Memories related to it are considered global context for the agent.
-        this.ensureRoomExists(this.agentId);
-        this.ensureUserExists(
-            this.agentId,
-            this.character.name,
-            this.character.name
-        );
-        this.ensureParticipantExists(this.agentId, this.agentId);
-
-        elizaLogger.success("Agent ID", this.agentId);
+        console.log("Agent ID", this.agentId);
 
         this.fetch = (opts.fetch as typeof fetch) ?? this.fetch;
+        this.character = opts.character || defaultCharacter;
         if (!opts.databaseAdapter) {
             throw new Error("No database adapter provided");
         }
-
-        this.cacheManager = opts.cacheManager;
 
         this.messageManager = new MemoryManager({
             runtime: this,
@@ -285,79 +249,40 @@ export class AgentRuntime implements IAgentRuntime {
             tableName: "fragments",
         });
 
-        (opts.managers ?? []).forEach((manager: IMemoryManager) => {
-            this.registerMemoryManager(manager);
-        });
-
         (opts.services ?? []).forEach((service: Service) => {
             this.registerService(service);
         });
 
         this.serverUrl = opts.serverUrl ?? this.serverUrl;
-
-        elizaLogger.info("Setting model provider...");
-        elizaLogger.info("Model Provider Selection:", {
-            characterModelProvider: this.character.modelProvider,
-            optsModelProvider: opts.modelProvider,
-            currentModelProvider: this.modelProvider,
-            finalSelection:
-                this.character.modelProvider ??
-                opts.modelProvider ??
-                this.modelProvider,
-        });
-
         this.modelProvider =
             this.character.modelProvider ??
             opts.modelProvider ??
             this.modelProvider;
-
-        this.imageModelProvider =
-            this.character.imageModelProvider ?? this.modelProvider;
-
-        elizaLogger.info("Selected model provider:", this.modelProvider);
-        elizaLogger.info(
-            "Selected image model provider:",
-            this.imageModelProvider
-        );
-
-        // Validate model provider
-        if (!Object.values(ModelProviderName).includes(this.modelProvider)) {
-            elizaLogger.error("Invalid model provider:", this.modelProvider);
-            elizaLogger.error(
-                "Available providers:",
-                Object.values(ModelProviderName)
-            );
-            throw new Error(`Invalid model provider: ${this.modelProvider}`);
-        }
-
         if (!this.serverUrl) {
-            elizaLogger.warn("No serverUrl provided, defaulting to localhost");
+            console.warn("No serverUrl provided, defaulting to localhost");
         }
 
         this.token = opts.token;
 
-        this.plugins = [
-            ...(opts.character?.plugins ?? []),
-            ...(opts.plugins ?? []),
-        ];
+        [...(opts.character.plugins || []), ...(opts.plugins || [])].forEach(
+            (plugin) => {
+                plugin.actions?.forEach((action) => {
+                    this.registerAction(action);
+                });
 
-        this.plugins.forEach((plugin) => {
-            plugin.actions?.forEach((action) => {
-                this.registerAction(action);
-            });
+                plugin.evaluators?.forEach((evaluator) => {
+                    this.registerEvaluator(evaluator);
+                });
 
-            plugin.evaluators?.forEach((evaluator) => {
-                this.registerEvaluator(evaluator);
-            });
+                plugin.providers?.forEach((provider) => {
+                    this.registerContextProvider(provider);
+                });
 
-            plugin.services?.forEach((service) => {
-                this.registerService(service);
-            });
-
-            plugin.providers?.forEach((provider) => {
-                this.registerContextProvider(provider);
-            });
-        });
+                plugin.services?.forEach((service) => {
+                    this.registerService(service);
+                });
+            }
+        );
 
         (opts.actions ?? []).forEach((action) => {
             this.registerAction(action);
@@ -370,38 +295,13 @@ export class AgentRuntime implements IAgentRuntime {
         (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
             this.registerEvaluator(evaluator);
         });
-    }
-
-    async initialize() {
-        for (const [serviceType, service] of this.services.entries()) {
-            try {
-                await service.initialize(this);
-                this.services.set(serviceType, service);
-                elizaLogger.success(
-                    `Service ${serviceType} initialized successfully`
-                );
-            } catch (error) {
-                elizaLogger.error(
-                    `Failed to initialize service ${serviceType}:`,
-                    error
-                );
-                throw error;
-            }
-        }
-
-        for (const plugin of this.plugins) {
-            if (plugin.services)
-                await Promise.all(
-                    plugin.services?.map((service) => service.initialize(this))
-                );
-        }
 
         if (
-            this.character &&
-            this.character.knowledge &&
-            this.character.knowledge.length > 0
+            opts.character &&
+            opts.character.knowledge &&
+            opts.character.knowledge.length > 0
         ) {
-            await this.processCharacterKnowledge(this.character.knowledge);
+            this.processCharacterKnowledge(opts.character.knowledge);
         }
     }
 
@@ -411,28 +311,57 @@ export class AgentRuntime implements IAgentRuntime {
      * then chunks the content into fragments, embeds each fragment, and creates fragment memories.
      * @param knowledge An array of knowledge items containing id, path, and content.
      */
-    private async processCharacterKnowledge(items: string[]) {
-        for (const item of items) {
-            const knowledgeId = stringToUuid(item);
+    private async processCharacterKnowledge(knowledge: string[]) {
+        // ensure the room exists and the agent exists in the room
+        this.ensureRoomExists(this.agentId);
+        this.ensureUserExists(
+            this.agentId,
+            this.character.name,
+            this.character.name
+        );
+        this.ensureParticipantExists(this.agentId, this.agentId);
+
+        for (const knowledgeItem of knowledge) {
+            const knowledgeId = stringToUuid(knowledgeItem);
+            console.log("knowledgeId", knowledgeId);
             const existingDocument =
                 await this.documentsManager.getMemoryById(knowledgeId);
-            if (existingDocument) {
-                continue;
+            console.log("existingDocument", existingDocument);
+            if (!existingDocument) {
+                console.log(
+                    "Processing knowledge for ",
+                    this.character.name,
+                    " - ",
+                    knowledgeItem.slice(0, 100)
+                );
+                await this.documentsManager.createMemory({
+                    embedding: embeddingZeroVector,
+                    id: knowledgeId,
+                    agentId: this.agentId,
+                    roomId: this.agentId,
+                    userId: this.agentId,
+                    createdAt: Date.now(),
+                    content: {
+                        text: knowledgeItem,
+                    },
+                });
+                const fragments = await splitChunks(knowledgeItem, 1200, 200);
+                for (const fragment of fragments) {
+                    const embedding = await embed(this, fragment);
+                    await this.knowledgeManager.createMemory({
+                        id: stringToUuid(fragment),
+                        roomId: this.agentId,
+                        agentId: this.agentId,
+                        userId: this.agentId,
+                        createdAt: Date.now(),
+                        content: {
+                            source: knowledgeId,
+                            text: fragment,
+                        },
+                        embedding,
+                    });
+                }
             }
-
-            elizaLogger.info(
-                "Processing knowledge for ",
-                this.character.name,
-                " - ",
-                item.slice(0, 100)
-            );
-
-            await knowledge.set(this, {
-                id: knowledgeId,
-                content: {
-                    text: item,
-                },
-            });
         }
     }
 
@@ -554,12 +483,8 @@ export class AgentRuntime implements IAgentRuntime {
             return;
         }
 
-        try {
-            elizaLogger.info(`Executing handler for action: ${action.name}`);
-            await action.handler(this, message, state, {}, callback);
-        } catch (error) {
-            elizaLogger.error(error);
-        }
+        elizaLogger.success(`Executing handler for action: ${action.name}`);
+        await action.handler(this, message, state, {}, callback);
     }
 
     /**
@@ -572,7 +497,7 @@ export class AgentRuntime implements IAgentRuntime {
     async evaluate(message: Memory, state?: State, didRespond?: boolean) {
         const evaluatorPromises = this.evaluators.map(
             async (evaluator: Evaluator) => {
-                elizaLogger.log("Evaluating", evaluator.name);
+                console.log("Evaluating", evaluator.name);
                 if (!evaluator.handler) {
                     return null;
                 }
@@ -680,15 +605,9 @@ export class AgentRuntime implements IAgentRuntime {
             await this.databaseAdapter.getParticipantsForRoom(roomId);
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
-            if (userId === this.agentId) {
-                elizaLogger.log(
-                    `Agent ${this.character.name} linked to room ${roomId} successfully.`
-                );
-            } else {
-                elizaLogger.log(
-                    `User ${userId} linked to room ${roomId} successfully.`
-                );
-            }
+            elizaLogger.log(
+                `User ${userId} linked to room ${roomId} successfully.`
+            );
         }
     }
 
@@ -757,6 +676,7 @@ export class AgentRuntime implements IAgentRuntime {
             getActorDetails({ runtime: this, roomId }),
             this.messageManager.getMemories({
                 roomId,
+                agentId: this.agentId,
                 count: conversationLength,
                 unique: false,
             }),
@@ -830,7 +750,7 @@ export class AgentRuntime implements IAgentRuntime {
             .map(
                 (attachment) =>
                     `ID: ${attachment.id}
-Name: ${attachment.title}
+Name: ${attachment.title} 
 URL: ${attachment.url}
 Type: ${attachment.source}
 Description: ${attachment.description}
@@ -896,6 +816,7 @@ Text: ${attachment.text}
             // Check the existing memories in the database
             const existingMemories =
                 await this.messageManager.getMemoriesByRoomIds({
+                    agentId: this.agentId,
                     // filter out the current room id from rooms
                     roomIds: rooms.filter((room) => room !== roomId),
                 });
@@ -917,10 +838,10 @@ Text: ${attachment.text}
             recentInteractionsData: Memory[]
         ): Promise<string> => {
             // Format the recent messages
-            const formattedInteractions = await Promise.all(
-                recentInteractionsData.map(async (message) => {
+            const formattedInteractions = await recentInteractionsData
+                .map(async (message) => {
                     const isSelf = message.userId === this.agentId;
-                    let sender: string;
+                    let sender;
                     if (isSelf) {
                         sender = this.character.name;
                     } else {
@@ -932,9 +853,9 @@ Text: ${attachment.text}
                     }
                     return `${sender}: ${message.content.text}`;
                 })
-            );
+                .join("\n");
 
-            return formattedInteractions.join("\n");
+            return formattedInteractions;
         };
 
         const formattedMessageInteractions =
@@ -968,9 +889,33 @@ Text: ${attachment.text}
                 .join(" ");
         }
 
-        const knowledegeData = await knowledge.get(this, message);
+        async function getKnowledge(
+            runtime: AgentRuntime,
+            message: Memory
+        ): Promise<string[]> {
+            const embedding = await embed(runtime, message.content.text);
 
-        const formattedKnowledge = formatKnowledge(knowledegeData);
+            const memories =
+                await runtime.knowledgeManager.searchMemoriesByEmbedding(
+                    embedding,
+                    {
+                        roomId: message.agentId,
+                        agentId: message.agentId,
+                        count: 3,
+                    }
+                );
+
+            const knowledge = memories.map((memory) => memory.content.text);
+            return knowledge;
+        }
+
+        const formatKnowledge = (knowledge: string[]) => {
+            return knowledge.map((knowledge) => `- ${knowledge}`).join("\n");
+        };
+
+        const formattedKnowledge = formatKnowledge(
+            await getKnowledge(this, message)
+        );
 
         const initialState = {
             agentId: this.agentId,
@@ -987,7 +932,6 @@ Text: ${attachment.text}
                       ]
                     : "",
             knowledge: formattedKnowledge,
-            knowledgeData: knowledegeData,
             // Recent interactions between the sender and receiver, formatted as messages
             recentMessageInteractions: formattedMessageInteractions,
             // Recent interactions between the sender and receiver, formatted as posts
@@ -1046,11 +990,17 @@ Text: ${attachment.text}
                           (() => {
                               const all = this.character?.style?.all || [];
                               const chat = this.character?.style?.chat || [];
-                              return [...all, ...chat].join("\n");
+                              const shuffled = [...all, ...chat].sort(
+                                  () => 0.5 - Math.random()
+                              );
+                              const allSliced = shuffled.slice(
+                                  0,
+                                  conversationLength / 2
+                              );
+                              return allSliced.concat(allSliced).join("\n");
                           })()
                       )
                     : "",
-
             postDirections:
                 this.character?.style?.all?.length > 0 ||
                 this.character?.style?.post.length > 0
@@ -1059,31 +1009,15 @@ Text: ${attachment.text}
                           (() => {
                               const all = this.character?.style?.all || [];
                               const post = this.character?.style?.post || [];
-                              return [...all, ...post].join("\n");
+                              const shuffled = [...all, ...post].sort(
+                                  () => 0.5 - Math.random()
+                              );
+                              return shuffled
+                                  .slice(0, conversationLength / 2)
+                                  .join("\n");
                           })()
                       )
                     : "",
-
-            //old logic left in for reference
-            //food for thought. how could we dynamically decide what parts of the character to add to the prompt other than random? rag? prompt the llm to decide?
-            /*
-            postDirections:
-                this.character?.style?.all?.length > 0 ||
-                this.character?.style?.post.length > 0
-                    ? addHeader(
-                            "# Post Directions for " + this.character.name,
-                            (() => {
-                                const all = this.character?.style?.all || [];
-                                const post = this.character?.style?.post || [];
-                                const shuffled = [...all, ...post].sort(
-                                    () => 0.5 - Math.random()
-                                );
-                                return shuffled
-                                    .slice(0, conversationLength / 2)
-                                    .join("\n");
-                            })()
-                        )
-                    : "",*/
             // Agent runtime stuff
             senderName,
             actors:
@@ -1114,7 +1048,7 @@ Text: ${attachment.text}
                     ? addHeader("# Attachments", formattedAttachments)
                     : "",
             ...additionalKeys,
-        } as State;
+        };
 
         const actionPromises = this.actions.map(async (action: Action) => {
             const result = await action.validate(this, message, initialState);
@@ -1191,6 +1125,7 @@ Text: ${attachment.text}
         const conversationLength = this.getConversationLength();
         const recentMessagesData = await this.messageManager.getMemories({
             roomId: state.roomId,
+            agentId: this.agentId,
             count: conversationLength,
             unique: false,
         });
@@ -1232,7 +1167,7 @@ Text: ${attachment.text}
                 (attachment) =>
                     `ID: ${attachment.id}
 Name: ${attachment.title}
-URL: ${attachment.url}
+URL: ${attachment.url} 
 Type: ${attachment.source}
 Description: ${attachment.description}
 Text: ${attachment.text}
@@ -1251,9 +1186,3 @@ Text: ${attachment.text}
         } as State;
     }
 }
-
-const formatKnowledge = (knowledge: KnowledgeItem[]) => {
-    return knowledge
-        .map((knowledge) => `- ${knowledge.content.text}`)
-        .join("\n");
-};

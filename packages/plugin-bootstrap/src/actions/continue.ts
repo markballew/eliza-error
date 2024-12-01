@@ -1,6 +1,12 @@
-import { composeContext, elizaLogger } from "@ai16z/eliza";
-import { generateMessageResponse, generateTrueOrFalse } from "@ai16z/eliza";
-import { booleanFooter, messageCompletionFooter } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza/src/context.ts";
+import {
+    generateMessageResponse,
+    generateTrueOrFalse,
+} from "@ai16z/eliza/src/generation.ts";
+import {
+    booleanFooter,
+    messageCompletionFooter,
+} from "@ai16z/eliza/src/parsing.ts";
 import {
     Action,
     ActionExample,
@@ -61,6 +67,7 @@ export const continueAction: Action = {
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         const recentMessagesData = await runtime.messageManager.getMemories({
             roomId: message.roomId,
+            agentId: runtime.agentId,
             count: 10,
             unique: false,
         });
@@ -122,7 +129,7 @@ export const continueAction: Action = {
 
         const shouldContinue = await _shouldContinue(state);
         if (!shouldContinue) {
-            elizaLogger.log("Not elaborating, returning");
+            console.log("Not elaborating");
             return;
         }
 
