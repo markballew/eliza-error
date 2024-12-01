@@ -1,20 +1,11 @@
 {
-    "extends": "../packages/core/tsconfig.json",
+    "extends": "../tsconfig.json",
     "compilerOptions": {
         "outDir": "dist",
         "rootDir": ".",
         "module": "ESNext",
         "moduleResolution": "Bundler",
-        "types": [
-            "node"
-        ]
+        "types": ["node"]
     },
-    "ts-node": {
-        "experimentalSpecifierResolution": "node",
-        "transpileOnly": true,
-        "esm": true,
-    },
-    "include": [
-        "src"
-    ]
+    "include": ["src"]
 }

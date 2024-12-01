@@ -5,9 +5,9 @@
 </div>
 
 <div align="center">
-
+  
   📖 [Документация](https://ai16z.github.io/eliza/) | 🎯 [Примеры](https://github.com/thejoven/awesome-eliza)
-
+  
 </div>
 
 ## ✨ Особенности
@@ -126,6 +126,7 @@ ANTHROPIC_API_KEY=
 
 # EVM
 EVM_PRIVATE_KEY=EXAMPLE_WALLET_PRIVATE_KEY
+EVM_PUBLIC_KEY=EXAMPLE_WALLET_PUBLIC_KEY
 
 # Solana
 SOLANA_PRIVATE_KEY=EXAMPLE_WALLET_PRIVATE_KEY

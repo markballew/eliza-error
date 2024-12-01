@@ -20,9 +20,9 @@ import {
     type UUID,
     type IDatabaseCacheAdapter,
     Participant,
+    DatabaseAdapter,
     elizaLogger,
     getEmbeddingConfig,
-    DatabaseAdapter,
 } from "@ai16z/eliza";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -43,12 +43,7 @@ export class PostgresDatabaseAdapter
     private readonly connectionTimeout: number = 5000; // 5 seconds
 
     constructor(connectionConfig: any) {
-        super({
-            //circuitbreaker stuff
-            failureThreshold: 5,
-            resetTimeout: 60000,
-            halfOpenMaxAttempts: 3,
-        });
+        super();
 
         const defaultConfig = {
             max: 20,
@@ -80,19 +75,6 @@ export class PostgresDatabaseAdapter
             await this.cleanup();
             process.exit(0);
         });
-
-        process.on("beforeExit", async () => {
-            await this.cleanup();
-        });
-    }
-
-    private async withDatabase<T>(
-        operation: () => Promise<T>,
-        context: string
-    ): Promise<T> {
-        return this.withCircuitBreaker(async () => {
-            return this.withRetry(operation);
-        }, context);
     }
 
     private async withRetry<T>(operation: () => Promise<T>): Promise<T> {
@@ -177,41 +159,27 @@ export class PostgresDatabaseAdapter
         queryTextOrConfig: string | QueryConfig<I>,
         values?: QueryConfigValues<I>
     ): Promise<QueryResult<R>> {
-        return this.withDatabase(async () => {
-            return await this.pool.query(queryTextOrConfig, values);
-        }, "query");
+        const client = await this.pool.connect();
+
+        try {
+            return client.query(queryTextOrConfig, values);
+        } catch (error) {
+            elizaLogger.error(error);
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     async init() {
         await this.testConnection();
 
-        const client = await this.pool.connect();
-        try {
-            await client.query("BEGIN");
+        const schema = fs.readFileSync(
+            path.resolve(__dirname, "../schema.sql"),
+            "utf8"
+        );
 
-            // Check if schema already exists (check for a core table)
-            const { rows } = await client.query(`
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables
-                    WHERE table_name = 'rooms'
-                );
-            `);
-
-            if (!rows[0].exists) {
-                const schema = fs.readFileSync(
-                    path.resolve(__dirname, "../schema.sql"),
-                    "utf8"
-                );
-                await client.query(schema);
-            }
-
-            await client.query("COMMIT");
-        } catch (error) {
-            await client.query("ROLLBACK");
-            throw error;
-        } finally {
-            client.release();
-        }
+        await this.query(schema);
     }
 
     async close() {
@@ -248,17 +216,17 @@ export class PostgresDatabaseAdapter
     }
 
     async getRoom(roomId: UUID): Promise<UUID | null> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 "SELECT id FROM rooms WHERE id = $1",
                 [roomId]
             );
             return rows.length > 0 ? (rows[0].id as UUID) : null;
-        }, "getRoom");
+        });
     }
 
     async getParticipantsForAccount(userId: UUID): Promise<Participant[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 `SELECT id, "userId", "roomId", "last_message_read"
                 FROM participants
@@ -266,20 +234,20 @@ export class PostgresDatabaseAdapter
                 [userId]
             );
             return rows as Participant[];
-        }, "getParticipantsForAccount");
+        });
     }
 
     async getParticipantUserState(
         roomId: UUID,
         userId: UUID
     ): Promise<"FOLLOWED" | "MUTED" | null> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 `SELECT "userState" FROM participants WHERE "roomId" = $1 AND "userId" = $2`,
                 [roomId, userId]
             );
             return rows.length > 0 ? rows[0].userState : null;
-        }, "getParticipantUserState");
+        });
     }
 
     async getMemoriesByRoomIds(params: {
@@ -287,7 +255,7 @@ export class PostgresDatabaseAdapter
         agentId?: UUID;
         tableName: string;
     }): Promise<Memory[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             if (params.roomIds.length === 0) return [];
             const placeholders = params.roomIds
                 .map((_, i) => `$${i + 2}`)
@@ -309,7 +277,7 @@ export class PostgresDatabaseAdapter
                         ? JSON.parse(row.content)
                         : row.content,
             }));
-        }, "getMemoriesByRoomIds");
+        });
     }
 
     async setParticipantUserState(
@@ -317,26 +285,26 @@ export class PostgresDatabaseAdapter
         userId: UUID,
         state: "FOLLOWED" | "MUTED" | null
     ): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             await this.pool.query(
                 `UPDATE participants SET "userState" = $1 WHERE "roomId" = $2 AND "userId" = $3`,
                 [state, roomId, userId]
             );
-        }, "setParticipantUserState");
+        });
     }
 
     async getParticipantsForRoom(roomId: UUID): Promise<UUID[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 'SELECT "userId" FROM participants WHERE "roomId" = $1',
                 [roomId]
             );
             return rows.map((row) => row.userId);
-        }, "getParticipantsForRoom");
+        });
     }
 
     async getAccountById(userId: UUID): Promise<Account | null> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 "SELECT * FROM accounts WHERE id = $1",
                 [userId]
@@ -359,11 +327,11 @@ export class PostgresDatabaseAdapter
                         ? JSON.parse(account.details)
                         : account.details,
             };
-        }, "getAccountById");
+        });
     }
 
     async createAccount(account: Account): Promise<boolean> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const accountId = account.id ?? v4();
                 await this.pool.query(
@@ -391,11 +359,11 @@ export class PostgresDatabaseAdapter
                 });
                 return false; // Return false instead of throwing to maintain existing behavior
             }
-        }, "createAccount");
+        });
     }
 
     async getActorById(params: { roomId: UUID }): Promise<Actor[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 `SELECT a.id, a.name, a.username, a.details
                 FROM participants p
@@ -432,7 +400,7 @@ export class PostgresDatabaseAdapter
                     };
                 }
             });
-        }, "getActorById").catch((error) => {
+        }).catch((error) => {
             elizaLogger.error("Failed to get actors:", {
                 roomId: params.roomId,
                 error: error.message,
@@ -442,7 +410,7 @@ export class PostgresDatabaseAdapter
     }
 
     async getMemoryById(id: UUID): Promise<Memory | null> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 "SELECT * FROM memories WHERE id = $1",
                 [id]
@@ -456,11 +424,11 @@ export class PostgresDatabaseAdapter
                         ? JSON.parse(rows[0].content)
                         : rows[0].content,
             };
-        }, "getMemoryById");
+        });
     }
 
     async createMemory(memory: Memory, tableName: string): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             elizaLogger.debug("PostgresAdapter createMemory:", {
                 memoryId: memory.id,
                 embeddingLength: memory.embedding?.length,
@@ -497,7 +465,7 @@ export class PostgresDatabaseAdapter
                     Date.now(),
                 ]
             );
-        }, "createMemory");
+        });
     }
 
     async searchMemories(params: {
@@ -532,7 +500,7 @@ export class PostgresDatabaseAdapter
         if (!params.tableName) throw new Error("tableName is required");
         if (!params.roomId) throw new Error("roomId is required");
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             // Build query
             let sql = `SELECT * FROM memories WHERE type = $1 AND "roomId" = $2`;
             const values: any[] = [params.tableName, params.roomId];
@@ -598,7 +566,7 @@ export class PostgresDatabaseAdapter
                         ? JSON.parse(row.content)
                         : row.content,
             }));
-        }, "getMemories");
+        });
     }
 
     async getGoals(params: {
@@ -607,7 +575,7 @@ export class PostgresDatabaseAdapter
         onlyInProgress?: boolean;
         count?: number;
     }): Promise<Goal[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             let sql = `SELECT * FROM goals WHERE "roomId" = $1`;
             const values: any[] = [params.roomId];
             let paramCount = 1;
@@ -636,11 +604,11 @@ export class PostgresDatabaseAdapter
                         ? JSON.parse(row.objectives)
                         : row.objectives,
             }));
-        }, "getGoals");
+        });
     }
 
     async updateGoal(goal: Goal): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 await this.pool.query(
                     `UPDATE goals SET name = $1, status = $2, objectives = $3 WHERE id = $4`,
@@ -660,11 +628,11 @@ export class PostgresDatabaseAdapter
                 });
                 throw error;
             }
-        }, "updateGoal");
+        });
     }
 
     async createGoal(goal: Goal): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             await this.pool.query(
                 `INSERT INTO goals (id, "roomId", "userId", name, status, objectives)
                 VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -677,13 +645,13 @@ export class PostgresDatabaseAdapter
                     JSON.stringify(goal.objectives),
                 ]
             );
-        }, "createGoal");
+        });
     }
 
     async removeGoal(goalId: UUID): Promise<void> {
         if (!goalId) throw new Error("Goal ID is required");
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const result = await this.pool.query(
                     "DELETE FROM goals WHERE id = $1 RETURNING id",
@@ -702,23 +670,23 @@ export class PostgresDatabaseAdapter
                 });
                 throw error;
             }
-        }, "removeGoal");
+        });
     }
 
     async createRoom(roomId?: UUID): Promise<UUID> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const newRoomId = roomId || v4();
             await this.pool.query("INSERT INTO rooms (id) VALUES ($1)", [
                 newRoomId,
             ]);
             return newRoomId as UUID;
-        }, "createRoom");
+        });
     }
 
     async removeRoom(roomId: UUID): Promise<void> {
         if (!roomId) throw new Error("Room ID is required");
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const client = await this.pool.connect();
             try {
                 await client.query("BEGIN");
@@ -770,9 +738,9 @@ export class PostgresDatabaseAdapter
                 });
                 throw error;
             } finally {
-                if (client) client.release();
+                client.release();
             }
-        }, "removeRoom");
+        });
     }
 
     async createRelationship(params: {
@@ -784,7 +752,7 @@ export class PostgresDatabaseAdapter
             throw new Error("userA and userB are required");
         }
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const relationshipId = v4();
                 await this.pool.query(
@@ -825,7 +793,7 @@ export class PostgresDatabaseAdapter
                 }
                 return false;
             }
-        }, "createRelationship");
+        });
     }
 
     async getRelationship(params: {
@@ -836,7 +804,7 @@ export class PostgresDatabaseAdapter
             throw new Error("userA and userB are required");
         }
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const { rows } = await this.pool.query(
                     `SELECT * FROM relationships
@@ -868,7 +836,7 @@ export class PostgresDatabaseAdapter
                 });
                 throw error;
             }
-        }, "getRelationship");
+        });
     }
 
     async getRelationships(params: { userId: UUID }): Promise<Relationship[]> {
@@ -876,7 +844,7 @@ export class PostgresDatabaseAdapter
             throw new Error("userId is required");
         }
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const { rows } = await this.pool.query(
                     `SELECT * FROM relationships
@@ -899,7 +867,7 @@ export class PostgresDatabaseAdapter
                 });
                 throw error;
             }
-        }, "getRelationships");
+        });
     }
 
     async getCachedEmbeddings(opts: {
@@ -921,7 +889,7 @@ export class PostgresDatabaseAdapter
         if (opts.query_match_count <= 0)
             throw new Error("query_match_count must be positive");
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 elizaLogger.debug("Fetching cached embeddings:", {
                     tableName: opts.query_table_name,
@@ -1007,7 +975,7 @@ export class PostgresDatabaseAdapter
                 });
                 throw error;
             }
-        }, "getCachedEmbeddings");
+        });
     }
 
     async log(params: {
@@ -1024,7 +992,7 @@ export class PostgresDatabaseAdapter
             throw new Error("body must be a valid object");
         }
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const logId = v4(); // Generate ID for tracking
                 await this.pool.query(
@@ -1063,7 +1031,7 @@ export class PostgresDatabaseAdapter
                 });
                 throw error;
             }
-        }, "log");
+        });
     }
 
     async searchMemoriesByEmbedding(
@@ -1077,7 +1045,7 @@ export class PostgresDatabaseAdapter
             tableName: string;
         }
     ): Promise<Memory[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             elizaLogger.debug("Incoming vector:", {
                 length: embedding.length,
                 sample: embedding.slice(0, 5),
@@ -1165,11 +1133,11 @@ export class PostgresDatabaseAdapter
                         : row.content,
                 similarity: row.similarity,
             }));
-        }, "searchMemoriesByEmbedding");
+        });
     }
 
     async addParticipant(userId: UUID, roomId: UUID): Promise<boolean> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 await this.pool.query(
                     `INSERT INTO participants (id, "userId", "roomId")
@@ -1181,11 +1149,11 @@ export class PostgresDatabaseAdapter
                 console.log("Error adding participant", error);
                 return false;
             }
-        }, "addParticpant");
+        });
     }
 
     async removeParticipant(userId: UUID, roomId: UUID): Promise<boolean> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 await this.pool.query(
                     `DELETE FROM participants WHERE "userId" = $1 AND "roomId" = $2`,
@@ -1196,37 +1164,37 @@ export class PostgresDatabaseAdapter
                 console.log("Error removing participant", error);
                 return false;
             }
-        }, "removeParticipant");
+        });
     }
 
     async updateGoalStatus(params: {
         goalId: UUID;
         status: GoalStatus;
     }): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             await this.pool.query(
                 "UPDATE goals SET status = $1 WHERE id = $2",
                 [params.status, params.goalId]
             );
-        }, "updateGoalStatus");
+        });
     }
 
     async removeMemory(memoryId: UUID, tableName: string): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             await this.pool.query(
                 "DELETE FROM memories WHERE type = $1 AND id = $2",
                 [tableName, memoryId]
             );
-        }, "removeMemory");
+        });
     }
 
     async removeAllMemories(roomId: UUID, tableName: string): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             await this.pool.query(
                 `DELETE FROM memories WHERE type = $1 AND "roomId" = $2`,
                 [tableName, roomId]
             );
-        }, "removeAllMemories");
+        });
     }
 
     async countMemories(
@@ -1236,7 +1204,7 @@ export class PostgresDatabaseAdapter
     ): Promise<number> {
         if (!tableName) throw new Error("tableName is required");
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             let sql = `SELECT COUNT(*) as count FROM memories WHERE type = $1 AND "roomId" = $2`;
             if (unique) {
                 sql += ` AND "unique" = true`;
@@ -1244,36 +1212,36 @@ export class PostgresDatabaseAdapter
 
             const { rows } = await this.pool.query(sql, [tableName, roomId]);
             return parseInt(rows[0].count);
-        }, "countMemories");
+        });
     }
 
     async removeAllGoals(roomId: UUID): Promise<void> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             await this.pool.query(`DELETE FROM goals WHERE "roomId" = $1`, [
                 roomId,
             ]);
-        }, "removeAllGoals");
+        });
     }
 
     async getRoomsForParticipant(userId: UUID): Promise<UUID[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const { rows } = await this.pool.query(
                 `SELECT "roomId" FROM participants WHERE "userId" = $1`,
                 [userId]
             );
             return rows.map((row) => row.roomId);
-        }, "getRoomsForParticipant");
+        });
     }
 
     async getRoomsForParticipants(userIds: UUID[]): Promise<UUID[]> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
             const { rows } = await this.pool.query(
                 `SELECT DISTINCT "roomId" FROM participants WHERE "userId" IN (${placeholders})`,
                 userIds
             );
             return rows.map((row) => row.roomId);
-        }, "getRoomsForParticipants");
+        });
     }
 
     async getActorDetails(params: { roomId: string }): Promise<Actor[]> {
@@ -1281,7 +1249,7 @@ export class PostgresDatabaseAdapter
             throw new Error("roomId is required");
         }
 
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const sql = `
                     SELECT
@@ -1338,14 +1306,14 @@ export class PostgresDatabaseAdapter
                     `Failed to fetch actor details: ${error instanceof Error ? error.message : String(error)}`
                 );
             }
-        }, "getActorDetails");
+        });
     }
 
     async getCache(params: {
         key: string;
         agentId: UUID;
     }): Promise<string | undefined> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const sql = `SELECT "value"::TEXT FROM cache WHERE "key" = $1 AND "agentId" = $2`;
                 const { rows } = await this.query<{ value: string }>(sql, [
@@ -1362,7 +1330,7 @@ export class PostgresDatabaseAdapter
                 });
                 return undefined;
             }
-        }, "getCache");
+        });
     }
 
     async setCache(params: {
@@ -1370,7 +1338,7 @@ export class PostgresDatabaseAdapter
         agentId: UUID;
         value: string;
     }): Promise<boolean> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const client = await this.pool.connect();
                 try {
@@ -1396,7 +1364,7 @@ export class PostgresDatabaseAdapter
                     });
                     return false;
                 } finally {
-                    if (client) client.release();
+                    client.release();
                 }
             } catch (error) {
                 elizaLogger.error(
@@ -1405,14 +1373,14 @@ export class PostgresDatabaseAdapter
                 );
                 return false;
             }
-        }, "setCache");
+        });
     }
 
     async deleteCache(params: {
         key: string;
         agentId: UUID;
     }): Promise<boolean> {
-        return this.withDatabase(async () => {
+        return this.withRetry(async () => {
             try {
                 const client = await this.pool.connect();
                 try {
@@ -1444,7 +1412,7 @@ export class PostgresDatabaseAdapter
                 );
                 return false;
             }
-        }, "deleteCache");
+        });
     }
 }
 

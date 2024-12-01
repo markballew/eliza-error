@@ -4,6 +4,11 @@ export default [
     ...eslintGlobalConfig,
     {
         files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
-        ignores: ["**/node_modules/**", "**/dist/**"],
+        languageOptions: {
+            parserOptions: {
+                tsconfigRootDir: import.meta.dirname,
+                project: "./tsconfig.json",
+            },
+        }
     },
 ];

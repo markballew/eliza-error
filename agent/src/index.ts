@@ -23,7 +23,6 @@ import {
     validateCharacterConfig,
 } from "@ai16z/eliza";
 import { zgPlugin } from "@ai16z/plugin-0g";
-import { goatPlugin } from "@ai16z/plugin-goat";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 // import { buttplugPlugin } from "@ai16z/plugin-buttplug";
 import {
@@ -37,7 +36,6 @@ import { evmPlugin } from "@ai16z/plugin-evm";
 import { createNodePlugin } from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
 import { teePlugin } from "@ai16z/plugin-tee";
-import { nearPlugin } from "@ai16z/plugin-near";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -84,10 +82,6 @@ function tryLoadFile(filePath: string): string | null {
     }
 }
 
-function isAllStrings(arr: unknown[]): boolean {
-    return Array.isArray(arr) && arr.every((item) => typeof item === "string");
-}
-
 export async function loadCharacters(
     charactersArg: string
 ): Promise<Character[]> {
@@ -95,6 +89,24 @@ export async function loadCharacters(
         ?.split(",")
         .map((filePath) => filePath.trim());
     const loadedCharacters = [];
+
+    // Add logging here
+    elizaLogger.info("Character loading details:", {
+        characterPaths,
+        cwd: process.cwd(),
+        dirname: __dirname,
+        fullPath: path.resolve(
+            process.cwd(),
+            "characters/8bitoracle.laozi.character.json"
+        ),
+        exists: fs.existsSync(
+            path.resolve(
+                process.cwd(),
+                "characters/8bitoracle.laozi.character.json"
+            )
+        ),
+        dirContents: fs.readdirSync(process.cwd()),
+    });
 
     if (characterPaths?.length > 0) {
         for (const characterPath of characterPaths) {
@@ -154,15 +166,15 @@ export async function loadCharacters(
                 validateCharacterConfig(character);
 
                 // Handle plugins
-                if (isAllStrings(character.plugins)) {
+                if (character.plugins) {
                     elizaLogger.info("Plugins are: ", character.plugins);
                     const importedPlugins = await Promise.all(
                         character.plugins.map(async (plugin) => {
                             const importedPlugin = await import(plugin);
-                            return importedPlugin.default;
+                            return importedPlugin;
                         })
                     );
-                    character.plugins = importedPlugins.filter(Boolean);
+                    character.plugins = importedPlugins;
                 }
 
                 loadedCharacters.push(character);
@@ -202,7 +214,6 @@ export function getTokenForProvider(
                 settings.ETERNALAI_API_KEY
             );
         case ModelProviderName.LLAMACLOUD:
-        case ModelProviderName.TOGETHER:
             return (
                 character.settings?.secrets?.LLAMACLOUD_API_KEY ||
                 settings.LLAMACLOUD_API_KEY ||
@@ -253,16 +264,6 @@ export function getTokenForProvider(
         case ModelProviderName.FAL:
             return (
                 character.settings?.secrets?.FAL_API_KEY || settings.FAL_API_KEY
-            );
-        case ModelProviderName.ALI_BAILIAN:
-            return (
-                character.settings?.secrets?.ALI_BAILIAN_API_KEY ||
-                settings.ALI_BAILIAN_API_KEY
-            );
-        case ModelProviderName.VOLENGINE:
-            return (
-                character.settings?.secrets?.VOLENGINE_API_KEY ||
-                settings.VOLENGINE_API_KEY
             );
     }
 }
@@ -373,11 +374,6 @@ export function createAgent(
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? solanaPlugin
                 : null,
-            getSecret(character, "NEAR_PUBLIC_KEY") ||
-            (getSecret(character, "WALLET_PUBLIC_KEY") &&
-                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("ed25519"))
-                ? nearPlugin
-                : null,
             getSecret(character, "EVM_PUBLIC_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
@@ -397,7 +393,6 @@ export function createAgent(
                 ? [coinbaseMassPaymentsPlugin, tradePlugin]
                 : []),
             getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
-            getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -491,9 +486,7 @@ const startAgents = async () => {
     }
 
     elizaLogger.log("Chat started. Type 'exit' to quit.");
-    if (!args["non-interactive"]) {
-        chat();
-    }
+    chat();
 };
 
 startAgents().catch((error) => {

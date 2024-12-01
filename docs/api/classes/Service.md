@@ -36,7 +36,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:955](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L955)
+[packages/core/src/types.ts:940](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L940)
 
 ***
 
@@ -52,7 +52,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:966](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L966)
+[packages/core/src/types.ts:951](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L951)
 
 ## Methods
 
@@ -70,7 +70,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:959](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L959)
+[packages/core/src/types.ts:944](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L944)
 
 ***
 
@@ -90,4 +90,4 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:971](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L971)
+[packages/core/src/types.ts:956](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L956)

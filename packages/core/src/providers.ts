@@ -12,13 +12,11 @@ export async function getProviders(
     message: Memory,
     state?: State
 ) {
-    const providerResults = (
-        await Promise.all(
-            runtime.providers.map(async (provider) => {
-                return await provider.get(runtime, message, state);
-            })
-        )
-    ).filter((result) => result != null && result !== "");
+    const providerResults = await Promise.all(
+        runtime.providers.map(async (provider) => {
+            return await provider.get(runtime, message, state);
+        })
+    );
 
     return providerResults.join("\n");
 }

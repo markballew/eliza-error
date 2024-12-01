@@ -11,7 +11,7 @@ import { generateImage } from "@ai16z/eliza";
 
 import fs from "fs";
 import path from "path";
-import { validateImageGenConfig } from "./environment";
+import { validateImageGenConfig } from "./enviroment";
 
 export function saveBase64Image(base64Data: string, filename: string): string {
     // Create generatedImages directory if it doesn't exist
@@ -97,17 +97,7 @@ const imageGeneration: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        options: {
-            width?: number;
-            height?: number;
-            count?: number;
-            negativePrompt?: string;
-            numIterations?: number;
-            guidanceScale?: number;
-            seed?: number;
-            modelId?: string;
-            jobId?: string;
-        },
+        options: any,
         callback: HandlerCallback
     ) => {
         elizaLogger.log("Composing state for message:", message);
@@ -126,23 +116,9 @@ const imageGeneration: Action = {
         const images = await generateImage(
             {
                 prompt: imagePrompt,
-                width: options.width || 1024,
-                height: options.height || 1024,
-                ...(options.count != null ? { count: options.count || 1 } : {}),
-                ...(options.negativePrompt != null
-                    ? { negativePrompt: options.negativePrompt }
-                    : {}),
-                ...(options.numIterations != null
-                    ? { numIterations: options.numIterations }
-                    : {}),
-                ...(options.guidanceScale != null
-                    ? { guidanceScale: options.guidanceScale }
-                    : {}),
-                ...(options.seed != null ? { seed: options.seed } : {}),
-                ...(options.modelId != null
-                    ? { modelId: options.modelId }
-                    : {}),
-                ...(options.jobId != null ? { jobId: options.jobId } : {}),
+                width: 1024,
+                height: 1024,
+                count: 1,
             },
             runtime
         );

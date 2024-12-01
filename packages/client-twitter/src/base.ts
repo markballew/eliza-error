@@ -82,7 +82,7 @@ class RequestQueue {
 }
 
 export class ClientBase extends EventEmitter {
-    static _twitterClients: { [accountIdentifier: string]: Scraper } = {};
+    static _twitterClient: Scraper;
     twitterClient: Scraper;
     runtime: IAgentRuntime;
     directions: string;
@@ -137,12 +137,11 @@ export class ClientBase extends EventEmitter {
     constructor(runtime: IAgentRuntime) {
         super();
         this.runtime = runtime;
-        const username = this.runtime.getSetting("TWITTER_USERNAME");
-        if (ClientBase._twitterClients[username]) {
-            this.twitterClient = ClientBase._twitterClients[username];
+        if (ClientBase._twitterClient) {
+            this.twitterClient = ClientBase._twitterClient;
         } else {
             this.twitterClient = new Scraper();
-            ClientBase._twitterClients[username] = this.twitterClient;
+            ClientBase._twitterClient = this.twitterClient;
         }
 
         this.directions =
