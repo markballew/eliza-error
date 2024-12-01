@@ -158,8 +158,9 @@ export class FarcasterInteractionManager {
         if (!castMemory) {
             await this.runtime.messageManager.createMemory(
                 createCastMemory({
+                    agentId: this.runtime.agentId,
                     roomId: memory.roomId,
-                    runtime: this.runtime,
+                    userId: memory.userId,
                     cast,
                 })
             );

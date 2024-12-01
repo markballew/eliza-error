@@ -199,8 +199,6 @@ export type Models = {
     [ModelProviderName.OPENROUTER]: Model;
     [ModelProviderName.OLLAMA]: Model;
     [ModelProviderName.HEURIST]: Model;
-    [ModelProviderName.GALADRIEL]: Model;
-    [ModelProviderName.FAL]: Model;
 };
 
 /**
@@ -220,8 +218,6 @@ export enum ModelProviderName {
     OPENROUTER = "openrouter",
     OLLAMA = "ollama",
     HEURIST = "heurist",
-    GALADRIEL = "galadriel",
-    FAL = "falai",
 }
 
 /**
@@ -614,9 +610,6 @@ export type Character = {
     /** Model provider to use */
     modelProvider: ModelProviderName;
 
-    /** Image model provider to use, if different from modelProvider */
-    imageModelProvider?: ModelProviderName;
-
     /** Optional model endpoint override */
     modelEndpointOverride?: string;
 
@@ -653,6 +646,9 @@ export type Character = {
 
     /** Example posts */
     postExamples: string[];
+
+    /** Known people */
+    people: string[];
 
     /** Known topics */
     topics: string[];
@@ -963,7 +959,6 @@ export interface IAgentRuntime {
     databaseAdapter: IDatabaseAdapter;
     token: string | null;
     modelProvider: ModelProviderName;
-    imageModelProvider: ModelProviderName;
     character: Character;
     providers: Provider[];
     actions: Action[];
@@ -1099,23 +1094,6 @@ export interface IPdfService extends Service {
     getInstance(): IPdfService;
     convertPdfToText(pdfBuffer: Buffer): Promise<string>;
 }
-
-export type SearchResult = {
-    title: string;
-    url: string;
-    content: string;
-    score: number;
-    raw_content: string | null;
-};
-
-export type SearchResponse = {
-    query: string;
-    follow_up_questions: string[] | null;
-    answer: string | null;
-    images: string[];
-    results: SearchResult[];
-    response_time: number;
-};
 
 export enum ServiceType {
     IMAGE_DESCRIPTION = "image_description",

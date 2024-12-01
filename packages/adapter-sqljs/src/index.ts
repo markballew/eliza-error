@@ -1,20 +1,25 @@
 export * from "./sqliteTables.ts";
 export * from "./types.ts";
 
+import { v4 } from "uuid";
+import { DatabaseAdapter, IDatabaseCacheAdapter } from "@ai16z/eliza";
 import {
     Account,
-    Actor, DatabaseAdapter, GoalStatus, IDatabaseCacheAdapter, Participant, type Goal,
+    Actor,
+    GoalStatus,
+    type Goal,
     type Memory,
     type Relationship,
-    type UUID
+    type UUID,
+    Participant,
 } from "@ai16z/eliza";
-import { v4 } from "uuid";
 import { sqliteTables } from "./sqliteTables.ts";
 import { Database } from "./types.ts";
 
 export class SqlJsDatabaseAdapter
     extends DatabaseAdapter<Database>
-    implements IDatabaseCacheAdapter {
+    implements IDatabaseCacheAdapter
+{
     constructor(db: Database) {
         super();
         this.db = db;
