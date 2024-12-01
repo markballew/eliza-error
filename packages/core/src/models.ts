@@ -45,14 +45,14 @@ export const models: Models = {
         settings: {
             stop: [],
             maxInputTokens: 200000,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 4096,
             frequency_penalty: 0.4,
             presence_penalty: 0.4,
             temperature: 0.7,
         },
         endpoint: "https://api.anthropic.com/v1",
         model: {
-            [ModelClass.SMALL]: "claude-3-5-haiku-20241022",
+            [ModelClass.SMALL]: "claude-3-haiku-20240307",
             [ModelClass.MEDIUM]: "claude-3-5-sonnet-20241022",
             [ModelClass.LARGE]: "claude-3-5-sonnet-20241022",
         },
@@ -177,9 +177,18 @@ export const models: Models = {
         // Available models: https://docs.red-pill.ai/get-started/supported-models
         // To test other models, change the models below
         model: {
-            [ModelClass.SMALL]: "gpt-4o-mini", // [ModelClass.SMALL]: "claude-3-5-sonnet-20241022",
-            [ModelClass.MEDIUM]: "gpt-4o", // [ModelClass.MEDIUM]: "claude-3-5-sonnet-20241022",
-            [ModelClass.LARGE]: "gpt-4o", // [ModelClass.LARGE]: "claude-3-opus-20240229",
+            [ModelClass.SMALL]:
+                settings.SMALL_REDPILL_MODEL ||
+                settings.REDPILL_MODEL ||
+                "gpt-4o-mini",
+            [ModelClass.MEDIUM]:
+                settings.MEDIUM_REDPILL_MODEL ||
+                settings.REDPILL_MODEL ||
+                "gpt-4o",
+            [ModelClass.LARGE]:
+                settings.LARGE_REDPILL_MODEL ||
+                settings.REDPILL_MODEL ||
+                "gpt-4o",
             [ModelClass.EMBEDDING]: "text-embedding-3-small",
         },
     },
@@ -258,7 +267,24 @@ export const models: Models = {
             [ModelClass.IMAGE]: "PepeXL",
         },
     },
-    [ModelProviderName.GAIANET]: {
+    [ModelProviderName.GALADRIEL]: {
+        endpoint: "https://api.galadriel.com/v1",
+        settings: {
+            stop: [],
+            maxInputTokens: 128000,
+            maxOutputTokens: 8192,
+            frequency_penalty: 0.5,
+            presence_penalty: 0.5,
+            temperature: 0.8,
+        },
+        model: {
+            [ModelClass.SMALL]: "llama3.1:70b",
+            [ModelClass.MEDIUM]: "llama3.1:70b",
+            [ModelClass.LARGE]: "llama3.1:405b",
+            [ModelClass.EMBEDDING]: "gte-large-en-v1.5",
+        },
+    },
+    [ModelProviderName.FAL]: {
         settings: {
             stop: [],
             maxInputTokens: 128000,
@@ -266,18 +292,18 @@ export const models: Models = {
             repetition_penalty: 0.4,
             temperature: 0.7,
         },
-        endpoint: settings.GAIANET_SERVER_URL || "http://localhost:8080/v1",
-        model: {
-            [ModelClass.SMALL]:
-                settings.GAIANET_MODEL || "llama3.2",
-            [ModelClass.MEDIUM]:
-                settings.GAIANET_MODEL || "llama3.2",
-            [ModelClass.LARGE]:
-                settings.GAIANET_MODEL || "llama3.2",
-            [ModelClass.EMBEDDING]:
-                settings.GAIANET_EMBEDDING_MODEL || "nomic-embed",
+        imageSettings: {
+            steps: 28,
         },
-    }
+        endpoint: "https://api.fal.ai/v1",
+        model: {
+            [ModelClass.SMALL]: "", // FAL doesn't provide text models
+            [ModelClass.MEDIUM]: "",
+            [ModelClass.LARGE]: "",
+            [ModelClass.EMBEDDING]: "",
+            [ModelClass.IMAGE]: "fal-ai/flux-lora",
+        },
+    },
 };
 
 export function getModel(provider: ModelProviderName, type: ModelClass) {
