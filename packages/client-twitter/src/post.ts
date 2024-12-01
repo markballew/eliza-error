@@ -11,25 +11,24 @@ import {
 import { elizaLogger } from "@ai16z/eliza";
 import { ClientBase } from "./base.ts";
 
-const twitterPostTemplate = `{{timeline}}
-
-# Knowledge
+const twitterPostTemplate = `
+# Areas of Expertise
 {{knowledge}}
 
-About {{agentName}} (@{{twitterUserName}}):
+# About {{agentName}} (@{{twitterUserName}}):
 {{bio}}
 {{lore}}
-{{postDirections}}
+{{topics}}
 
 {{providers}}
 
-{{recentPosts}}
-
 {{characterPostExamples}}
 
-# Task: Generate a post in the voice and style of {{agentName}}, aka @{{twitterUserName}}
-Write a single sentence post that is {{adjective}} about {{topic}} (without mentioning {{topic}} directly), from the perspective of {{agentName}}. Try to write something totally different than previous posts. Do not add commentary or acknowledge this request, just write the post.
-Your response should not contain any questions. Brief, concise statements only. No emojis. Use \\n\\n (double spaces) between statements.`;
+{{postDirections}}
+
+# Task: Generate a post in the voice and style and perspective of {{agentName}} @{{twitterUserName}}.
+Write a 1-3 sentence post that is {{adjective}} about {{topic}} (without mentioning {{topic}} directly), from the perspective of {{agentName}}. Do not add commentary or acknowledge this request, just write the post.
+Your response should not contain any questions. Brief, concise statements only. The total character count MUST be less than 280. No emojis. Use \\n\\n (double spaces) between statements.`;
 
 const MAX_TWEET_LENGTH = 280;
 
@@ -83,9 +82,9 @@ export class TwitterPostClient {
 
             const lastPostTimestamp = lastPost?.timestamp ?? 0;
             const minMinutes =
-                parseInt(this.runtime.getSetting("POST_INTERVAL_MIN")) || 1;
+                parseInt(this.runtime.getSetting("POST_INTERVAL_MIN")) || 90;
             const maxMinutes =
-                parseInt(this.runtime.getSetting("POST_INTERVAL_MAX")) || 1;
+                parseInt(this.runtime.getSetting("POST_INTERVAL_MAX")) || 180;
             const randomMinutes =
                 Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) +
                 minMinutes;
@@ -135,28 +134,7 @@ export class TwitterPostClient {
                 "twitter"
             );
 
-            let homeTimeline: Tweet[] = [];
-
-            const cachedTimeline = await this.client.getCachedTimeline();
-
-            // console.log({ cachedTimeline });
-
-            if (cachedTimeline) {
-                homeTimeline = cachedTimeline;
-            } else {
-                homeTimeline = await this.client.fetchHomeTimeline(10);
-                await this.client.cacheTimeline(homeTimeline);
-            }
-            const formattedHomeTimeline =
-                `# ${this.runtime.character.name}'s Home Timeline\n\n` +
-                homeTimeline
-                    .map((tweet) => {
-                        return `#${tweet.id}\n${tweet.name} (@${tweet.username})${tweet.inReplyToStatusId ? `\nIn reply to: ${tweet.inReplyToStatusId}` : ""}\n${new Date(tweet.timestamp).toDateString()}\n\n${tweet.text}\n---\n`;
-                    })
-                    .join("\n");
-
             const topics = this.runtime.character.topics.join(", ");
-
             const state = await this.runtime.composeState(
                 {
                     userId: this.runtime.agentId,
@@ -169,7 +147,6 @@ export class TwitterPostClient {
                 },
                 {
                     twitterUserName: this.client.profile.username,
-                    timeline: formattedHomeTimeline,
                 }
             );
 
@@ -180,7 +157,7 @@ export class TwitterPostClient {
                     twitterPostTemplate,
             });
 
-            console.log("generate post prompt:\n" + context);
+            elizaLogger.debug("generate post prompt:\n" + context);
 
             const newTweetContent = await generateText({
                 runtime: this.runtime,
@@ -249,8 +226,6 @@ export class TwitterPostClient {
 
                 await this.client.cacheTweet(tweet);
 
-                homeTimeline.push(tweet);
-                await this.client.cacheTimeline(homeTimeline);
                 elizaLogger.log(`Tweet posted:\n ${tweet.permanentUrl}`);
 
                 await this.runtime.ensureRoomExists(roomId);
