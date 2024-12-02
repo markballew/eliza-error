@@ -41,11 +41,12 @@ Recent interactions between {{agentName}} and other users:
 
 {{recentPosts}}
 
+
 # Task: Generate a post/reply in the voice, style and perspective of {{agentName}} (@{{twitterUserName}}) while using the thread of tweets as additional context:
 Current Post:
 {{currentPost}}
-
 Thread of Tweets You Are Replying To:
+
 {{formattedConversation}}
 
 {{actions}}
