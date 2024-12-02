@@ -23,6 +23,7 @@ import {
     validateCharacterConfig,
 } from "@ai16z/eliza";
 import { zgPlugin } from "@ai16z/plugin-0g";
+import { goatPlugin } from "@ai16z/plugin-goat";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 // import { buttplugPlugin } from "@ai16z/plugin-buttplug";
 import {
@@ -89,24 +90,6 @@ export async function loadCharacters(
         ?.split(",")
         .map((filePath) => filePath.trim());
     const loadedCharacters = [];
-
-    // Add logging here
-    elizaLogger.info("Character loading details:", {
-        characterPaths,
-        cwd: process.cwd(),
-        dirname: __dirname,
-        fullPath: path.resolve(
-            process.cwd(),
-            "characters/8bitoracle.laozi.character.json"
-        ),
-        exists: fs.existsSync(
-            path.resolve(
-                process.cwd(),
-                "characters/8bitoracle.laozi.character.json"
-            )
-        ),
-        dirContents: fs.readdirSync(process.cwd()),
-    });
 
     if (characterPaths?.length > 0) {
         for (const characterPath of characterPaths) {
@@ -265,6 +248,16 @@ export function getTokenForProvider(
             return (
                 character.settings?.secrets?.FAL_API_KEY || settings.FAL_API_KEY
             );
+        case ModelProviderName.ALI_BAILIAN:
+            return (
+                character.settings?.secrets?.ALI_BAILIAN_API_KEY ||
+                settings.ALI_BAILIAN_API_KEY
+            );
+        case ModelProviderName.VOLENGINE:
+            return (
+                character.settings?.secrets?.VOLENGINE_API_KEY ||
+                settings.VOLENGINE_API_KEY
+            );
     }
 }
 
@@ -374,7 +367,7 @@ export function createAgent(
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? solanaPlugin
                 : null,
-            getSecret(character, "EVM_PUBLIC_KEY") ||
+            getSecret(character, "EVM_PRIVATE_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
@@ -393,6 +386,7 @@ export function createAgent(
                 ? [coinbaseMassPaymentsPlugin, tradePlugin]
                 : []),
             getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
+            getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],

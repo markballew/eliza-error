@@ -118,6 +118,8 @@ export async function generateText({
             // OPENAI & LLAMACLOUD shared same structure.
             case ModelProviderName.OPENAI:
             case ModelProviderName.ETERNALAI:
+            case ModelProviderName.ALI_BAILIAN:
+            case ModelProviderName.VOLENGINE:
             case ModelProviderName.LLAMACLOUD: {
                 elizaLogger.debug("Initializing OpenAI model.");
                 const openai = createOpenAI({ apiKey, baseURL: endpoint });
@@ -371,6 +373,27 @@ export async function generateText({
 
                 response = heuristResponse;
                 elizaLogger.debug("Received response from Heurist model.");
+                break;
+            }
+            case ModelProviderName.GAIANET: {
+                elizaLogger.debug("Initializing GAIANET model.");
+                const openai = createOpenAI({ apiKey, baseURL: endpoint });
+
+                const { text: openaiResponse } = await aiGenerateText({
+                    model: openai.languageModel(model),
+                    prompt: context,
+                    system:
+                        runtime.character.system ??
+                        settings.SYSTEM_PROMPT ??
+                        undefined,
+                    temperature: temperature,
+                    maxTokens: max_response_length,
+                    frequencyPenalty: frequency_penalty,
+                    presencePenalty: presence_penalty,
+                });
+
+                response = openaiResponse;
+                elizaLogger.debug("Received response from GAIANET model.");
                 break;
             }
 
@@ -1131,6 +1154,8 @@ export async function handleProvider(
     switch (provider) {
         case ModelProviderName.OPENAI:
         case ModelProviderName.ETERNALAI:
+        case ModelProviderName.ALI_BAILIAN:
+        case ModelProviderName.VOLENGINE:
         case ModelProviderName.LLAMACLOUD:
             return await handleOpenAI(options);
         case ModelProviderName.ANTHROPIC:
