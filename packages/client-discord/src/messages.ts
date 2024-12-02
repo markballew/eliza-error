@@ -1,5 +1,6 @@
 import { composeContext } from "@ai16z/eliza";
 import { generateMessageResponse, generateShouldRespond } from "@ai16z/eliza";
+import { embeddingZeroVector } from "@ai16z/eliza";
 import {
     Content,
     HandlerCallback,
@@ -14,7 +15,7 @@ import {
     State,
     UUID,
 } from "@ai16z/eliza";
-import { stringToUuid, getEmbeddingZeroVector } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
 import {
     ChannelType,
     Client,
@@ -267,7 +268,7 @@ export class MessageManager {
                                     url: m.url,
                                 },
                                 roomId,
-                                embedding: getEmbeddingZeroVector(),
+                                embedding: embeddingZeroVector,
                                 createdAt: m.createdTimestamp,
                             };
                             memories.push(memory);

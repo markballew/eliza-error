@@ -1,4 +1,4 @@
-import { Coinbase} from "@coinbase/coinbase-sdk";
+import { Coinbase, Trade } from "@coinbase/coinbase-sdk";
 import {
     Action,
     Plugin,
@@ -12,7 +12,7 @@ import {
     ModelClass,
     Provider,
 } from "@ai16z/eliza";
-import { executeTradeAndCharityTransfer, getWalletDetails } from "../utils";
+import { initializeWallet } from "../utils";
 import { tradeTemplate } from "../templates";
 import { isTradeContent, TradeContent, TradeSchema } from "../types";
 import { readFile } from "fs/promises";
@@ -22,7 +22,6 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { createArrayCsvWriter } from "csv-writer";
 
-
 // Dynamically resolve the file path to the src/plugins directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,16 +29,8 @@ const baseDir = path.resolve(__dirname, "../../plugin-coinbase/src/plugins");
 const tradeCsvFilePath = path.join(baseDir, "trades.csv");
 
 export const tradeProvider: Provider = {
-    get: async (runtime: IAgentRuntime, _message: Memory) => {
+    get: async (_runtime: IAgentRuntime, _message: Memory) => {
         try {
-            Coinbase.configure({
-                apiKeyName:
-                    runtime.getSetting("COINBASE_API_KEY") ??
-                    process.env.COINBASE_API_KEY,
-                privateKey:
-                    runtime.getSetting("COINBASE_PRIVATE_KEY") ??
-                    process.env.COINBASE_PRIVATE_KEY,
-            });
             elizaLogger.log("Reading CSV file from:", tradeCsvFilePath);
 
             // Check if the file exists; if not, create it with headers
@@ -69,28 +60,55 @@ export const tradeProvider: Provider = {
             });
 
             elizaLogger.log("Parsed CSV records:", records);
-            const { balances, transactions } = await getWalletDetails(runtime);
-            elizaLogger.log("Current Balances:", balances);
-            elizaLogger.log("Last Transactions:", transactions);
-            return {
-                currentTrades: records.map((record: any) => ({
-                    network: record["Network"] || undefined,
-                    amount: parseFloat(record["From Amount"]) || undefined,
-                    sourceAsset: record["Source Asset"] || undefined,
-                    toAmount: parseFloat(record["To Amount"]) || undefined,
-                    targetAsset: record["Target Asset"] || undefined,
-                    status: record["Status"] || undefined,
-                    transactionUrl: record["Transaction URL"] || "",
-                })),
-                balances,
-                transactions,
-            };
+            return records.map((record: any) => ({
+                network: record["Network"] || undefined,
+                amount: parseFloat(record["From Amount"]) || undefined,
+                sourceAsset: record["Source Asset"] || undefined,
+                toAmount: parseFloat(record["To Amount"]) || undefined,
+                targetAsset: record["Target Asset"] || undefined,
+                status: record["Status"] || undefined,
+                transactionUrl: record["Transaction URL"] || "",
+            }));
         } catch (error) {
             elizaLogger.error("Error in tradeProvider:", error);
             return [];
         }
     },
 };
+
+export async function appendTradeToCsv(trade: Trade) {
+    try {
+        const csvWriter = createArrayCsvWriter({
+            path: tradeCsvFilePath,
+            header: [
+                "Network",
+                "From Amount",
+                "Source Asset",
+                "To Amount",
+                "Target Asset",
+                "Status",
+                "Transaction URL",
+            ],
+            append: true,
+        });
+
+        const formattedTrade = [
+            trade.getNetworkId(),
+            trade.getFromAmount(),
+            trade.getFromAssetId(),
+            trade.getToAmount(),
+            trade.getToAssetId(),
+            trade.getStatus(),
+            trade.getTransaction().getTransactionLink() || "",
+        ];
+
+        elizaLogger.log("Writing trade to CSV:", formattedTrade);
+        await csvWriter.writeRecords([formattedTrade]);
+        elizaLogger.log("Trade written to CSV successfully.");
+    } catch (error) {
+        elizaLogger.error("Error writing trade to CSV:", error);
+    }
+}
 
 export const executeTradeAction: Action = {
     name: "EXECUTE_TRADE",
@@ -165,17 +183,37 @@ export const executeTradeAction: Action = {
                 );
                 return;
             }
-            const { trade, transfer } = await executeTradeAndCharityTransfer(runtime, network, amount, sourceAsset, targetAsset);
+
+            const wallet = await initializeWallet(runtime, network);
+
+            elizaLogger.log("Wallet initialized:", {
+                network,
+                address: await wallet.getDefaultAddress(),
+            });
+
+            const tradeParams = {
+                amount,
+                fromAssetId: sourceAsset.toLowerCase(),
+                toAssetId: targetAsset.toLowerCase(),
+            };
+
+            const trade: Trade = await wallet.createTrade(tradeParams);
+
+            elizaLogger.log("Trade initiated:", trade.toString());
+
+            // Wait for the trade to complete
+            await trade.wait();
+
+            elizaLogger.log("Trade completed successfully:", trade.toString());
+            await appendTradeToCsv(trade);
             callback(
                 {
                     text: `Trade executed successfully:
 - Network: ${network}
-- Amount: ${trade.getFromAmount()}
+- Amount: ${amount}
 - From: ${sourceAsset}
 - To: ${targetAsset}
-- Transaction URL: ${trade.getTransaction().getTransactionLink() || ""}
-- Charity Amount: ${transfer.getAmount()}
-- Charity Transaction URL: ${transfer.getTransactionLink() || ""}`,
+- Transaction URL: ${trade.getTransaction().getTransactionLink() || ""}`,
                 },
                 []
             );
@@ -194,7 +232,7 @@ export const executeTradeAction: Action = {
             {
                 user: "{{user1}}",
                 content: {
-                    text: "Trade 0.00001 ETH for USDC on base",
+                    text: "Trade 0.00001 ETH for USDC on the base",
                 },
             },
             {
@@ -264,4 +302,3 @@ export const tradePlugin: Plugin = {
     actions: [executeTradeAction],
     providers: [tradeProvider],
 };
-

@@ -20,8 +20,7 @@ export async function validateTwitterConfig(
         const config = {
             TWITTER_DRY_RUN:
                 runtime.getSetting("TWITTER_DRY_RUN") ||
-                process.env.TWITTER_DRY_RUN ||
-                "false",
+                process.env.TWITTER_DRY_RUN,
             TWITTER_USERNAME:
                 runtime.getSetting("TWITTER_USERNAME") ||
                 process.env.TWITTER_USERNAME,

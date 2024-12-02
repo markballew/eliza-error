@@ -1,9 +1,4 @@
-export interface SynthesisVoice {
-    name: string;
-    languages: string[];
-    gender: string;
-    speakerCount?: number;
-}
+import { SynthesisVoice } from "./vits";
 
 export const vitsVoiceList: SynthesisVoice[] = [
     {

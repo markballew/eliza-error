@@ -38,12 +38,6 @@ Optional system prompt
 
 Model provider to use
 
-### imageModelProvider?
-
-> `optional` **imageModelProvider**: [`ModelProviderName`](../enumerations/ModelProviderName.md)
-
-Image model provider to use, if different from modelProvider
-
 ### modelEndpointOverride?
 
 > `optional` **modelEndpointOverride**: `string`
@@ -152,6 +146,12 @@ Example messages
 
 Example posts
 
+### people
+
+> **people**: `string`[]
+
+Known people
+
 ### topics
 
 > **topics**: `string`[]
@@ -211,36 +211,6 @@ Optional configuration
 ### settings.voice.url?
 
 > `optional` **url**: `string`
-
-### settings.voice.elevenlabs?
-
-> `optional` **elevenlabs**: `object`
-
-### settings.voice.elevenlabs.voiceId
-
-> **voiceId**: `string`
-
-New structured ElevenLabs config
-
-### settings.voice.elevenlabs.model?
-
-> `optional` **model**: `string`
-
-### settings.voice.elevenlabs.stability?
-
-> `optional` **stability**: `string`
-
-### settings.voice.elevenlabs.similarityBoost?
-
-> `optional` **similarityBoost**: `string`
-
-### settings.voice.elevenlabs.style?
-
-> `optional` **style**: `string`
-
-### settings.voice.elevenlabs.useSpeakerBoost?
-
-> `optional` **useSpeakerBoost**: `string`
 
 ### settings.model?
 
@@ -342,4 +312,4 @@ Optional Twitter profile
 
 ## Defined in
 
-[packages/core/src/types.ts:607](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L607)
+[packages/core/src/types.ts:597](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L597)

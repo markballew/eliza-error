@@ -1,55 +1,83 @@
-# Use a specific Node.js version for better reproducibility
-FROM node:23.3.0-slim AS builder
+# Stage 1: Build dependencies in a temporary stage
+FROM node:23.3.0 AS builder
 
-# Install pnpm globally and install necessary build tools
-RUN npm install -g pnpm@9.4.0 && \
-    apt-get update && \
-    apt-get install -y git python3 make g++ && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install required global dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    git \
+    curl \
+    sqlite3 && \
+    apt-get clean \
+    && npm install -g pnpm@9.4.0
 
-# Set Python 3 as the default python
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and other configuration files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json ./
+# Add configuration files and install dependencies
+ADD pnpm-workspace.yaml /app/pnpm-workspace.yaml
+ADD package.json /app/package.json
+ADD .npmrc /app/.npmrc
+ADD tsconfig.json /app/tsconfig.json
+ADD pnpm-lock.yaml /app/pnpm-lock.yaml
 
-# Copy the rest of the application code
-COPY agent ./agent
-COPY packages ./packages
-COPY scripts ./scripts
-COPY characters ./characters
+# Install dependencies
+RUN pnpm install
 
-# Install dependencies and build the project
-RUN pnpm install \
-    && pnpm build \
-    && pnpm prune --prod
+# Copy source code
+ADD docs /app/docs
+ADD packages /app/packages
+ADD scripts /app/scripts
+ADD characters /app/characters
+ADD agent /app/agent
 
-# Create a new stage for the final image
-FROM node:23.3.0-slim
+# Add dependencies to workspace root
+RUN pnpm add -w -D ts-node typescript @types/node
 
-# Install runtime dependencies if needed
-RUN npm install -g pnpm@9.4.0 && \
-    apt-get update && \
-    apt-get install -y git python3 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+WORKDIR /app/packages/agent
+
+# Add dependencies to the agent package specifically
+RUN pnpm add -D ts-node typescript @types/node --filter "@ai16z/agent"
+
+WORKDIR /app/packages/core
+RUN pnpm add -D ts-node typescript @types/node --filter "@ai16z/eliza"
 
 WORKDIR /app
 
-# Copy built artifacts and production dependencies from the builder stage
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/.npmrc ./
-COPY --from=builder /app/turbo.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/agent ./agent
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/characters ./characters
+# Optional: build step if using TypeScript or other build process
+RUN pnpm build
 
-# Set the command to run the application
+# Stage 2: Production image
+FROM node:23.3.0
+
+# Install dependencies required for the final runtime
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    git \
+    curl \
+    sqlite3 && \
+    apt-get clean \
+    && npm install -g pnpm@9.4.0
+
+# Set working directory
+WORKDIR /app
+
+# Copy built files from the builder stage
+COPY --from=builder /app /app
+
+# install playwright
+RUN pnpm exec playwright install
+RUN pnpm exec playwright install-deps
+
+# Expose application port if running a web server
+EXPOSE 3000
+
+# Add health check to ensure the app is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s CMD curl -f http://localhost:3000 || exit 1
+
+# Set environment variables to configure runtime model settings
+ENV NODE_ENV=production
+
+# Default command to run the application
 CMD ["pnpm", "start"]
