@@ -36,50 +36,6 @@ import {
 import { fal } from "@fal-ai/client";
 
 /**
- * Gets the Cloudflare Gateway base URL for a specific provider if enabled
- * @param runtime The runtime environment
- * @param provider The model provider name
- * @returns The Cloudflare Gateway base URL if enabled, undefined otherwise
- */
-function getCloudflareGatewayBaseURL(runtime: IAgentRuntime, provider: string): string | undefined {
-    const isCloudflareEnabled = runtime.getSetting("CLOUDFLARE_GW_ENABLED") === "true";
-    const cloudflareAccountId = runtime.getSetting("CLOUDFLARE_AI_ACCOUNT_ID");
-    const cloudflareGatewayId = runtime.getSetting("CLOUDFLARE_AI_GATEWAY_ID");
-
-    elizaLogger.debug("Cloudflare Gateway Configuration:", {
-        isEnabled: isCloudflareEnabled,
-        hasAccountId: !!cloudflareAccountId,
-        hasGatewayId: !!cloudflareGatewayId,
-        provider: provider
-    });
-
-    if (!isCloudflareEnabled) {
-        elizaLogger.debug("Cloudflare Gateway is not enabled");
-        return undefined;
-    }
-
-    if (!cloudflareAccountId) {
-        elizaLogger.warn("Cloudflare Gateway is enabled but CLOUDFLARE_AI_ACCOUNT_ID is not set");
-        return undefined;
-    }
-
-    if (!cloudflareGatewayId) {
-        elizaLogger.warn("Cloudflare Gateway is enabled but CLOUDFLARE_AI_GATEWAY_ID is not set");
-        return undefined;
-    }
-
-    const baseURL = `https://gateway.ai.cloudflare.com/v1/${cloudflareAccountId}/${cloudflareGatewayId}/${provider.toLowerCase()}`;
-    elizaLogger.info("Using Cloudflare Gateway:", {
-        provider,
-        baseURL,
-        accountId: cloudflareAccountId,
-        gatewayId: cloudflareGatewayId
-    });
-
-    return baseURL;
-}
-
-/**
  * Send a message to the model for a text generateText - receive a string back and parse how you'd like
  * @param opts - The options for the generateText request.
  * @param opts.context The context of the message to be completed.
@@ -116,16 +72,6 @@ export async function generateText({
     });
 
     const provider = runtime.modelProvider;
-    elizaLogger.debug("Provider settings:", {
-        provider,
-        hasRuntime: !!runtime,
-        runtimeSettings: {
-            CLOUDFLARE_GW_ENABLED: runtime.getSetting("CLOUDFLARE_GW_ENABLED"),
-            CLOUDFLARE_AI_ACCOUNT_ID: runtime.getSetting("CLOUDFLARE_AI_ACCOUNT_ID"),
-            CLOUDFLARE_AI_GATEWAY_ID: runtime.getSetting("CLOUDFLARE_AI_GATEWAY_ID")
-        }
-    });
-
     const endpoint =
         runtime.character.modelEndpointOverride || models[provider].endpoint;
     let model = models[provider].model[modelClass];
@@ -184,16 +130,16 @@ export async function generateText({
             case ModelProviderName.VOLENGINE:
             case ModelProviderName.LLAMACLOUD:
             case ModelProviderName.TOGETHER: {
-                elizaLogger.debug("Initializing OpenAI model with Cloudflare check");
-                const baseURL = getCloudflareGatewayBaseURL(runtime, 'openai') || endpoint;
-                elizaLogger.debug("OpenAI baseURL result:", { baseURL });
-                
-                const openai = createOpenAI({ apiKey, baseURL });
+                elizaLogger.debug("Initializing OpenAI model.");
+                const openai = createOpenAI({ apiKey, baseURL: endpoint });
 
                 const { text: openaiResponse } = await aiGenerateText({
                     model: openai.languageModel(model),
                     prompt: context,
-                    system: runtime.character.system ?? settings.SYSTEM_PROMPT ?? undefined,
+                    system:
+                        runtime.character.system ??
+                        settings.SYSTEM_PROMPT ??
+                        undefined,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -227,15 +173,17 @@ export async function generateText({
             }
 
             case ModelProviderName.ANTHROPIC: {
-                elizaLogger.debug("Initializing Anthropic model with Cloudflare check");
-                const baseURL = getCloudflareGatewayBaseURL(runtime, 'anthropic');
-                elizaLogger.debug("Anthropic baseURL result:", { baseURL });
+                elizaLogger.debug("Initializing Anthropic model.");
 
-                const anthropic = createAnthropic({ apiKey, baseURL });
+                const anthropic = createAnthropic({ apiKey });
+
                 const { text: anthropicResponse } = await aiGenerateText({
                     model: anthropic.languageModel(model),
                     prompt: context,
-                    system: runtime.character.system ?? settings.SYSTEM_PROMPT ?? undefined,
+                    system:
+                        runtime.character.system ??
+                        settings.SYSTEM_PROMPT ??
+                        undefined,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -297,23 +245,22 @@ export async function generateText({
             }
 
             case ModelProviderName.GROQ: {
-                elizaLogger.debug("Initializing Groq model with Cloudflare check");
-                const baseURL = getCloudflareGatewayBaseURL(runtime, 'groq');
-                elizaLogger.debug("Groq baseURL result:", { baseURL });
+                const groq = createGroq({ apiKey });
 
-                const groq = createGroq({ apiKey, baseURL });
                 const { text: groqResponse } = await aiGenerateText({
                     model: groq.languageModel(model),
                     prompt: context,
-                    system: runtime.character.system ?? settings.SYSTEM_PROMPT ?? undefined,
                     temperature: temperature,
+                    system:
+                        runtime.character.system ??
+                        settings.SYSTEM_PROMPT ??
+                        undefined,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
                 });
 
                 response = groqResponse;
-                elizaLogger.debug("Received response from Groq model.");
                 break;
             }
 
@@ -960,7 +907,7 @@ export const generateImage = async (
                 const blob = await imageResponse.blob();
                 const arrayBuffer = await blob.arrayBuffer();
                 const base64 = Buffer.from(arrayBuffer).toString('base64');
-
+                
                 // Return with proper MIME type
                 return `data:image/jpeg;base64,${base64}`;
             }));
@@ -1276,10 +1223,8 @@ async function handleOpenAI({
     schemaDescription,
     mode,
     modelOptions,
-    provider,
-    runtime,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    const baseURL = getCloudflareGatewayBaseURL(runtime, 'openai') || models.openai.endpoint;
+    const baseURL = models.openai.endpoint || undefined;
     const openai = createOpenAI({ apiKey, baseURL });
     return await aiGenerateObject({
         model: openai.languageModel(model),
@@ -1305,13 +1250,8 @@ async function handleAnthropic({
     schemaDescription,
     mode,
     modelOptions,
-    runtime,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    elizaLogger.debug("Handling Anthropic request with Cloudflare check");
-    const baseURL = getCloudflareGatewayBaseURL(runtime, 'anthropic');
-    elizaLogger.debug("Anthropic handleAnthropic baseURL:", { baseURL });
-
-    const anthropic = createAnthropic({ apiKey, baseURL });
+    const anthropic = createAnthropic({ apiKey });
     return await aiGenerateObject({
         model: anthropic.languageModel(model),
         schema,
@@ -1362,13 +1302,8 @@ async function handleGroq({
     schemaDescription,
     mode,
     modelOptions,
-    runtime,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    elizaLogger.debug("Handling Groq request with Cloudflare check");
-    const baseURL = getCloudflareGatewayBaseURL(runtime, 'groq');
-    elizaLogger.debug("Groq handleGroq baseURL:", { baseURL });
-
-    const groq = createGroq({ apiKey, baseURL });
+    const groq = createGroq({ apiKey });
     return await aiGenerateObject({
         model: groq.languageModel(model),
         schema,
