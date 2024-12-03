@@ -1,4 +1,3 @@
-import { isCastAddMessage } from "@farcaster/hub-nodejs";
 import {
     elizaLogger,
     getEmbeddingZeroVector,
@@ -21,16 +20,16 @@ export function createCastMemory({
     runtime: IAgentRuntime;
     cast: Cast;
 }): Memory {
-    const inReplyTo = cast.message.data.castAddBody.parentCastId
+    const inReplyTo =  cast.inReplyTo
         ? castUuid({
-              hash: toHex(cast.message.data.castAddBody.parentCastId.hash),
-              agentId: runtime.agentId,
+            hash: toHex(cast.inReplyTo.hash),
+            agentId: runtime.agentId,
           })
         : undefined;
 
     return {
         id: castUuid({
-            hash: cast.id,
+            hash: cast.hash,
             agentId: runtime.agentId,
         }),
         agentId: runtime.agentId,
@@ -40,11 +39,10 @@ export function createCastMemory({
             source: "farcaster",
             url: "",
             inReplyTo,
-            hash: cast.id,
+            hash: cast.hash,
         },
         roomId,
         embedding: getEmbeddingZeroVector(),
-        createdAt: cast.message.data.timestamp * 1000,
     };
 }
 
@@ -61,22 +59,22 @@ export async function buildConversationThread({
     const visited: Set<string> = new Set();
 
     async function processThread(currentCast: Cast) {
-        if (visited.has(cast.id)) {
+        if (visited.has(cast.hash)) {
             return;
         }
 
-        visited.add(cast.id);
+        visited.add(cast.hash);
 
         const roomId = castUuid({
-            hash: currentCast.id,
+            hash: currentCast.hash,
             agentId: runtime.agentId,
         });
 
-        // Check if the current tweet has already been saved
+        // Check if the current cast has already been saved
         const memory = await runtime.messageManager.getMemoryById(roomId);
 
         if (!memory) {
-            elizaLogger.log("Creating memory for cast", cast.id);
+            elizaLogger.log("Creating memory for cast", cast.hash);
 
             const userId = stringToUuid(cast.profile.username);
 
@@ -99,15 +97,9 @@ export async function buildConversationThread({
 
         thread.unshift(currentCast);
 
-        if (currentCast.message.data.castAddBody.parentCastId) {
-            const message = await client.getCast(
-                currentCast.message.data.castAddBody.parentCastId
-            );
-
-            if (isCastAddMessage(message)) {
-                const parentCast = await client.loadCastFromMessage(message);
-                await processThread(parentCast);
-            }
+        if (currentCast.inReplyTo) {
+            const parentCast = await client.getCast(currentCast.inReplyTo.hash);
+            await processThread(parentCast);
         }
     }
 

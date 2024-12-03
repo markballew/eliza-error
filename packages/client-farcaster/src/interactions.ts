@@ -7,7 +7,6 @@ import {
     stringToUuid,
     type IAgentRuntime,
 } from "@ai16z/eliza";
-import { isCastAddMessage, type Signer } from "@farcaster/hub-nodejs";
 import type { FarcasterClient } from "./client";
 import { toHex } from "viem";
 import { buildConversationThread, createCastMemory } from "./memory";
@@ -26,7 +25,7 @@ export class FarcasterInteractionManager {
     constructor(
         public client: FarcasterClient,
         public runtime: IAgentRuntime,
-        private signer: Signer,
+        private signerUuid: string,
         public cache: Map<string, any>
     ) {}
 
@@ -55,39 +54,37 @@ export class FarcasterInteractionManager {
     private async handleInteractions() {
         const agentFid = Number(this.runtime.getSetting("FARCASTER_FID"));
 
-        const { messages } = await this.client.getMentions({
+        const mentions = await this.client.getMentions({
             fid: agentFid,
+            pageSize: 10,
         });
 
         const agent = await this.client.getProfile(agentFid);
-
-        for (const mention of messages) {
-            if (!isCastAddMessage(mention)) continue;
-
+        console.log(
+            `[Farcaster Neynar Client] Found ${mentions.length} mentions.`
+        );
+        for (const mention of mentions) {
             const messageHash = toHex(mention.hash);
-            const messageSigner = toHex(mention.signer);
             const conversationId = `${messageHash}-${this.runtime.agentId}`;
             const roomId = stringToUuid(conversationId);
-            const userId = stringToUuid(messageSigner);
-
-            const cast = await this.client.loadCastFromMessage(mention);
+            const userId = stringToUuid(mention.authorFid.toString());
 
             await this.runtime.ensureConnection(
                 userId,
                 roomId,
-                cast.profile.username,
-                cast.profile.name,
+                mention.profile.username,
+                mention.profile.name,
                 "farcaster"
             );
 
             await buildConversationThread({
                 client: this.client,
                 runtime: this.runtime,
-                cast,
+                cast: mention,
             });
 
             const memory: Memory = {
-                content: { text: mention.data.castAddBody.text },
+                content: { text: mention.text },
                 agentId: this.runtime.agentId,
                 userId,
                 roomId,
@@ -95,10 +92,12 @@ export class FarcasterInteractionManager {
 
             await this.handleCast({
                 agent,
-                cast,
+                cast: mention,
                 memory,
             });
         }
+
+        this.client.lastInteractionTimestamp = new Date();
     }
 
     private async handleCast({
@@ -111,12 +110,12 @@ export class FarcasterInteractionManager {
         memory: Memory;
     }) {
         if (cast.profile.fid === agent.fid) {
-            console.log("skipping cast from bot itself", cast.id);
+            console.log("skipping cast from bot itself", cast.hash);
             return;
         }
 
         if (!memory.content.text) {
-            console.log("skipping cast with no text", cast.id);
+            console.log("skipping cast with no text", cast.hash);
             return { text: "", action: "IGNORE" };
         }
 
@@ -149,7 +148,7 @@ export class FarcasterInteractionManager {
 
         const memoryId = castUuid({
             agentId: this.runtime.agentId,
-            hash: cast.id,
+            hash: cast.hash,
         });
 
         const castMemory =
@@ -195,17 +194,24 @@ export class FarcasterInteractionManager {
 
         if (!response.text) return;
 
+        if (cast.timestamp < this.client.lastInteractionTimestamp) {
+            console.log(`Cast ${cast.hash} was sent before startup. Skipping.`);
+            return;
+        }
+
         try {
+            console.log(`Replying to cast ${cast.hash}.`);
+
             const results = await sendCast({
                 runtime: this.runtime,
                 client: this.client,
-                signer: this.signer,
+                signerUuid: this.signerUuid,
                 profile: cast.profile,
                 content: response,
                 roomId: memory.roomId,
                 inReplyTo: {
-                    fid: cast.message.data.fid,
-                    hash: cast.message.hash,
+                    fid: cast.authorFid,
+                    hash: cast.hash,
                 },
             });
 
