@@ -16,7 +16,7 @@ import {
 } from "@ai16z/eliza";
 import { getStarknetAccount } from "../utils";
 import { ERC20Token } from "../utils/ERC20Token";
-import { validateStarknetConfig } from "../environment";
+import { validateStarknetConfig } from "../enviroment";
 import { getAddressFromName, isStarkDomain } from "../utils/starknetId";
 
 export interface TransferContent extends Content {
