@@ -617,7 +617,7 @@ export class ClientBase extends EventEmitter {
         await this.runtime.cacheManager.set(
             `twitter/${this.profile.username}/timeline`,
             timeline,
-            { expires: Date.now() + 10 * 1000 }
+            { expires: 10 * 1000 }
         );
     }
 
@@ -625,7 +625,7 @@ export class ClientBase extends EventEmitter {
         await this.runtime.cacheManager.set(
             `twitter/${this.profile.username}/mentions`,
             mentions,
-            { expires: Date.now() + 10 * 1000 }
+            { expires: 10 * 1000 }
         );
     }
 
