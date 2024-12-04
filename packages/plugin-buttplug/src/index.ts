@@ -1,5 +1,5 @@
 import { ButtplugClient, ButtplugNodeWebsocketClientConnector } from "buttplug";
-import { validateButtplugConfig, type ButtplugConfig } from "./environment";
+import { validateButtplugConfig, type ButtplugConfig } from "./enviroment";
 import type {
     Action,
     HandlerCallback,
