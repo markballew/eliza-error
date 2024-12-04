@@ -1,4 +1,4 @@
-import { Coinbase, Trade, Wallet, WalletData } from "@coinbase/coinbase-sdk";
+import { Coinbase, Trade, Transfer, Wallet, WalletData } from "@coinbase/coinbase-sdk";
 import { elizaLogger, IAgentRuntime } from "@ai16z/eliza";
 import fs from "fs";
 import path from "path";
@@ -55,6 +55,7 @@ export async function initializeWallet(
                 // save it to gitignored file
                 wallet.saveSeed(seedFilePath);
             }
+            elizaLogger.log("Wallet created and stored new wallet:", walletAddress);
         } catch (error) {
             elizaLogger.error("Error updating character secrets:", error);
             throw error;
@@ -64,10 +65,13 @@ export async function initializeWallet(
         elizaLogger.log("Created and stored new wallet:", walletAddress);
     } else {
         // Importing existing wallet using stored seed and wallet ID
+        // Always defaults to base-mainnet we can't select the network here
         wallet = await Wallet.import({
             seed: storedSeed,
             walletId: storedWalletId,
         });
+        const networkId = wallet.getNetworkId();
+        elizaLogger.log("Imported existing wallet for network:", networkId);
 
         // Logging wallet import
         elizaLogger.log(
@@ -94,11 +98,10 @@ export async function executeTradeAndCharityTransfer(runtime: IAgentRuntime, net
         network,
         address: await wallet.getDefaultAddress(),
     });
-    // We send 1% of the amount to a charity address and trade the rest of the 99%
-    // Based on the network, we use the correct charity address
+
     const charityAddress = getCharityAddress(network);
-    const charityAmount = amount * 0.01;
-    const tradeAmount = amount - charityAmount;
+    const charityAmount = charityAddress ? amount * 0.01 : 0;
+    const tradeAmount = charityAddress ? amount - charityAmount : amount;
     const assetIdLowercase = sourceAsset.toLowerCase();
     const tradeParams = {
         amount: tradeAmount,
@@ -106,24 +109,26 @@ export async function executeTradeAndCharityTransfer(runtime: IAgentRuntime, net
         toAssetId: targetAsset.toLowerCase(),
     };
 
-    const transfer = await executeTransfer(wallet, charityAmount, assetIdLowercase, network);
+    let transfer: Transfer;
+    if (charityAddress && charityAmount > 0) {
+        transfer = await executeTransfer(wallet, charityAmount, assetIdLowercase, charityAddress);
+        elizaLogger.log("Charity Transfer successful:", {
+            address: charityAddress,
+            transactionUrl: transfer.getTransactionLink(),
+        });
+        await appendTransactionsToCsv([{
+            address: charityAddress,
+            amount: charityAmount,
+            status: "Success",
+            errorCode: null,
+            transactionUrl: transfer.getTransactionLink(),
+        }]);
+    }
+
     const trade: Trade = await wallet.createTrade(tradeParams);
     elizaLogger.log("Trade initiated:", trade.toString());
-    // Wait for the trade to complete
     await trade.wait();
-    const transactionUrl = transfer.getTransactionLink();
-    elizaLogger.log("Transfer successful:", {
-        address: charityAddress,
-        transactionUrl,
-    });
     elizaLogger.log("Trade completed successfully:", trade.toString());
-    await appendTransactionsToCsv([{
-        address: charityAddress,
-        amount: charityAmount,
-        status: "Success",
-        errorCode: null,
-        transactionUrl,
-    }]);
     await appendTradeToCsv(trade);
     return {
         trade,
@@ -300,6 +305,8 @@ export async function getWalletDetails(
             amount: balance[1].toString(),
         }));
 
+        // Fetch the wallet's recent transactions
+        const walletAddress = await wallet.getDefaultAddress();
         const transactions =[];
 
         const formattedTransactions = transactions.map((transaction) => {
@@ -316,7 +323,7 @@ export async function getWalletDetails(
         // Return formatted data
         return {
             balances: formattedBalances,
-            transactions: formattedTransactions,
+            transactions: [],
         };
     } catch (error) {
         console.error("Error fetching wallet details:", error);
@@ -333,28 +340,49 @@ export async function getWalletDetails(
  */
 export async function executeTransferAndCharityTransfer(wallet: Wallet, amount: number, sourceAsset: string, targetAddress: string, network: string) {
     const charityAddress = getCharityAddress(network);
-    const charityAmount = amount * 0.01;
-    const transferAmount = amount - charityAmount;
+    const charityAmount = charityAddress ? amount * 0.01 : 0;
+    const transferAmount = charityAddress ? amount - charityAmount : amount;
     const assetIdLowercase = sourceAsset.toLowerCase();
-    const charityTransfer = await executeTransfer(wallet, charityAmount, assetIdLowercase, charityAddress);
-    elizaLogger.log("Charity Transfer successful:", charityTransfer.toString());
+
+    let charityTransfer: Transfer;
+    if (charityAddress && charityAmount > 0) {
+        charityTransfer = await executeTransfer(wallet, charityAmount, assetIdLowercase, charityAddress);
+        elizaLogger.log("Charity Transfer successful:", charityTransfer.toString());
+    }
+
     const transferDetails = {
         amount: transferAmount,
         assetId: assetIdLowercase,
         destination: targetAddress,
         gasless: assetIdLowercase === "usdc" ? true : false,
     };
-    elizaLogger.log("Initiating transfer charity:", transferDetails);
+    elizaLogger.log("Initiating transfer:", transferDetails);
     const transfer = await wallet.createTransfer(transferDetails);
     elizaLogger.log("Transfer initiated:", transfer.toString());
     await transfer.wait();
+
+    let responseText = `Transfer executed successfully:
+- Amount: ${transfer.getAmount()}
+- Asset: ${assetIdLowercase}
+- Destination: ${targetAddress}
+- Transaction URL: ${transfer.getTransactionLink() || ""}`;
+
+    if (charityTransfer) {
+        responseText += `
+- Charity Amount: ${charityTransfer.getAmount()}
+- Charity Transaction URL: ${charityTransfer.getTransactionLink() || ""}`;
+    } else {
+        responseText += "\n(Note: Charity transfer was not completed)";
+    }
+
+    elizaLogger.log(responseText);
+
     return {
         transfer,
         charityTransfer,
+        responseText,
     }
-
 }
-
 
 /**
  * Executes a transfer.
@@ -371,10 +399,18 @@ export async function executeTransfer(wallet: Wallet, amount: number, sourceAsse
         destination: targetAddress,
         gasless: assetIdLowercase === "usdc" ? true : false,
     };
-    elizaLogger.log("Initiating transfer charity:", transferDetails);
-    const transfer = await wallet.createTransfer(transferDetails);
-    elizaLogger.log("Charity Transfer initiated:", transfer.toString());
-    await transfer.wait();
+    elizaLogger.log("Initiating transfer:", transferDetails);
+    let transfer: Transfer | undefined;
+    try {
+        transfer = await wallet.createTransfer(transferDetails);
+        elizaLogger.log("Transfer initiated:", transfer.toString());
+        await transfer.wait({
+        intervalSeconds: 1,
+        timeoutSeconds: 20,
+        });
+    } catch (error) {
+        elizaLogger.error("Error executing transfer:", error);
+    }
     return transfer;
 }
 
@@ -384,18 +420,16 @@ export async function executeTransfer(wallet: Wallet, amount: number, sourceAsse
  * https://www.givedirectly.org/crypto/?_gl=1*va5e6k*_gcl_au*MTM1NDUzNTk5Mi4xNzMzMDczNjA3*_ga*OTIwMDMwNTMwLjE3MzMwNzM2MDg.*_ga_GV8XF9FJ16*MTczMzA3MzYwNy4xLjEuMTczMzA3MzYyMi40NS4wLjA.
  * @param {string} network - The network to use.
  */
-export function getCharityAddress(network: string): string {
- let charityAddress;
+export function getCharityAddress(network: string): string | null {
+    let charityAddress = null;
     if (network === "base") {
-        charityAddress = "0x1234567890123456789012345678901234567890";
+        charityAddress = "0x750EF1D7a0b4Ab1c97B7A623D7917CcEb5ea779C";
     } else if (network === "sol") {
         charityAddress = "pWvDXKu6CpbKKvKQkZvDA66hgsTB6X2AgFxksYogHLV";
     } else if (network === "eth") {
         charityAddress = "0x750EF1D7a0b4Ab1c97B7A623D7917CcEb5ea779C";
-    } else if (network === "arb") {
-        charityAddress = "0x1234567890123456789012345678901234567890";
-    } else if (network === "pol") {
-        charityAddress = "0x1234567890123456789012345678901234567890";
+    } else {
+        return null;
     }
     return charityAddress;
 }
