@@ -4,55 +4,13 @@ import crypto from "crypto";
 import { DeriveKeyResponse, TappdClient } from "@phala/dstack-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 import { PrivateKeyAccount, keccak256 } from "viem";
-import { RemoteAttestationProvider } from "./remoteAttestationProvider";
-import { TEEMode, RemoteAttestationQuote } from "../types/tee";
-
-interface DeriveKeyAttestationData {
-    agentId: string;
-    publicKey: string;
-}
 
 class DeriveKeyProvider {
     private client: TappdClient;
-    private raProvider: RemoteAttestationProvider;
 
-    constructor(teeMode?: string) {
-        let endpoint: string | undefined;
-
-        // Both LOCAL and DOCKER modes use the simulator, just with different endpoints
-        switch(teeMode) {
-            case TEEMode.LOCAL:
-                endpoint = "http://localhost:8090";
-                console.log("TEE: Connecting to local simulator at localhost:8090");
-                break;
-            case TEEMode.DOCKER:
-                endpoint = "http://host.docker.internal:8090";
-                console.log("TEE: Connecting to simulator via Docker at host.docker.internal:8090");
-                break;
-            case TEEMode.PRODUCTION:
-                endpoint = undefined;
-                console.log("TEE: Running in production mode without simulator");
-                break;
-            default:
-                throw new Error(`Invalid TEE_MODE: ${teeMode}. Must be one of: LOCAL, DOCKER, PRODUCTION`);
-        }
-
+    constructor(endpoint?: string) {
         this.client = endpoint ? new TappdClient(endpoint) : new TappdClient();
-        this.raProvider = new RemoteAttestationProvider(teeMode);
     }
-
-    private async generateDeriveKeyAttestation(agentId: string, publicKey: string): Promise<RemoteAttestationQuote> {
-        const deriveKeyData: DeriveKeyAttestationData = {
-            agentId,
-            publicKey
-        }
-        const reportdata = JSON.stringify(deriveKeyData);
-        console.log("Generating attestation for: ", reportdata);
-        const quote = await this.raProvider.generateAttestation(reportdata);
-        console.log("TEE Quote generated:", quote);
-        return quote;
-    }
-
 
     async rawDeriveKey(
         path: string,
@@ -78,9 +36,8 @@ class DeriveKeyProvider {
 
     async deriveEd25519Keypair(
         path: string,
-        subject: string,
-        agentId: string
-    ): Promise<{ keypair: Keypair, attestation: RemoteAttestationQuote }> {
+        subject: string
+    ): Promise<Keypair> {
         try {
             if (!path || !subject) {
                 console.error(
@@ -98,14 +55,8 @@ class DeriveKeyProvider {
             const seedArray = new Uint8Array(seed);
             const keypair = Keypair.fromSeed(seedArray.slice(0, 32));
 
-            // Generate an attestation for the derived key data for public to verify
-            const attestation = await this.generateDeriveKeyAttestation(
-                agentId,
-                keypair.publicKey.toBase58()
-            );
             console.log("Key Derived Successfully!");
-
-            return { keypair, attestation };
+            return keypair;
         } catch (error) {
             console.error("Error deriving key:", error);
             throw error;
@@ -114,9 +65,8 @@ class DeriveKeyProvider {
 
     async deriveEcdsaKeypair(
         path: string,
-        subject: string,
-        agentId: string
-    ): Promise<{ keypair: PrivateKeyAccount, attestation: RemoteAttestationQuote }> {
+        subject: string
+    ): Promise<PrivateKeyAccount> {
         try {
             if (!path || !subject) {
                 console.error(
@@ -129,15 +79,8 @@ class DeriveKeyProvider {
                 await this.client.deriveKey(path, subject);
             const hex = keccak256(deriveKeyResponse.asUint8Array());
             const keypair: PrivateKeyAccount = privateKeyToAccount(hex);
-
-            // Generate an attestation for the derived key data for public to verify
-            const attestation = await this.generateDeriveKeyAttestation(
-                agentId,
-                keypair.address
-            );
             console.log("ECDSA Key Derived Successfully!");
-
-            return { keypair, attestation };
+            return keypair;
         } catch (error) {
             console.error("Error deriving ecdsa key:", error);
             throw error;
@@ -147,9 +90,8 @@ class DeriveKeyProvider {
 
 const deriveKeyProvider: Provider = {
     get: async (runtime: IAgentRuntime, _message?: Memory, _state?: State) => {
-        const teeMode = runtime.getSetting("TEE_MODE");
-        const provider = new DeriveKeyProvider(teeMode);
-        const agentId = runtime.agentId;
+        const endpoint = runtime.getSetting("DSTACK_SIMULATOR_ENDPOINT");
+        const provider = new DeriveKeyProvider(endpoint);
         try {
             // Validate wallet configuration
             if (!runtime.getSetting("WALLET_SECRET_SALT")) {
@@ -165,17 +107,15 @@ const deriveKeyProvider: Provider = {
                     runtime.getSetting("WALLET_SECRET_SALT") || "secret_salt";
                 const solanaKeypair = await provider.deriveEd25519Keypair(
                     "/",
-                    secretSalt,
-                    agentId
+                    secretSalt
                 );
                 const evmKeypair = await provider.deriveEcdsaKeypair(
                     "/",
-                    secretSalt,
-                    agentId
+                    secretSalt
                 );
                 return JSON.stringify({
-                    solana: solanaKeypair.keypair.publicKey,
-                    evm: evmKeypair.keypair.address,
+                    solana: solanaKeypair.publicKey,
+                    evm: evmKeypair.address,
                 });
             } catch (error) {
                 console.error("Error creating PublicKey:", error);

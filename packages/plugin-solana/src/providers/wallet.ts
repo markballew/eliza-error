@@ -2,7 +2,6 @@ import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
-import { DeriveKeyProvider, TEEMode } from "@ai16z/plugin-tee";
 
 // Provider configuration
 const PROVIDER_CONFIG = {
@@ -371,33 +370,12 @@ const walletProvider: Provider = {
         _state?: State
     ): Promise<string | null> => {
         try {
-            let publicKey: PublicKey;
-            const agentId = runtime.agentId;
-            const publicKeyEnv = runtime.getSetting("SOLANA_PUBLIC_KEY");
-            const teeMode = runtime.getSetting("TEE_MODE") || TEEMode.OFF;
-
-            // Validate TEE configuration
-            if (teeMode !== TEEMode.OFF) {
-                console.log("TEE_MODE is enabled, deriving wallet keypair");
-                const walletSecretSalt = runtime.getSetting("WALLET_SECRET_SALT");
-                if (!walletSecretSalt) {
-                    console.error(
-                        "WALLET_SECRET_SALT required when TEE_MODE is enabled"
-                    );
-                    return "";
-                }
-                const deriveKeyProvider = new DeriveKeyProvider(teeMode);
-                const deriveKeyPairResult = await deriveKeyProvider.deriveEd25519Keypair("/", walletSecretSalt, agentId);
-                publicKey = deriveKeyPairResult.keypair.publicKey;
-            } else if (teeMode === TEEMode.OFF) {
-                console.log("TEE_MODE is disabled, using SOLANA_PUBLIC_KEY");
-                if (!publicKeyEnv) {
-                    console.error(
-                        "SOLANA_PUBLIC_KEY not configured, skipping wallet injection"
-                    );
-                    return "";
-                }
-                publicKey = new PublicKey(publicKeyEnv);
+            const publicKey = runtime.getSetting("SOLANA_PUBLIC_KEY");
+            if (!publicKey) {
+                console.error(
+                    "SOLANA_PUBLIC_KEY not configured, skipping wallet injection"
+                );
+                return "";
             }
 
             const connection = new Connection(
@@ -406,7 +384,7 @@ const walletProvider: Provider = {
 
             const provider = new WalletProvider(
                 connection,
-                publicKey
+                new PublicKey(publicKey)
             );
 
             return await provider.getFormattedPortfolio(runtime);

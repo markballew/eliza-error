@@ -5,6 +5,7 @@ import { DirectClientInterface } from "@ai16z/client-direct";
 import { DiscordClientInterface } from "@ai16z/client-discord";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
 import { TwitterClientInterface } from "@ai16z/client-twitter";
+import { FarcasterAgentClient } from "@ai16z/client-farcaster";
 import {
     AgentRuntime,
     CacheManager,
@@ -36,7 +37,7 @@ import { imageGenerationPlugin } from "@ai16z/plugin-image-generation";
 import { evmPlugin } from "@ai16z/plugin-evm";
 import { createNodePlugin } from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { teePlugin, TEEMode } from "@ai16z/plugin-tee";
+import { teePlugin } from "@ai16z/plugin-tee";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -322,6 +323,12 @@ export async function initializeClients(
         clients.push(twitterClients);
     }
 
+    if (clientTypes.includes("farcaster")) {
+        const farcasterClients = new FarcasterAgentClient(runtime);
+        farcasterClients.start();
+        clients.push(farcasterClients);
+    }
+
     if (character.plugins?.length > 0) {
         for (const plugin of character.plugins) {
             if (plugin.clients) {
@@ -354,15 +361,6 @@ export function createAgent(
     );
 
     nodePlugin ??= createNodePlugin();
-
-    const teeMode = getSecret(character, "TEE_MODE") || "OFF";
-    const walletSecretSalt = getSecret(character, "WALLET_SECRET_SALT");
-
-    // Validate TEE configuration
-    if (teeMode !== TEEMode.OFF && !walletSecretSalt) {
-        elizaLogger.error("WALLET_SECRET_SALT required when TEE_MODE is enabled");
-        throw new Error("Invalid TEE configuration");
-    }
 
     return new AgentRuntime({
         databaseAdapter: db,
@@ -399,9 +397,7 @@ export function createAgent(
             getSecret(character, "COINBASE_PRIVATE_KEY")
                 ? [coinbaseMassPaymentsPlugin, tradePlugin]
                 : []),
-            ...(teeMode !== TEEMode.OFF && walletSecretSalt
-                ? [teePlugin, solanaPlugin]
-                : []),
+            getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
             getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
         ].filter(Boolean),
         providers: [],
