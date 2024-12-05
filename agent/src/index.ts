@@ -9,7 +9,6 @@ import {
     AgentRuntime,
     CacheManager,
     Character,
-    Clients,
     DbCacheAdapter,
     FsCacheAdapter,
     IAgentRuntime,
@@ -31,14 +30,12 @@ import {
     coinbaseCommercePlugin,
     coinbaseMassPaymentsPlugin,
     tradePlugin,
-    tokenContractPlugin,
 } from "@ai16z/plugin-coinbase";
 import { confluxPlugin } from "@ai16z/plugin-conflux";
 import { imageGenerationPlugin } from "@ai16z/plugin-image-generation";
 import { evmPlugin } from "@ai16z/plugin-evm";
 import { createNodePlugin } from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { aptosPlugin, TransferAptosToken } from "@ai16z/plugin-aptos";
 import { teePlugin } from "@ai16z/plugin-tee";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -84,10 +81,6 @@ function tryLoadFile(filePath: string): string | null {
     } catch (e) {
         return null;
     }
-}
-
-function isAllStrings(arr: unknown[]): boolean {
-    return Array.isArray(arr) && arr.every((item) => typeof item === "string");
 }
 
 export async function loadCharacters(
@@ -156,12 +149,12 @@ export async function loadCharacters(
                 validateCharacterConfig(character);
 
                 // Handle plugins
-                if (isAllStrings(character.plugins)) {
+                if (character.plugins) {
                     elizaLogger.info("Plugins are: ", character.plugins);
                     const importedPlugins = await Promise.all(
                         character.plugins.map(async (plugin) => {
                             const importedPlugin = await import(plugin);
-                            return importedPlugin.default;
+                            return importedPlugin;
                         })
                     );
                     character.plugins = importedPlugins;
@@ -204,7 +197,6 @@ export function getTokenForProvider(
                 settings.ETERNALAI_API_KEY
             );
         case ModelProviderName.LLAMACLOUD:
-        case ModelProviderName.TOGETHER:
             return (
                 character.settings?.secrets?.LLAMACLOUD_API_KEY ||
                 settings.LLAMACLOUD_API_KEY ||
@@ -391,11 +383,10 @@ export function createAgent(
                 : null,
             ...(getSecret(character, "COINBASE_API_KEY") &&
             getSecret(character, "COINBASE_PRIVATE_KEY")
-                ? [coinbaseMassPaymentsPlugin, tradePlugin, tokenContractPlugin]
+                ? [coinbaseMassPaymentsPlugin, tradePlugin]
                 : []),
             getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
             getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
-            getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -489,9 +480,7 @@ const startAgents = async () => {
     }
 
     elizaLogger.log("Chat started. Type 'exit' to quit.");
-    if (!args["non-interactive"]) {
-        chat();
-    }
+    chat();
 };
 
 startAgents().catch((error) => {

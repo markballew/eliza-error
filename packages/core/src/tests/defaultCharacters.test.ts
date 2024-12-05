@@ -25,8 +25,8 @@ describe("defaultCharacter", () => {
     });
 
     it("should have a system description", () => {
-        expect(defaultCharacter.system).toContain(
-            "Roleplay and generate interesting"
+        expect(defaultCharacter.system).toBe(
+            "Roleplay and generate interesting on behalf of Eliza."
         );
     });
 
@@ -43,7 +43,7 @@ describe("defaultCharacter", () => {
     });
 
     it("should have a topics array with at least one broad topic", () => {
-        expect(defaultCharacter.topics).toContain("Learning");
+        expect(defaultCharacter.topics).toContain("metaphysics");
     });
 
     it('should have style settings with "all" array', () => {
