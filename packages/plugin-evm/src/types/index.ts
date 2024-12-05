@@ -8,10 +8,8 @@ import type {
     PublicClient,
     WalletClient,
 } from "viem";
-import * as viemChains from "viem/chains";
 
-const SupportedChainList = Object.keys(viemChains) as Array<keyof typeof viemChains>;
-export type SupportedChain = (typeof SupportedChainList)[number];
+export type SupportedChain = "ethereum" | "base";
 
 // Transaction types
 export interface Transaction {
@@ -89,29 +87,6 @@ export interface EvmPluginConfig {
     rpcUrl?: {
         ethereum?: string;
         base?: string;
-        sepolia?: string;
-        bsc?: string;
-        arbitrum?: string;
-        avalanche?: string;
-        polygon?: string;
-        optimism?: string;
-        cronos?: string;
-        gnosis?: string;
-        fantom?: string;
-        klaytn?: string;
-        celo?: string;
-        moonbeam?: string;
-        aurora?: string;
-        harmonyOne?: string;
-        moonriver?: string;
-        arbitrumNova?: string;
-        mantle?: string;
-        linea?: string;
-        scroll?: string;
-        filecoin?: string;
-        taiko?: string;
-        zksync?: string;
-        canto?: string;
     };
     secrets?: {
         EVM_PRIVATE_KEY: string;
