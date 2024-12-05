@@ -9,7 +9,6 @@ import {
     AgentRuntime,
     CacheManager,
     Character,
-    Clients,
     DbCacheAdapter,
     FsCacheAdapter,
     IAgentRuntime,
@@ -31,15 +30,14 @@ import {
     coinbaseCommercePlugin,
     coinbaseMassPaymentsPlugin,
     tradePlugin,
-    tokenContractPlugin,
 } from "@ai16z/plugin-coinbase";
 import { confluxPlugin } from "@ai16z/plugin-conflux";
 import { imageGenerationPlugin } from "@ai16z/plugin-image-generation";
 import { evmPlugin } from "@ai16z/plugin-evm";
 import { createNodePlugin } from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
-import { aptosPlugin, TransferAptosToken } from "@ai16z/plugin-aptos";
 import { teePlugin } from "@ai16z/plugin-tee";
+import { nearPlugin } from "@ai16z/plugin-near";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -375,7 +373,12 @@ export function createAgent(
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? solanaPlugin
                 : null,
-            getSecret(character, "EVM_PRIVATE_KEY") ||
+            (getSecret(character, "NEAR_ADDRESS") ||
+                getSecret(character, "NEAR_WALLET_PUBLIC_KEY")) &&
+                getSecret(character, "NEAR_WALLET_SECRET_KEY")
+                ? nearPlugin
+                : null,
+            getSecret(character, "EVM_PUBLIC_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
@@ -391,11 +394,10 @@ export function createAgent(
                 : null,
             ...(getSecret(character, "COINBASE_API_KEY") &&
             getSecret(character, "COINBASE_PRIVATE_KEY")
-                ? [coinbaseMassPaymentsPlugin, tradePlugin, tokenContractPlugin]
+                ? [coinbaseMassPaymentsPlugin, tradePlugin]
                 : []),
             getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
             getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
-            getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -437,7 +439,6 @@ async function startAgent(character: Character, directClient) {
 
         const cache = intializeDbCache(character, db);
         const runtime = createAgent(character, db, cache, token);
-
         await runtime.initialize();
 
         const clients = await initializeClients(character, runtime);
