@@ -13,7 +13,7 @@ import {
     knowledge,
     stringToUuid,
 } from "@ai16z/eliza";
-import { validateGithubConfig } from "./environment";
+import { validateGithubConfig } from "./enviroment";
 
 export interface GitHubConfig {
     owner: string;
