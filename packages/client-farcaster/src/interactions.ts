@@ -5,11 +5,9 @@ import {
     Memory,
     ModelClass,
     stringToUuid,
-    elizaLogger,
-    HandlerCallback,
-    Content,
     type IAgentRuntime,
 } from "@ai16z/eliza";
+import { isCastAddMessage, type Signer } from "@farcaster/hub-nodejs";
 import type { FarcasterClient } from "./client";
 import { toHex } from "viem";
 import { buildConversationThread, createCastMemory } from "./memory";
@@ -28,7 +26,7 @@ export class FarcasterInteractionManager {
     constructor(
         public client: FarcasterClient,
         public runtime: IAgentRuntime,
-        private signerUuid: string,
+        private signer: Signer,
         public cache: Map<string, any>
     ) {}
 
@@ -37,16 +35,14 @@ export class FarcasterInteractionManager {
             try {
                 await this.handleInteractions();
             } catch (error) {
-                elizaLogger.error(error);
+                console.error(error);
                 return;
             }
 
             this.timeout = setTimeout(
                 handleInteractionsLoop,
-                Number(
-                    this.runtime.getSetting("FARCASTER_POLL_INTERVAL") || 120
-                ) * 1000 // Default to 2 minutes
-            );
+                (Math.floor(Math.random() * (5 - 2 + 1)) + 2) * 60 * 1000
+            ); // Random interval between 2-5 minutes
         };
 
         handleInteractionsLoop();
@@ -59,46 +55,39 @@ export class FarcasterInteractionManager {
     private async handleInteractions() {
         const agentFid = Number(this.runtime.getSetting("FARCASTER_FID"));
 
-        const mentions = await this.client.getMentions({
+        const { messages } = await this.client.getMentions({
             fid: agentFid,
-            pageSize: 10,
         });
 
         const agent = await this.client.getProfile(agentFid);
-        for (const mention of mentions) {
+
+        for (const mention of messages) {
+            if (!isCastAddMessage(mention)) continue;
+
             const messageHash = toHex(mention.hash);
+            const messageSigner = toHex(mention.signer);
             const conversationId = `${messageHash}-${this.runtime.agentId}`;
             const roomId = stringToUuid(conversationId);
-            const userId = stringToUuid(mention.authorFid.toString());
+            const userId = stringToUuid(messageSigner);
 
-            const pastMemoryId = castUuid({
-                agentId: this.runtime.agentId,
-                hash: mention.hash,
-            });
-
-            const pastMemory =
-                await this.runtime.messageManager.getMemoryById(pastMemoryId);
-
-            if (pastMemory) {
-                continue;
-            }
+            const cast = await this.client.loadCastFromMessage(mention);
 
             await this.runtime.ensureConnection(
                 userId,
                 roomId,
-                mention.profile.username,
-                mention.profile.name,
+                cast.profile.username,
+                cast.profile.name,
                 "farcaster"
             );
 
-            const thread = await buildConversationThread({
+            await buildConversationThread({
                 client: this.client,
                 runtime: this.runtime,
-                cast: mention,
+                cast,
             });
 
             const memory: Memory = {
-                content: { text: mention.text, hash: mention.hash },
+                content: { text: mention.data.castAddBody.text },
                 agentId: this.runtime.agentId,
                 userId,
                 roomId,
@@ -106,33 +95,28 @@ export class FarcasterInteractionManager {
 
             await this.handleCast({
                 agent,
-                cast: mention,
+                cast,
                 memory,
-                thread,
             });
         }
-
-        this.client.lastInteractionTimestamp = new Date();
     }
 
     private async handleCast({
         agent,
         cast,
         memory,
-        thread,
     }: {
         agent: Profile;
         cast: Cast;
         memory: Memory;
-        thread: Cast[];
     }) {
         if (cast.profile.fid === agent.fid) {
-            elizaLogger.info("skipping cast from bot itself", cast.hash);
+            console.log("skipping cast from bot itself", cast.id);
             return;
         }
 
         if (!memory.content.text) {
-            elizaLogger.info("skipping cast with no text", cast.hash);
+            console.log("skipping cast with no text", cast.id);
             return { text: "", action: "IGNORE" };
         }
 
@@ -148,25 +132,10 @@ export class FarcasterInteractionManager {
             timeline
         );
 
-        const formattedConversation = thread
-            .map(
-                (cast) => `@${cast.profile.username} (${new Date(
-                    cast.timestamp
-                ).toLocaleString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    month: "short",
-                    day: "numeric",
-                })}):
-                ${cast.text}`
-            )
-            .join("\n\n");
-
         const state = await this.runtime.composeState(memory, {
             farcasterUsername: agent.username,
             timeline: formattedTimeline,
             currentPost,
-            formattedConversation,
         });
 
         const shouldRespondContext = composeContext({
@@ -180,7 +149,7 @@ export class FarcasterInteractionManager {
 
         const memoryId = castUuid({
             agentId: this.runtime.agentId,
-            hash: cast.hash,
+            hash: cast.id,
         });
 
         const castMemory =
@@ -196,20 +165,15 @@ export class FarcasterInteractionManager {
             );
         }
 
-        const shouldRespondResponse = await generateShouldRespond({
+        const shouldRespond = await generateShouldRespond({
             runtime: this.runtime,
             context: shouldRespondContext,
             modelClass: ModelClass.SMALL,
         });
 
-        if (
-            shouldRespondResponse === "IGNORE" ||
-            shouldRespondResponse === "STOP"
-        ) {
-            elizaLogger.info(
-                `Not responding to cast because generated ShouldRespond was ${shouldRespondResponse}`
-            );
-            return;
+        if (!shouldRespond) {
+            console.log("Not responding to message");
+            return { text: "", action: "IGNORE" };
         }
 
         const context = composeContext({
@@ -221,65 +185,45 @@ export class FarcasterInteractionManager {
                 messageHandlerTemplate,
         });
 
-        const responseContent = await generateMessageResponse({
+        const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
             modelClass: ModelClass.LARGE,
         });
 
-        responseContent.inReplyTo = memoryId;
+        response.inReplyTo = memoryId;
 
-        if (!responseContent.text) return;
+        if (!response.text) return;
 
-        if (this.runtime.getSetting("FARCASTER_DRY_RUN") === "true") {
-            elizaLogger.info(
-                `Dry run: would have responded to cast ${cast.hash} with ${responseContent.text}`
-            );
-            return;
-        }
+        try {
+            const results = await sendCast({
+                runtime: this.runtime,
+                client: this.client,
+                signer: this.signer,
+                profile: cast.profile,
+                content: response,
+                roomId: memory.roomId,
+                inReplyTo: {
+                    fid: cast.message.data.fid,
+                    hash: cast.message.hash,
+                },
+            });
 
-        const callback: HandlerCallback = async (
-            content: Content,
-            files: any[]
-        ) => {
-            try {
-                if (memoryId && !content.inReplyTo) {
-                    content.inReplyTo = memoryId;
-                }
-                const results = await sendCast({
-                    runtime: this.runtime,
-                    client: this.client,
-                    signerUuid: this.signerUuid,
-                    profile: cast.profile,
-                    content: content,
-                    roomId: memory.roomId,
-                    inReplyTo: {
-                        fid: cast.authorFid,
-                        hash: cast.hash,
-                    },
-                });
-                // sendCast lost response action, so we need to add it back here
-                results[0].memory.content.action = content.action;
+            const newState = await this.runtime.updateRecentMessageState(state);
 
-                for (const { memory } of results) {
-                    await this.runtime.messageManager.createMemory(memory);
-                }
-                return results.map((result) => result.memory);
-            } catch (error) {
-                console.error("Error sending response cast:", error);
-                return [];
+            for (const { memory } of results) {
+                await this.runtime.messageManager.createMemory(memory);
             }
-        };
 
-        const responseMessages = await callback(responseContent);
+            await this.runtime.evaluate(memory, newState);
 
-        const newState = await this.runtime.updateRecentMessageState(state);
-
-        await this.runtime.processActions(
-            memory,
-            responseMessages,
-            newState,
-            callback
-        );
+            await this.runtime.processActions(
+                memory,
+                results.map((result) => result.memory),
+                newState
+            );
+        } catch (error) {
+            console.error(`Error sending response cast: ${error}`);
+        }
     }
 }

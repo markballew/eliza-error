@@ -1,11 +1,12 @@
 import type { IAgentRuntime, Memory, State } from "@ai16z/eliza";
 import {
+    ChainId,
     createConfig,
     executeRoute,
     ExtendedChain,
     getRoutes,
 } from "@lifi/sdk";
-import { WalletProvider } from "../providers/wallet";
+import { getChainConfigs, WalletProvider } from "../providers/wallet";
 import { bridgeTemplate } from "../templates";
 import type { BridgeParams, Transaction } from "../types";
 
@@ -17,23 +18,25 @@ export class BridgeAction {
     constructor(private walletProvider: WalletProvider) {
         this.config = createConfig({
             integrator: "eliza",
-            chains: Object.values(this.walletProvider.chains).map((config) => ({
-                id: config.id,
+            chains: Object.values(
+                getChainConfigs(this.walletProvider.runtime)
+            ).map((config) => ({
+                id: config.chainId,
                 name: config.name,
                 key: config.name.toLowerCase(),
                 chainType: "EVM",
                 nativeToken: {
                     ...config.nativeCurrency,
-                    chainId: config.id,
+                    chainId: config.chainId,
                     address: "0x0000000000000000000000000000000000000000",
                     coinKey: config.nativeCurrency.symbol,
                 },
                 metamask: {
-                    chainId: `0x${config.id.toString(16)}`,
+                    chainId: `0x${config.chainId.toString(16)}`,
                     chainName: config.name,
                     nativeCurrency: config.nativeCurrency,
-                    rpcUrls: [config.rpcUrls.default.http[0]],
-                    blockExplorerUrls: [config.blockExplorers.default.url],
+                    rpcUrls: [config.rpcUrl],
+                    blockExplorerUrls: [config.blockExplorerUrl],
                 },
                 diamondAddress: "0x0000000000000000000000000000000000000000",
                 coin: config.nativeCurrency.symbol,
@@ -43,15 +46,16 @@ export class BridgeAction {
     }
 
     async bridge(params: BridgeParams): Promise<Transaction> {
-        const walletClient = this.walletProvider.getWalletClient(
-            params.fromChain
-        );
+        const walletClient = this.walletProvider.getWalletClient();
         const [fromAddress] = await walletClient.getAddresses();
 
         const routes = await getRoutes({
-            fromChainId: this.walletProvider.getChainConfigs(params.fromChain)
-                .id,
-            toChainId: this.walletProvider.getChainConfigs(params.toChain).id,
+            fromChainId: getChainConfigs(this.walletProvider.runtime)[
+                params.fromChain
+            ].chainId as ChainId,
+            toChainId: getChainConfigs(this.walletProvider.runtime)[
+                params.toChain
+            ].chainId as ChainId,
             fromTokenAddress: params.fromToken,
             toTokenAddress: params.toToken,
             fromAmount: params.amount,
@@ -74,7 +78,9 @@ export class BridgeAction {
             to: routes.routes[0].steps[0].estimate
                 .approvalAddress as `0x${string}`,
             value: BigInt(params.amount),
-            chainId: this.walletProvider.getChainConfigs(params.fromChain).id,
+            chainId: getChainConfigs(this.walletProvider.runtime)[
+                params.fromChain
+            ].chainId,
         };
     }
 }
@@ -88,10 +94,7 @@ export const bridgeAction = {
         state: State,
         options: any
     ) => {
-        const privateKey = runtime.getSetting(
-            "EVM_PRIVATE_KEY"
-        ) as `0x${string}`;
-        const walletProvider = new WalletProvider(privateKey);
+        const walletProvider = new WalletProvider(runtime);
         const action = new BridgeAction(walletProvider);
         return action.bridge(options);
     },

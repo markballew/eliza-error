@@ -205,9 +205,6 @@ export type Models = {
     [ModelProviderName.GAIANET]: Model;
     [ModelProviderName.ALI_BAILIAN]: Model;
     [ModelProviderName.VOLENGINE]: Model;
-    [ModelProviderName.NANOGPT]: Model;
-    [ModelProviderName.HYPERBOLIC]: Model;
-    [ModelProviderName.VENICE]: Model;
 };
 
 /**
@@ -233,9 +230,6 @@ export enum ModelProviderName {
     GAIANET = "gaianet",
     ALI_BAILIAN = "ali_bailian",
     VOLENGINE = "volengine",
-    NANOGPT = "nanogpt",
-    HYPERBOLIC = "hyperbolic",
-    VENICE = "venice",
 }
 
 /**
@@ -568,10 +562,10 @@ export type Media = {
  */
 export type Client = {
     /** Start client connection */
-    start: (runtime: IAgentRuntime) => Promise<unknown>;
+    start: (runtime?: IAgentRuntime) => Promise<unknown>;
 
     /** Stop client connection */
-    stop: (runtime: IAgentRuntime) => Promise<unknown>;
+    stop: (runtime?: IAgentRuntime) => Promise<unknown>;
 };
 
 /**
@@ -605,12 +599,9 @@ export type Plugin = {
  */
 export enum Clients {
     DISCORD = "discord",
-// you can't specify this in characters
-// all characters are registered with this
-//    DIRECT = "direct",
+    DIRECT = "direct",
     TWITTER = "twitter",
     TELEGRAM = "telegram",
-    FARCASTER = "farcaster",
 }
 /**
  * Configuration for an agent character
@@ -689,7 +680,7 @@ export type Character = {
     /** Optional configuration */
     settings?: {
         secrets?: { [key: string]: string };
-        intiface?: boolean;
+        buttplug?: boolean;
         voice?: {
             model?: string; // For VITS
             url?: string; // Legacy VITS support
@@ -717,11 +708,6 @@ export type Character = {
         discord?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
-            messageSimilarityThreshold?: number;
-            isPartOfTeam?: boolean;
-            teamAgentIds?: string[];
-            teamLeaderId?: string;
-            teamMemberInterestKeywords?: string[];
         };
         telegram?: {
             shouldIgnoreBotMessages?: boolean;
@@ -1001,8 +987,6 @@ export interface IAgentRuntime {
     evaluators: Evaluator[];
     plugins: Plugin[];
 
-    fetch?: typeof fetch | null;
-
     messageManager: IMemoryManager;
     descriptionManager: IMemoryManager;
     documentsManager: IMemoryManager;
@@ -1012,9 +996,6 @@ export interface IAgentRuntime {
     cacheManager: ICacheManager;
 
     services: Map<ServiceType, Service>;
-    // any could be EventEmitter
-    // but I think the real solution is forthcoming as a base client interface
-    clients: Record<string, any>;
 
     initialize(): Promise<void>;
 
@@ -1041,8 +1022,7 @@ export interface IAgentRuntime {
     evaluate(
         message: Memory,
         state?: State,
-        didRespond?: boolean,
-        callback?: HandlerCallback
+        didRespond?: boolean
     ): Promise<string[]>;
 
     ensureParticipantExists(userId: UUID, roomId: UUID): Promise<void>;
@@ -1137,15 +1117,6 @@ export interface IPdfService extends Service {
     convertPdfToText(pdfBuffer: Buffer): Promise<string>;
 }
 
-export interface IAwsS3Service extends Service {
-    uploadFile(imagePath: string, useSignedUrl: boolean, expiresIn: number ): Promise<{
-        success: boolean;
-        url?: string;
-        error?: string;
-    }>;
-    generateSignedUrl(fileName: string, expiresIn: number): Promise<string>
-}
-
 export type SearchResult = {
     title: string;
     url: string;
@@ -1171,8 +1142,7 @@ export enum ServiceType {
     BROWSER = "browser",
     SPEECH_GENERATION = "speech_generation",
     PDF = "pdf",
-    INTIFACE = "intiface",
-    AWS_S3 = "aws_s3",
+    BUTTPLUG = "buttplug",
 }
 
 export enum LoggingLevel {
@@ -1185,10 +1155,3 @@ export type KnowledgeItem = {
     id: UUID;
     content: Content;
 };
-
-export interface ActionResponse {
-    like: boolean;
-    retweet: boolean;
-    quote?: boolean;
-    reply?: boolean;
-}

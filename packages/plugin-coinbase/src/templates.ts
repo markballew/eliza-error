@@ -49,7 +49,7 @@ Here are the recent user messages for context:
 export const transferTemplate = `
 Extract the following details for processing a mass payout using the Coinbase SDK:
 - **receivingAddresses** (array): A list of wallet addresses receiving the funds.
-- **transferAmount** (number): The amount to transfer to each address.
+- **transferAmount** (number): The amount to transfer to each address (in the smallest unit, e.g., Wei for ETH).
 - **assetId** (string): The asset ID to transfer (e.g., ETH, BTC).
 - **network** (string): The blockchain network to use. Allowed values are:
     static networks: {
@@ -81,16 +81,14 @@ Here are the recent user messages for context:
 export const tradeTemplate = `
 Extract the following details for processing a trade using the Coinbase SDK:
 - **network** (string): The blockchain network to use (e.g., base, sol, eth, arb, pol).
-- **amount** (number): The amount to trade.
+- **amount** (number): The amount to trade (in the smallest unit, e.g., Wei for ETH).
 - **sourceAsset** (string): The asset ID to trade from (must be one of: ETH, SOL, USDC, WETH, GWEI, LAMPORT).
 - **targetAsset** (string): The asset ID to trade to (must be one of: ETH, SOL, USDC, WETH, GWEI, LAMPORT).
-- **side** (string): The side of the trade (must be either "BUY" or "SELL").
 
 Ensure that:
 1. **network** is one of the supported networks: "base", "sol", "eth", "arb", or "pol".
 2. **sourceAsset** and **targetAsset** are valid assets from the provided list.
 3. **amount** is a positive number.
-4. **side** is either "BUY" or "SELL".
 
 Provide the details in the following JSON format:
 
@@ -99,46 +97,13 @@ Provide the details in the following JSON format:
     "network": "<network>",
     "amount": <amount>,
     "sourceAsset": "<source_asset_id>",
-    "targetAsset": "<target_asset_id>",
-    "side": "<side>"
+    "targetAsset": "<target_asset_id>"
 }
 \`\`\`
 
 Here are the recent user messages for context:
 {{recentMessages}}
 `;
-
-export const advancedTradeTemplate = `
-Extract the following details for processing an advanced trade using the Coinbase Advanced Trading API:
-- **productId** (string): The trading pair ID (e.g., "BTC-USD", "ETH-USD", "SOL-USD")
-- **side** (string): The side of the trade (must be either "BUY" or "SELL")
-- **amount** (number): The amount to trade
-- **orderType** (string): The type of order (must be either "MARKET" or "LIMIT")
-- **limitPrice** (number, optional): The limit price for limit orders
-
-Ensure that:
-1. **productId** follows the format "ASSET-USD" (e.g., "BTC-USD")
-2. **side** is either "BUY" or "SELL"
-3. **amount** is a positive number
-4. **orderType** is either "MARKET" or "LIMIT"
-5. **limitPrice** is provided when orderType is "LIMIT"
-
-Provide the details in the following JSON format:
-
-\`\`\`json
-{
-    "productId": "<product_id>",
-    "side": "<side>",
-    "amount": <amount>,
-    "orderType": "<order_type>",
-    "limitPrice": <limit_price>
-}
-\`\`\`
-
-Here are the recent user messages for context:
-{{recentMessages}}
-`;
-
 
 export const tokenContractTemplate = `
 Extract the following details for deploying a token contract using the Coinbase SDK:
@@ -173,19 +138,9 @@ Extract the following details for invoking a smart contract using the Coinbase S
 - **method** (string): The method to invoke on the contract
 - **abi** (array): The ABI of the contract
 - **args** (object, optional): The arguments to pass to the contract method
-- **amount** (string, optional): The amount of the asset to send (as string to handle large numbers)
-- **assetId** (string, required): The ID of the asset to send (e.g., 'USDC')
-- **networkId** (string, required): The network ID to use in format "chain-network".
- static networks: {
-        readonly BaseSepolia: "base-sepolia";
-        readonly BaseMainnet: "base-mainnet";
-        readonly EthereumHolesky: "ethereum-holesky";
-        readonly EthereumMainnet: "ethereum-mainnet";
-        readonly PolygonMainnet: "polygon-mainnet";
-        readonly SolanaDevnet: "solana-devnet";
-        readonly SolanaMainnet: "solana-mainnet";
-        readonly ArbitrumMainnet: "arbitrum-mainnet";
-    };
+- **amount** (number, optional): The amount of the asset to send to a payable contract method
+- **assetId** (string, optional): The ID of the asset to send to a payable contract method
+- **network** (string): The blockchain network to use (e.g., base, eth, arb, pol)
 
 Provide the details in the following JSON format:
 
@@ -197,17 +152,17 @@ Provide the details in the following JSON format:
     "args": {
         "<arg_name>": "<arg_value>"
     },
-    "amount": "<amount_as_string>",
+    "amount": <amount>,
     "assetId": "<asset_id>",
-    "networkId": "<network_id>"
+    "network": "<network>"
 }
 \`\`\`
 
-Example for invoking a transfer method on the USDC contract:
+Example for invoking a transfer method on an ERC20 token contract:
 
 \`\`\`json
 {
-    "contractAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "contractAddress": "0x37f2131ebbc8f97717edc3456879ef56b9f4b97b",
     "method": "transfer",
     "abi": [
         {
@@ -218,7 +173,7 @@ Example for invoking a transfer method on the USDC contract:
                     "type": "address"
                 },
                 {
-                    "name": "amount",
+                    "name": "value",
                     "type": "uint256"
                 }
             ],
@@ -235,151 +190,10 @@ Example for invoking a transfer method on the USDC contract:
         }
     ],
     "args": {
-        "to": "0xbcF7C64B880FA89a015970dC104E848d485f99A3",
-        "amount": "1000000" // 1 USDC (6 decimals)
+        "to": "0xRecipientAddressHere",
+        "value": 1000
     },
-    "networkId": "ethereum-mainnet",
-    "assetId": "USDC"
-}
-\`\`\`
-
-Here are the recent user messages for context:
-{{recentMessages}}
-`;
-
-export const webhookTemplate = `
-Extract the following details for creating a webhook:
-- **networkId** (string): The network ID for which the webhook is created.
-Allowed values are:
-    static networks: {
-        readonly BaseSepolia: "base-sepolia";
-        readonly BaseMainnet: "base-mainnet";
-        readonly EthereumHolesky: "ethereum-holesky";
-        readonly EthereumMainnet: "ethereum-mainnet";
-        readonly PolygonMainnet: "polygon-mainnet";
-        readonly SolanaDevnet: "solana-devnet";
-        readonly SolanaMainnet: "solana-mainnet";
-        readonly ArbitrumMainnet: "arbitrum-mainnet";
-    };
-- **eventType** (string): The type of event for the webhook.
-export declare const WebhookEventType: {
-    readonly Unspecified: "unspecified";
-    readonly Erc20Transfer: "erc20_transfer";
-    readonly Erc721Transfer: "erc721_transfer";
-    readonly WalletActivity: "wallet_activity";
-};
-- **eventTypeFilter** (string, optional): Filter for wallet activity event type.
-export interface WebhookEventTypeFilter {
-    /**
-     * A list of wallet addresses to filter on.
-     * @type {Array<string>}
-     * @memberof WebhookWalletActivityFilter
-     */
-    'addresses'?: Array<string>;
-    /**
-     * The ID of the wallet that owns the webhook.
-     * @type {string}
-     * @memberof WebhookWalletActivityFilter
-     */
-    'wallet_id'?: string;
-}
-- **eventFilters** (array, optional): Filters applied to the events that determine which specific events trigger the webhook.
-export interface Array<WebhookEventFilter> {
-    /**
-     * The onchain contract address of the token for which the events should be tracked.
-     * @type {string}
-     * @memberof WebhookEventFilter
-     */
-    'contract_address'?: string;
-    /**
-     * The onchain address of the sender. Set this filter to track all transfer events originating from your address.
-     * @type {string}
-     * @memberof WebhookEventFilter
-     */
-    'from_address'?: string;
-    /**
-     * The onchain address of the receiver. Set this filter to track all transfer events sent to your address.
-     * @type {string}
-     * @memberof WebhookEventFilter
-     */
-    'to_address'?: string;
-}
-Provide the details in the following JSON format:
-\`\`\`json
-{
-    "networkId": "<networkId>",
-    "eventType": "<eventType>",
-    "eventTypeFilter": "<eventTypeFilter>",
-    "eventFilters": [<eventFilter1>, <eventFilter2>]
-}
-\`\`\`
-
-
-
-Example for creating a webhook on the Sepolia testnet for ERC20 transfers originating from a specific wallet 0x1234567890123456789012345678901234567890 on transfers from 0xbcF7C64B880FA89a015970dC104E848d485f99A3
-
-\`\`\`javascript
-
-    networkId: 'base-sepolia', // Listening on sepolia testnet transactions
-    eventType: 'erc20_transfer',
-    eventTypeFilter: {
-      addresses: ['0x1234567890123456789012345678901234567890']
-    },
-    eventFilters: [{
-      from_address: '0xbcF7C64B880FA89a015970dC104E848d485f99A3',
-    }],
-});
-\`\`\`
-
-Here are the recent user messages for context:
-{{recentMessages}}
-`;
-
-export const readContractTemplate = `
-Extract the following details for reading from a smart contract using the Coinbase SDK:
-- **contractAddress** (string): The address of the contract to read from (must start with 0x)
-- **method** (string): The view/pure method to call on the contract
-- **networkId** (string): The network ID based on networks configured in Coinbase SDK
-Allowed values are:
-    static networks: {
-        readonly BaseSepolia: "base-sepolia";
-        readonly BaseMainnet: "base-mainnet";
-        readonly EthereumHolesky: "ethereum-holesky";
-        readonly EthereumMainnet: "ethereum-mainnet";
-        readonly PolygonMainnet: "polygon-mainnet";
-        readonly SolanaDevnet: "solana-devnet";
-        readonly SolanaMainnet: "solana-mainnet";
-        readonly ArbitrumMainnet: "arbitrum-mainnet";
-    };
-- **args** (object): The arguments to pass to the contract method
-- **abi** (array, optional): The contract ABI if needed for complex interactions
-
-Provide the details in the following JSON format:
-
-\`\`\`json
-{
-    "contractAddress": "<0x-prefixed-address>",
-    "method": "<method_name>",
-    "networkId": "<network_id>",
-    "args": {
-        "<arg_name>": "<arg_value>"
-    },
-    "abi": [
-        // Optional ABI array
-    ]
-}
-\`\`\`
-
-Example for reading the balance of an ERC20 token:
-
-\`\`\`json
-{
-    "contractAddress": "0x37f2131ebbc8f97717edc3456879ef56b9f4b97b",
-    "method": "balanceOf",
-    "networkId": "eth-mainnet",
-    "args": {
-        "account": "0xbcF7C64B880FA89a015970dC104E848d485f99A3"
-    }
+    "network": "eth"
 }
 \`\`\`
 
