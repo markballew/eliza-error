@@ -6,8 +6,7 @@
     "types": "dist/index.d.ts",
     "dependencies": {
         "@ai16z/eliza": "workspace:*",
-        "coinbase-api": "1.0.5",
-        "coinbase-advanced-sdk": "file:../../packages/plugin-coinbase/advanced-sdk-ts"
+        "coinbase-api": "1.0.5"
     },
     "devDependencies": {
         "tsup": "8.3.5"
