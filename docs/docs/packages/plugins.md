@@ -481,6 +481,146 @@ When successful, a response similar to the following will be returned:
 
 ---
 
+#### 8. Coinbase Token Contract Plugin (`@eliza/plugin-coinbase`)
+
+This plugin enables the deployment and interaction with various token contracts (ERC20, ERC721, ERC1155) using the Coinbase SDK. It provides functionality for both deploying new token contracts and interacting with existing ones.
+
+**Actions:**
+
+1. `DEPLOY_TOKEN_CONTRACT`
+   Deploys a new token contract (ERC20, ERC721, or ERC1155).
+   - **Inputs**:
+     - `contractType` (string): Type of contract to deploy (`ERC20`, `ERC721`, or `ERC1155`)
+     - `name` (string): Name of the token
+     - `symbol` (string): Symbol of the token
+     - `network` (string): Blockchain network to deploy on
+     - `baseURI` (string, optional): Base URI for token metadata (required for ERC721 and ERC1155)
+     - `totalSupply` (number, optional): Total supply of tokens (only for ERC20)
+   - **Example**:
+     ```json
+     {
+       "contractType": "ERC20",
+       "name": "MyToken",
+       "symbol": "MTK",
+       "network": "base",
+       "totalSupply": 1000000
+     }
+     ```
+
+2. `INVOKE_CONTRACT`
+   Invokes a method on a deployed smart contract.
+   - **Inputs**:
+     - `contractAddress` (string): Address of the contract to invoke
+     - `method` (string): Method name to invoke
+     - `abi` (array): Contract ABI
+     - `args` (object, optional): Arguments for the method
+     - `amount` (number, optional): Amount of asset to send (for payable methods)
+     - `assetId` (string, optional): Asset ID to send
+     - `network` (string): Blockchain network to use
+   - **Example**:
+     ```json
+     {
+       "contractAddress": "0x123...",
+       "method": "transfer",
+       "abi": [...],
+       "args": {
+         "to": "0x456...",
+         "amount": "1000000000000000000"
+       },
+       "network": "base"
+     }
+     ```
+
+**Description:**
+
+The Coinbase Token Contract plugin simplifies the process of deploying and interacting with various token contracts on supported blockchain networks. It supports:
+
+- ERC20 token deployment with customizable supply
+- ERC721 (NFT) deployment with metadata URI support
+- ERC1155 (Multi-token) deployment with metadata URI support
+- Contract method invocation for deployed contracts
+
+All contract deployments and interactions are logged to a CSV file for record-keeping and auditing purposes.
+
+**Usage Instructions:**
+
+1. **Configure the Plugin**
+   Add the plugin to your character's configuration:
+
+   ```typescript
+   import { tokenContractPlugin } from "@eliza/plugin-coinbase";
+
+   const character = {
+     plugins: [tokenContractPlugin],
+   };
+   ```
+
+2. **Required Configurations**
+   Ensure the following environment variables or runtime settings are configured:
+   - `COINBASE_API_KEY`: API key for Coinbase SDK
+   - `COINBASE_PRIVATE_KEY`: Private key for secure transactions
+   - Wallet configuration (same as MassPayments plugin)
+
+**Example Deployments:**
+
+1. **ERC20 Token**
+   ```typescript
+   const response = await runtime.triggerAction("DEPLOY_TOKEN_CONTRACT", {
+     contractType: "ERC20",
+     name: "MyToken",
+     symbol: "MTK",
+     network: "base",
+     totalSupply: 1000000
+   });
+   ```
+
+2. **NFT Collection**
+   ```typescript
+   const response = await runtime.triggerAction("DEPLOY_TOKEN_CONTRACT", {
+     contractType: "ERC721",
+     name: "MyNFT",
+     symbol: "MNFT",
+     network: "eth",
+     baseURI: "https://api.mynft.com/metadata/"
+   });
+   ```
+
+3. **Multi-token Collection**
+   ```typescript
+   const response = await runtime.triggerAction("DEPLOY_TOKEN_CONTRACT", {
+     contractType: "ERC1155",
+     name: "MyMultiToken",
+     symbol: "MMT",
+     network: "pol",
+     baseURI: "https://api.mymultitoken.com/metadata/"
+   });
+   ```
+
+**Contract Interaction Example:**
+
+```typescript
+const response = await runtime.triggerAction("INVOKE_CONTRACT", {
+  contractAddress: "0x123...",
+  method: "transfer",
+  abi: [...],
+  args: {
+    to: "0x456...",
+    amount: "1000000000000000000"
+  },
+  network: "base"
+});
+```
+
+**Best Practices:**
+
+- Always verify contract parameters before deployment
+- Store contract addresses and deployment details securely
+- Test contract interactions on testnets before mainnet deployment
+- Keep track of deployed contracts using the generated CSV logs
+- Ensure proper error handling for failed deployments or interactions
+
+---
+
 #### 7. TEE Plugin (`@ai16z/plugin-tee`)
 
 Integrates [Dstack SDK](https://github.com/Dstack-TEE/dstack) to enable TEE (Trusted Execution Environment) functionality and deploy secure & privacy-enhanced Eliza Agents:
@@ -568,6 +708,76 @@ WALLET_SECRET_SALT=your-secret-salt // Required to single agent deployments
 ```
 
 ---
+
+#### 9. Webhook Plugin (`@eliza/plugin-coinbase-webhooks`)
+
+Manages webhooks using the Coinbase SDK, allowing for the creation and management of webhooks to listen for specific events on the Coinbase platform.
+
+**Actions:**
+
+- `CREATE_WEBHOOK` - Create a new webhook to listen for specific events.
+  - **Inputs**:
+    - `networkId` (string): The network ID where the webhook should listen for events.
+    - `eventType` (string): The type of event to listen for (e.g., transfers).
+    - `eventFilters` (object, optional): Additional filters for the event.
+    - `eventTypeFilter` (string, optional): Specific event type filter.
+  - **Outputs**: Confirmation message with webhook details.
+  - **Example**:
+    ```json
+    {
+      "networkId": "base",
+      "eventType": "transfers",
+      "notificationUri": "https://your-notification-uri.com"
+    }
+    ```
+
+**Providers:**
+
+- `webhookProvider` - Retrieves a list of all configured webhooks.
+  - **Outputs**: A list of webhooks with details such as ID, URL, event type, and status.
+
+**Description:**
+
+The Webhook Plugin enables Eliza to interact with the Coinbase SDK to create and manage webhooks. This allows for real-time event handling and notifications based on specific criteria set by the user.
+
+**Usage Instructions:**
+
+1. **Configure the Plugin**
+   Add the plugin to your character’s configuration:
+
+   ```typescript
+   import { webhookPlugin } from "@eliza/plugin-coinbase-webhooks";
+
+   const character = {
+     plugins: [webhookPlugin],
+   };
+   ```
+
+2. **Ensure Secure Configuration**
+   Set the following environment variables or runtime settings to ensure the plugin functions securely:
+
+   - `COINBASE_API_KEY`: API key for Coinbase SDK.
+   - `COINBASE_PRIVATE_KEY`: Private key for secure transactions.
+   - `COINBASE_NOTIFICATION_URI`: URI where notifications should be sent.
+
+**Example Call**
+
+To create a webhook:
+
+```typescript
+const response = await runtime.triggerAction("CREATE_WEBHOOK", {
+  networkId: "base",
+  eventType: "transfers",
+  notificationUri: "https://your-notification-uri.com"
+});
+console.log("Webhook creation response:", response);
+```
+
+**Best Practices:**
+
+- **Secure Secrets Storage**: Ensure `COINBASE_API_KEY`, `COINBASE_PRIVATE_KEY`, and `COINBASE_NOTIFICATION_URI` are stored securely in `runtime.character.settings.secrets` or environment variables.
+- **Validation**: Always validate input parameters to ensure compliance with expected formats and supported networks.
+- **Error Handling**: Monitor logs for errors during webhook creation and adjust retry logic as needed.
 
 ### Writing Custom Plugins
 

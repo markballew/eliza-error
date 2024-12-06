@@ -16,9 +16,6 @@ import { TokenProvider } from "../providers/token.ts";
 import { WalletProvider } from "../providers/wallet.ts";
 import { TrustScoreDatabase } from "@ai16z/plugin-trustdb";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { DeriveKeyProvider } from "@ai16z/plugin-tee";
-import { TEEMode } from "@ai16z/plugin-tee";
-import { getWalletKey } from "../keypairUtils.ts";
 
 const shouldProcessTemplate =
     `# Task: Decide if the recent messages should be processed for token recommendations.
@@ -147,8 +144,6 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
         );
     });
 
-    const { publicKey } = await getWalletKey(runtime, false);
-
     for (const rec of filteredRecommendations) {
         // create the wallet provider and token provider
         const walletProvider = new WalletProvider(
@@ -156,7 +151,10 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
                 runtime.getSetting("RPC_URL") ||
                     "https://api.mainnet-beta.solana.com"
             ),
-            publicKey
+            new PublicKey(
+                runtime.getSetting("SOLANA_PUBLIC_KEY") ??
+                    runtime.getSetting("WALLET_PUBLIC_KEY")
+            )
         );
         const tokenProvider = new TokenProvider(
             rec.contractAddress,

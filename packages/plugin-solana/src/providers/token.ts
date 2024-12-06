@@ -16,9 +16,6 @@ import * as path from "path";
 import { toBN } from "../bignumber.ts";
 import { WalletProvider, Item } from "./wallet.ts";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { DeriveKeyProvider } from "@ai16z/plugin-tee";
-import { TEEMode } from "@ai16z/plugin-tee";
-import { getWalletKey } from "../keypairUtils.ts";
 
 const PROVIDER_CONFIG = {
     BIRDEYE_API: "https://public-api.birdeye.so",
@@ -1105,11 +1102,9 @@ const tokenProvider: Provider = {
         _state?: State
     ): Promise<string> => {
         try {
-            const { publicKey } = await getWalletKey(runtime, false);
-
             const walletProvider = new WalletProvider(
                 connection,
-                publicKey
+                new PublicKey(PROVIDER_CONFIG.MAIN_WALLET)
             );
 
             const provider = new TokenProvider(
