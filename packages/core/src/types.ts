@@ -205,7 +205,6 @@ export type Models = {
     [ModelProviderName.GAIANET]: Model;
     [ModelProviderName.ALI_BAILIAN]: Model;
     [ModelProviderName.VOLENGINE]: Model;
-    [ModelProviderName.HYPERBOLIC]: Model;
 };
 
 /**
@@ -231,7 +230,6 @@ export enum ModelProviderName {
     GAIANET = "gaianet",
     ALI_BAILIAN = "ali_bailian",
     VOLENGINE = "volengine",
-    HYPERBOLIC = "hyperbolic",
 }
 
 /**
@@ -1120,15 +1118,6 @@ export interface IPdfService extends Service {
     convertPdfToText(pdfBuffer: Buffer): Promise<string>;
 }
 
-export interface IAwsS3Service extends Service {
-    uploadFile(imagePath: string, useSignedUrl: boolean, expiresIn: number ): Promise<{
-        success: boolean;
-        url?: string;
-        error?: string;
-    }>;
-    generateSignedUrl(fileName: string, expiresIn: number): Promise<string>
-}
-
 export type SearchResult = {
     title: string;
     url: string;
@@ -1155,7 +1144,6 @@ export enum ServiceType {
     SPEECH_GENERATION = "speech_generation",
     PDF = "pdf",
     BUTTPLUG = "buttplug",
-    AWS_S3 = "aws_s3",
 }
 
 export enum LoggingLevel {
