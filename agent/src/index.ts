@@ -25,7 +25,7 @@ import {
     validateCharacterConfig,
 } from "@ai16z/eliza";
 import { zgPlugin } from "@ai16z/plugin-0g";
-import createGoatPlugin from "@ai16z/plugin-goat";
+import { goatPlugin } from "@ai16z/plugin-goat";
 import { bootstrapPlugin } from "@ai16z/plugin-bootstrap";
 // import { buttplugPlugin } from "@ai16z/plugin-buttplug";
 import {
@@ -353,7 +353,7 @@ function getSecret(character: Character, secret: string) {
 
 let nodePlugin: any | undefined;
 
-export async function createAgent(
+export function createAgent(
     character: Character,
     db: IDatabaseAdapter,
     cache: ICacheManager,
@@ -366,10 +366,6 @@ export async function createAgent(
     );
 
     nodePlugin ??= createNodePlugin();
-
-    const goatPlugin = await createGoatPlugin((secret) =>
-        getSecret(character, secret)
-    );
 
     return new AgentRuntime({
         databaseAdapter: db,
@@ -458,7 +454,7 @@ async function startAgent(character: Character, directClient) {
         await db.init();
 
         const cache = intializeDbCache(character, db);
-        const runtime = await createAgent(character, db, cache, token);
+        const runtime = createAgent(character, db, cache, token);
 
         await runtime.initialize();
 
