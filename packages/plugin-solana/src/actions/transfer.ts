@@ -25,6 +25,8 @@ import {
 } from "@ai16z/eliza";
 import { composeContext } from "@ai16z/eliza";
 import { generateObject } from "@ai16z/eliza";
+import { DeriveKeyProvider, TEEMode } from "@ai16z/plugin-tee";
+import { getWalletKey } from "../keypairUtils";
 
 export interface TransferContent extends Content {
     tokenAddress: string;
@@ -138,11 +140,10 @@ export default {
         }
 
         try {
-            const privateKeyString =
-                runtime.getSetting("SOLANA_PRIVATE_KEY") ??
-                runtime.getSetting("WALLET_PRIVATE_KEY");
-            const secretKey = bs58.decode(privateKeyString);
-            const senderKeypair = Keypair.fromSecretKey(secretKey);
+            const { keypair: senderKeypair } = await getWalletKey(
+                runtime,
+                true
+            );
 
             const connection = new Connection(settings.RPC_URL!);
 
