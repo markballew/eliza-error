@@ -2,7 +2,7 @@ import {
     composeContext,
     Content,
     elizaLogger,
-    generateObjectDEPRECATED,
+    generateObject,
     ModelClass,
     type Action,
     type ActionExample,
@@ -87,7 +87,7 @@ export class TransferAction {
         });
 
         // Generate transfer content
-        const content = await generateObjectDEPRECATED({
+        const content = await generateObject({
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
