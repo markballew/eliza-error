@@ -60,40 +60,34 @@ Your response must include the JSON block.`;
 export function parseJsonArrayFromText(text: string) {
     let jsonData = null;
 
-    // First try to parse with the original JSON format
     const jsonBlockMatch = text.match(jsonBlockPattern);
 
     if (jsonBlockMatch) {
         try {
-            // Replace single quotes with double quotes before parsing
-            const normalizedJson = jsonBlockMatch[1].replace(/'/g, '"');
-            jsonData = JSON.parse(normalizedJson);
+            jsonData = JSON.parse(jsonBlockMatch[1]);
         } catch (e) {
             console.error("Error parsing JSON:", e);
+            return null;
         }
-    }
-
-    // If that fails, try to find an array pattern
-    if (!jsonData) {
-        const arrayPattern = /\[\s*['"][^'"]*['"]\s*\]/;
+    } else {
+        const arrayPattern = /\[\s*{[\s\S]*?}\s*\]/;
         const arrayMatch = text.match(arrayPattern);
 
         if (arrayMatch) {
             try {
-                // Replace single quotes with double quotes before parsing
-                const normalizedJson = arrayMatch[0].replace(/'/g, '"');
-                jsonData = JSON.parse(normalizedJson);
+                jsonData = JSON.parse(arrayMatch[0]);
             } catch (e) {
                 console.error("Error parsing JSON:", e);
+                return null;
             }
         }
     }
 
     if (Array.isArray(jsonData)) {
         return jsonData;
+    } else {
+        return null;
     }
-
-    return null;
 }
 
 /**
