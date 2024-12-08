@@ -102,8 +102,8 @@ export const models: Models = {
         },
         model: {
             [ModelClass.SMALL]: "llama-3.1-8b-instant",
-            [ModelClass.MEDIUM]: "llama-3.1-70b-versatile",
-            [ModelClass.LARGE]: "llama-3.2-90b-text-preview",
+            [ModelClass.MEDIUM]: "llama-3.3-70b-versatile",
+            [ModelClass.LARGE]: "llama-3.2-90b-vision-preview",
             [ModelClass.EMBEDDING]: "llama-3.1-8b-instant",
         },
     },
@@ -341,11 +341,11 @@ export const models: Models = {
             repetition_penalty: 0.4,
             temperature: 0.7,
         },
-        endpoint: settings.GAIANET_SERVER_URL || "http://localhost:8080/v1",
+        endpoint: settings.GAIANET_SERVER_URL,
         model: {
-            [ModelClass.SMALL]: settings.GAIANET_MODEL || "llama3.2",
-            [ModelClass.MEDIUM]: settings.GAIANET_MODEL || "llama3.2",
-            [ModelClass.LARGE]: settings.GAIANET_MODEL || "llama3.2",
+            [ModelClass.SMALL]: settings.GAIANET_MODEL || "llama3b",
+            [ModelClass.MEDIUM]: settings.GAIANET_MODEL || "llama",
+            [ModelClass.LARGE]: settings.GAIANET_MODEL || "qwen72b",
             [ModelClass.EMBEDDING]:
                 settings.GAIANET_EMBEDDING_MODEL || "nomic-embed",
         },

@@ -13,6 +13,7 @@ cat << "EOF"
 * IMPORTANT NOTICE:                                                  *
 *                                                                     *
 * To add your plugin to the development workflow:                    *
+*                                                                     *
 *  1. Navigate to the 'scripts' directory in your project.           *
 *                                                                     *
 *        cd scripts                                                  *
@@ -35,11 +36,36 @@ cat << "EOF"
 *                                                                     *
 *        Example: WORKING_FOLDERS=("client-direct" "your-plugin-folder") *
 *                                                                     *
+*  4. Update the 'agent/package.json' file:                          *
+*                                                                     *
+*     Add your plugin to the "dependencies" section like so:         *
+*                                                                     *
+*        "@ai16z/your-plugin-name": "workspace:*"                    *
+*                                                                     *
+*  5. Edit the 'index.ts' file in 'agent/src':                       *
+*                                                                     *
+*     a. Import your plugin:                                         *
+*                                                                     *
+*        import yourPlugin from '@ai16z/your-plugin-name';           *
+*                                                                     *
+*     b. Add your plugin to the `plugins` array:                     *
+*                                                                     *
+*        const plugins = [                                           *
+*          existingPlugin,                                           *
+*          yourPlugin,                                               *
+*        ];                                                          *
+*                                                                     *
 * This will ensure that your plugin's development server runs        *
 * alongside others when you execute this script.                     *
 ***********************************************************************
 
 EOF
+
+# 2 seconds delay
+for i in {1..5}; do
+  echo -n "."
+  sleep 0.4
+done
 
 # Check if the packages directory exists
 if [ ! -d "$PACKAGES_DIR" ]; then
@@ -87,7 +113,7 @@ else
 fi
 
 # Run build command first
-if ! pnpm dev:build; then
+if ! pnpm build; then
   echo "Build failed. Exiting."
   exit 1
 fi
