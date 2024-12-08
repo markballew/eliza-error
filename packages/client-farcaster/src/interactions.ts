@@ -5,7 +5,6 @@ import {
     Memory,
     ModelClass,
     stringToUuid,
-    elizaLogger,
     type IAgentRuntime,
 } from "@ai16z/eliza";
 import type { FarcasterClient } from "./client";
@@ -35,7 +34,7 @@ export class FarcasterInteractionManager {
             try {
                 await this.handleInteractions();
             } catch (error) {
-                elizaLogger.error(error)
+                console.error(error);
                 return;
             }
 
@@ -123,12 +122,12 @@ export class FarcasterInteractionManager {
         thread: Cast[]
     }) {
         if (cast.profile.fid === agent.fid) {
-            elizaLogger.info("skipping cast from bot itself", cast.hash)
+            console.log("skipping cast from bot itself", cast.hash);
             return;
         }
 
         if (!memory.content.text) {
-            elizaLogger.info("skipping cast with no text", cast.hash);
+            console.log("skipping cast with no text", cast.hash);
             return { text: "", action: "IGNORE" };
         }
 
@@ -184,7 +183,7 @@ export class FarcasterInteractionManager {
         });
 
         if (!shouldRespond) {
-            elizaLogger.info("Not responding to message");
+            console.log("Not responding to message");
             return { text: "", action: "IGNORE" };
         }
 
@@ -200,7 +199,7 @@ export class FarcasterInteractionManager {
         const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
-            modelClass: ModelClass.SMALL,
+            modelClass: ModelClass.LARGE,
         });
 
         response.inReplyTo = memoryId;
@@ -208,7 +207,7 @@ export class FarcasterInteractionManager {
         if (!response.text) return;
 
         try {
-            elizaLogger.info(`Replying to cast ${cast.hash}.`);
+            console.log(`Replying to cast ${cast.hash}.`);
 
             const results = await sendCast({
                 runtime: this.runtime,
@@ -237,7 +236,7 @@ export class FarcasterInteractionManager {
                 newState
             );
         } catch (error) {
-            elizaLogger.error(`Error sending response cast: ${error}`);
+            console.error(`Error sending response cast: ${error}`);
         }
     }
 }
