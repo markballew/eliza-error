@@ -2,17 +2,12 @@
     "extends": "../core/tsconfig.json",
     "compilerOptions": {
         "outDir": "dist",
-        "rootDir": ".",
-        "rootDirs": [
-            "src",
-            "advanced-sdk-ts"
-        ],
+        "rootDir": "src",
         "types": [
             "node"
         ]
     },
     "include": [
-        "src/**/*.ts",
-        "advanced-sdk-ts/src/**/*.ts",
+        "src/**/*.ts"
     ]
 }
