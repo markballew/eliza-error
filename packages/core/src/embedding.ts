@@ -22,7 +22,7 @@ export const getEmbeddingConfig = () => ({
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
               ? 1024 // Ollama mxbai-embed-large
               :settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? 768 // GaiaNet
+                ? 1536 // GaiaNet
                 : 384, // BGE
     model:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
@@ -196,8 +196,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
             model: config.model,
             endpoint:
                 runtime.character.modelEndpointOverride ||
-                models[ModelProviderName.GAIANET].endpoint ||
-                "https://qwen72b.gaia.domains/v1",
+                models[ModelProviderName.GAIANET].endpoint,
             apiKey: settings.GAIANET_API_KEY || runtime.token,
             dimensions: config.dimensions,
         });

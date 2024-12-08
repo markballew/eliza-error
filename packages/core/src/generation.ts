@@ -386,24 +386,6 @@ export async function generateText({
             }
             case ModelProviderName.GAIANET: {
                 elizaLogger.debug("Initializing GAIANET model.");
-
-                var baseURL = models[provider].endpoint;
-                if(!baseURL){
-                    switch(modelClass){
-                        case ModelClass.SMALL:
-                            baseURL = "https://llama3b.gaia.domains/v1";
-                            break;
-                        case ModelClass.MEDIUM:
-                            baseURL = "https://llama8b.gaia.domains/v1";
-                            break;
-                        case ModelClass.LARGE:
-                            baseURL = "https://qwen72b.gaia.domains/v1";
-                            break;
-                    }
-                }
-
-                elizaLogger.debug("Using GAIANET model with baseURL:", baseURL);
-
                 const openai = createOpenAI({ apiKey, baseURL: endpoint });
 
                 const { text: openaiResponse } = await aiGenerateText({
