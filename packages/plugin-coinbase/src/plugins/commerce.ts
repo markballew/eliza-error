@@ -506,14 +506,8 @@ export const chargeProvider: Provider = {
             elizaLogger.log("Current Balances:", balances);
             elizaLogger.log("Last Transactions:", transactions);
         }
-        const formattedCharges = charges.map(charge => ({
-            id: charge.id,
-            name: charge.name,
-            description: charge.description,
-            pricing: charge.pricing,
-        }));
-        elizaLogger.log("Charges:", formattedCharges);
-        return { charges: formattedCharges, balances, transactions };
+        elizaLogger.log("Charges:", charges);
+        return { charges: charges.data, balances, transactions };
     },
 };
 

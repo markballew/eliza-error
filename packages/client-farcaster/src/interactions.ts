@@ -5,7 +5,6 @@ import {
     Memory,
     ModelClass,
     stringToUuid,
-    elizaLogger,
     type IAgentRuntime,
 } from "@ai16z/eliza";
 import type { FarcasterClient } from "./client";
@@ -35,16 +34,14 @@ export class FarcasterInteractionManager {
             try {
                 await this.handleInteractions();
             } catch (error) {
-                elizaLogger.error(error)
+                console.error(error);
                 return;
             }
 
             this.timeout = setTimeout(
                 handleInteractionsLoop,
-                Number(
-                    this.runtime.getSetting("FARCASTER_POLL_INTERVAL") || 120
-                ) * 1000 // Default to 2 minutes
-            );
+                (Math.floor(Math.random() * (5 - 2 + 1)) + 2) * 60 * 1000
+            ); // Random interval between 2-5 minutes
         };
 
         handleInteractionsLoop();
@@ -125,12 +122,12 @@ export class FarcasterInteractionManager {
         thread: Cast[]
     }) {
         if (cast.profile.fid === agent.fid) {
-            elizaLogger.info("skipping cast from bot itself", cast.hash)
+            console.log("skipping cast from bot itself", cast.hash);
             return;
         }
 
         if (!memory.content.text) {
-            elizaLogger.info("skipping cast with no text", cast.hash);
+            console.log("skipping cast with no text", cast.hash);
             return { text: "", action: "IGNORE" };
         }
 
@@ -146,25 +143,10 @@ export class FarcasterInteractionManager {
             timeline
         );
 
-        const formattedConversation = thread
-            .map(
-                (cast) => `@${cast.profile.username} (${new Date(
-                    cast.timestamp
-                ).toLocaleString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    month: "short",
-                    day: "numeric",
-                })}):
-                ${cast.text}`
-            )
-            .join("\n\n");
-
         const state = await this.runtime.composeState(memory, {
             farcasterUsername: agent.username,
             timeline: formattedTimeline,
             currentPost,
-            formattedConversation
         });
 
         const shouldRespondContext = composeContext({
@@ -194,15 +176,15 @@ export class FarcasterInteractionManager {
             );
         }
 
-        const shouldRespondResponse = await generateShouldRespond({
+        const shouldRespond = await generateShouldRespond({
             runtime: this.runtime,
             context: shouldRespondContext,
             modelClass: ModelClass.SMALL,
         });
 
-        if (shouldRespondResponse === "IGNORE" || shouldRespondResponse === "STOP") {
-            elizaLogger.info(`Not responding to cast because generated ShouldRespond was ${shouldRespondResponse}`)
-            return;
+        if (!shouldRespond) {
+            console.log("Not responding to message");
+            return { text: "", action: "IGNORE" };
         }
 
         const context = composeContext({
@@ -224,16 +206,8 @@ export class FarcasterInteractionManager {
 
         if (!response.text) return;
 
-
-        if (this.runtime.getSetting("FARCASTER_DRY_RUN") === "true") {
-            elizaLogger.info(
-                `Dry run: would have responded to cast ${cast.hash} with ${response.text}`
-            );
-            return;
-        }
-
         try {
-            elizaLogger.info(`Replying to cast ${cast.hash}.`);
+            console.log(`Replying to cast ${cast.hash}.`);
 
             const results = await sendCast({
                 runtime: this.runtime,
@@ -262,7 +236,7 @@ export class FarcasterInteractionManager {
                 newState
             );
         } catch (error) {
-            elizaLogger.error(`Error sending response cast: ${error}`);
+            console.error(`Error sending response cast: ${error}`);
         }
     }
 }
