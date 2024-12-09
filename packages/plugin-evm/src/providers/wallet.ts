@@ -1,17 +1,53 @@
-import { formatUnits } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import type { IAgentRuntime, Provider, Memory, State } from "@ai16z/eliza";
-import type {
-    Address,
-    WalletClient,
-    PublicClient,
-    Chain,
-    HttpTransport,
+import {
+    createPublicClient,
+    createWalletClient,
+    http,
+    formatUnits,
+    type PublicClient,
+    type WalletClient,
+    type Chain,
+    type HttpTransport,
+    type Address,
     Account,
 } from "viem";
-import type { SupportedChain, ChainConfig } from "../types";
-import { getChainConfigs } from "./chainConfigs";
-import { initializeChainConfigs } from "./chainUtils";
+import { mainnet, base } from "viem/chains";
+import type { SupportedChain, ChainConfig, ChainMetadata } from "../types";
+import { privateKeyToAccount } from "viem/accounts";
+
+export const DEFAULT_CHAIN_CONFIGS: Record<SupportedChain, ChainMetadata> = {
+    ethereum: {
+        chainId: 1,
+        name: "Ethereum",
+        chain: mainnet,
+        rpcUrl: "https://eth.llamarpc.com",
+        nativeCurrency: {
+            name: "Ether",
+            symbol: "ETH",
+            decimals: 18,
+        },
+        blockExplorerUrl: "https://etherscan.io",
+    },
+    base: {
+        chainId: 8453,
+        name: "Base",
+        chain: base,
+        rpcUrl: "https://base.llamarpc.com",
+        nativeCurrency: {
+            name: "Ether",
+            symbol: "ETH",
+            decimals: 18,
+        },
+        blockExplorerUrl: "https://basescan.org",
+    },
+} as const;
+
+export const getChainConfigs = (runtime: IAgentRuntime) => {
+    return (
+        (runtime.character.settings.chains?.evm as ChainConfig[]) ||
+        DEFAULT_CHAIN_CONFIGS
+    );
+};
 
 export class WalletProvider {
     private chainConfigs: Record<SupportedChain, ChainConfig>;
@@ -24,11 +60,30 @@ export class WalletProvider {
         if (!privateKey) throw new Error("EVM_PRIVATE_KEY not configured");
 
         this.runtime = runtime;
+
         const account = privateKeyToAccount(privateKey as `0x${string}`);
         this.address = account.address;
 
-        // Initialize all chain configs at once
-        this.chainConfigs = initializeChainConfigs(runtime, account);
+        const createClients = (chain: SupportedChain): ChainConfig => {
+            const transport = http(getChainConfigs(runtime)[chain].rpcUrl);
+            return {
+                chain: getChainConfigs(runtime)[chain].chain,
+                publicClient: createPublicClient<HttpTransport>({
+                    chain: getChainConfigs(runtime)[chain].chain,
+                    transport,
+                }) as PublicClient<HttpTransport, Chain, Account | undefined>,
+                walletClient: createWalletClient<HttpTransport>({
+                    chain: getChainConfigs(runtime)[chain].chain,
+                    transport,
+                    account,
+                }),
+            };
+        };
+
+        this.chainConfigs = {
+            ethereum: createClients("ethereum"),
+            base: createClients("base"),
+        };
     }
 
     getAddress(): Address {
@@ -120,6 +175,7 @@ export const evmWalletProvider: Provider = {
         message: Memory,
         state?: State
     ): Promise<string | null> {
+        // Check if the user has an EVM wallet
         if (!runtime.getSetting("EVM_PRIVATE_KEY")) {
             return null;
         }

@@ -24,7 +24,7 @@ export async function isPortAvailable(port: number): Promise<boolean> {
 export async function startIntifaceEngine(): Promise<void> {
     const configPath = path.join(
         __dirname,
-        "../src/intiface-user-device-config.json"
+        "../src/buttplug-user-device-config.json"
     );
     try {
         const child = spawn(
@@ -34,7 +34,7 @@ export async function startIntifaceEngine(): Promise<void> {
                 "12345",
                 "--use-bluetooth-le",
                 "--server-name",
-                "Eliza Intiface Server",
+                "Eliza Buttplugin Server",
                 "--use-device-websocket-server",
                 "--user-device-config-file",
                 configPath,
