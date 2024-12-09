@@ -569,12 +569,7 @@ export class AgentRuntime implements IAgentRuntime {
      * @param didRespond Whether the agent responded to the message.
      * @returns The results of the evaluation.
      */
-    async evaluate(
-        message: Memory,
-        state?: State,
-        didRespond?: boolean,
-        callback?: HandlerCallback
-    ) {
+    async evaluate(message: Memory, state?: State, didRespond?: boolean) {
         const evaluatorPromises = this.evaluators.map(
             async (evaluator: Evaluator) => {
                 elizaLogger.log("Evaluating", evaluator.name);
@@ -600,12 +595,17 @@ export class AgentRuntime implements IAgentRuntime {
             return [];
         }
 
+        const evaluators = formatEvaluators(evaluatorsData as Evaluator[]);
+        const evaluatorNames = formatEvaluatorNames(
+            evaluatorsData as Evaluator[]
+        );
+
         const context = composeContext({
             state: {
                 ...state,
-                evaluators: formatEvaluators(evaluatorsData),
-                evaluatorNames: formatEvaluatorNames(evaluatorsData),
-            },
+                evaluators,
+                evaluatorNames,
+            } as State,
             template:
                 this.character.templates?.evaluationTemplate ||
                 evaluationTemplate,
@@ -617,18 +617,21 @@ export class AgentRuntime implements IAgentRuntime {
             modelClass: ModelClass.SMALL,
         });
 
-        const evaluators = parseJsonArrayFromText(
+        const parsedResult = parseJsonArrayFromText(
             result
         ) as unknown as string[];
 
-        for (const evaluator of this.evaluators) {
-            if (!evaluators.includes(evaluator.name)) continue;
+        this.evaluators
+            .filter((evaluator: Evaluator) =>
+                parsedResult?.includes(evaluator.name)
+            )
+            .forEach((evaluator: Evaluator) => {
+                if (!evaluator?.handler) return;
 
-            if (evaluator.handler)
-                await evaluator.handler(this, message, state, {}, callback);
-        }
+                evaluator.handler(this, message);
+            });
 
-        return evaluators;
+        return parsedResult;
     }
 
     /**

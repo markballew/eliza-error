@@ -1023,8 +1023,7 @@ export interface IAgentRuntime {
     evaluate(
         message: Memory,
         state?: State,
-        didRespond?: boolean,
-        callback?: HandlerCallback
+        didRespond?: boolean
     ): Promise<string[]>;
 
     ensureParticipantExists(userId: UUID, roomId: UUID): Promise<void>;
