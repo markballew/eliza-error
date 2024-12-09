@@ -173,19 +173,9 @@ Extract the following details for invoking a smart contract using the Coinbase S
 - **method** (string): The method to invoke on the contract
 - **abi** (array): The ABI of the contract
 - **args** (object, optional): The arguments to pass to the contract method
-- **amount** (string, optional): The amount of the asset to send (as string to handle large numbers)
-- **assetId** (string, required): The ID of the asset to send (e.g., 'USDC')
-- **networkId** (string, required): The network ID to use in format "chain-network".
- static networks: {
-        readonly BaseSepolia: "base-sepolia";
-        readonly BaseMainnet: "base-mainnet";
-        readonly EthereumHolesky: "ethereum-holesky";
-        readonly EthereumMainnet: "ethereum-mainnet";
-        readonly PolygonMainnet: "polygon-mainnet";
-        readonly SolanaDevnet: "solana-devnet";
-        readonly SolanaMainnet: "solana-mainnet";
-        readonly ArbitrumMainnet: "arbitrum-mainnet";
-    };
+- **amount** (number, optional): The amount of the asset to send to a payable contract method
+- **assetId** (string, optional): The ID of the asset to send to a payable contract method
+- **network** (string): The blockchain network to use (e.g., base, eth, arb, pol)
 
 Provide the details in the following JSON format:
 
@@ -197,17 +187,17 @@ Provide the details in the following JSON format:
     "args": {
         "<arg_name>": "<arg_value>"
     },
-    "amount": "<amount_as_string>",
+    "amount": <amount>,
     "assetId": "<asset_id>",
-    "networkId": "<network_id>"
+    "network": "<network>"
 }
 \`\`\`
 
-Example for invoking a transfer method on the USDC contract:
+Example for invoking a transfer method on an ERC20 token contract:
 
 \`\`\`json
 {
-    "contractAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "contractAddress": "0x37f2131ebbc8f97717edc3456879ef56b9f4b97b",
     "method": "transfer",
     "abi": [
         {
@@ -218,7 +208,7 @@ Example for invoking a transfer method on the USDC contract:
                     "type": "address"
                 },
                 {
-                    "name": "amount",
+                    "name": "value",
                     "type": "uint256"
                 }
             ],
@@ -235,11 +225,10 @@ Example for invoking a transfer method on the USDC contract:
         }
     ],
     "args": {
-        "to": "0xbcF7C64B880FA89a015970dC104E848d485f99A3",
-        "amount": "1000000" // 1 USDC (6 decimals)
+        "to": "0xRecipientAddressHere",
+        "value": 1000
     },
-    "networkId": "ethereum-mainnet",
-    "assetId": "USDC"
+    "network": "eth"
 }
 \`\`\`
 
@@ -329,58 +318,6 @@ Example for creating a webhook on the Sepolia testnet for ERC20 transfers origin
       from_address: '0xbcF7C64B880FA89a015970dC104E848d485f99A3',
     }],
 });
-\`\`\`
-
-Here are the recent user messages for context:
-{{recentMessages}}
-`;
-
-export const readContractTemplate = `
-Extract the following details for reading from a smart contract using the Coinbase SDK:
-- **contractAddress** (string): The address of the contract to read from (must start with 0x)
-- **method** (string): The view/pure method to call on the contract
-- **networkId** (string): The network ID based on networks configured in Coinbase SDK
-Allowed values are:
-    static networks: {
-        readonly BaseSepolia: "base-sepolia";
-        readonly BaseMainnet: "base-mainnet";
-        readonly EthereumHolesky: "ethereum-holesky";
-        readonly EthereumMainnet: "ethereum-mainnet";
-        readonly PolygonMainnet: "polygon-mainnet";
-        readonly SolanaDevnet: "solana-devnet";
-        readonly SolanaMainnet: "solana-mainnet";
-        readonly ArbitrumMainnet: "arbitrum-mainnet";
-    };
-- **args** (object): The arguments to pass to the contract method
-- **abi** (array, optional): The contract ABI if needed for complex interactions
-
-Provide the details in the following JSON format:
-
-\`\`\`json
-{
-    "contractAddress": "<0x-prefixed-address>",
-    "method": "<method_name>",
-    "networkId": "<network_id>",
-    "args": {
-        "<arg_name>": "<arg_value>"
-    },
-    "abi": [
-        // Optional ABI array
-    ]
-}
-\`\`\`
-
-Example for reading the balance of an ERC20 token:
-
-\`\`\`json
-{
-    "contractAddress": "0x37f2131ebbc8f97717edc3456879ef56b9f4b97b",
-    "method": "balanceOf",
-    "networkId": "eth-mainnet",
-    "args": {
-        "account": "0xbcF7C64B880FA89a015970dC104E848d485f99A3"
-    }
-}
 \`\`\`
 
 Here are the recent user messages for context:
