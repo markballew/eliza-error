@@ -270,11 +270,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.VOLENGINE_API_KEY ||
                 settings.VOLENGINE_API_KEY
             );
-        case ModelProviderName.HYPERBOLIC:
-            return (
-                character.settings?.secrets?.HYPERBOLIC_API_KEY ||
-                settings.HYPERBOLIC_API_KEY
-            );
     }
 }
 
