@@ -270,11 +270,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.VOLENGINE_API_KEY ||
                 settings.VOLENGINE_API_KEY
             );
-        case ModelProviderName.HYPERBOLIC:
-            return (
-                character.settings?.secrets?.HYPERBOLIC_API_KEY ||
-                settings.HYPERBOLIC_API_KEY
-            );
     }
 }
 
@@ -401,7 +396,7 @@ export function createAgent(
                 : null,
             getSecret(character, "EVM_PRIVATE_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
-                getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
+                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
                 : null,
             getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
