@@ -101,10 +101,10 @@ export const models: Models = {
             temperature: 0.7,
         },
         model: {
-            [ModelClass.SMALL]: "llama-3.1-8b-instant",
-            [ModelClass.MEDIUM]: "llama-3.1-70b-versatile",
-            [ModelClass.LARGE]: "llama-3.2-90b-text-preview",
-            [ModelClass.EMBEDDING]: "llama-3.1-8b-instant",
+            [ModelClass.SMALL]: settings.SMALL_GROQ_MODEL || "llama-3.1-8b-instant",
+            [ModelClass.MEDIUM]: settings.MEDIUM_GROQ_MODEL || "llama-3.3-70b-versatile",
+            [ModelClass.LARGE]: settings.LARGE_GROQ_MODEL || "llama-3.2-90b-vision-preview",
+            [ModelClass.EMBEDDING]: settings.EMBEDDING_GROQ_MODEL || "llama-3.1-8b-instant",
         },
     },
     [ModelProviderName.LLAMACLOUD]: {
@@ -179,10 +179,18 @@ export const models: Models = {
             temperature: 0.7,
         },
         model: {
-            [ModelClass.SMALL]: "gemini-1.5-flash-latest",
-            [ModelClass.MEDIUM]: "gemini-1.5-flash-latest",
-            [ModelClass.LARGE]: "gemini-1.5-pro-latest",
-            [ModelClass.EMBEDDING]: "text-embedding-004",
+            [ModelClass.SMALL]: settings.SMALL_GOOGLE_MODEL ||
+                settings.GOOGLE_MODEL ||
+                "gemini-1.5-flash-latest",
+            [ModelClass.MEDIUM]: settings.MEDIUM_GOOGLE_MODEL ||
+                settings.GOOGLE_MODEL ||
+                "gemini-1.5-flash-latest",
+            [ModelClass.LARGE]: settings.LARGE_GOOGLE_MODEL ||
+                settings.GOOGLE_MODEL ||
+                "gemini-1.5-pro-latest",
+            [ModelClass.EMBEDDING]: settings.EMBEDDING_GOOGLE_MODEL ||
+                settings.GOOGLE_MODEL ||
+                "text-embedding-004",
         },
     },
     [ModelProviderName.REDPILL]: {
@@ -333,11 +341,11 @@ export const models: Models = {
             repetition_penalty: 0.4,
             temperature: 0.7,
         },
-        endpoint: settings.GAIANET_SERVER_URL || "http://localhost:8080/v1",
+        endpoint: settings.GAIANET_SERVER_URL,
         model: {
-            [ModelClass.SMALL]: settings.GAIANET_MODEL || "llama3.2",
-            [ModelClass.MEDIUM]: settings.GAIANET_MODEL || "llama3.2",
-            [ModelClass.LARGE]: settings.GAIANET_MODEL || "llama3.2",
+            [ModelClass.SMALL]: settings.GAIANET_MODEL || settings.SMALL_GAIANET_MODEL || "llama3b",
+            [ModelClass.MEDIUM]: settings.GAIANET_MODEL || settings.MEDIUM_GAIANET_MODEL || "llama",
+            [ModelClass.LARGE]: settings.GAIANET_MODEL || settings.LARGE_GAIANET_MODEL || "qwen72b",
             [ModelClass.EMBEDDING]:
                 settings.GAIANET_EMBEDDING_MODEL || "nomic-embed",
         },
