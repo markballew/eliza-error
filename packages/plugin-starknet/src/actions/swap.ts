@@ -3,7 +3,7 @@ import {
     ActionExample,
     composeContext,
     elizaLogger,
-    generateObjectDEPRECATED,
+    generateObject,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -17,7 +17,7 @@ import {
 } from "@avnu/avnu-sdk";
 
 import { getStarknetAccount } from "../utils/index.ts";
-import { validateStarknetConfig } from "../environment.ts";
+import { validateStarknetConfig } from "../enviroment.ts";
 
 interface SwapContent {
     sellTokenAddress: string;
@@ -105,7 +105,7 @@ export const executeSwap: Action = {
             template: swapTemplate,
         });
 
-        const response = await generateObjectDEPRECATED({
+        const response = await generateObject({
             runtime,
             context: swapContext,
             modelClass: ModelClass.MEDIUM,
