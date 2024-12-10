@@ -36,10 +36,6 @@ Model configurations by provider
 
 > **together**: [`Model`](Model.md)
 
-### together
-
-> **together**: [`Model`](Model.md)
-
 ### llama\_local
 
 > **llama\_local**: [`Model`](Model.md)
