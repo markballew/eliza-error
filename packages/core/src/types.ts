@@ -205,7 +205,6 @@ export type Models = {
     [ModelProviderName.GAIANET]: Model;
     [ModelProviderName.ALI_BAILIAN]: Model;
     [ModelProviderName.VOLENGINE]: Model;
-    [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
 };
 
@@ -232,7 +231,6 @@ export enum ModelProviderName {
     GAIANET = "gaianet",
     ALI_BAILIAN = "ali_bailian",
     VOLENGINE = "volengine",
-    NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
 }
 
@@ -991,8 +989,6 @@ export interface IAgentRuntime {
     actions: Action[];
     evaluators: Evaluator[];
     plugins: Plugin[];
-
-    fetch?: typeof fetch | null;
 
     messageManager: IMemoryManager;
     descriptionManager: IMemoryManager;

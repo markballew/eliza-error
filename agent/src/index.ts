@@ -60,12 +60,6 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     return new Promise((resolve) => setTimeout(resolve, waitTime));
 };
 
-const logFetch = async (url: string, options: any) => {
-    elizaLogger.info(`Fetching ${url}`);
-    elizaLogger.info(options);
-    return fetch(url, options);
-};
-
 export function parseArguments(): {
     character?: string;
     characters?: string;
@@ -276,11 +270,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.VOLENGINE_API_KEY ||
                 settings.VOLENGINE_API_KEY
             );
-        case ModelProviderName.NANOGPT:
-            return (
-                character.settings?.secrets?.NANOGPT_API_KEY ||
-                settings.NANOGPT_API_KEY
-            );
         case ModelProviderName.HYPERBOLIC:
             return (
                 character.settings?.secrets?.HYPERBOLIC_API_KEY ||
@@ -462,18 +451,17 @@ export async function createAgent(
         services: [],
         managers: [],
         cacheManager: cache,
-        fetch: logFetch,
     });
 }
 
-function initializeFsCache(baseDir: string, character: Character) {
+function intializeFsCache(baseDir: string, character: Character) {
     const cacheDir = path.resolve(baseDir, character.id, "cache");
 
     const cache = new CacheManager(new FsCacheAdapter(cacheDir));
     return cache;
 }
 
-function initializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
+function intializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
     const cache = new CacheManager(new DbCacheAdapter(db, character.id));
     return cache;
 }
@@ -496,7 +484,7 @@ async function startAgent(character: Character, directClient) {
 
         await db.init();
 
-        const cache = initializeDbCache(character, db);
+        const cache = intializeDbCache(character, db);
         const runtime = await createAgent(character, db, cache, token);
 
         await runtime.initialize();
