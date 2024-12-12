@@ -44,7 +44,6 @@ import { solanaPlugin } from "@ai16z/plugin-solana";
 import { teePlugin, TEEMode } from "@ai16z/plugin-tee";
 import { aptosPlugin, TransferAptosToken } from "@ai16z/plugin-aptos";
 import { flowPlugin } from "@ai16z/plugin-flow";
-import { genLayerPlugin } from "@ai16z/plugin-genlayer";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -271,6 +270,11 @@ export function getTokenForProvider(
                 character.settings?.secrets?.VOLENGINE_API_KEY ||
                 settings.VOLENGINE_API_KEY
             );
+        case ModelProviderName.NANOGPT:
+            return (
+                character.settings?.secrets?.NANOGPT_API_KEY ||
+                settings.NANOGPT_API_KEY
+            );
         case ModelProviderName.HYPERBOLIC:
             return (
                 character.settings?.secrets?.HYPERBOLIC_API_KEY ||
@@ -446,9 +450,6 @@ export async function createAgent(
                 ? flowPlugin
                 : null,
             getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
-            getSecret(character, "GENLAYER_PRIVATE_KEY")
-                ? genLayerPlugin
-                : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -458,14 +459,14 @@ export async function createAgent(
     });
 }
 
-function intializeFsCache(baseDir: string, character: Character) {
+function initializeFsCache(baseDir: string, character: Character) {
     const cacheDir = path.resolve(baseDir, character.id, "cache");
 
     const cache = new CacheManager(new FsCacheAdapter(cacheDir));
     return cache;
 }
 
-function intializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
+function initializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
     const cache = new CacheManager(new DbCacheAdapter(db, character.id));
     return cache;
 }
@@ -488,7 +489,7 @@ async function startAgent(character: Character, directClient) {
 
         await db.init();
 
-        const cache = intializeDbCache(character, db);
+        const cache = initializeDbCache(character, db);
         const runtime = await createAgent(character, db, cache, token);
 
         await runtime.initialize();
