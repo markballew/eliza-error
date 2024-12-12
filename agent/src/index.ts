@@ -44,7 +44,6 @@ import { solanaPlugin } from "@ai16z/plugin-solana";
 import { teePlugin, TEEMode } from "@ai16z/plugin-tee";
 import { aptosPlugin, TransferAptosToken } from "@ai16z/plugin-aptos";
 import { flowPlugin } from "@ai16z/plugin-flow";
-import { nftGenerationPlugin, createNFTApiRouter } from "@ai16z/plugin-nft-generation";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -59,6 +58,12 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     const waitTime =
         Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
     return new Promise((resolve) => setTimeout(resolve, waitTime));
+};
+
+const logFetch = async (url: string, options: any) => {
+    elizaLogger.info(`Fetching ${url}`);
+    elizaLogger.info(options);
+    return fetch(url, options);
 };
 
 export function parseArguments(): {
@@ -419,12 +424,6 @@ export async function createAgent(
                 getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
                 : null,
-            (getSecret(character, "SOLANA_PUBLIC_KEY") ||
-            (getSecret(character, "WALLET_PUBLIC_KEY") &&
-                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))) &&
-            getSecret(character, "SOLANA_ADMIN_PUBLIC_KEY")
-                ? nftGenerationPlugin
-                : null,
             getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
             getSecret(character, "COINBASE_COMMERCE_KEY")
                 ? coinbaseCommercePlugin
@@ -463,6 +462,7 @@ export async function createAgent(
         services: [],
         managers: [],
         cacheManager: cache,
+        fetch: logFetch,
     });
 }
 
@@ -504,12 +504,6 @@ async function startAgent(character: Character, directClient) {
         const clients = await initializeClients(character, runtime);
 
         directClient.registerAgent(runtime);
-
-        // Support using API to create NFT
-        // const agents = new Map();
-        // agents.set(runtime.agentId, runtime)
-        // const apiNFTGenerationRouter = createNFTApiRouter(agents);
-        // directClient?.app?.use(apiNFTGenerationRouter)
 
         return clients;
     } catch (error) {

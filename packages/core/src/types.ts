@@ -735,10 +735,6 @@ export type Character = {
         bio: string;
         nicknames?: string[];
     };
-    /** Optional NFT prompt */
-    nft?: {
-        prompt: string;
-    }
 };
 
 /**
@@ -996,6 +992,8 @@ export interface IAgentRuntime {
     evaluators: Evaluator[];
     plugins: Plugin[];
 
+    fetch?: typeof fetch | null;
+
     messageManager: IMemoryManager;
     descriptionManager: IMemoryManager;
     documentsManager: IMemoryManager;
@@ -1128,7 +1126,7 @@ export interface IPdfService extends Service {
 }
 
 export interface IAwsS3Service extends Service {
-    uploadFile(imagePath: string, subDirectory: string, useSignedUrl: boolean, expiresIn: number ): Promise<{
+    uploadFile(imagePath: string, useSignedUrl: boolean, expiresIn: number ): Promise<{
         success: boolean;
         url?: string;
         error?: string;
