@@ -2,7 +2,7 @@ import {
     composeContext,
     Content,
     elizaLogger,
-    generateObjectArray,
+    generateObject,
     ModelClass,
     type Action,
     type ActionExample,
@@ -87,16 +87,11 @@ export class TransferAction {
         });
 
         // Generate transfer content
-        const recommendations = await generateObjectArray({
+        const content = await generateObject({
             runtime,
             context: transferContext,
-            modelClass: ModelClass.MEDIUM,
+            modelClass: ModelClass.SMALL,
         });
-
-        elizaLogger.debug("Recommendations", recommendations);
-
-        // Convert array to object
-        const content = recommendations[recommendations.length - 1];
 
         // Validate transfer content
         if (!isTransferContent(runtime, content)) {
