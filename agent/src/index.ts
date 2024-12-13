@@ -286,11 +286,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.HYPERBOLIC_API_KEY ||
                 settings.HYPERBOLIC_API_KEY
             );
-        case ModelProviderName.VENICE:
-            return (
-                character.settings?.secrets?.VENICE_API_KEY ||
-                settings.VENICE_API_KEY
-            );
     }
 }
 
@@ -323,53 +318,42 @@ function initializeDatabase(dataDir: string) {
     }
 }
 
-// also adds plugins from character file into the runtime
 export async function initializeClients(
     character: Character,
     runtime: IAgentRuntime
 ) {
-    // each client can only register once
-    // and if we want two we can explicitly support it
-    const clients: Record<string, any> = {};
-    const clientTypes:string[] =
+    const clients = [];
+    const clientTypes =
         character.clients?.map((str) => str.toLowerCase()) || [];
-    elizaLogger.log('initializeClients', clientTypes, 'for', character.name)
 
     if (clientTypes.includes("auto")) {
         const autoClient = await AutoClientInterface.start(runtime);
-        if (autoClient) clients.auto = autoClient;
+        if (autoClient) clients.push(autoClient);
     }
 
     if (clientTypes.includes("discord")) {
-        const discordClient = await DiscordClientInterface.start(runtime);
-        if (discordClient) clients.discord = discordClient;
+        clients.push(await DiscordClientInterface.start(runtime));
     }
 
     if (clientTypes.includes("telegram")) {
         const telegramClient = await TelegramClientInterface.start(runtime);
-        if (telegramClient) clients.telegram = telegramClient;
+        if (telegramClient) clients.push(telegramClient);
     }
 
     if (clientTypes.includes("twitter")) {
         TwitterClientInterface.enableSearch = !isFalsish(getSecret(character, "TWITTER_SEARCH_ENABLE"));
-        const twitterClient = await TwitterClientInterface.start(runtime);
-        if (twitterClient) clients.twitter = twitterClient;
+        const twitterClients = await TwitterClientInterface.start(runtime);
+        clients.push(twitterClients);
     }
 
     if (clientTypes.includes("farcaster")) {
-        // why is this one different :(
-        const farcasterClient = new FarcasterAgentClient(runtime);
-        if (farcasterClient) {
-          farcasterClient.start();
-          clients.farcaster = farcasterClient;
-        }
+        const farcasterClients = new FarcasterAgentClient(runtime);
+        farcasterClients.start();
+        clients.push(farcasterClients);
     }
-
-    elizaLogger.log('client keys', Object.keys(clients));
 
     if (character.plugins?.length > 0) {
         for (const plugin of character.plugins) {
-            // if plugin has clients, add those..
             if (plugin.clients) {
                 for (const client of plugin.clients) {
                     clients.push(await client.start(runtime));
@@ -398,7 +382,7 @@ function isFalsish(input: any): boolean {
 }
 
 function getSecret(character: Character, secret: string) {
-    return character.settings?.secrets?.[secret] || process.env[secret];
+    return character.settings.secrets?.[secret] || process.env[secret];
 }
 
 let nodePlugin: any | undefined;
@@ -408,7 +392,7 @@ export async function createAgent(
     db: IDatabaseAdapter,
     cache: ICacheManager,
     token: string
-):AgentRuntime {
+) {
     elizaLogger.success(
         elizaLogger.successesTitle,
         "Creating runtime for character",
@@ -441,7 +425,6 @@ export async function createAgent(
         modelProvider: character.modelProvider,
         evaluators: [],
         character,
-        // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
@@ -512,7 +495,7 @@ function initializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
     return cache;
 }
 
-async function startAgent(character: Character, directClient):AgentRuntime {
+async function startAgent(character: Character, directClient) {
     let db: IDatabaseAdapter & IDatabaseCacheAdapter;
     try {
         character.id ??= stringToUuid(character.name);
@@ -531,21 +514,15 @@ async function startAgent(character: Character, directClient):AgentRuntime {
         await db.init();
 
         const cache = initializeDbCache(character, db);
-        const runtime:AgentRuntime = await createAgent(character, db, cache, token);
+        const runtime = await createAgent(character, db, cache, token);
 
-        // start services/plugins/process knowledge
         await runtime.initialize();
 
-        // start assigned clients
-        runtime.clients = await initializeClients(character, runtime);
+        const clients = await initializeClients(character, runtime);
 
-        // add to container
         directClient.registerAgent(runtime);
 
-        // report to console
-        elizaLogger.debug(`Started ${character.name} as ${runtime.agentId}`)
-
-        return runtime;
+        return clients;
     } catch (error) {
         elizaLogger.error(
             `Error starting agent for character ${character.name}:`,
@@ -589,8 +566,8 @@ const startAgents = async () => {
         });
     }
 
+    elizaLogger.log("Chat started. Type 'exit' to quit.");
     if (!args["non-interactive"]) {
-        elizaLogger.log("Chat started. Type 'exit' to quit.");
         chat();
     }
 };
