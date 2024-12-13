@@ -207,7 +207,6 @@ export type Models = {
     [ModelProviderName.VOLENGINE]: Model;
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
-    [ModelProviderName.VENICE]: Model;
 };
 
 /**
@@ -235,7 +234,6 @@ export enum ModelProviderName {
     VOLENGINE = "volengine",
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
-    VENICE = "venice",
 }
 
 /**
@@ -715,11 +713,6 @@ export type Character = {
         discord?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
-            messageSimilarityThreshold?: number;
-            isPartOfTeam?: boolean;
-            teamAgentIds?: string[];
-            teamLeaderId?: string;
-            teamMemberInterestKeywords?: string[];
         };
         telegram?: {
             shouldIgnoreBotMessages?: boolean;
