@@ -7,7 +7,6 @@ import {
     ModelClass,
     stringToUuid,
     parseBooleanFromText,
-    IAgentConfig,
 } from "@ai16z/eliza";
 import { elizaLogger } from "@ai16z/eliza";
 import { ClientBase } from "./base.ts";
@@ -97,8 +96,6 @@ function truncateToCompleteSentence(
 export class TwitterPostClient {
     client: ClientBase;
     runtime: IAgentRuntime;
-    config: IAgentConfig;
-    twitterUsername: string;
     private isProcessing: boolean = false;
     private lastProcessTime: number = 0;
     private stopProcessingActions: boolean = false;
@@ -114,7 +111,7 @@ export class TwitterPostClient {
                 timestamp: number;
             }>(
                 "twitter/" +
-                    this.twitterUsername +
+                    this.runtime.getSetting("TWITTER_USERNAME") +
                     "/lastPost"
             );
 
@@ -190,11 +187,9 @@ export class TwitterPostClient {
         }
     }
 
-    constructor(client: ClientBase, runtime: IAgentRuntime, config: IAgentConfig) {
+    constructor(client: ClientBase, runtime: IAgentRuntime) {
         this.client = client;
         this.runtime = runtime;
-        this.config = config;
-        this.twitterUsername = config.TWITTER_USERNAME || runtime.getSetting("TWITTER_USERNAME");
     }
 
     private async generateNewTweet() {
@@ -280,7 +275,7 @@ export class TwitterPostClient {
             // Final cleaning
             cleanedContent = removeQuotes(content);
 
-            if ((this.config.TWITTER_DRY_RUN || this.runtime.getSetting("TWITTER_DRY_RUN")) === "true") {
+            if (this.runtime.getSetting("TWITTER_DRY_RUN") === "true") {
                 elizaLogger.info(
                     `Dry run: would have posted tweet: ${cleanedContent}`
                 );
@@ -314,7 +309,7 @@ export class TwitterPostClient {
                     userId: this.client.profile.id,
                     inReplyToStatusId:
                         tweetResult.legacy.in_reply_to_status_id_str,
-                    permanentUrl: `https://twitter.com/${this.twitterUsername}/status/${tweetResult.rest_id}`,
+                    permanentUrl: `https://twitter.com/${this.runtime.getSetting("TWITTER_USERNAME")}/status/${tweetResult.rest_id}`,
                     hashtags: [],
                     mentions: [],
                     photos: [],
@@ -434,7 +429,7 @@ export class TwitterPostClient {
 
             await this.runtime.ensureUserExists(
                 this.runtime.agentId,
-                this.twitterUsername,
+                this.runtime.getSetting("TWITTER_USERNAME"),
                 this.runtime.character.name,
                 "twitter"
             );
@@ -465,7 +460,7 @@ export class TwitterPostClient {
                             content: { text: "", action: "" },
                         },
                         {
-                            twitterUserName: this.twitterUsername,
+                            twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
                             currentTweet: `ID: ${tweet.id}\nFrom: ${tweet.name} (@${tweet.username})\nText: ${tweet.text}`,
                         }
                     );
@@ -551,7 +546,7 @@ export class TwitterPostClient {
                                     content: { text: tweet.text, action: "QUOTE" }
                                 },
                                 {
-                                    twitterUserName: this.twitterUsername,
+                                    twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
                                     currentPost: `From @${tweet.username}: ${tweet.text}`,
                                     formattedConversation,
                                     imageContext: imageDescriptions.length > 0
@@ -700,7 +695,7 @@ export class TwitterPostClient {
                     content: { text: tweet.text, action: "" }
                 },
                 {
-                    twitterUserName: this.twitterUsername,
+                    twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
                     currentPost: `From @${tweet.username}: ${tweet.text}`,
                     formattedConversation,
                     imageContext: imageDescriptions.length > 0

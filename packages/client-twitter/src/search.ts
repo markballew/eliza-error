@@ -1,5 +1,5 @@
 import { SearchMode } from "agent-twitter-client";
-import { composeContext, IAgentConfig } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza";
 import { generateMessageResponse, generateText } from "@ai16z/eliza";
 import { messageCompletionFooter } from "@ai16z/eliza";
 import {
@@ -45,15 +45,11 @@ Your response should not contain any questions. Brief, concise statements only. 
 export class TwitterSearchClient {
     client: ClientBase;
     runtime: IAgentRuntime;
-    config: IAgentConfig;
-    twitterUsername: string;
     private respondedTweets: Set<string> = new Set();
 
-    constructor(client: ClientBase, runtime: IAgentRuntime, config: IAgentConfig) {
+    constructor(client: ClientBase, runtime: IAgentRuntime) {
         this.client = client;
         this.runtime = runtime;
-        this.config = config;
-        this.twitterUsername = config.TWITTER_USERNAME || runtime.getSetting("TWITTER_USERNAME");
     }
 
     async start() {
@@ -112,13 +108,13 @@ export class TwitterSearchClient {
 
             const prompt = `
   Here are some tweets related to the search term "${searchTerm}":
-
+  
   ${[...slicedTweets, ...homeTimeline]
       .filter((tweet) => {
           // ignore tweets where any of the thread tweets contain a tweet by the bot
           const thread = tweet.thread;
           const botTweet = thread.find(
-              (t) => t.username === this.twitterUsername
+              (t) => t.username === this.runtime.getSetting("TWITTER_USERNAME")
           );
           return !botTweet;
       })
@@ -130,7 +126,7 @@ export class TwitterSearchClient {
   `
       )
       .join("\n")}
-
+  
   Which tweet is the most interesting and relevant for Ruby to reply to? Please provide only the ID of the tweet in your response.
   Notes:
     - Respond to English tweets only
@@ -159,7 +155,10 @@ export class TwitterSearchClient {
 
             console.log("Selected tweet to reply to:", selectedTweet?.text);
 
-            if (selectedTweet.username === this.twitterUsername) {
+            if (
+                selectedTweet.username ===
+                this.runtime.getSetting("TWITTER_USERNAME")
+            ) {
                 console.log("Skipping tweet from bot itself");
                 return;
             }
@@ -210,7 +209,9 @@ export class TwitterSearchClient {
             const replies = selectedTweet.thread;
             const replyContext = replies
                 .filter(
-                    (reply) => reply.username !== this.twitterUsername
+                    (reply) =>
+                        reply.username !==
+                        this.runtime.getSetting("TWITTER_USERNAME")
                 )
                 .map((reply) => `@${reply.username}: ${reply.text}`)
                 .join("\n");
@@ -236,10 +237,10 @@ export class TwitterSearchClient {
 
             let state = await this.runtime.composeState(message, {
                 twitterClient: this.client.twitterClient,
-                twitterUserName: this.twitterUsername,
+                twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
                 timeline: formattedHomeTimeline,
                 tweetContext: `${tweetBackground}
-
+  
   Original Post:
   By @${selectedTweet.username}
   ${selectedTweet.text}${replyContext.length > 0 && `\nReplies to original post:\n${replyContext}`}
@@ -281,7 +282,7 @@ export class TwitterSearchClient {
                         this.client,
                         response,
                         message.roomId,
-                        this.twitterUsername,
+                        this.runtime.getSetting("TWITTER_USERNAME"),
                         tweetId
                     );
                     return memories;
