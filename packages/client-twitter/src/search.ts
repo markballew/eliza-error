@@ -42,17 +42,17 @@ Your response should not contain any questions. Brief, concise statements only. 
 
 ` + messageCompletionFooter;
 
-export class TwitterSearchClient {
-    client: ClientBase;
-    runtime: IAgentRuntime;
+export class TwitterSearchClient extends ClientBase {
     private respondedTweets: Set<string> = new Set();
 
-    constructor(client: ClientBase, runtime: IAgentRuntime) {
-        this.client = client;
-        this.runtime = runtime;
+    constructor(runtime: IAgentRuntime) {
+        // Initialize the client and pass an optional callback to be called when the client is ready
+        super({
+            runtime,
+        });
     }
 
-    async start() {
+    async onReady() {
         this.engageWithSearchTermsLoop();
     }
 
@@ -74,16 +74,16 @@ export class TwitterSearchClient {
             console.log("Fetching search tweets");
             // TODO: we wait 5 seconds here to avoid getting rate limited on startup, but we should queue
             await new Promise((resolve) => setTimeout(resolve, 5000));
-            const recentTweets = await this.client.fetchSearchTweets(
+            const recentTweets = await this.fetchSearchTweets(
                 searchTerm,
                 20,
                 SearchMode.Top
             );
             console.log("Search tweets fetched");
 
-            const homeTimeline = await this.client.fetchHomeTimeline(50);
+            const homeTimeline = await this.fetchHomeTimeline(50);
 
-            await this.client.cacheTimeline(homeTimeline);
+            await this.cacheTimeline(homeTimeline);
 
             const formattedHomeTimeline =
                 `# ${this.runtime.character.name}'s Home Timeline\n\n` +
@@ -179,7 +179,7 @@ export class TwitterSearchClient {
             );
 
             // crawl additional conversation tweets, if there are any
-            await buildConversationThread(selectedTweet, this.client);
+            await buildConversationThread(selectedTweet, this);
 
             const message = {
                 id: stringToUuid(selectedTweet.id + "-" + this.runtime.agentId),
@@ -218,8 +218,8 @@ export class TwitterSearchClient {
 
             let tweetBackground = "";
             if (selectedTweet.isRetweet) {
-                const originalTweet = await this.client.requestQueue.add(() =>
-                    this.client.twitterClient.getTweet(selectedTweet.id)
+                const originalTweet = await this.requestQueue.add(() =>
+                    this.twitterClient.getTweet(selectedTweet.id)
                 );
                 tweetBackground = `Retweeting @${originalTweet.username}: ${originalTweet.text}`;
             }
@@ -231,12 +231,13 @@ export class TwitterSearchClient {
                     .getService<IImageDescriptionService>(
                         ServiceType.IMAGE_DESCRIPTION
                     )
+                    .getInstance()
                     .describeImage(photo.url);
                 imageDescriptions.push(description);
             }
 
             let state = await this.runtime.composeState(message, {
-                twitterClient: this.client.twitterClient,
+                twitterClient: this.twitterClient,
                 twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
                 timeline: formattedHomeTimeline,
                 tweetContext: `${tweetBackground}
@@ -249,7 +250,7 @@ export class TwitterSearchClient {
   `,
             });
 
-            await this.client.saveRequestMessage(message, state as State);
+            await this.saveRequestMessage(message, state as State);
 
             const context = composeContext({
                 state,
@@ -279,7 +280,7 @@ export class TwitterSearchClient {
             try {
                 const callback: HandlerCallback = async (response: Content) => {
                     const memories = await sendTweet(
-                        this.client,
+                        this,
                         response,
                         message.roomId,
                         this.runtime.getSetting("TWITTER_USERNAME"),

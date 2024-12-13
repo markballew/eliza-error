@@ -6,8 +6,6 @@ import {
     ModelClass,
     stringToUuid,
     elizaLogger,
-    HandlerCallback,
-    Content,
     type IAgentRuntime,
 } from "@ai16z/eliza";
 import type { FarcasterClient } from "./client";
@@ -37,7 +35,7 @@ export class FarcasterInteractionManager {
             try {
                 await this.handleInteractions();
             } catch (error) {
-                elizaLogger.error(error);
+                elizaLogger.error(error)
                 return;
             }
 
@@ -98,7 +96,7 @@ export class FarcasterInteractionManager {
             });
 
             const memory: Memory = {
-                content: { text: mention.text, hash: mention.hash },
+                content: { text: mention.text },
                 agentId: this.runtime.agentId,
                 userId,
                 roomId,
@@ -108,7 +106,7 @@ export class FarcasterInteractionManager {
                 agent,
                 cast: mention,
                 memory,
-                thread,
+                thread
             });
         }
 
@@ -119,15 +117,15 @@ export class FarcasterInteractionManager {
         agent,
         cast,
         memory,
-        thread,
+        thread
     }: {
         agent: Profile;
         cast: Cast;
         memory: Memory;
-        thread: Cast[];
+        thread: Cast[]
     }) {
         if (cast.profile.fid === agent.fid) {
-            elizaLogger.info("skipping cast from bot itself", cast.hash);
+            elizaLogger.info("skipping cast from bot itself", cast.hash)
             return;
         }
 
@@ -166,7 +164,7 @@ export class FarcasterInteractionManager {
             farcasterUsername: agent.username,
             timeline: formattedTimeline,
             currentPost,
-            formattedConversation,
+            formattedConversation
         });
 
         const shouldRespondContext = composeContext({
@@ -202,13 +200,8 @@ export class FarcasterInteractionManager {
             modelClass: ModelClass.SMALL,
         });
 
-        if (
-            shouldRespondResponse === "IGNORE" ||
-            shouldRespondResponse === "STOP"
-        ) {
-            elizaLogger.info(
-                `Not responding to cast because generated ShouldRespond was ${shouldRespondResponse}`
-            );
+        if (shouldRespondResponse === "IGNORE" || shouldRespondResponse === "STOP") {
+            elizaLogger.info(`Not responding to cast because generated ShouldRespond was ${shouldRespondResponse}`)
             return;
         }
 
@@ -221,65 +214,55 @@ export class FarcasterInteractionManager {
                 messageHandlerTemplate,
         });
 
-        const responseContent = await generateMessageResponse({
+        const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
             modelClass: ModelClass.LARGE,
         });
 
-        responseContent.inReplyTo = memoryId;
+        response.inReplyTo = memoryId;
 
-        if (!responseContent.text) return;
+        if (!response.text) return;
+
 
         if (this.runtime.getSetting("FARCASTER_DRY_RUN") === "true") {
             elizaLogger.info(
-                `Dry run: would have responded to cast ${cast.hash} with ${responseContent.text}`
+                `Dry run: would have responded to cast ${cast.hash} with ${response.text}`
             );
             return;
         }
 
-        const callback: HandlerCallback = async (
-            content: Content,
-            files: any[]
-        ) => {
-            try {
-                if (memoryId && !content.inReplyTo) {
-                    content.inReplyTo = memoryId;
-                }
-                const results = await sendCast({
-                    runtime: this.runtime,
-                    client: this.client,
-                    signerUuid: this.signerUuid,
-                    profile: cast.profile,
-                    content: content,
-                    roomId: memory.roomId,
-                    inReplyTo: {
-                        fid: cast.authorFid,
-                        hash: cast.hash,
-                    },
-                });
-                // sendCast lost response action, so we need to add it back here
-                results[0].memory.content.action = content.action;
+        try {
+            elizaLogger.info(`Replying to cast ${cast.hash}.`);
 
-                for (const { memory } of results) {
-                    await this.runtime.messageManager.createMemory(memory);
-                }
-                return results.map((result) => result.memory);
-            } catch (error) {
-                console.error("Error sending response cast:", error);
-                return [];
+            const results = await sendCast({
+                runtime: this.runtime,
+                client: this.client,
+                signerUuid: this.signerUuid,
+                profile: cast.profile,
+                content: response,
+                roomId: memory.roomId,
+                inReplyTo: {
+                    fid: cast.authorFid,
+                    hash: cast.hash,
+                },
+            });
+
+            const newState = await this.runtime.updateRecentMessageState(state);
+
+            for (const { memory } of results) {
+                await this.runtime.messageManager.createMemory(memory);
             }
-        };
 
-        const responseMessages = await callback(responseContent);
+            await this.runtime.evaluate(memory, newState);
 
-        const newState = await this.runtime.updateRecentMessageState(state);
-
-        await this.runtime.processActions(
-            memory,
-            responseMessages,
-            newState,
-            callback
-        );
+            await this.runtime.processActions(
+                memory,
+                results.map((result) => result.memory),
+                newState
+            );
+        } catch (error) {
+            elizaLogger.error(`Error sending response cast: ${error}`);
+        }
     }
 }
