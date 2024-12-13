@@ -10,7 +10,6 @@ import {
     AgentRuntime,
     CacheManager,
     Character,
-    ClientType,
     Clients,
     DbCacheAdapter,
     FsCacheAdapter,
@@ -287,11 +286,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.HYPERBOLIC_API_KEY ||
                 settings.HYPERBOLIC_API_KEY
             );
-        case ModelProviderName.VENICE:
-            return (
-                character.settings?.secrets?.VENICE_API_KEY ||
-                settings.VENICE_API_KEY
-            );
     }
 }
 
@@ -330,30 +324,29 @@ export async function initializeClients(
 ) {
     const clients = [];
     const clientTypes =
-        character.clients?.map((str) => str.type.toLowerCase()) || [];
+        character.clients?.map((str) => str.toLowerCase()) || [];
 
-    if (clientTypes.includes(ClientType.DIRECT)) {
+    if (clientTypes.includes("auto")) {
         const autoClient = await AutoClientInterface.start(runtime);
         if (autoClient) clients.push(autoClient);
     }
 
-    if (clientTypes.includes(ClientType.DISCORD)) {
+    if (clientTypes.includes("discord")) {
         clients.push(await DiscordClientInterface.start(runtime));
     }
 
-    if (clientTypes.includes(ClientType.TELEGRAM)) {
+    if (clientTypes.includes("telegram")) {
         const telegramClient = await TelegramClientInterface.start(runtime);
         if (telegramClient) clients.push(telegramClient);
     }
 
-    if (clientTypes.includes(ClientType.TWITTER)) {
-        const config = character.clients?.find((client) => client.type === ClientType.TWITTER)?.config;
+    if (clientTypes.includes("twitter")) {
         TwitterClientInterface.enableSearch = !isFalsish(getSecret(character, "TWITTER_SEARCH_ENABLE"));
-        const twitterClients = await TwitterClientInterface.start(runtime, config);
+        const twitterClients = await TwitterClientInterface.start(runtime);
         clients.push(twitterClients);
     }
 
-    if (clientTypes.includes(ClientType.FARCASTER)) {
+    if (clientTypes.includes("farcaster")) {
         const farcasterClients = new FarcasterAgentClient(runtime);
         farcasterClients.start();
         clients.push(farcasterClients);

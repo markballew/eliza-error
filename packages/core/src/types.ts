@@ -207,7 +207,6 @@ export type Models = {
     [ModelProviderName.VOLENGINE]: Model;
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
-    [ModelProviderName.VENICE]: Model;
 };
 
 /**
@@ -235,7 +234,6 @@ export enum ModelProviderName {
     VOLENGINE = "volengine",
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
-    VENICE = "venice",
 }
 
 /**
@@ -568,7 +566,7 @@ export type Media = {
  */
 export type Client = {
     /** Start client connection */
-    start: (runtime: IAgentRuntime, config?: IAgentConfig) => Promise<unknown>;
+    start: (runtime: IAgentRuntime) => Promise<unknown>;
 
     /** Stop client connection */
     stop: (runtime: IAgentRuntime) => Promise<unknown>;
@@ -603,23 +601,13 @@ export type Plugin = {
 /**
  * Available client platforms
  */
-export enum ClientType {
+export enum Clients {
     DISCORD = "discord",
     DIRECT = "direct",
     TWITTER = "twitter",
     TELEGRAM = "telegram",
-    FARCASTER = "farcaster"
+    FARCASTER = "farcaster",
 }
-
-export interface IAgentConfig {
-    [key: string]: string;
-}
-
-export type Clients = {
-    type: ClientType;
-    config: IAgentConfig;
-};
-
 /**
  * Configuration for an agent character
  */
