@@ -8,6 +8,7 @@ import {
     getEmbeddingZeroVector,
     elizaLogger,
     stringToUuid,
+    IAgentConfig,
 } from "@ai16z/eliza";
 import {
     QueryTweetsResponse,
@@ -85,6 +86,7 @@ export class ClientBase extends EventEmitter {
     static _twitterClients: { [accountIdentifier: string]: Scraper } = {};
     twitterClient: Scraper;
     runtime: IAgentRuntime;
+    config: IAgentConfig;
     directions: string;
     lastCheckedTweetId: bigint | null = null;
     imageDescriptionService: IImageDescriptionService;
@@ -134,10 +136,11 @@ export class ClientBase extends EventEmitter {
         );
     }
 
-    constructor(runtime: IAgentRuntime) {
+    constructor(runtime: IAgentRuntime, config: IAgentConfig) {
         super();
         this.runtime = runtime;
-        const username = this.runtime.getSetting("TWITTER_USERNAME");
+        this.config = config;
+        const username = this.config.TWITTER_USERNAME || this.runtime.getSetting("TWITTER_USERNAME");
         if (ClientBase._twitterClients[username]) {
             this.twitterClient = ClientBase._twitterClients[username];
         } else {
@@ -154,16 +157,19 @@ export class ClientBase extends EventEmitter {
 
     async init() {
         //test
-        const username = this.runtime.getSetting("TWITTER_USERNAME");
+        const username = this.config.TWITTER_USERNAME || this.runtime.getSetting("TWITTER_USERNAME");
+        const password = this.config.TWITTER_PASSWORD || this.runtime.getSetting("TWITTER_PASSWORD");
+        const email = this.config.TWITTER_EMAIL || this.runtime.getSetting("TWITTER_EMAIL");
+        const twitter2faSecret = this.config.TWITTER_2FA_SECRET || this.runtime.getSetting("TWITTER_2FA_SECRET") || undefined;
+        const cookies = this.config.TWITTER_COOKIES || this.runtime.getSetting("TWITTER_COOKIES");
+
 
         if (!username) {
             throw new Error("Twitter username not configured");
         }
         // Check for Twitter cookies
-        if (this.runtime.getSetting("TWITTER_COOKIES")) {
-            const cookiesArray = JSON.parse(
-                this.runtime.getSetting("TWITTER_COOKIES")
-            );
+        if (cookies) {
+            const cookiesArray = JSON.parse(cookies);
 
             await this.setCookiesFromArray(cookiesArray);
         } else {
@@ -177,9 +183,9 @@ export class ClientBase extends EventEmitter {
         while (true) {
             await this.twitterClient.login(
                 username,
-                this.runtime.getSetting("TWITTER_PASSWORD"),
-                this.runtime.getSetting("TWITTER_EMAIL"),
-                this.runtime.getSetting("TWITTER_2FA_SECRET") || undefined
+                password,
+                email,
+                twitter2faSecret
             );
 
             if (await this.twitterClient.isLoggedIn()) {
@@ -218,57 +224,90 @@ export class ClientBase extends EventEmitter {
         await this.populateTimeline();
     }
 
-    async fetchHomeTimeline(count: number): Promise<Tweet[]> {
-        elizaLogger.debug("fetching home timeline");
+    async fetchOwnPosts(count: number): Promise<Tweet[]> {
+        elizaLogger.debug("fetching own posts");
         const homeTimeline = await this.twitterClient.getUserTweets(
             this.profile.id,
             count
         );
-
-        // console.dir(homeTimeline, { depth: Infinity });
-
         return homeTimeline.tweets;
-        // .filter((t) => t.__typename !== "TweetWithVisibilityResults")
-        // .map((tweet) => {
-        //     // console.log("tweet is", tweet);
-        //     const obj = {
-        //         id: tweet.id,
-        //         name:
-        //             tweet.name ??
-        //             tweet. ?.user_results?.result?.legacy.name,
-        //         username:
-        //             tweet.username ??
-        //             tweet.core?.user_results?.result?.legacy.screen_name,
-        //         text: tweet.text ?? tweet.legacy?.full_text,
-        //         inReplyToStatusId:
-        //             tweet.inReplyToStatusId ??
-        //             tweet.legacy?.in_reply_to_status_id_str,
-        //         createdAt: tweet.createdAt ?? tweet.legacy?.created_at,
-        //         userId: tweet.userId ?? tweet.legacy?.user_id_str,
-        //         conversationId:
-        //             tweet.conversationId ??
-        //             tweet.legacy?.conversation_id_str,
-        //         hashtags: tweet.hashtags ?? tweet.legacy?.entities.hashtags,
-        //         mentions:
-        //             tweet.mentions ?? tweet.legacy?.entities.user_mentions,
-        //         photos:
-        //             tweet.photos ??
-        //             tweet.legacy?.entities.media?.filter(
-        //                 (media) => media.type === "photo"
-        //             ) ??
-        //             [],
-        //         thread: [],
-        //         urls: tweet.urls ?? tweet.legacy?.entities.urls,
-        //         videos:
-        //             tweet.videos ??
-        //             tweet.legacy?.entities.media?.filter(
-        //                 (media) => media.type === "video"
-        //             ) ??
-        //             [],
-        //     };
-        //     // console.log("obj is", obj);
-        //     return obj;
-        // });
+    }
+
+    async fetchHomeTimeline(count: number): Promise<Tweet[]> {
+        elizaLogger.debug("fetching home timeline");
+        const homeTimeline = await this.twitterClient.fetchHomeTimeline(count, []);
+
+        elizaLogger.debug(homeTimeline, { depth: Infinity });
+        const processedTimeline = homeTimeline
+        .filter((t) => t.__typename !== "TweetWithVisibilityResults") // what's this about?
+        .map((tweet) => {
+            //console.log("tweet is", tweet);
+            const obj = {
+                id: tweet.id,
+                name:
+                    tweet.name ??
+                    tweet?.user_results?.result?.legacy.name,
+                username:
+                    tweet.username ??
+                    tweet.core?.user_results?.result?.legacy.screen_name,
+                text: tweet.text ?? tweet.legacy?.full_text,
+                inReplyToStatusId:
+                    tweet.inReplyToStatusId ??
+                    tweet.legacy?.in_reply_to_status_id_str ??
+                    null,
+                timestamp: new Date(tweet.legacy?.created_at).getTime() / 1000,
+                createdAt: tweet.createdAt ?? tweet.legacy?.created_at ?? tweet.core?.user_results?.result?.legacy.created_at,
+                userId: tweet.userId ?? tweet.legacy?.user_id_str,
+                conversationId:
+                    tweet.conversationId ??
+                    tweet.legacy?.conversation_id_str,
+                permanentUrl: `https://x.com/${tweet.core?.user_results?.result?.legacy?.screen_name}/status/${tweet.rest_id}`,
+                hashtags: tweet.hashtags ?? tweet.legacy?.entities.hashtags,
+                mentions:
+                    tweet.mentions ?? tweet.legacy?.entities.user_mentions,
+                photos:
+                    tweet.photos ??
+                    tweet.legacy?.entities.media?.filter(
+                        (media) => media.type === "photo"
+                    ) ??
+                    [],
+                thread: tweet.thread || [],
+                urls: tweet.urls ?? tweet.legacy?.entities.urls,
+                videos:
+                    tweet.videos ??
+                    tweet.legacy?.entities.media?.filter(
+                        (media) => media.type === "video"
+                    ) ??
+                    [],
+            };
+            //console.log("obj is", obj);
+            return obj;
+        });
+        //elizaLogger.debug("process homeTimeline", processedTimeline);
+        return processedTimeline;
+    }
+
+    async fetchTimelineForActions(count: number): Promise<Tweet[]> {
+        elizaLogger.debug("fetching timeline for actions");
+        const homeTimeline = await this.twitterClient.fetchHomeTimeline(count, []);
+
+        return homeTimeline.map(tweet => ({
+            id: tweet.rest_id,
+            name: tweet.core?.user_results?.result?.legacy?.name,
+            username: tweet.core?.user_results?.result?.legacy?.screen_name,
+            text: tweet.legacy?.full_text,
+            inReplyToStatusId: tweet.legacy?.in_reply_to_status_id_str,
+            timestamp: new Date(tweet.legacy?.created_at).getTime() / 1000,
+            userId: tweet.legacy?.user_id_str,
+            conversationId: tweet.legacy?.conversation_id_str,
+            permanentUrl: `https://twitter.com/${tweet.core?.user_results?.result?.legacy?.screen_name}/status/${tweet.rest_id}`,
+            hashtags: tweet.legacy?.entities?.hashtags || [],
+            mentions: tweet.legacy?.entities?.user_mentions || [],
+            photos: tweet.legacy?.entities?.media?.filter(media => media.type === "photo") || [],
+            thread: tweet.thread || [],
+            urls: tweet.legacy?.entities?.urls || [],
+            videos: tweet.legacy?.entities?.media?.filter(media => media.type === "video") || []
+        }));
     }
 
     async fetchSearchTweets(
@@ -436,10 +475,11 @@ export class ClientBase extends EventEmitter {
         }
 
         const timeline = await this.fetchHomeTimeline(cachedTimeline ? 10 : 50);
+        const username = this.config.TWITTER_USERNAME || this.runtime.getSetting("TWITTER_USERNAME");
 
         // Get the most recent 20 mentions and interactions
         const mentionsAndInteractions = await this.fetchSearchTweets(
-            `@${this.runtime.getSetting("TWITTER_USERNAME")}`,
+            `@${username}`,
             20,
             SearchMode.Latest
         );

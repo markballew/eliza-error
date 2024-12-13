@@ -10,6 +10,7 @@ import {
     AgentRuntime,
     CacheManager,
     Character,
+    ClientType,
     Clients,
     DbCacheAdapter,
     FsCacheAdapter,
@@ -58,6 +59,12 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
     const waitTime =
         Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
     return new Promise((resolve) => setTimeout(resolve, waitTime));
+};
+
+const logFetch = async (url: string, options: any) => {
+    elizaLogger.info(`Fetching ${url}`);
+    elizaLogger.info(options);
+    return fetch(url, options);
 };
 
 export function parseArguments(): {
@@ -280,6 +287,11 @@ export function getTokenForProvider(
                 character.settings?.secrets?.HYPERBOLIC_API_KEY ||
                 settings.HYPERBOLIC_API_KEY
             );
+        case ModelProviderName.VENICE:
+            return (
+                character.settings?.secrets?.VENICE_API_KEY ||
+                settings.VENICE_API_KEY
+            );
     }
 }
 
@@ -318,28 +330,30 @@ export async function initializeClients(
 ) {
     const clients = [];
     const clientTypes =
-        character.clients?.map((str) => str.toLowerCase()) || [];
+        character.clients?.map((str) => str.type.toLowerCase()) || [];
 
-    if (clientTypes.includes("auto")) {
+    if (clientTypes.includes(ClientType.DIRECT)) {
         const autoClient = await AutoClientInterface.start(runtime);
         if (autoClient) clients.push(autoClient);
     }
 
-    if (clientTypes.includes("discord")) {
+    if (clientTypes.includes(ClientType.DISCORD)) {
         clients.push(await DiscordClientInterface.start(runtime));
     }
 
-    if (clientTypes.includes("telegram")) {
+    if (clientTypes.includes(ClientType.TELEGRAM)) {
         const telegramClient = await TelegramClientInterface.start(runtime);
         if (telegramClient) clients.push(telegramClient);
     }
 
-    if (clientTypes.includes("twitter")) {
-        const twitterClients = await TwitterClientInterface.start(runtime);
+    if (clientTypes.includes(ClientType.TWITTER)) {
+        const config = character.clients?.find((client) => client.type === ClientType.TWITTER)?.config;
+        TwitterClientInterface.enableSearch = !isFalsish(getSecret(character, "TWITTER_SEARCH_ENABLE"));
+        const twitterClients = await TwitterClientInterface.start(runtime, config);
         clients.push(twitterClients);
     }
 
-    if (clientTypes.includes("farcaster")) {
+    if (clientTypes.includes(ClientType.FARCASTER)) {
         const farcasterClients = new FarcasterAgentClient(runtime);
         farcasterClients.start();
         clients.push(farcasterClients);
@@ -356,6 +370,22 @@ export async function initializeClients(
     }
 
     return clients;
+}
+
+function isFalsish(input: any): boolean {
+    // If the input is exactly NaN, return true
+    if (Number.isNaN(input)) {
+        return true;
+    }
+
+    // Convert input to a string if it's not null or undefined
+    const value = input == null ? '' : String(input);
+
+    // List of common falsish string representations
+    const falsishValues = ['false', '0', 'no', 'n', 'off', 'null', 'undefined', ''];
+
+    // Check if the value (trimmed and lowercased) is in the falsish list
+    return falsishValues.includes(value.trim().toLowerCase());
 }
 
 function getSecret(character: Character, secret: string) {
@@ -456,6 +486,7 @@ export async function createAgent(
         services: [],
         managers: [],
         cacheManager: cache,
+        fetch: logFetch,
     });
 }
 
