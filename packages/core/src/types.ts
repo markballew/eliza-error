@@ -566,7 +566,7 @@ export type Media = {
  */
 export type Client = {
     /** Start client connection */
-    start: (runtime: IAgentRuntime) => Promise<unknown>;
+    start: (runtime: IAgentRuntime, config?: IAgentConfig) => Promise<unknown>;
 
     /** Stop client connection */
     stop: (runtime: IAgentRuntime) => Promise<unknown>;
@@ -601,13 +601,23 @@ export type Plugin = {
 /**
  * Available client platforms
  */
-export enum Clients {
+export enum ClientType {
     DISCORD = "discord",
     DIRECT = "direct",
     TWITTER = "twitter",
     TELEGRAM = "telegram",
-    FARCASTER = "farcaster",
+    FARCASTER = "farcaster"
 }
+
+export interface IAgentConfig {
+    [key: string]: string;
+}
+
+export type Clients = {
+    type: ClientType;
+    config: IAgentConfig;
+};
+
 /**
  * Configuration for an agent character
  */
