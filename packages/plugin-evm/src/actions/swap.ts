@@ -7,6 +7,7 @@ import {
     getRoutes,
 } from "@lifi/sdk";
 import { WalletProvider } from "../providers/wallet";
+import { getChainConfigs } from "../providers/chainConfigs";
 import { swapTemplate } from "../templates";
 import type { SwapParams, Transaction } from "../types";
 
@@ -18,14 +19,16 @@ export class SwapAction {
     constructor(private walletProvider: WalletProvider) {
         this.config = createConfig({
             integrator: "eliza",
-            chains: Object.values(this.walletProvider.chains).map((config) => ({
-                id: config.id,
+            chains: Object.values(
+                getChainConfigs(this.walletProvider.runtime)
+            ).map((config) => ({
+                id: config.chainId,
                 name: config.name,
                 key: config.name.toLowerCase(),
                 chainType: "EVM" as const,
                 nativeToken: {
                     ...config.nativeCurrency,
-                    chainId: config.id,
+                    chainId: config.chainId,
                     address: "0x0000000000000000000000000000000000000000",
                     coinKey: config.nativeCurrency.symbol,
                     priceUSD: "0",
@@ -35,15 +38,15 @@ export class SwapAction {
                     name: config.nativeCurrency.name,
                 },
                 rpcUrls: {
-                    public: { http: [config.rpcUrls.default.http[0]] },
+                    public: { http: [config.rpcUrl] },
                 },
-                blockExplorerUrls: [config.blockExplorers.default.url],
+                blockExplorerUrls: [config.blockExplorerUrl],
                 metamask: {
-                    chainId: `0x${config.id.toString(16)}`,
+                    chainId: `0x${config.chainId.toString(16)}`,
                     chainName: config.name,
                     nativeCurrency: config.nativeCurrency,
-                    rpcUrls: [config.rpcUrls.default.http[0]],
-                    blockExplorerUrls: [config.blockExplorers.default.url],
+                    rpcUrls: [config.rpcUrl],
+                    blockExplorerUrls: [config.blockExplorerUrl],
                 },
                 coin: config.nativeCurrency.symbol,
                 mainnet: true,
@@ -53,12 +56,16 @@ export class SwapAction {
     }
 
     async swap(params: SwapParams): Promise<Transaction> {
-        const walletClient = this.walletProvider.getWalletClient(params.chain);
+        const walletClient = this.walletProvider.getWalletClient();
         const [fromAddress] = await walletClient.getAddresses();
 
         const routes = await getRoutes({
-            fromChainId: this.walletProvider.getChainConfigs(params.chain).id,
-            toChainId: this.walletProvider.getChainConfigs(params.chain).id,
+            fromChainId: getChainConfigs(this.walletProvider.runtime)[
+                params.chain
+            ].chainId as ChainId,
+            toChainId: getChainConfigs(this.walletProvider.runtime)[
+                params.chain
+            ].chainId as ChainId,
             fromTokenAddress: params.fromToken,
             toTokenAddress: params.toToken,
             fromAmount: params.amount,
@@ -85,7 +92,8 @@ export class SwapAction {
                 .approvalAddress as `0x${string}`,
             value: BigInt(params.amount),
             data: process.data as `0x${string}`,
-            chainId: this.walletProvider.getChainConfigs(params.chain).id,
+            chainId: getChainConfigs(this.walletProvider.runtime)[params.chain]
+                .chainId,
         };
     }
 }
@@ -101,10 +109,7 @@ export const swapAction = {
         callback?: any
     ) => {
         try {
-            const privateKey = runtime.getSetting(
-                "EVM_PRIVATE_KEY"
-            ) as `0x${string}`;
-            const walletProvider = new WalletProvider(privateKey);
+            const walletProvider = new WalletProvider(runtime);
             const action = new SwapAction(walletProvider);
             return await action.swap(options);
         } catch (error) {

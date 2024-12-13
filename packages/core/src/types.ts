@@ -207,7 +207,6 @@ export type Models = {
     [ModelProviderName.VOLENGINE]: Model;
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
-    [ModelProviderName.VENICE]: Model;
 };
 
 /**
@@ -235,7 +234,6 @@ export enum ModelProviderName {
     VOLENGINE = "volengine",
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
-    VENICE = "venice",
 }
 
 /**
@@ -568,10 +566,10 @@ export type Media = {
  */
 export type Client = {
     /** Start client connection */
-    start: (runtime: IAgentRuntime) => Promise<unknown>;
+    start: (runtime?: IAgentRuntime) => Promise<unknown>;
 
     /** Stop client connection */
-    stop: (runtime: IAgentRuntime) => Promise<unknown>;
+    stop: (runtime?: IAgentRuntime) => Promise<unknown>;
 };
 
 /**
@@ -994,8 +992,6 @@ export interface IAgentRuntime {
     evaluators: Evaluator[];
     plugins: Plugin[];
 
-    fetch?: typeof fetch | null;
-
     messageManager: IMemoryManager;
     descriptionManager: IMemoryManager;
     documentsManager: IMemoryManager;
@@ -1175,10 +1171,3 @@ export type KnowledgeItem = {
     id: UUID;
     content: Content;
 };
-
-export interface ActionResponse {
-    like: boolean;
-    retweet: boolean;
-    quote?: boolean;
-    reply?: boolean;
-}
