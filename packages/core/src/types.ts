@@ -207,6 +207,7 @@ export type Models = {
     [ModelProviderName.VOLENGINE]: Model;
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
+    [ModelProviderName.VENICE]: Model;
 };
 
 /**
@@ -234,6 +235,7 @@ export enum ModelProviderName {
     VOLENGINE = "volengine",
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
+    VENICE = "venice",
 }
 
 /**
@@ -566,10 +568,10 @@ export type Media = {
  */
 export type Client = {
     /** Start client connection */
-    start: (runtime?: IAgentRuntime) => Promise<unknown>;
+    start: (runtime: IAgentRuntime) => Promise<unknown>;
 
     /** Stop client connection */
-    stop: (runtime?: IAgentRuntime) => Promise<unknown>;
+    stop: (runtime: IAgentRuntime) => Promise<unknown>;
 };
 
 /**
@@ -648,8 +650,11 @@ export type Character = {
         twitterMessageHandlerTemplate?: string;
         twitterShouldRespondTemplate?: string;
         farcasterPostTemplate?: string;
+        lensPostTemplate?: string;
         farcasterMessageHandlerTemplate?: string;
+        lensMessageHandlerTemplate?: string;
         farcasterShouldRespondTemplate?: string;
+        lensShouldRespondTemplate?: string;
         telegramMessageHandlerTemplate?: string;
         telegramShouldRespondTemplate?: string;
         discordVoiceHandlerTemplate?: string;
@@ -715,6 +720,11 @@ export type Character = {
         discord?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
+            messageSimilarityThreshold?: number;
+            isPartOfTeam?: boolean;
+            teamAgentIds?: string[];
+            teamLeaderId?: string;
+            teamMemberInterestKeywords?: string[];
         };
         telegram?: {
             shouldIgnoreBotMessages?: boolean;
@@ -1131,12 +1141,16 @@ export interface IPdfService extends Service {
 }
 
 export interface IAwsS3Service extends Service {
-    uploadFile(imagePath: string, useSignedUrl: boolean, expiresIn: number ): Promise<{
+    uploadFile(
+        imagePath: string,
+        useSignedUrl: boolean,
+        expiresIn: number
+    ): Promise<{
         success: boolean;
         url?: string;
         error?: string;
     }>;
-    generateSignedUrl(fileName: string, expiresIn: number): Promise<string>
+    generateSignedUrl(fileName: string, expiresIn: number): Promise<string>;
 }
 
 export type SearchResult = {
