@@ -6,6 +6,7 @@
     "types": "dist/index.d.ts",
     "dependencies": {
         "@ai16z/eliza": "workspace:*",
+        "@ai16z/plugin-trustdb": "workspace:*",
         "@onflow/config": "1.5.1",
         "@onflow/fcl": "1.13.1",
         "@onflow/typedefs": "1.4.0",
@@ -27,7 +28,7 @@
         "lines": "find . \\( -name '*.cdc' -o -name '*.ts' \\) -not -path '*/node_modules/*' -not -path '*/tests/*' -not -path '*/deps/*' -not -path '*/dist/*' -not -path '*/imports*' | xargs wc -l",
         "build": "tsup --format esm --dts",
         "dev": "tsup --format esm --dts --watch",
-        "lint": "eslint --fix  --cache .",
+        "lint": "eslint . --fix",
         "test": "vitest run"
     },
     "peerDependencies": {

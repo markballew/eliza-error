@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.5](../index.md) / Character
+[@ai16z/eliza v0.1.5-alpha.3](../index.md) / Character
 
 # Type Alias: Character
 
@@ -108,18 +108,6 @@ Optional prompt templates
 
 > `optional` **farcasterShouldRespondTemplate**: `string`
 
-### templates.lensPostTemplate?
-
-> `optional` **lensPostTemplate**: `string`
-
-### templates.lensMessageHandlerTemplate?
-
-> `optional` **farcasterMessageHandlerTemplate**: `string`
-
-### templates.lensShouldRespondTemplate?
-
-> `optional` **lensShouldRespondTemplate**: `string`
-
 ### templates.telegramMessageHandlerTemplate?
 
 > `optional` **telegramMessageHandlerTemplate**: `string`
@@ -139,14 +127,6 @@ Optional prompt templates
 ### templates.discordMessageHandlerTemplate?
 
 > `optional` **discordMessageHandlerTemplate**: `string`
-
-### templates.slackMessageHandlerTemplate?
-
-> `optional` **slackMessageHandlerTemplate**: `string`
-
-### templates.slackShouldRespondTemplate?
-
-> `optional` **slackShouldRespondTemplate**: `string`
 
 ### bio
 
@@ -214,11 +194,11 @@ Optional configuration
 
 #### Index Signature
 
-\[`key`: `string`\]: `string`
+ \[`key`: `string`\]: `string`
 
-### settings.intiface?
+### settings.buttplug?
 
-> `optional` **intiface**: `boolean`
+> `optional` **buttplug**: `boolean`
 
 ### settings.voice?
 
@@ -276,7 +256,7 @@ New structured ElevenLabs config
 
 #### Index Signature
 
-\[`key`: `string`\]: `any`[]
+ \[`key`: `string`\]: `any`[]
 
 ### settings.chains.evm?
 
@@ -304,26 +284,6 @@ Optional client-specific config
 
 > `optional` **shouldIgnoreDirectMessages**: `boolean`
 
-### clientConfig.discord.messageSimilarityThreshold?
-
-> `optional` **messageSimilarityThreshold**: `number`
-
-### clientConfig.discord.isPartOfTeam?
-
-> `optional` **isPartOfTeam**: `boolean`
-
-### clientConfig.discord.teamAgentIds?
-
-> `optional` **teamAgentIds**: `string`[]
-
-### clientConfig.discord.teamLeaderId?
-
-> `optional` **teamLeaderId**: `string`
-
-### clientConfig.discord.teamMemberInterestKeywords?
-
-> `optional` **teamMemberInterestKeywords**: `string`[]
-
 ### clientConfig.telegram?
 
 > `optional` **telegram**: `object`
@@ -333,38 +293,6 @@ Optional client-specific config
 > `optional` **shouldIgnoreBotMessages**: `boolean`
 
 ### clientConfig.telegram.shouldIgnoreDirectMessages?
-
-> `optional` **shouldIgnoreDirectMessages**: `boolean`
-
-### clientConfig.telegram.messageSimilarityThreshold?
-
-> `optional` **messageSimilarityThreshold**: `number`
-
-### clientConfig.telegram.isPartOfTeam?
-
-> `optional` **isPartOfTeam**: `boolean`
-
-### clientConfig.telegram.teamAgentIds?
-
-> `optional` **teamAgentIds**: `string`[]
-
-### clientConfig.telegram.teamLeaderId?
-
-> `optional` **teamLeaderId**: `string`
-
-### clientConfig.telegram.teamMemberInterestKeywords?
-
-> `optional` **teamMemberInterestKeywords**: `string`[]
-
-### clientConfig.slack?
-
-> `optional` **slack**: `object`
-
-### clientConfig.slack.shouldIgnoreBotMessages?
-
-> `optional` **shouldIgnoreBotMessages**: `boolean`
-
-### clientConfig.slack.shouldIgnoreDirectMessages?
 
 > `optional` **shouldIgnoreDirectMessages**: `boolean`
 
@@ -414,4 +342,4 @@ Optional Twitter profile
 
 ## Defined in
 
-[packages/core/src/types.ts:623](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L623)
+[packages/core/src/types.ts:609](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L609)

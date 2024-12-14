@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.5](../index.md) / IAgentRuntime
+[@ai16z/eliza v0.1.5-alpha.3](../index.md) / IAgentRuntime
 
 # Interface: IAgentRuntime
 
@@ -12,7 +12,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1008](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1008)
+[packages/core/src/types.ts:978](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L978)
 
 ***
 
@@ -22,7 +22,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1009](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1009)
+[packages/core/src/types.ts:979](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L979)
 
 ***
 
@@ -32,7 +32,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1010](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1010)
+[packages/core/src/types.ts:980](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L980)
 
 ***
 
@@ -42,7 +42,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1011](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1011)
+[packages/core/src/types.ts:981](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L981)
 
 ***
 
@@ -52,7 +52,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1012](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1012)
+[packages/core/src/types.ts:982](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L982)
 
 ***
 
@@ -62,7 +62,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1013](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1013)
+[packages/core/src/types.ts:983](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L983)
 
 ***
 
@@ -72,7 +72,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1014](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1014)
+[packages/core/src/types.ts:984](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L984)
 
 ***
 
@@ -82,7 +82,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1015](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1015)
+[packages/core/src/types.ts:985](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L985)
 
 ***
 
@@ -92,7 +92,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1016](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1016)
+[packages/core/src/types.ts:986](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L986)
 
 ***
 
@@ -102,7 +102,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1017](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1017)
+[packages/core/src/types.ts:987](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L987)
 
 ***
 
@@ -112,39 +112,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1018](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1018)
-
-***
-
-### fetch()?
-
-> `optional` **fetch**: (`input`, `init`?) => `Promise`\<`Response`\>(`input`, `init`?) => `Promise`\<`Response`\>
-
-[MDN Reference](https://developer.mozilla.org/docs/Web/API/fetch)
-
-#### Parameters
-
-• **input**: `RequestInfo` \| `URL`
-
-• **init?**: `RequestInit`
-
-#### Returns
-
-`Promise`\<`Response`\>
-
-#### Parameters
-
-• **input**: `string` \| `Request` \| `URL`
-
-• **init?**: `RequestInit`
-
-#### Returns
-
-`Promise`\<`Response`\>
-
-#### Defined in
-
-[packages/core/src/types.ts:1020](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1020)
+[packages/core/src/types.ts:988](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L988)
 
 ***
 
@@ -154,7 +122,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1022](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1022)
+[packages/core/src/types.ts:990](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L990)
 
 ***
 
@@ -164,7 +132,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1023](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1023)
+[packages/core/src/types.ts:991](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L991)
 
 ***
 
@@ -174,7 +142,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1024](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1024)
+[packages/core/src/types.ts:992](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L992)
 
 ***
 
@@ -184,7 +152,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1025](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1025)
+[packages/core/src/types.ts:993](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L993)
 
 ***
 
@@ -194,7 +162,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1026](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1026)
+[packages/core/src/types.ts:994](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L994)
 
 ***
 
@@ -204,7 +172,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1028](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1028)
+[packages/core/src/types.ts:996](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L996)
 
 ***
 
@@ -214,20 +182,7 @@ Properties
 
 #### Defined in
 
-[packages/core/src/types.ts:1030](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1030)
-
-***
-
-### clients
-
-> **clients**: `Record`\<`string`, `any`\>
-
-any could be EventEmitter
-but I think the real solution is forthcoming as a base client interface
-
-#### Defined in
-
-[packages/core/src/types.ts:1033](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1033)
+[packages/core/src/types.ts:998](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L998)
 
 ## Methods
 
@@ -241,7 +196,7 @@ but I think the real solution is forthcoming as a base client interface
 
 #### Defined in
 
-[packages/core/src/types.ts:1035](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1035)
+[packages/core/src/types.ts:1000](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1000)
 
 ***
 
@@ -259,7 +214,7 @@ but I think the real solution is forthcoming as a base client interface
 
 #### Defined in
 
-[packages/core/src/types.ts:1037](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1037)
+[packages/core/src/types.ts:1002](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1002)
 
 ***
 
@@ -277,7 +232,7 @@ but I think the real solution is forthcoming as a base client interface
 
 #### Defined in
 
-[packages/core/src/types.ts:1039](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1039)
+[packages/core/src/types.ts:1004](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1004)
 
 ***
 
@@ -299,7 +254,7 @@ but I think the real solution is forthcoming as a base client interface
 
 #### Defined in
 
-[packages/core/src/types.ts:1041](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1041)
+[packages/core/src/types.ts:1006](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1006)
 
 ***
 
@@ -317,7 +272,7 @@ but I think the real solution is forthcoming as a base client interface
 
 #### Defined in
 
-[packages/core/src/types.ts:1043](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1043)
+[packages/core/src/types.ts:1008](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1008)
 
 ***
 
@@ -335,7 +290,7 @@ but I think the real solution is forthcoming as a base client interface
 
 #### Defined in
 
-[packages/core/src/types.ts:1045](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1045)
+[packages/core/src/types.ts:1010](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1010)
 
 ***
 
@@ -351,7 +306,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1048](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1048)
+[packages/core/src/types.ts:1013](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1013)
 
 ***
 
@@ -375,13 +330,13 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1050](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1050)
+[packages/core/src/types.ts:1015](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1015)
 
 ***
 
 ### evaluate()
 
-> **evaluate**(`message`, `state`?, `didRespond`?, `callback`?): `Promise`\<`string`[]\>
+> **evaluate**(`message`, `state`?, `didRespond`?): `Promise`\<`string`[]\>
 
 #### Parameters
 
@@ -391,15 +346,13 @@ Methods
 
 • **didRespond?**: `boolean`
 
-• **callback?**: [`HandlerCallback`](../type-aliases/HandlerCallback.md)
-
 #### Returns
 
 `Promise`\<`string`[]\>
 
 #### Defined in
 
-[packages/core/src/types.ts:1057](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1057)
+[packages/core/src/types.ts:1022](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1022)
 
 ***
 
@@ -419,7 +372,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1064](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1064)
+[packages/core/src/types.ts:1028](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1028)
 
 ***
 
@@ -443,7 +396,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1066](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1066)
+[packages/core/src/types.ts:1030](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1030)
 
 ***
 
@@ -461,7 +414,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1073](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1073)
+[packages/core/src/types.ts:1037](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1037)
 
 ***
 
@@ -487,7 +440,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1075](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1075)
+[packages/core/src/types.ts:1039](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1039)
 
 ***
 
@@ -507,7 +460,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1083](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1083)
+[packages/core/src/types.ts:1047](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1047)
 
 ***
 
@@ -525,7 +478,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1085](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1085)
+[packages/core/src/types.ts:1049](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1049)
 
 ***
 
@@ -545,7 +498,7 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1087](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1087)
+[packages/core/src/types.ts:1051](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1051)
 
 ***
 
@@ -563,4 +516,4 @@ Methods
 
 #### Defined in
 
-[packages/core/src/types.ts:1092](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1092)
+[packages/core/src/types.ts:1056](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L1056)

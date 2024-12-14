@@ -4,10 +4,6 @@
 
 # Visit https://eliza.builders for support
 
-## 🌍 README Translations
-
-[中文说明](./README_CN.md) | [Français](./README_FR.md) | [ไทย](./README_TH.md)
-
 # dev branch
 
 <img src="./docs/static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
