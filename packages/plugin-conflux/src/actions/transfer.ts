@@ -6,7 +6,7 @@ import {
     HandlerCallback,
 } from "@ai16z/eliza";
 import {
-    generateObject,
+    generateObjectV2,
     composeContext,
     ModelClass,
     Content,
@@ -94,7 +94,7 @@ export const transfer: Action = {
             template: confluxTransferTemplate,
         });
 
-        const content = await generateObject({
+        const content = await generateObjectV2({
             runtime,
             context,
             modelClass: ModelClass.SMALL,

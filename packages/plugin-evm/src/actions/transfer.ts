@@ -1,7 +1,7 @@
 import { ByteArray, formatEther, parseEther, type Hex } from "viem";
 import {
     composeContext,
-    generateObjectDeprecated,
+    generateObjectDEPRECATED,
     HandlerCallback,
     ModelClass,
     type IAgentRuntime,
@@ -76,7 +76,7 @@ const buildTransferDetails = async (
         chains.toString()
     );
 
-    const transferDetails = (await generateObjectDeprecated({
+    const transferDetails = (await generateObjectDEPRECATED({
         runtime,
         context: contextWithChains,
         modelClass: ModelClass.SMALL,
