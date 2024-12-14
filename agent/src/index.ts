@@ -48,7 +48,6 @@ import { solanaPlugin } from "@ai16z/plugin-solana";
 import { TEEMode, teePlugin } from "@ai16z/plugin-tee";
 import { tonPlugin } from "@ai16z/plugin-ton";
 import { zksyncEraPlugin } from "@ai16z/plugin-zksync-era";
-import { nftGenerationPlugin, createNFTApiRouter } from "@ai16z/plugin-nft-generation";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -485,14 +484,6 @@ export async function createAgent(
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
-                : null,
-            (getSecret(character, "SOLANA_PUBLIC_KEY") ||
-            (getSecret(character, "WALLET_PUBLIC_KEY") &&
-                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))) &&
-            getSecret(character, "SOLANA_ADMIN_PUBLIC_KEY") &&
-            getSecret(character, "SOLANA_PRIVATE_KEY") &&
-            getSecret(character, "SOLANA_ADMIN_PRIVATE_KEY")
-                ? nftGenerationPlugin
                 : null,
             getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
             getSecret(character, "COINBASE_COMMERCE_KEY")
