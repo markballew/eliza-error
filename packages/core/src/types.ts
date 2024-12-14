@@ -724,6 +724,7 @@ export type Character = {
         discord?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
+            shouldRespondOnlyToMentions?: boolean;
             messageSimilarityThreshold?: number;
             isPartOfTeam?: boolean;
             teamAgentIds?: string[];
@@ -733,6 +734,9 @@ export type Character = {
         telegram?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
+            shouldRespondOnlyToMentions?: boolean;
+            shouldOnlyJoinInAllowedGroups?: boolean;
+            allowedGroupIds?: string[];
             messageSimilarityThreshold?: number;
             isPartOfTeam?: boolean;
             teamAgentIds?: string[];
@@ -742,6 +746,7 @@ export type Character = {
         slack?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
+
         };
     };
 
