@@ -12,7 +12,6 @@
 - [`ISpeechService`](../interfaces/ISpeechService.md)
 - [`IPdfService`](../interfaces/IPdfService.md)
 - [`IAwsS3Service`](../interfaces/IAwsS3Service.md)
-- [`ISlackService`](../interfaces/ISlackService.md)
 
 ## Constructors
 
@@ -38,7 +37,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:987](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L987)
+[packages/core/src/types.ts:962](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L962)
 
 ***
 
@@ -54,7 +53,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:998](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L998)
+[packages/core/src/types.ts:973](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L973)
 
 ## Methods
 
@@ -72,7 +71,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:991](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L991)
+[packages/core/src/types.ts:966](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L966)
 
 ***
 
@@ -92,4 +91,4 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:1003](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1003)
+[packages/core/src/types.ts:978](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L978)

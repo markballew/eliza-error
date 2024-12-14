@@ -12,7 +12,7 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1235](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1235)
+[packages/core/src/generation.ts:1123](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1123)
 
 ***
 
@@ -22,7 +22,7 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1236](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1236)
+[packages/core/src/generation.ts:1124](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1124)
 
 ***
 
@@ -32,17 +32,17 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1237](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1237)
+[packages/core/src/generation.ts:1125](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1125)
 
 ***
 
 ### schema?
 
-> `optional` **schema**: `ZodType`\<`any`, `ZodTypeDef`, `any`\>
+> `optional` **schema**: `ZodSchema`
 
 #### Defined in
 
-[packages/core/src/generation.ts:1238](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1238)
+[packages/core/src/generation.ts:1126](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1126)
 
 ***
 
@@ -52,7 +52,7 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1239](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1239)
+[packages/core/src/generation.ts:1127](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1127)
 
 ***
 
@@ -62,7 +62,7 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1240](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1240)
+[packages/core/src/generation.ts:1128](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1128)
 
 ***
 
@@ -72,7 +72,7 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1241](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1241)
+[packages/core/src/generation.ts:1129](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1129)
 
 ***
 
@@ -82,7 +82,7 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1242](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1242)
+[packages/core/src/generation.ts:1130](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1130)
 
 ***
 
@@ -92,4 +92,4 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1243](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1243)
+[packages/core/src/generation.ts:1131](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1131)

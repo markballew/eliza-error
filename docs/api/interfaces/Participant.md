@@ -14,7 +14,7 @@ Unique identifier
 
 #### Defined in
 
-[packages/core/src/types.ts:526](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L526)
+[packages/core/src/types.ts:524](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L524)
 
 ***
 
@@ -26,4 +26,4 @@ Associated account
 
 #### Defined in
 
-[packages/core/src/types.ts:529](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L529)
+[packages/core/src/types.ts:527](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L527)

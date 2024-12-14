@@ -7,7 +7,7 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "build": "tsup --format esm --dts",
-        "lint": "eslint --fix  --cache .",
+        "lint": "eslint . --fix",
         "watch": "tsc --watch",
         "dev": "tsup --format esm --dts --watch",
         "build:docs": "cd docs && pnpm run build",

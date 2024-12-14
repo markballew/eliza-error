@@ -10,7 +10,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1187](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1187)
+[packages/core/src/types.ts:1153](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1153)
 
 ***
 
@@ -20,7 +20,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1188](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1188)
+[packages/core/src/types.ts:1154](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1154)
 
 ***
 
@@ -30,7 +30,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1189](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1189)
+[packages/core/src/types.ts:1155](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1155)
 
 ***
 
@@ -40,7 +40,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1190](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1190)
+[packages/core/src/types.ts:1156](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1156)
 
 ***
 
@@ -50,7 +50,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1191](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1191)
+[packages/core/src/types.ts:1157](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1157)
 
 ***
 
@@ -60,7 +60,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1192](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1192)
+[packages/core/src/types.ts:1158](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1158)
 
 ***
 
@@ -70,7 +70,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1193](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1193)
+[packages/core/src/types.ts:1159](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1159)
 
 ***
 
@@ -80,7 +80,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1194](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1194)
+[packages/core/src/types.ts:1160](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1160)
 
 ***
 
@@ -90,24 +90,4 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1195](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1195)
-
-***
-
-### BUTTPLUG
-
-> **BUTTPLUG**: `"buttplug"`
-
-#### Defined in
-
-[packages/core/src/types.ts:1196](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1196)
-
-***
-
-### SLACK
-
-> **SLACK**: `"slack"`
-
-#### Defined in
-
-[packages/core/src/types.ts:1197](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1197)
+[packages/core/src/types.ts:1161](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1161)

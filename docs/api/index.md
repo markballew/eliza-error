@@ -55,7 +55,6 @@
 - [IPdfService](interfaces/IPdfService.md)
 - [IAwsS3Service](interfaces/IAwsS3Service.md)
 - [ActionResponse](interfaces/ActionResponse.md)
-- [ISlackService](interfaces/ISlackService.md)
 
 ## Type Aliases
 
@@ -115,13 +114,13 @@
 - [splitChunks](functions/splitChunks.md)
 - [generateTrueOrFalse](functions/generateTrueOrFalse.md)
 - [generateTextArray](functions/generateTextArray.md)
-- [generateObjectDeprecated](functions/generateObjectDeprecated.md)
+- [generateObjectDEPRECATED](functions/generateObjectDEPRECATED.md)
 - [generateObjectArray](functions/generateObjectArray.md)
 - [generateMessageResponse](functions/generateMessageResponse.md)
 - [generateImage](functions/generateImage.md)
 - [generateCaption](functions/generateCaption.md)
 - [generateWebSearch](functions/generateWebSearch.md)
-- [generateObject](functions/generateObject.md)
+- [generateObjectV2](functions/generateObjectV2.md)
 - [handleProvider](functions/handleProvider.md)
 - [generateTweetActions](functions/generateTweetActions.md)
 - [getGoals](functions/getGoals.md)
