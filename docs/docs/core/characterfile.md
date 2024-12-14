@@ -22,7 +22,7 @@ A `characterfile` implements the [Character](/api/type-aliases/character) type a
 ```json
 {
   "name": "trump",
-  "clients": ["discord", "direct"],
+  "clients": ["DISCORD", "DIRECT"],
   "settings": {
     "voice": { "model": "en_US-male-medium" }
   },
@@ -92,11 +92,11 @@ The character's display name for identification and in conversations.
 
 #### `modelProvider` (required)
 
-Specifies the AI model provider. Supported options from [ModelProviderName](/api/enumerations/modelprovidername) include `anthropic`, `llama_local`, `openai`, and others.
+Specifies the AI model provider. Supported options from [ModelProviderName](/api/enumerations/modelprovidername) include `ANTHROPIC`, `LLAMALOCAL`, `OPENAI`, and others.
 
 #### `clients` (required)
 
-Array of supported client types from [Clients](/api/enumerations/clients) e.g., `discord`, `direct`, `twitter`, `telegram`, `farcaster`.
+Array of supported client types from [Clients](/api/enumerations/clients) e.g., `DISCORD`, `DIRECT`, `TWITTER`, `TELEGRAM`.
 
 #### `bio`
 
@@ -261,8 +261,8 @@ Your response should not contain any questions. Brief, concise statements only. 
 ```json
 {
   "name": "TechAI",
-  "modelProvider": "anthropic",
-  "clients": ["discord", "direct"],
+  "modelProvider": "ANTHROPIC",
+  "clients": ["DISCORD", "DIRECT"],
   "bio": "AI researcher and educator focused on practical applications",
   "lore": [
     "Pioneer in open-source AI development",
