@@ -208,6 +208,7 @@ export type Models = {
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
     [ModelProviderName.VENICE]: Model;
+    [ModelProviderName.AKASH_CHAT_API]: Model;
 };
 
 /**
@@ -236,6 +237,7 @@ export enum ModelProviderName {
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
     VENICE = "venice",
+    AKASH_CHAT_API = "akash_chat_api",
 }
 
 /**
@@ -561,9 +563,6 @@ export type Media = {
 
     /** Text content */
     text: string;
-
-    /** Content type */
-    contentType?: string;
 };
 
 /**
@@ -608,19 +607,13 @@ export type Plugin = {
  */
 export enum Clients {
     DISCORD = "discord",
-    DIRECT = "direct",
+// you can't specify this in characters
+// all characters are registered with this
+//    DIRECT = "direct",
     TWITTER = "twitter",
     TELEGRAM = "telegram",
     FARCASTER = "farcaster",
-    LENS = "lens",
-    AUTO = "auto",
-    SLACK = "slack",
 }
-
-export interface IAgentConfig {
-    [key: string]: string;
-}
-
 /**
  * Configuration for an agent character
  */
@@ -659,18 +652,13 @@ export type Character = {
         twitterMessageHandlerTemplate?: string;
         twitterShouldRespondTemplate?: string;
         farcasterPostTemplate?: string;
-        lensPostTemplate?: string;
         farcasterMessageHandlerTemplate?: string;
-        lensMessageHandlerTemplate?: string;
         farcasterShouldRespondTemplate?: string;
-        lensShouldRespondTemplate?: string;
         telegramMessageHandlerTemplate?: string;
         telegramShouldRespondTemplate?: string;
         discordVoiceHandlerTemplate?: string;
         discordShouldRespondTemplate?: string;
         discordMessageHandlerTemplate?: string;
-        slackMessageHandlerTemplate?: string;
-        slackShouldRespondTemplate?: string;
     };
 
     /** Character biography */
@@ -731,7 +719,6 @@ export type Character = {
         discord?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
-            shouldRespondOnlyToMentions?: boolean;
             messageSimilarityThreshold?: number;
             isPartOfTeam?: boolean;
             teamAgentIds?: string[];
@@ -741,25 +728,6 @@ export type Character = {
         telegram?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
-            shouldRespondOnlyToMentions?: boolean;
-            shouldOnlyJoinInAllowedGroups?: boolean;
-            allowedGroupIds?: string[];
-            messageSimilarityThreshold?: number;
-            isPartOfTeam?: boolean;
-            teamAgentIds?: string[];
-            teamLeaderId?: string;
-            teamMemberInterestKeywords?: string[];
-        };
-        slack?: {
-            shouldIgnoreBotMessages?: boolean;
-            shouldIgnoreDirectMessages?: boolean;
-        };
-        gitbook?: {
-            keywords?: {
-                projectTerms?: string[];
-                generalQueries?: string[];
-            };
-            documentTriggers?: string[];
         };
     };
 
@@ -778,10 +746,6 @@ export type Character = {
         bio: string;
         nicknames?: string[];
     };
-    /** Optional NFT prompt */
-    nft?: {
-        prompt: string;
-    }
 };
 
 /**
@@ -1176,17 +1140,12 @@ export interface IPdfService extends Service {
 }
 
 export interface IAwsS3Service extends Service {
-    uploadFile(
-        imagePath: string,
-        subDirectory: string,
-        useSignedUrl: boolean,
-        expiresIn: number
-    ): Promise<{
+    uploadFile(imagePath: string, useSignedUrl: boolean, expiresIn: number ): Promise<{
         success: boolean;
         url?: string;
         error?: string;
     }>;
-    generateSignedUrl(fileName: string, expiresIn: number): Promise<string>;
+    generateSignedUrl(fileName: string, expiresIn: number): Promise<string>
 }
 
 export type SearchResult = {
@@ -1216,8 +1175,6 @@ export enum ServiceType {
     PDF = "pdf",
     INTIFACE = "intiface",
     AWS_S3 = "aws_s3",
-    BUTTPLUG = "buttplug",
-    SLACK = "slack",
 }
 
 export enum LoggingLevel {
@@ -1236,8 +1193,4 @@ export interface ActionResponse {
     retweet: boolean;
     quote?: boolean;
     reply?: boolean;
-}
-
-export interface ISlackService extends Service {
-    client: any;
 }

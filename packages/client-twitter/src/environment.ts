@@ -23,7 +23,7 @@ export async function validateTwitterConfig(
     runtime: IAgentRuntime
 ): Promise<TwitterConfig> {
     try {
-        const twitterConfig = {
+        const config = {
             TWITTER_DRY_RUN:
                 runtime.getSetting("TWITTER_DRY_RUN") ||
                 process.env.TWITTER_DRY_RUN ||
@@ -46,7 +46,7 @@ export async function validateTwitterConfig(
                 DEFAULT_MAX_TWEET_LENGTH.toString(),
         };
 
-        return twitterEnvSchema.parse(twitterConfig);
+        return twitterEnvSchema.parse(config);
     } catch (error) {
         if (error instanceof z.ZodError) {
             const errorMessages = error.errors
