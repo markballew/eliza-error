@@ -208,7 +208,6 @@ export type Models = {
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
     [ModelProviderName.VENICE]: Model;
-    [ModelProviderName.AKASH_CHAT_API]: Model;
 };
 
 /**
@@ -237,7 +236,6 @@ export enum ModelProviderName {
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
     VENICE = "venice",
-    AKASH_CHAT_API = "akash_chat_api",
 }
 
 /**
