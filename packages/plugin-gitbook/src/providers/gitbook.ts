@@ -1,9 +1,7 @@
-import { Provider, IAgentRuntime, Memory, State } from "@ai16z/eliza";
+import { Provider, IAgentRuntime, Memory, State, elizaLogger } from "@ai16z/eliza";
 import { GitBookResponse, GitBookClientConfig } from '../types';
 
 function cleanText(text: string): string {
-    console.log('📝 Cleaning text input:', text);
-
     const cleaned = text
         .replace(/<@!?\d+>/g, '')        // Discord mentions
         .replace(/<#\d+>/g, '')          // Discord channels
@@ -11,37 +9,33 @@ function cleanText(text: string): string {
         .replace(/(?:^|\s)@[\w_]+/g, '') // Platform mentions
         .trim();
 
-    console.log('✨ Cleaned text result:', cleaned);
     return cleaned;
 }
 
 async function validateQuery(runtime: IAgentRuntime, text: string): Promise<boolean> {
-    console.log('🔍 Validating query text:', text);
-
-    // Default keywords
+    // Default general queries - everything else comes from config
     let keywords = {
-        contractQueries: ['contract', 'address'],
-        generalQueries: ['how', 'what', 'where', 'explain', 'show', 'list', 'tell'],
-        mustInclude: [],
-        shouldInclude: []
+        generalQueries: [
+            'how', 'what', 'where', 'explain', 'show', 'tell',
+            'can', 'does', 'is', 'are', 'will', 'why',
+            'benefits', 'features', 'cost', 'price',
+            'use', 'using', 'work', 'access', 'get'
+        ]
     };
-
-    let documentTriggers: string[] = [];
 
     try {
         const gitbookConfig = runtime.character.clientConfig?.gitbook as GitBookClientConfig;
-        console.log('📋 GitBook Config:', gitbookConfig);
 
-        if (gitbookConfig) {
-            if (gitbookConfig.keywords) {
-                keywords = {
-                    ...keywords,
-                    ...gitbookConfig.keywords
-                };
-            }
-            if (gitbookConfig.documentTriggers) {
-                documentTriggers = gitbookConfig.documentTriggers;
-            }
+        // Get project terms and document triggers from config
+        const projectTerms = gitbookConfig?.keywords?.projectTerms || [];
+        const documentTriggers = gitbookConfig?.documentTriggers || [];
+
+        // Merge any additional general queries from config
+        if (gitbookConfig?.keywords?.generalQueries) {
+            keywords.generalQueries = [
+                ...keywords.generalQueries,
+                ...gitbookConfig.keywords.generalQueries
+            ];
         }
 
         const containsAnyWord = (text: string, words: string[] = []) => {
@@ -54,54 +48,40 @@ async function validateQuery(runtime: IAgentRuntime, text: string): Promise<bool
             });
         };
 
+        const hasProjectTerm = containsAnyWord(text, projectTerms);
         const hasDocTrigger = containsAnyWord(text, documentTriggers);
-        const hasContractQuery = containsAnyWord(text, keywords.contractQueries);
         const hasGeneralQuery = containsAnyWord(text, keywords.generalQueries);
-        const hasMustInclude = containsAnyWord(text, keywords.mustInclude);
 
-        const validationResults = {
-            hasDocTrigger,
-            hasContractQuery,
-            hasGeneralQuery,
-            hasMustInclude,
-            text
-        };
+        const isValid = hasProjectTerm || hasDocTrigger || hasGeneralQuery;
 
-        console.log('🔍 Validation Results:', validationResults);
-
-        const isValid = (hasDocTrigger || hasContractQuery || hasGeneralQuery) && hasMustInclude;
-        console.log('✅ Validation Result:', isValid);
+        elizaLogger.info(`✅ Is GitBook Validation Result: ${isValid}`)
         return isValid;
 
     } catch (error) {
-        console.error("❌ Error in validation:", error);
+        elizaLogger.warn(`❌ Error in GitBook validation:\n${error}`)
         return false;
     }
 }
 
 export const gitbookProvider: Provider = {
     get: async (runtime: IAgentRuntime, message: Memory, _state?: State): Promise<string> => {
-        console.log('🔄 GitBook Provider executing');
-
         try {
             const spaceId = runtime.getSetting("GITBOOK_SPACE_ID");
             if (!spaceId) {
-                console.error("❌ GitBook Space ID not configured");
+                elizaLogger.error('⚠️ GitBook Space ID not configured')
                 return "";
             }
-            console.log('✓ SpaceID configured:', spaceId);
 
             const text = message.content.text.toLowerCase().trim();
             const isValidQuery = await validateQuery(runtime, text);
 
             if (!isValidQuery) {
-                console.log('⚠️ Query validation failed');
+                elizaLogger.info('⚠️ GitBook Query validation failed')
                 return "";
             }
 
             const cleanedQuery = cleanText(message.content.text);
 
-            console.log('📡 Making GitBook API request...');
             const response = await fetch(
                 `https://api.gitbook.com/v1/spaces/${spaceId}/search/ask`,
                 {
@@ -121,9 +101,7 @@ export const gitbookProvider: Provider = {
                 return "";
             }
 
-            console.log('✓ GitBook API response received');
             const result: GitBookResponse = await response.json();
-            console.log('📄 GitBook Response:', result?.answer?.text || 'No answer text');
 
             return result.answer?.text || "";
         } catch (error) {
