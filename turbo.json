@@ -5,10 +5,7 @@
             "dependsOn": ["build"]
         },
         "@ai16z/agent#check-types": {
-            "dependsOn": [
-                "@ai16z/plugin-solana#build",
-                "@ai16z/plugin-direct#build"
-            ]
+            "dependsOn": ["@ai16z/plugin-solana#build"]
         },
         "build": {
             "outputs": ["dist/**"],
@@ -17,9 +14,6 @@
         "@ai16z/plugin-solana#build": {
             "outputs": ["dist/**"],
             "dependsOn": ["@ai16z/plugin-trustdb#build"]
-        },
-        "@ai16z/plugin-nft-generation#build": {
-            "dependsOn": ["@ai16z/plugin-node#build"]
         },
         "eliza-docs#build": {
             "outputs": ["build/**"]

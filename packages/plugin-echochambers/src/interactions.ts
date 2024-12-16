@@ -362,7 +362,7 @@ export class InteractionClient {
             const response = await generateMessageResponse({
                 runtime: this.runtime,
                 context: responseContext,
-                modelClass: ModelClass.LARGE,
+                modelClass: ModelClass.SMALL,
             });
 
             if (!response || !response.text) {
