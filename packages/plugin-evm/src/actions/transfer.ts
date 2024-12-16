@@ -12,6 +12,15 @@ import {
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import type { Transaction, TransferParams } from "../types";
 import { transferTemplate } from "../templates";
+import {
+    composeContext,
+    generateObjectDEPRECATED,
+    HandlerCallback,
+    ModelClass,
+    type IAgentRuntime,
+    type Memory,
+    type State,
+} from "@ai16z/eliza";
 
 export { transferTemplate };
 export class TransferAction {
@@ -22,9 +31,11 @@ export class TransferAction {
             `Transferring: ${params.amount} tokens to (${params.toAddress} on ${params.fromChain})`
         );
 
-        const walletClient = this.walletProvider.getWalletClient(
-            params.fromChain
-        );
+        if (!params.data) {
+            params.data = "0x";
+        }
+
+        await this.walletProvider.switchChain(runtime, params.fromChain);
 
         try {
             const hash = await walletClient.sendTransaction({
@@ -106,29 +117,44 @@ export const transferAction = {
         options: any,
         callback?: HandlerCallback
     ) => {
-        try {
-            const walletProvider = initWalletProvider(runtime);
-            const action = new TransferAction(walletProvider);
-            const transferDetails = await buildTransferDetails(
-                state,
-                runtime,
-                walletProvider
-            );
-            const tx = await action.transfer(transferDetails);
+        console.log("Transfer action handler called");
+        const walletProvider = new WalletProvider(runtime);
+        const action = new TransferAction(walletProvider);
 
+        // Compose transfer context
+        const transferContext = composeContext({
+            state,
+            template: transferTemplate,
+        });
+
+        // Generate transfer content
+        const content = await generateObjectDEPRECATED({
+            runtime,
+            context: transferContext,
+            modelClass: ModelClass.LARGE,
+        });
+
+        const paramOptions: TransferParams = {
+            fromChain: content.fromChain,
+            toAddress: content.toAddress,
+            amount: content.amount,
+            data: content.data,
+        };
+
+        try {
+            const transferResp = await action.transfer(runtime, paramOptions);
             if (callback) {
                 callback({
-                    text: `Successfully transferred ${formatEther(tx.value)} tokens to ${tx.to}\nTransaction hash: ${tx.hash}\nChain: ${transferDetails.fromChain}`,
+                    text: `Successfully transferred ${paramOptions.amount} tokens to ${paramOptions.toAddress}\nTransaction Hash: ${transferResp.hash}`,
                     content: {
                         success: true,
-                        hash: tx.hash,
-                        amount: formatEther(tx.value),
-                        recipient: tx.to,
-                        chain: transferDetails.fromChain,
+                        hash: transferResp.hash,
+                        amount: formatEther(transferResp.value),
+                        recipient: transferResp.to,
+                        chain: content.fromChain,
                     },
                 });
             }
-
             return true;
         } catch (error) {
             console.error("Error during token transfer:", error);
