@@ -155,18 +155,15 @@ export class ClientBase extends EventEmitter {
     async init() {
         //test
         const username = this.runtime.getSetting("TWITTER_USERNAME");
-        const password = this.runtime.getSetting("TWITTER_PASSWORD");
-        const email = this.runtime.getSetting("TWITTER_EMAIL");
-        const twitter2faSecret = this.runtime.getSetting("TWITTER_2FA_SECRET") || undefined;
-        const cookies = this.runtime.getSetting("TWITTER_COOKIES");
-
 
         if (!username) {
             throw new Error("Twitter username not configured");
         }
         // Check for Twitter cookies
-        if (cookies) {
-            const cookiesArray = JSON.parse(cookies);
+        if (this.runtime.getSetting("TWITTER_COOKIES")) {
+            const cookiesArray = JSON.parse(
+                this.runtime.getSetting("TWITTER_COOKIES")
+            );
 
             await this.setCookiesFromArray(cookiesArray);
         } else {
@@ -177,36 +174,25 @@ export class ClientBase extends EventEmitter {
         }
 
         elizaLogger.log("Waiting for Twitter login");
-        let retries = 5; // Optional: Set a retry limit
-        while (retries > 0) {
-            const cookies = await this.twitterClient.getCookies();
-            if (await this.twitterClient.isLoggedIn() || !!cookies) {
+        while (true) {
+            await this.twitterClient.login(
+                username,
+                this.runtime.getSetting("TWITTER_PASSWORD"),
+                this.runtime.getSetting("TWITTER_EMAIL"),
+                this.runtime.getSetting("TWITTER_2FA_SECRET") || undefined
+            );
+
+            if (await this.twitterClient.isLoggedIn()) {
+                const cookies = await this.twitterClient.getCookies();
                 await this.cacheCookies(username, cookies);
-                elizaLogger.info("Successfully logged in and cookies cached.");
                 break;
             }
 
-            try {
-                await this.twitterClient.login(
-                    username,
-                    password,
-                    email,
-                    twitter2faSecret
-                );
-            } catch (error) {
-                elizaLogger.error(`Login attempt failed: ${error.message}`);
-            }
-
-            retries--;
-            elizaLogger.error(`Failed to login to Twitter. Retrying... (${retries} attempts left)`);
-
-            if (retries === 0) {
-                elizaLogger.error("Max retries reached. Exiting login process.");
-                throw new Error("Twitter login failed after maximum retries.");
-            }
+            elizaLogger.error("Failed to login to Twitter trying again...");
 
             await new Promise((resolve) => setTimeout(resolve, 2000));
         }
+
         // Initialize Twitter profile
         this.profile = await this.fetchProfile(username);
 
@@ -483,11 +469,10 @@ export class ClientBase extends EventEmitter {
         }
 
         const timeline = await this.fetchHomeTimeline(cachedTimeline ? 10 : 50);
-        const username = this.runtime.getSetting("TWITTER_USERNAME");
 
         // Get the most recent 20 mentions and interactions
         const mentionsAndInteractions = await this.fetchSearchTweets(
-            `@${username}`,
+            `@${this.runtime.getSetting("TWITTER_USERNAME")}`,
             20,
             SearchMode.Latest
         );
