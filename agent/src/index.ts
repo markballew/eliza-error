@@ -69,9 +69,8 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
 };
 
 const logFetch = async (url: string, options: any) => {
-    elizaLogger.info(`Fetching ${url}`);
-    // Disabled to avoid disclosure of sensitive information such as API keys
-    // elizaLogger.info(JSON.stringify(options, null, 2));
+    elizaLogger.debug(`Fetching ${url}`);
+    elizaLogger.debug(JSON.stringify(options, null, 2));
     return fetch(url, options);
 };
 
@@ -468,7 +467,7 @@ export async function createAgent(
     }
 
     let goatPlugin: any | undefined;
-    if (getSecret(character, "ALCHEMY_API_KEY")) {
+    if (getSecret(character, "EVM_PROVIDER_URL")) {
         goatPlugin = await createGoatPlugin((secret) =>
             getSecret(character, secret)
         );
@@ -539,7 +538,7 @@ export async function createAgent(
             getSecret(character, "COINBASE_NOTIFICATION_URI")
                 ? webhookPlugin
                 : null,
-            getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
+            getSecret(character, "EVM_PROVIDER_URL") ? goatPlugin : null,
             getSecret(character, "FLOW_ADDRESS") &&
             getSecret(character, "FLOW_PRIVATE_KEY")
                 ? flowPlugin
@@ -648,10 +647,16 @@ const startAgents = async () => {
         elizaLogger.error("Error starting agents:", error);
     }
 
+    // upload some agent functionality into directClient
+    directClient.startAgent = async (character) => {
+        // wrap it so we don't have to inject directClient later
+        return startAgent(character, directClient);
+    };
     directClient.start(serverPort);
 
-    elizaLogger.log("Visit the following URL to chat with your agents:");
-    elizaLogger.log(`http://localhost:5173`);
+    elizaLogger.log(
+        "Run `pnpm start:client` to start the client and visit the outputted URL (http://localhost:5173) to chat with your agents"
+    );
 };
 
 startAgents().catch((error) => {
