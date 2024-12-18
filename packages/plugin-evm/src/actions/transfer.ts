@@ -14,8 +14,6 @@ import type { Transaction, TransferParams } from "../types";
 import { transferTemplate } from "../templates";
 
 export { transferTemplate };
-
-// Exported for tests
 export class TransferAction {
     constructor(private walletProvider: WalletProvider) {}
 
@@ -23,12 +21,6 @@ export class TransferAction {
         console.log(
             `Transferring: ${params.amount} tokens to (${params.toAddress} on ${params.fromChain})`
         );
-
-        if (!params.data) {
-            params.data = "0x";
-        }
-
-        await this.walletProvider.switchChain(params.fromChain);
 
         const walletClient = this.walletProvider.getWalletClient(
             params.fromChain
@@ -114,44 +106,29 @@ export const transferAction = {
         options: any,
         callback?: HandlerCallback
     ) => {
-        console.log("Transfer action handler called");
-        const walletProvider = initWalletProvider(runtime);
-        const action = new TransferAction(walletProvider);
-
-        // Compose transfer context
-        const transferContext = composeContext({
-            state,
-            template: transferTemplate,
-        });
-
-        // Generate transfer content
-        const content = await generateObjectDeprecated({
-            runtime,
-            context: transferContext,
-            modelClass: ModelClass.LARGE,
-        });
-
-        const paramOptions: TransferParams = {
-            fromChain: content.fromChain,
-            toAddress: content.toAddress,
-            amount: content.amount,
-            data: content.data,
-        };
-
         try {
-            const transferResp = await action.transfer(paramOptions);
+            const walletProvider = initWalletProvider(runtime);
+            const action = new TransferAction(walletProvider);
+            const transferDetails = await buildTransferDetails(
+                state,
+                runtime,
+                walletProvider
+            );
+            const tx = await action.transfer(transferDetails);
+
             if (callback) {
                 callback({
-                    text: `Successfully transferred ${paramOptions.amount} tokens to ${paramOptions.toAddress}\nTransaction Hash: ${transferResp.hash}`,
+                    text: `Successfully transferred ${formatEther(tx.value)} tokens to ${tx.to}\nTransaction hash: ${tx.hash}\nChain: ${transferDetails.fromChain}`,
                     content: {
                         success: true,
-                        hash: transferResp.hash,
-                        amount: formatEther(transferResp.value),
-                        recipient: transferResp.to,
-                        chain: content.fromChain,
+                        hash: tx.hash,
+                        amount: formatEther(tx.value),
+                        recipient: tx.to,
+                        chain: transferDetails.fromChain,
                     },
                 });
             }
+
             return true;
         } catch (error) {
             console.error("Error during token transfer:", error);
