@@ -70,8 +70,7 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
 
 const logFetch = async (url: string, options: any) => {
     elizaLogger.debug(`Fetching ${url}`);
-    // Disabled to avoid disclosure of sensitive information such as API keys
-    // elizaLogger.debug(JSON.stringify(options, null, 2));
+    elizaLogger.debug(JSON.stringify(options, null, 2));
     return fetch(url, options);
 };
 
@@ -392,17 +391,20 @@ export async function initializeClients(
     elizaLogger.log("client keys", Object.keys(clients));
 
     // TODO: Add Slack client to the list
+    // Initialize clients as an object
+
+
     if (clientTypes.includes("slack")) {
         const slackClient = await SlackClientInterface.start(runtime);
-        if (slackClient) clients.push(slackClient);
+        if (slackClient) clients.slack = slackClient; // Use object property instead of push
     }
 
     if (character.plugins?.length > 0) {
         for (const plugin of character.plugins) {
-            // if plugin has clients, add those..
             if (plugin.clients) {
                 for (const client of plugin.clients) {
-                    clients.push(await client.start(runtime));
+                    const startedClient = await client.start(runtime);
+                    clients[client.name] = startedClient; // Assuming client has a name property
                 }
             }
         }
@@ -649,15 +651,14 @@ const startAgents = async () => {
     }
 
     // upload some agent functionality into directClient
-    directClient.startAgent = async (character) => {
-        // wrap it so we don't have to inject directClient later
-        return startAgent(character, directClient);
+    directClient.startAgent = async character => {
+      // wrap it so we don't have to inject directClient later
+      return startAgent(character, directClient)
     };
     directClient.start(serverPort);
 
-    elizaLogger.log(
-        "Run `pnpm start:client` to start the client and visit the outputted URL (http://localhost:5173) to chat with your agents"
-    );
+    elizaLogger.log("Visit the following URL to chat with your agents:");
+    elizaLogger.log(`http://localhost:5173`);
 };
 
 startAgents().catch((error) => {
