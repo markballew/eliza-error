@@ -391,20 +391,17 @@ export async function initializeClients(
     elizaLogger.log("client keys", Object.keys(clients));
 
     // TODO: Add Slack client to the list
-    // Initialize clients as an object
-
-
     if (clientTypes.includes("slack")) {
         const slackClient = await SlackClientInterface.start(runtime);
-        if (slackClient) clients.slack = slackClient; // Use object property instead of push
+        if (slackClient) clients.push(slackClient);
     }
 
     if (character.plugins?.length > 0) {
         for (const plugin of character.plugins) {
+            // if plugin has clients, add those..
             if (plugin.clients) {
                 for (const client of plugin.clients) {
-                    const startedClient = await client.start(runtime);
-                    clients[client.name] = startedClient; // Assuming client has a name property
+                    clients.push(await client.start(runtime));
                 }
             }
         }
@@ -651,14 +648,15 @@ const startAgents = async () => {
     }
 
     // upload some agent functionality into directClient
-    directClient.startAgent = async character => {
-      // wrap it so we don't have to inject directClient later
-      return startAgent(character, directClient)
+    directClient.startAgent = async (character) => {
+        // wrap it so we don't have to inject directClient later
+        return startAgent(character, directClient);
     };
     directClient.start(serverPort);
 
-    elizaLogger.log("Visit the following URL to chat with your agents:");
-    elizaLogger.log(`http://localhost:5173`);
+    elizaLogger.log(
+        "Run `pnpm start:client` to start the client and visit the outputted URL (http://localhost:5173) to chat with your agents"
+    );
 };
 
 startAgents().catch((error) => {
