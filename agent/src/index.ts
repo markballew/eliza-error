@@ -7,7 +7,6 @@ import { LensAgentClient } from "@ai16z/client-lens";
 import { SlackClientInterface } from "@ai16z/client-slack";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
 import { TwitterClientInterface } from "@ai16z/client-twitter";
-import { JeeterClientInterface } from "@ai16z/client-simsai";
 import {
     AgentRuntime,
     CacheManager,
@@ -71,7 +70,8 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
 
 const logFetch = async (url: string, options: any) => {
     elizaLogger.debug(`Fetching ${url}`);
-    elizaLogger.debug(JSON.stringify(options, null, 2));
+    // Disabled to avoid disclosure of sensitive information such as API keys
+    // elizaLogger.debug(JSON.stringify(options, null, 2));
     return fetch(url, options);
 };
 
@@ -210,8 +210,11 @@ export async function loadCharacters(
 export function getTokenForProvider(
     provider: ModelProviderName,
     character: Character
-) {
+):string {
     switch (provider) {
+        // no key needed for llama_local
+        case ModelProviderName.LLAMALOCAL:
+            return ''
         case ModelProviderName.OPENAI:
             return (
                 character.settings?.secrets?.OPENAI_API_KEY ||
@@ -305,6 +308,10 @@ export function getTokenForProvider(
                 character.settings?.secrets?.AKASH_CHAT_API_KEY ||
                 settings.AKASH_CHAT_API_KEY
             );
+        default:
+            const errorMessage = `Failed to get token - unsupported model provider: ${provider}`
+            elizaLogger.error(errorMessage)
+            throw new Error(errorMessage)
     }
 }
 
@@ -383,16 +390,10 @@ export async function initializeClients(
             clients.farcaster = farcasterClient;
         }
     }
-
     if (clientTypes.includes("lens")) {
         const lensClient = new LensAgentClient(runtime);
         lensClient.start();
         clients.lens = lensClient;
-    }
-
-    if (clientTypes.includes(Clients.SIMSAI)) {
-        const simsaiClient = await JeeterClientInterface.start(runtime);
-        if (simsaiClient) clients.simsai = simsaiClient;
     }
 
     elizaLogger.log("client keys", Object.keys(clients));
@@ -661,8 +662,9 @@ const startAgents = async () => {
     };
     directClient.start(serverPort);
 
-    elizaLogger.log("Visit the following URL to chat with your agents:");
-    elizaLogger.log(`http://localhost:5173`);
+    elizaLogger.log(
+        "Run `pnpm start:client` to start the client and visit the outputted URL (http://localhost:5173) to chat with your agents"
+    );
 };
 
 startAgents().catch((error) => {

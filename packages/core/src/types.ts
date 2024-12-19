@@ -617,7 +617,6 @@ export enum Clients {
     LENS = "lens",
     AUTO = "auto",
     SLACK = "slack",
-    SIMSAI = "simsai",
 }
 
 export interface IAgentConfig {
@@ -658,6 +657,7 @@ export type Character = {
         continueMessageHandlerTemplate?: string;
         evaluationTemplate?: string;
         twitterSearchTemplate?: string;
+        twitterActionTemplate?: string;
         twitterPostTemplate?: string;
         twitterMessageHandlerTemplate?: string;
         twitterShouldRespondTemplate?: string;
@@ -674,11 +674,6 @@ export type Character = {
         discordMessageHandlerTemplate?: string;
         slackMessageHandlerTemplate?: string;
         slackShouldRespondTemplate?: string;
-        jeeterPostTemplate?: string;
-        jeeterSearchTemplate?: string;
-        jeeterInteractionTemplate?: string;
-        jeeterMessageHandlerTemplate?: string;
-        jeeterShouldRespondTemplate?: string;
     };
 
     /** Character biography */
