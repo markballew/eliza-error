@@ -1,8 +1,7 @@
 import { Message } from "@telegraf/types";
-import { Context, Telegraf, TelegramBot } from "telegraf";
-
-import { composeContext, elizaLogger, ServiceType } from "@ai16z/eliza";
-import { getEmbeddingZeroVector } from "@ai16z/eliza";
+import { Context, Telegraf } from "telegraf";
+import { composeContext, elizaLogger, ServiceType, composeRandomUser } from "@elizaos/core";
+import { getEmbeddingZeroVector } from "@elizaos/core";
 import {
     Content,
     HandlerCallback,
@@ -13,11 +12,11 @@ import {
     State,
     UUID,
     Media,
-} from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
+} from "@elizaos/core";
+import { stringToUuid } from "@elizaos/core";
 
-import { generateMessageResponse, generateShouldRespond } from "@ai16z/eliza";
-import { messageCompletionFooter, shouldRespondFooter } from "@ai16z/eliza";
+import { generateMessageResponse, generateShouldRespond } from "@elizaos/core";
+import { messageCompletionFooter, shouldRespondFooter } from "@elizaos/core";
 
 import { cosineSimilarity } from "./utils";
 import {
@@ -661,7 +660,7 @@ export class MessageManager {
                     this.runtime.character.templates
                         ?.telegramShouldRespondTemplate ||
                     this.runtime.character?.templates?.shouldRespondTemplate ||
-                    telegramShouldRespondTemplate,
+                    composeRandomUser(telegramShouldRespondTemplate, 2),
             });
 
             const response = await generateShouldRespond({
@@ -684,7 +683,9 @@ export class MessageManager {
     ): Promise<Message.TextMessage[]> {
         if (content.attachments && content.attachments.length > 0) {
             content.attachments.map(async (attachment: Media) => {
-                this.sendImage(ctx, attachment.url, attachment.description);
+                if (attachment.contentType.startsWith("image")) {
+                    this.sendImage(ctx, attachment.url, attachment.description);
+                }
             });
         } else {
             const chunks = this.splitMessage(content.text);
@@ -700,6 +701,7 @@ export class MessageManager {
                             i === 0 && replyToMessageId
                                 ? { message_id: replyToMessageId }
                                 : undefined,
+                        parse_mode: "Markdown",
                     }
                 )) as Message.TextMessage;
 
@@ -709,27 +711,36 @@ export class MessageManager {
             return sentMessages;
         }
     }
+
     private async sendImage(
         ctx: Context,
         imagePath: string,
         caption?: string
     ): Promise<void> {
         try {
-            if (!fs.existsSync(imagePath)) {
-                throw new Error(`File not found: ${imagePath}`);
-            }
-
-            const fileStream = fs.createReadStream(imagePath);
-
-            await ctx.telegram.sendPhoto(
-                ctx.chat.id,
-                {
-                    source: fileStream,
-                },
-                {
+            if (/^(http|https):\/\//.test(imagePath)) {
+                // Handle HTTP URLs
+                await ctx.telegram.sendPhoto(ctx.chat.id, imagePath, {
                     caption,
+                });
+            } else {
+                // Handle local file paths
+                if (!fs.existsSync(imagePath)) {
+                    throw new Error(`File not found: ${imagePath}`);
                 }
-            );
+
+                const fileStream = fs.createReadStream(imagePath);
+
+                await ctx.telegram.sendPhoto(
+                    ctx.chat.id,
+                    {
+                        source: fileStream,
+                    },
+                    {
+                        caption,
+                    }
+                );
+            }
 
             elizaLogger.info(`Image sent successfully: ${imagePath}`);
         } catch (error) {
@@ -1062,7 +1073,6 @@ export class MessageManager {
                         content,
                         message.message_id
                     );
-
                     if (sentMessages) {
                         const memories: Memory[] = [];
 
