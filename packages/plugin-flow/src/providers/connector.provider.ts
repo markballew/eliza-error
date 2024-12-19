@@ -4,7 +4,7 @@ import {
     Memory,
     Provider,
     State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 
 import FlowConnector, { NetworkType } from "./utils/flow.connector";
 
