@@ -53,7 +53,6 @@ import { suiPlugin } from "@ai16z/plugin-sui";
 import { TEEMode, teePlugin } from "@ai16z/plugin-tee";
 import { tonPlugin } from "@ai16z/plugin-ton";
 import { zksyncEraPlugin } from "@ai16z/plugin-zksync-era";
-import { cronosZkEVMPlugin } from "@ai16z/plugin-cronoszkEVM";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -71,8 +70,7 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
 
 const logFetch = async (url: string, options: any) => {
     elizaLogger.debug(`Fetching ${url}`);
-    // Disabled to avoid disclosure of sensitive information such as API keys
-    // elizaLogger.debug(JSON.stringify(options, null, 2));
+    elizaLogger.debug(JSON.stringify(options, null, 2));
     return fetch(url, options);
 };
 
@@ -306,10 +304,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.AKASH_CHAT_API_KEY ||
                 settings.AKASH_CHAT_API_KEY
             );
-        default:
-            const errorMessage = `Failed to get token - unsupported model provider: ${provider}`
-            elizaLogger.error(errorMessage)
-            throw new Error(errorMessage)
     }
 }
 
@@ -552,7 +546,6 @@ export async function createAgent(
             getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
             getSecret(character, "MVX_PRIVATE_KEY") ? multiversxPlugin : null,
             getSecret(character, "ZKSYNC_PRIVATE_KEY") ? zksyncEraPlugin : null,
-            getSecret(character, "CRONOSZKEVM_PRIVATE_KEY") ? cronosZkEVMPlugin : null,
             getSecret(character, "TON_PRIVATE_KEY") ? tonPlugin : null,
             getSecret(character, "SUI_PRIVATE_KEY") ? suiPlugin : null,
             getSecret(character, "STORY_PRIVATE_KEY") ? storyPlugin : null,
@@ -655,15 +648,14 @@ const startAgents = async () => {
     }
 
     // upload some agent functionality into directClient
-    directClient.startAgent = async (character) => {
-        // wrap it so we don't have to inject directClient later
-        return startAgent(character, directClient);
+    directClient.startAgent = async character => {
+      // wrap it so we don't have to inject directClient later
+      return startAgent(character, directClient)
     };
     directClient.start(serverPort);
 
-    elizaLogger.log(
-        "Run `pnpm start:client` to start the client and visit the outputted URL (http://localhost:5173) to chat with your agents"
-    );
+    elizaLogger.log("Visit the following URL to chat with your agents:");
+    elizaLogger.log(`http://localhost:5173`);
 };
 
 startAgents().catch((error) => {
