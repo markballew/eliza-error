@@ -3,7 +3,7 @@ export * from "./providers/wallet.ts";
 export * from "./providers/trustScoreProvider.ts";
 export * from "./evaluators/trust.ts";
 
-import { Plugin } from "@elizaos/core";
+import { Plugin } from "@ai16z/eliza";
 import { executeSwap } from "./actions/swap.ts";
 import take_order from "./actions/takeOrder";
 import pumpfun from "./actions/pumpfun.ts";
@@ -15,9 +15,8 @@ import { trustScoreProvider } from "./providers/trustScoreProvider.ts";
 import { trustEvaluator } from "./evaluators/trust.ts";
 import { TokenProvider } from "./providers/token.ts";
 import { WalletProvider } from "./providers/wallet.ts";
-import { getTokenBalance, getTokenBalances } from "./providers/tokenUtils.ts";
 
-export { TokenProvider, WalletProvider, getTokenBalance, getTokenBalances };
+export { TokenProvider, WalletProvider };
 
 export const solanaPlugin: Plugin = {
     name: "solana",
