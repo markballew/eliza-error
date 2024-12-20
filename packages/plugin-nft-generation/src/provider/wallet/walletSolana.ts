@@ -10,7 +10,6 @@ import {
     createNft,
     findMetadataPda,
     mplTokenMetadata,
-    fetchDigitalAsset,
     updateV1,
     verifyCollectionV1,
 } from "@metaplex-foundation/mpl-token-metadata";
@@ -27,7 +26,7 @@ import {
 import { getExplorerLink } from "@solana-developers/helpers";
 // import { transferSol } from "@metaplex-foundation/mpl-toolbox";
 import bs58 from "bs58";
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@ai16z/eliza";
 
 export class WalletSolana {
     private cache: NodeCache;
@@ -56,9 +55,6 @@ export class WalletSolana {
         this.umi = umi;
     }
 
-    async fetchDigitalAsset (address: string) {
-        return fetchDigitalAsset(this.umi, publicKey(address))
-    }
     async getBalance() {
         const balance = await this.connection.getBalance(this.walletPublicKey);
         return {

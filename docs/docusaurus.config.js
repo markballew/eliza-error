@@ -7,9 +7,9 @@ const config = {
   title: "eliza",
   tagline: "Flexible, scalable AI agents for everyone",
   favicon: "img/favicon.ico",
-  url: "https://elizaos.github.io",
+  url: "https://ai16z.github.io",
   baseUrl: "/eliza/",
-  organizationName: "elizaos",
+  organizationName: "ai16z",
   projectName: "eliza",
   deploymentBranch: "gh-pages",
   trailingSlash: true,
@@ -102,7 +102,7 @@ const config = {
         treatValidationWarningsAsErrors: true,
         searchInComments: true,
         navigationLinks: {
-          GitHub: "https://github.com/elizaos/eliza",
+          GitHub: "https://github.com/ai16z/eliza",
           Documentation: "/docs/intro",
         },
       },
@@ -123,11 +123,9 @@ const config = {
       {
         docs: {
           sidebarPath: "./sidebars.js",
-          editUrl: "https://github.com/elizaos/eliza/tree/main/docs/",
+          editUrl: "https://github.com/ai16z/eliza/tree/main/docs/",
           routeBasePath: "docs",
           exclude: ["**/_media/**"],
-	  showLastUpdateAuthor: true,
-          showLastUpdateTime: true
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -175,7 +173,7 @@ const config = {
           docId: "index",
         },
         {
-          href: "https://github.com/elizaos/eliza",
+          href: "https://github.com/ai16z/eliza",
           label: "GitHub",
           position: "right",
         },
@@ -211,11 +209,12 @@ const config = {
           items: [
             {
               label: "GitHub",
-              href: "https://github.com/elizaos/eliza",
+              href: "https://github.com/ai16z/eliza",
             },
           ],
         },
       ],
+      copyright: `Copyright © ${new Date().getFullYear()} ai16z.ai`,
     },
     prism: {
       theme: prismThemes.github,

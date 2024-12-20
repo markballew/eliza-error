@@ -4,10 +4,10 @@ import {
     generateObjectDeprecated,
     HandlerCallback,
     ModelClass,
-    IAgentRuntime,
-    Memory,
-    State,
-} from "@elizaos/core";
+    type IAgentRuntime,
+    type Memory,
+    type State,
+} from "@ai16z/eliza";
 import pinataSDK from "@pinata/sdk";
 import { RegisterIpResponse } from "@story-protocol/core-sdk";
 import { createHash } from "crypto";
