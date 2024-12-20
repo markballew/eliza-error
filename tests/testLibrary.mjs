@@ -7,6 +7,7 @@ export const DEFAULT_AGENT_ID = stringToUuid(DEFAULT_CHARACTER ?? uuidv4());
 
 function projectRoot() {
     return path.join(import.meta.dirname, "..");
+    // return "/Users/piotr/Documents/GitHub/Sifchain/eliza"
 }
 
 function log(message) {
@@ -95,7 +96,7 @@ async function sendPostRequest(url, method, payload) {
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        return data[0].text;
+        return data;
     } catch (error) {
         throw new Error(`Failed to send message: ${error.message}`);
     }
@@ -134,5 +135,6 @@ export {
     send,
     runIntegrationTest,
     log,
-    logError
+    logError,
+    sleep
 }
