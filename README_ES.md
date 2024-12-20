@@ -9,7 +9,7 @@
 -   📚 Ingestión e interacción sencilla con documentos
 -   💾 Memoria recuperable y almacenamiento de documentos
 -   🚀 Altamente extensible - cree sus propias acciones y clientes para expandir capacidades
--   ☁️ Soporta múltiples modelos, incluidos Llama local, OpenAI, Anthropic, Groq y más
+-   ☁️ Soporta múltiples modelos, incluyendo Llama local, OpenAI, Anthropic, Groq y más
 -   📦 Funciona perfectamente
 
 ## Usos
@@ -29,8 +29,8 @@
 
 ### Edite el archivo .env
 
--   Copie el archivo .env.example a .env y complete los valores apropiados
--   Edite las variables de entorno de TWITTER para agregar nombre de usuario y contraseña del bot
+-   Copie .env.example a .env y complete los valores apropiados
+-   Edite las variables de ambiente de TWITTER para agregar nombre de usuario y contraseña del bot
 
 ### Edite el archivo de personaje
 

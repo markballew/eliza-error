@@ -12,7 +12,6 @@ import {
     ModelClass,
     State,
     UUID,
-    Media,
 } from "@ai16z/eliza";
 import { stringToUuid } from "@ai16z/eliza";
 
@@ -26,8 +25,6 @@ import {
     RESPONSE_CHANCES,
     TEAM_COORDINATION
 } from "./constants";
-
-import fs from "fs";
 
 const MAX_MESSAGE_LENGTH = 4096; // Telegram's max message length
 
@@ -583,78 +580,29 @@ export class MessageManager {
     // Send long messages in chunks
     private async sendMessageInChunks(
         ctx: Context,
-        content: Content,
+        content: string,
         replyToMessageId?: number
     ): Promise<Message.TextMessage[]> {
-        if (content.attachments && content.attachments.length > 0) {
-            content.attachments.map(async (attachment: Media) => {
-                if (attachment.contentType.startsWith("image")) {
-                    this.sendImage(ctx, attachment.url, attachment.description);
+        const chunks = this.splitMessage(content);
+        const sentMessages: Message.TextMessage[] = [];
+
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            const sentMessage = (await ctx.telegram.sendMessage(
+                ctx.chat.id,
+                chunk,
+                {
+                    reply_parameters:
+                        i === 0 && replyToMessageId
+                            ? { message_id: replyToMessageId }
+                            : undefined,
                 }
-            });
-        } else {
-            const chunks = this.splitMessage(content.text);
-            const sentMessages: Message.TextMessage[] = [];
+            )) as Message.TextMessage;
 
-            for (let i = 0; i < chunks.length; i++) {
-                const chunk = chunks[i];
-                const sentMessage = (await ctx.telegram.sendMessage(
-                    ctx.chat.id,
-                    chunk,
-                    {
-                        reply_parameters:
-                            i === 0 && replyToMessageId
-                                ? { message_id: replyToMessageId }
-                                : undefined,
-                        parse_mode:'Markdown'
-                    }
-                )) as Message.TextMessage;
-
-                sentMessages.push(sentMessage);
-            }
-
-            return sentMessages;
+            sentMessages.push(sentMessage);
         }
-    }
 
-    private async sendImage(
-        ctx: Context,
-        imagePath: string,
-        caption?: string
-    ): Promise<void> {
-        try {
-            if (/^(http|https):\/\//.test(imagePath)) {
-                // Handle HTTP URLs
-                await ctx.telegram.sendPhoto(
-                    ctx.chat.id,
-                    imagePath,
-                    {
-                        caption,
-                    }
-                );
-            } else {
-                // Handle local file paths 
-                if (!fs.existsSync(imagePath)) {
-                    throw new Error(`File not found: ${imagePath}`);
-                }
-    
-                const fileStream = fs.createReadStream(imagePath);
-    
-                await ctx.telegram.sendPhoto(
-                    ctx.chat.id,
-                    {
-                        source: fileStream,
-                    },
-                    {
-                        caption,
-                    }
-                );
-            }
-            
-            elizaLogger.info(`Image sent successfully: ${imagePath}`);
-        } catch (error) {
-            elizaLogger.error("Error sending image:", error);
-        }
+        return sentMessages;
     }
 
     // Split message into smaller parts
@@ -958,47 +906,46 @@ export class MessageManager {
                 const callback: HandlerCallback = async (content: Content) => {
                     const sentMessages = await this.sendMessageInChunks(
                         ctx,
-                        content,
+                        content.text,
                         message.message_id
                     );
-                    if (sentMessages) {
-                        const memories: Memory[] = [];
 
-                        // Create memories for each sent message
-                        for (let i = 0; i < sentMessages.length; i++) {
-                            const sentMessage = sentMessages[i];
-                            const isLastMessage = i === sentMessages.length - 1;
-    
-                            const memory: Memory = {
-                                id: stringToUuid(
-                                    sentMessage.message_id.toString() +
-                                        "-" +
-                                        this.runtime.agentId
-                                ),
-                                agentId,
-                                userId: agentId,
-                                roomId,
-                                content: {
-                                    ...content,
-                                    text: sentMessage.text,
-                                    inReplyTo: messageId,
-                                },
-                                createdAt: sentMessage.date * 1000,
-                                embedding: getEmbeddingZeroVector(),
-                            };
-    
-                            // Set action to CONTINUE for all messages except the last one
-                            // For the last message, use the original action from the response content
-                            memory.content.action = !isLastMessage
-                                ? "CONTINUE"
-                                : content.action;
-    
-                            await this.runtime.messageManager.createMemory(memory);
-                            memories.push(memory);
-                        }
-    
-                        return memories;
+                    const memories: Memory[] = [];
+
+                    // Create memories for each sent message
+                    for (let i = 0; i < sentMessages.length; i++) {
+                        const sentMessage = sentMessages[i];
+                        const isLastMessage = i === sentMessages.length - 1;
+
+                        const memory: Memory = {
+                            id: stringToUuid(
+                                sentMessage.message_id.toString() +
+                                    "-" +
+                                    this.runtime.agentId
+                            ),
+                            agentId,
+                            userId: agentId,
+                            roomId,
+                            content: {
+                                ...content,
+                                text: sentMessage.text,
+                                inReplyTo: messageId,
+                            },
+                            createdAt: sentMessage.date * 1000,
+                            embedding: getEmbeddingZeroVector(),
+                        };
+
+                        // Set action to CONTINUE for all messages except the last one
+                        // For the last message, use the original action from the response content
+                        memory.content.action = !isLastMessage
+                            ? "CONTINUE"
+                            : content.action;
+
+                        await this.runtime.messageManager.createMemory(memory);
+                        memories.push(memory);
                     }
+
+                    return memories;
                 };
 
                 // Execute callback to send messages and log memories

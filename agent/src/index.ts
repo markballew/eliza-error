@@ -70,8 +70,7 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
 
 const logFetch = async (url: string, options: any) => {
     elizaLogger.debug(`Fetching ${url}`);
-    // Disabled to avoid disclosure of sensitive information such as API keys
-    // elizaLogger.debug(JSON.stringify(options, null, 2));
+    elizaLogger.debug(JSON.stringify(options, null, 2));
     return fetch(url, options);
 };
 
@@ -210,11 +209,8 @@ export async function loadCharacters(
 export function getTokenForProvider(
     provider: ModelProviderName,
     character: Character
-):string {
+) {
     switch (provider) {
-        // no key needed for llama_local
-        case ModelProviderName.LLAMALOCAL:
-            return ''
         case ModelProviderName.OPENAI:
             return (
                 character.settings?.secrets?.OPENAI_API_KEY ||
@@ -237,7 +233,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.OPENAI_API_KEY ||
                 settings.OPENAI_API_KEY
             );
-        case ModelProviderName.CLAUDE_VERTEX:
         case ModelProviderName.ANTHROPIC:
             return (
                 character.settings?.secrets?.ANTHROPIC_API_KEY ||
@@ -309,10 +304,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.AKASH_CHAT_API_KEY ||
                 settings.AKASH_CHAT_API_KEY
             );
-        default:
-            const errorMessage = `Failed to get token - unsupported model provider: ${provider}`
-            elizaLogger.error(errorMessage)
-            throw new Error(errorMessage)
     }
 }
 
@@ -582,7 +573,7 @@ function initializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
 
 async function startAgent(
     character: Character,
-    directClient: DirectClient
+    directClient
 ): Promise<AgentRuntime> {
     let db: IDatabaseAdapter & IDatabaseCacheAdapter;
     try {
@@ -657,15 +648,14 @@ const startAgents = async () => {
     }
 
     // upload some agent functionality into directClient
-    directClient.startAgent = async (character: Character) => {
-        // wrap it so we don't have to inject directClient later
-        return startAgent(character, directClient);
+    directClient.startAgent = async character => {
+      // wrap it so we don't have to inject directClient later
+      return startAgent(character, directClient)
     };
     directClient.start(serverPort);
 
-    elizaLogger.log(
-        "Run `pnpm start:client` to start the client and visit the outputted URL (http://localhost:5173) to chat with your agents"
-    );
+    elizaLogger.log("Visit the following URL to chat with your agents:");
+    elizaLogger.log(`http://localhost:5173`);
 };
 
 startAgents().catch((error) => {

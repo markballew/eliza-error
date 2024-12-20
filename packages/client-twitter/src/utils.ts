@@ -165,6 +165,16 @@ export async function buildConversationThread(
     return thread;
 }
 
+export function getMediaType(attachment: Media) {
+    if (attachment.contentType?.startsWith("video")) {
+        return "video";
+    } else if (attachment.contentType?.startsWith("image")) {
+        return "image";
+    } else {
+        throw new Error(`Unsupported media type`);
+    }
+}
+
 export async function sendTweet(
     client: ClientBase,
     content: Content,
@@ -197,14 +207,14 @@ export async function sendTweet(
                         const mediaBuffer = Buffer.from(
                             await response.arrayBuffer()
                         );
-                        const mediaType = attachment.contentType;
+                        const mediaType = getMediaType(attachment);
                         return { data: mediaBuffer, mediaType };
                     } else if (fs.existsSync(attachment.url)) {
                         // Handle local file paths
                         const mediaBuffer = await fs.promises.readFile(
                             path.resolve(attachment.url)
                         );
-                        const mediaType = attachment.contentType;
+                        const mediaType = getMediaType(attachment);
                         return { data: mediaBuffer, mediaType };
                     } else {
                         throw new Error(

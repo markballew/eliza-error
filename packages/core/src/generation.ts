@@ -176,8 +176,7 @@ export async function generateText({
             case ModelProviderName.LLAMACLOUD:
             case ModelProviderName.NANOGPT:
             case ModelProviderName.HYPERBOLIC:
-            case ModelProviderName.TOGETHER:
-            case ModelProviderName.AKASH_CHAT_API: {
+            case ModelProviderName.TOGETHER: {
                 elizaLogger.debug("Initializing OpenAI model.");
                 const openai = createOpenAI({
                     apiKey,
@@ -1215,10 +1214,6 @@ export const generateWebSearch = async (
                 api_key: apiKey,
                 query,
                 include_answer: true,
-                max_results: 3, // 5 (default)
-                topic: "general", // "general"(default) "news"
-                search_depth: "basic", // "basic"(default) "advanced"
-                include_images: false, // false (default) true
             }),
         });
 
@@ -1365,7 +1360,6 @@ export async function handleProvider(
         case ModelProviderName.LLAMACLOUD:
         case ModelProviderName.TOGETHER:
         case ModelProviderName.NANOGPT:
-        case ModelProviderName.AKASH_CHAT_API:
             return await handleOpenAI(options);
         case ModelProviderName.ANTHROPIC:
             return await handleAnthropic(options);
