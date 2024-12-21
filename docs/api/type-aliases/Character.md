@@ -440,4 +440,4 @@ Optional NFT prompt
 
 ## Defined in
 
-[packages/core/src/types.ts:629](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L629)
+[packages/core/src/types.ts:629](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/types.ts#L629)

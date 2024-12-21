@@ -6,7 +6,7 @@
 
 ## 🌍 README Translations
 
-[中文说明](./README_CN.md) | [Deutsch](./README_DE.md) | [Français](./README_FR.md) | [ไทย](./README_TH.md)
+[中文说明](./README_CN.md) | [Français](./README_FR.md) | [ไทย](./README_TH.md)
 
 # dev branch
 

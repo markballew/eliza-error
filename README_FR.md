@@ -7,7 +7,7 @@
 -   🛠 Support des connecteurs Discord/ Twitter / Telegram
 -   🔗 Support des différents modèles d'IA (Llama, Grok, OpenAI, Anthropic, etc.)
 -   👥 Gestion de plusieurs agents et assistance
--   📚 Import et interactions avec différents types de documents simplifiés
+-   📚 Import et intéractions avec différents types de documents simplifiés
 -   💾 Accès aux données en mémoire et aux documents stockés
 -   🚀 Grande personnalisation possible : création de nouveaux clients et de nouvelles actions
 -   📦 Simplicité d'utilisation
@@ -15,9 +15,9 @@
 Que pouvez-vous faire avec Eliza?
 
 -   🤖 Chatbot
--   🕵 Agents autonomes
+-   🕵 ️Agents autonomes
 -   📈 Processus automatisés
--   🎮 PNJ interactifs
+-   🎮 PNJ intéractifs
 -   🧠 Trading automatisé
 
 # Premiers pas
@@ -32,7 +32,7 @@ Que pouvez-vous faire avec Eliza?
 
 ### Editer le fichier .env
 
--   Copier le fichier d'exemple .env.example et le remplir avec les valeurs adéquates
+-   Copier le fichier d'example et le remplir le avec les valeurs adéquates
 
 ```
 cp .env.example .env
@@ -59,10 +59,10 @@ pnpm start
 pnpm clean
 ```
 
-#### Ressources additionnelles
+#### Ressources additionelles
 
 Il vous faudra peut-être installer Sharp.
-S'il y a une erreur lors du lancement du bot, essayez d'installer Sharp comme ceci :
+Si il y a une erreur lors du lancement du bot, essayez d'installer Sharp comme ceci :
 
 ```
 pnpm install --include=optional sharp

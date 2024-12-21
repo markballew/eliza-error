@@ -26,4 +26,4 @@ Data retrieval function
 
 #### Defined in
 
-[packages/core/src/types.ts:467](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L467)
+[packages/core/src/types.ts:467](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/types.ts#L467)

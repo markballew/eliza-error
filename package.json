@@ -2,9 +2,9 @@
     "name": "eliza",
     "scripts": {
         "preinstall": "npx only-allow pnpm",
-        "build": "turbo run build --filter=!eliza-docs",
+        "build": "tsc",
         "build-docker": "turbo run build",
-        "start": "pnpm --filter \"@ai16z/agent\" start --isRoot",
+        "start": "pnpm --filter \"@ai16z/agent\" start",
         "start:client": "pnpm --dir client dev",
         "start:debug": "cross-env NODE_ENV=development VERBOSE=true DEBUG=eliza:* pnpm --filter \"@ai16z/agent\" start --isRoot",
         "dev": "bash ./scripts/dev.sh",
@@ -40,7 +40,8 @@
         "typedoc": "0.26.11",
         "typescript": "5.6.3",
         "vite": "5.4.11",
-        "vitest": "2.1.5"
+        "vitest": "2.1.5",
+        "zx": "^8.2.4"
     },
     "pnpm": {
         "overrides": {

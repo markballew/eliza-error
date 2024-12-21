@@ -14,7 +14,7 @@ Unique identifier
 
 #### Defined in
 
-[packages/core/src/types.ts:539](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L539)
+[packages/core/src/types.ts:539](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/types.ts#L539)
 
 ***
 
@@ -26,4 +26,4 @@ Room participants
 
 #### Defined in
 
-[packages/core/src/types.ts:542](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L542)
+[packages/core/src/types.ts:542](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/types.ts#L542)

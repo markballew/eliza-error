@@ -50,8 +50,9 @@
 
 ```bash
 git clone https://github.com/ai16z/eliza-starter.git
-cd eliza-starter
+
 cp .env.example .env
+
 pnpm i && pnpm build && pnpm start
 ```
 
