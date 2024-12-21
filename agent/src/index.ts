@@ -214,10 +214,8 @@ export function getTokenForProvider(
     character: Character
 ): string {
     switch (provider) {
-        // no key needed for llama_local or gaianet
+        // no key needed for llama_local
         case ModelProviderName.LLAMALOCAL:
-            return "";
-        case ModelProviderName.GAIANET:
             return "";
         case ModelProviderName.OPENAI:
             return (
