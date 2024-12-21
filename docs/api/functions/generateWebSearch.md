@@ -16,4 +16,4 @@
 
 ## Defined in
 
-[packages/core/src/generation.ts:1200](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/generation.ts#L1200)
+[packages/core/src/generation.ts:1200](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L1200)

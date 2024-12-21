@@ -24,4 +24,4 @@ Handler function type for processing messages
 
 ## Defined in
 
-[packages/core/src/types.ts:374](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/types.ts#L374)
+[packages/core/src/types.ts:374](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L374)

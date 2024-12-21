@@ -28,4 +28,4 @@
 
 ## Defined in
 
-[packages/core/src/types.ts:1188](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/types.ts#L1188)
+[packages/core/src/types.ts:1188](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L1188)

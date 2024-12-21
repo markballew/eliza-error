@@ -20,4 +20,4 @@
 
 ## Defined in
 
-[packages/core/src/generation.ts:800](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/generation.ts#L800)
+[packages/core/src/generation.ts:800](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L800)

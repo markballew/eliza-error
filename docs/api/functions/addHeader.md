@@ -39,4 +39,4 @@ const text = addHeader(header, body);
 
 ## Defined in
 
-[packages/core/src/context.ts:69](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/context.ts#L69)
+[packages/core/src/context.ts:69](https://github.com/ai16z/eliza/blob/main/packages/core/src/context.ts#L69)

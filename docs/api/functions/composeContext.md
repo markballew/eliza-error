@@ -2,7 +2,7 @@
 
 # Function: composeContext()
 
-> **composeContext**(`params`): `string`
+> **composeContext**(`params`): `any`
 
 Composes a context string by replacing placeholders in a template with corresponding values from the state.
 
@@ -32,7 +32,7 @@ The templating engine to use for compiling and evaluating the template (optional
 
 ## Returns
 
-`string`
+`any`
 
 The composed context string with placeholders replaced by corresponding state values.
 
@@ -50,4 +50,4 @@ const contextSimple = composeContext({ state, template });
 
 ## Defined in
 
-[packages/core/src/context.ts:28](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/context.ts#L28)
+[packages/core/src/context.ts:28](https://github.com/ai16z/eliza/blob/main/packages/core/src/context.ts#L28)

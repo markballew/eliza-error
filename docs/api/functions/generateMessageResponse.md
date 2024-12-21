@@ -28,4 +28,4 @@ The completed message.
 
 ## Defined in
 
-[packages/core/src/generation.ts:884](https://github.com/IkigaiLabsETH/eliza/blob/main/packages/core/src/generation.ts#L884)
+[packages/core/src/generation.ts:884](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L884)
