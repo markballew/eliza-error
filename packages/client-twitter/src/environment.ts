@@ -10,6 +10,7 @@ export const twitterEnvSchema = z.object({
     TWITTER_USERNAME: z.string().min(1, "Twitter username is required"),
     TWITTER_PASSWORD: z.string().min(1, "Twitter password is required"),
     TWITTER_EMAIL: z.string().email("Valid Twitter email is required"),
+    TWITTER_COOKIES: z.string().optional(),
     MAX_TWEET_LENGTH: z
         .string()
         .pipe(z.coerce.number().min(0).int())
@@ -36,6 +37,9 @@ export async function validateTwitterConfig(
             TWITTER_EMAIL:
                 runtime.getSetting("TWITTER_EMAIL") ||
                 process.env.TWITTER_EMAIL,
+            TWITTER_COOKIES:
+                runtime.getSetting("TWITTER_COOKIES") ||
+                process.env.TWITTER_COOKIES,
             MAX_TWEET_LENGTH:
                 runtime.getSetting("MAX_TWEET_LENGTH") ||
                 process.env.MAX_TWEET_LENGTH ||
