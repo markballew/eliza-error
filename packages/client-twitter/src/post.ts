@@ -7,13 +7,12 @@ import {
     ModelClass,
     stringToUuid,
     parseBooleanFromText,
-    UUID,
-} from "@ai16z/eliza";
-import { elizaLogger } from "@ai16z/eliza";
+} from "@elizaos/core";
+import { elizaLogger } from "@elizaos/core";
 import { ClientBase } from "./base.ts";
-import { postActionResponseFooter } from "@ai16z/eliza";
-import { generateTweetActions } from "@ai16z/eliza";
-import { IImageDescriptionService, ServiceType } from "@ai16z/eliza";
+import { postActionResponseFooter } from "@elizaos/core";
+import { generateTweetActions } from "@elizaos/core";
+import { IImageDescriptionService, ServiceType } from "@elizaos/core";
 import { buildConversationThread } from "./utils.ts";
 import { twitterMessageHandlerTemplate } from "./interactions.ts";
 import { DEFAULT_MAX_TWEET_LENGTH } from "./environment.ts";
@@ -72,26 +71,25 @@ function truncateToCompleteSentence(
     }
 
     // Attempt to truncate at the last period within the limit
-    const lastPeriodIndex = text.lastIndexOf(".", maxTweetLength - 1);
-    if (lastPeriodIndex !== -1) {
-        const truncatedAtPeriod = text.slice(0, lastPeriodIndex + 1).trim();
-        if (truncatedAtPeriod.length > 0) {
-            return truncatedAtPeriod;
-        }
+    const truncatedAtPeriod = text.slice(
+        0,
+        text.lastIndexOf(".", maxTweetLength) + 1
+    );
+    if (truncatedAtPeriod.trim().length > 0) {
+        return truncatedAtPeriod.trim();
     }
 
-    // If no period, truncate to the nearest whitespace within the limit
-    const lastSpaceIndex = text.lastIndexOf(" ", maxTweetLength - 1);
-    if (lastSpaceIndex !== -1) {
-        const truncatedAtSpace = text.slice(0, lastSpaceIndex).trim();
-        if (truncatedAtSpace.length > 0) {
-            return truncatedAtSpace + "...";
-        }
+    // If no period is found, truncate to the nearest whitespace
+    const truncatedAtSpace = text.slice(
+        0,
+        text.lastIndexOf(" ", maxTweetLength)
+    );
+    if (truncatedAtSpace.trim().length > 0) {
+        return truncatedAtSpace.trim() + "...";
     }
 
     // Fallback: Hard truncate and add ellipsis
-    const hardTruncated = text.slice(0, maxTweetLength - 3).trim();
-    return hardTruncated + "...";
+    return text.slice(0, maxTweetLength - 3).trim() + "...";
 }
 
 export class TwitterPostClient {
@@ -189,175 +187,13 @@ export class TwitterPostClient {
         } else {
             elizaLogger.log("Action processing loop disabled by configuration");
         }
+        generateNewTweetLoop();
     }
 
     constructor(client: ClientBase, runtime: IAgentRuntime) {
         this.client = client;
         this.runtime = runtime;
         this.twitterUsername = runtime.getSetting("TWITTER_USERNAME");
-    }
-
-    createTweetObject(
-        tweetResult: any,
-        client: any,
-        twitterUsername: string
-    ): Tweet {
-        return {
-            id: tweetResult.rest_id,
-            name: client.profile.screenName,
-            username: client.profile.username,
-            text: tweetResult.legacy.full_text,
-            conversationId: tweetResult.legacy.conversation_id_str,
-            createdAt: tweetResult.legacy.created_at,
-            timestamp: new Date(tweetResult.legacy.created_at).getTime(),
-            userId: client.profile.id,
-            inReplyToStatusId: tweetResult.legacy.in_reply_to_status_id_str,
-            permanentUrl: `https://twitter.com/${twitterUsername}/status/${tweetResult.rest_id}`,
-            hashtags: [],
-            mentions: [],
-            photos: [],
-            thread: [],
-            urls: [],
-            videos: [],
-        } as Tweet;
-    }
-
-    async processAndCacheTweet(
-        runtime: IAgentRuntime,
-        client: ClientBase,
-        tweet: Tweet,
-        roomId: UUID,
-        newTweetContent: string
-    ) {
-        // Cache the last post details
-        await runtime.cacheManager.set(
-            `twitter/${client.profile.username}/lastPost`,
-            {
-                id: tweet.id,
-                timestamp: Date.now(),
-            }
-        );
-
-        // Cache the tweet
-        await client.cacheTweet(tweet);
-
-        // Log the posted tweet
-        elizaLogger.log(`Tweet posted:\n ${tweet.permanentUrl}`);
-
-        // Ensure the room and participant exist
-        await runtime.ensureRoomExists(roomId);
-        await runtime.ensureParticipantInRoom(runtime.agentId, roomId);
-
-        // Create a memory for the tweet
-        await runtime.messageManager.createMemory({
-            id: stringToUuid(tweet.id + "-" + runtime.agentId),
-            userId: runtime.agentId,
-            agentId: runtime.agentId,
-            content: {
-                text: newTweetContent.trim(),
-                url: tweet.permanentUrl,
-                source: "twitter",
-            },
-            roomId,
-            embedding: getEmbeddingZeroVector(),
-            createdAt: tweet.timestamp,
-        });
-    }
-
-    async handleNoteTweet(
-        client: ClientBase,
-        runtime: IAgentRuntime,
-        content: string,
-        tweetId?: string
-    ) {
-        try {
-            const noteTweetResult = await client.requestQueue.add(
-                async () =>
-                    await client.twitterClient.sendNoteTweet(content, tweetId)
-            );
-
-            if (noteTweetResult.errors && noteTweetResult.errors.length > 0) {
-                // Note Tweet failed due to authorization. Falling back to standard Tweet.
-                const truncateContent = truncateToCompleteSentence(
-                    content,
-                    parseInt(runtime.getSetting("MAX_TWEET_LENGTH")) ||
-                        DEFAULT_MAX_TWEET_LENGTH
-                );
-                return await this.sendStandardTweet(
-                    client,
-                    truncateContent,
-                    tweetId
-                );
-            } else {
-                return noteTweetResult.data.notetweet_create.tweet_results
-                    .result;
-            }
-        } catch (error) {
-            throw new Error(`Note Tweet failed: ${error}`);
-        }
-    }
-
-    async sendStandardTweet(
-        client: ClientBase,
-        content: string,
-        tweetId?: string
-    ) {
-        try {
-            const standardTweetResult = await client.requestQueue.add(
-                async () =>
-                    await client.twitterClient.sendTweet(content, tweetId)
-            );
-            const body = await standardTweetResult.json();
-            if (!body?.data?.create_tweet?.tweet_results?.result) {
-                console.error("Error sending tweet; Bad response:", body);
-                return;
-            }
-            return body.data.create_tweet.tweet_results.result;
-        } catch (error) {
-            elizaLogger.error("Error sending standard Tweet:", error);
-            throw error;
-        }
-    }
-
-    async postTweet(
-        runtime: IAgentRuntime,
-        client: ClientBase,
-        cleanedContent: string,
-        roomId: UUID,
-        newTweetContent: string,
-        twitterUsername: string
-    ) {
-        try {
-            elizaLogger.log(`Posting new tweet:\n`);
-
-            let result;
-
-            if (cleanedContent.length > DEFAULT_MAX_TWEET_LENGTH) {
-                result = await this.handleNoteTweet(
-                    client,
-                    runtime,
-                    cleanedContent
-                );
-            } else {
-                result = await this.sendStandardTweet(client, cleanedContent);
-            }
-
-            const tweet = this.createTweetObject(
-                result,
-                client,
-                twitterUsername
-            );
-
-            await this.processAndCacheTweet(
-                runtime,
-                client,
-                tweet,
-                roomId,
-                newTweetContent
-            );
-        } catch (error) {
-            elizaLogger.error("Error sending tweet:", error);
-        }
     }
 
     private async generateNewTweet() {
@@ -397,6 +233,8 @@ export class TwitterPostClient {
                     this.runtime.character.templates?.twitterPostTemplate ||
                     twitterPostTemplate,
             });
+
+            console.log("twitter context:\n" + context);
 
             elizaLogger.debug("generate post prompt:\n" + context);
 
@@ -439,13 +277,20 @@ export class TwitterPostClient {
                 return;
             }
 
+            // Use the helper function to truncate to complete sentence
+            const content = truncateToCompleteSentence(
+                cleanedContent,
+                parseInt(this.runtime.getSetting("MAX_TWEET_LENGTH")) ||
+                    DEFAULT_MAX_TWEET_LENGTH
+            );
+
             const removeQuotes = (str: string) =>
                 str.replace(/^['"](.*)['"]$/, "$1");
 
             const fixNewLines = (str: string) => str.replaceAll(/\\n/g, "\n");
 
             // Final cleaning
-            cleanedContent = removeQuotes(fixNewLines(cleanedContent));
+            cleanedContent = removeQuotes(fixNewLines(content));
 
             if (this.runtime.getSetting("TWITTER_DRY_RUN") === "true") {
                 elizaLogger.info(
@@ -456,14 +301,73 @@ export class TwitterPostClient {
 
             try {
                 elizaLogger.log(`Posting new tweet:\n ${cleanedContent}`);
-                this.postTweet(
-                    this.runtime,
-                    this.client,
-                    cleanedContent,
-                    roomId,
-                    newTweetContent,
-                    this.twitterUsername
+
+                const result = await this.client.requestQueue.add(
+                    async () =>
+                        await this.client.twitterClient.sendTweet(
+                            cleanedContent
+                        )
                 );
+                const body = await result.json();
+                if (!body?.data?.create_tweet?.tweet_results?.result) {
+                    console.error("Error sending tweet; Bad response:", body);
+                    return;
+                }
+                const tweetResult = body.data.create_tweet.tweet_results.result;
+
+                const tweet = {
+                    id: tweetResult.rest_id,
+                    name: this.client.profile.screenName,
+                    username: this.client.profile.username,
+                    text: tweetResult.legacy.full_text,
+                    conversationId: tweetResult.legacy.conversation_id_str,
+                    createdAt: tweetResult.legacy.created_at,
+                    timestamp: new Date(
+                        tweetResult.legacy.created_at
+                    ).getTime(),
+                    userId: this.client.profile.id,
+                    inReplyToStatusId:
+                        tweetResult.legacy.in_reply_to_status_id_str,
+                    permanentUrl: `https://twitter.com/${this.twitterUsername}/status/${tweetResult.rest_id}`,
+                    hashtags: [],
+                    mentions: [],
+                    photos: [],
+                    thread: [],
+                    urls: [],
+                    videos: [],
+                } as Tweet;
+
+                await this.runtime.cacheManager.set(
+                    `twitter/${this.client.profile.username}/lastPost`,
+                    {
+                        id: tweet.id,
+                        timestamp: Date.now(),
+                    }
+                );
+
+                await this.client.cacheTweet(tweet);
+
+                elizaLogger.log(`Tweet posted:\n ${tweet.permanentUrl}`);
+
+                await this.runtime.ensureRoomExists(roomId);
+                await this.runtime.ensureParticipantInRoom(
+                    this.runtime.agentId,
+                    roomId
+                );
+
+                await this.runtime.messageManager.createMemory({
+                    id: stringToUuid(tweet.id + "-" + this.runtime.agentId),
+                    userId: this.runtime.agentId,
+                    agentId: this.runtime.agentId,
+                    content: {
+                        text: newTweetContent.trim(),
+                        url: tweet.permanentUrl,
+                        source: "twitter",
+                    },
+                    roomId,
+                    embedding: getEmbeddingZeroVector(),
+                    createdAt: tweet.timestamp,
+                });
             } catch (error) {
                 elizaLogger.error("Error sending tweet:", error);
             }
@@ -930,24 +834,18 @@ export class TwitterPostClient {
 
             elizaLogger.debug("Final reply text to be sent:", replyText);
 
-            let result;
+            // Send the tweet through request queue
+            const result = await this.client.requestQueue.add(
+                async () =>
+                    await this.client.twitterClient.sendTweet(
+                        replyText,
+                        tweet.id
+                    )
+            );
 
-            if (replyText.length > DEFAULT_MAX_TWEET_LENGTH) {
-                result = await this.handleNoteTweet(
-                    this.client,
-                    this.runtime,
-                    replyText,
-                    tweet.id
-                );
-            } else {
-                result = await this.sendStandardTweet(
-                    this.client,
-                    replyText,
-                    tweet.id
-                );
-            }
+            const body = await result.json();
 
-            if (result) {
+            if (body?.data?.create_tweet?.tweet_results?.result) {
                 elizaLogger.log("Successfully posted reply tweet");
                 executedActions.push("reply");
 
@@ -957,7 +855,7 @@ export class TwitterPostClient {
                     `Context:\n${enrichedState}\n\nGenerated Reply:\n${replyText}`
                 );
             } else {
-                elizaLogger.error("Tweet reply creation failed");
+                elizaLogger.error("Tweet reply creation failed:", body);
             }
         } catch (error) {
             elizaLogger.error("Error in handleTextOnlyReply:", error);
