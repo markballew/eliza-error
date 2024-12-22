@@ -7,7 +7,7 @@ import {
     type IAgentRuntime,
     type Memory,
     type State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { WalletProvider } from "../providers/wallet";
 import { licenseIPTemplate } from "../templates";
 import { LicenseIPParams } from "../types";

@@ -1,4 +1,4 @@
-# @elizaos/plugin-flow
+# @ai16z/plugin-flow
 
 This plugin provides basic actions and providers for interacting with the [Flow Blockchain](https://developers.flow.com/).
 

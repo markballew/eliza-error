@@ -1,6 +1,6 @@
 # Eliza - เฟรมเวิร์กจำลองเอเจนต์หลายตัวเเทน
 
-# https://github.com/elizaos/eliza
+# https://github.com/ai16z/eliza
 
 # เข้าไปดู https://eliza.builders สำหรับขอความช่วยเหลือประการใด
 

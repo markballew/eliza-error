@@ -1,6 +1,6 @@
 # Eliza - Multi-agent simulation framework
 
-# https://github.com/elizaos/eliza
+# https://github.com/ai16z/eliza
 
 # Visit https://eliza.builders for support
 
