@@ -1,4 +1,4 @@
-import { messageCompletionFooter, shouldRespondFooter } from "@elizaos/eliza";
+import { messageCompletionFooter, shouldRespondFooter } from "@ai16z/eliza";
 
 export const discordShouldRespondTemplate =
     `# Task: Decide if {{agentName}} should respond.

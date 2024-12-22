@@ -1,4 +1,4 @@
-import type { IAgentRuntime, Provider, Memory, State } from "@elizaos/eliza";
+import type { IAgentRuntime, Provider, Memory, State } from "@ai16z/eliza";
 import {
     createPublicClient,
     createWalletClient,

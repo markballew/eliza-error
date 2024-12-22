@@ -3,8 +3,8 @@ import {
     IAgentRuntime,
     ServiceType,
     ModelProviderName,
-} from "@elizaos/eliza";
-import { Service } from "@elizaos/eliza";
+} from "@ai16z/eliza";
+import { Service } from "@ai16z/eliza";
 import fs from "fs";
 import https from "https";
 import {

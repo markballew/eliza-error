@@ -10,7 +10,7 @@ import {
     composeContext,
     generateObject,
     ModelClass,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import { initializeWallet } from "../utils";
 import {
     contractInvocationTemplate,

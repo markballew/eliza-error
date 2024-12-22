@@ -1,4 +1,4 @@
-import { Plugin } from "@elizaos/eliza";
+import { Plugin } from "@ai16z/eliza";
 import { executeSwap } from "./actions/swap";
 import transfer from "./actions/transfer";
 import { deployToken } from "./actions/unruggable";

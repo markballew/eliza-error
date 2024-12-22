@@ -4,7 +4,7 @@ import {
     Memory,
     Provider,
     State,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import NodeCache from "node-cache";
 import * as fcl from "@onflow/fcl";
 import type { CompositeSignature, Account } from "@onflow/typedefs";

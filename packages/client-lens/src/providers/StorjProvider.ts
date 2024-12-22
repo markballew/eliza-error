@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import FormData from "form-data";
-import type { IAgentRuntime } from "@elizaos/eliza";
+import type { IAgentRuntime } from "@ai16z/eliza";
 
 // ipfs pinning service: https://storj.dev/dcs/api/storj-ipfs-pinning
 class StorjProvider {

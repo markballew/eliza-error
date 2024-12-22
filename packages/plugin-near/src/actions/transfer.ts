@@ -9,7 +9,7 @@ import {
     type Action,
     composeContext,
     generateObject,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import { connect, keyStores, utils } from "near-api-js";
 import { KeyPairString } from "near-api-js/lib/utils";
 import { utils as nearUtils } from "near-api-js";

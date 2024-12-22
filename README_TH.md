@@ -6,56 +6,56 @@
 
 <div align="center">
 
-📖 [คู่มือ](https://elizaos.github.io/eliza/) | 🎯 [ตัวอย่าง](https://github.com/thejoven/awesome-eliza)
+  📖 [คู่มือ](https://ai16z.github.io/eliza/) | 🎯 [ตัวอย่าง](https://github.com/thejoven/awesome-eliza)
 
 </div>
 
 ## ✨ ฟีเจอร์
 
-- 🛠️ สามารถเชื่อมต่อ Discord, Twitter และ Telegram ได้
-- 🔗 ซัพพอร์ตครบทุกโมเดล (Llama, Grok, OpenAI, Anthropic, ฯลฯ)
-- 👥 มัลติเอเจนต์และห้องสนทนา
-- 📚 ง่ายต่อการดึงและเข้าถึงข้อมูลเอกสาร
-- 💾 มีหน่วยความจำและที่จัดเก็บข้อมูล
-- 🚀 ง่ายต่อการปรับแต่งไม่ว่าจะเป็นการสร้าง clients หรือกำหนด action
-- ☁️ รองรับหลายโมเดล (local Llama, OpenAI, Anthropic, Groq, ฯลฯ)
-- 📦 ครบเครื่องเรื่อง AI agent!
+-   🛠️ สามารถเชื่อมต่อ Discord, Twitter และ Telegram ได้
+-   🔗 ซัพพอร์ตครบทุกโมเดล (Llama, Grok, OpenAI, Anthropic, ฯลฯ)
+-   👥 มัลติเอเจนต์และห้องสนทนา
+-   📚 ง่ายต่อการดึงและเข้าถึงข้อมูลเอกสาร
+-   💾 มีหน่วยความจำและที่จัดเก็บข้อมูล
+-   🚀 ง่ายต่อการปรับแต่งไม่ว่าจะเป็นการสร้าง clients หรือกำหนด action
+-   ☁️ รองรับหลายโมเดล (local Llama, OpenAI, Anthropic, Groq, ฯลฯ)
+-   📦 ครบเครื่องเรื่อง AI agent!
 
 ## 🎯 ตัวอย่างการนำไปใช้
 
-- 🤖 แชทบอท
-- 🕵️ เอเจนต์อิสระ (Autonomous Agent)
-- 📈 จัดการฝั่งธุรกิจ
-- 🎮 ตัวละครในเกมที่ไม่ใช่ผู้เล่น (NPC)
-- 🧠 การเทรด
+-   🤖 แชทบอท
+-   🕵️ เอเจนต์อิสระ (Autonomous Agent)
+-   📈 จัดการฝั่งธุรกิจ
+-   🎮 ตัวละครในเกมที่ไม่ใช่ผู้เล่น (NPC)
+-   🧠 การเทรด
 
 ## 🚀 เริ่มต้นการใช้งาน
 
 ### สิ่งที่จำเป็นก่อนเริ่มใช้งาน
 
-- [Python 2.7+](https://www.python.org/downloads/)
-- [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- [pnpm](https://pnpm.io/installation)
+-   [Python 2.7+](https://www.python.org/downloads/)
+-   [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+-   [pnpm](https://pnpm.io/installation)
 
 > **หมายเหตุสำหรับผู้ใช้ Windows:** จำเป็นต้องมี [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install-manual)
 
 ### เริ่มใช้งานด้วยตัวอย่าง (แนะนำ)
 
 ```bash
-git clone https://github.com/elizaos/eliza-starter.git
+git clone https://github.com/ai16z/eliza-starter.git
 
 cp .env.example .env
 
 pnpm i && pnpm start
 ```
 
-จากนั้นอ่าน [คู่มือ](https://elizaos.github.io/eliza/) เพื่อศึกษาวิธีการปรับแต่ง Eliza
+จากนั้นอ่าน [คู่มือ](https://ai16z.github.io/eliza/) เพื่อศึกษาวิธีการปรับแต่ง Eliza
 
 ### เริ่มใช้งาน Eliza ด้วยตนเอง (แนะนำสำหรับคนที่มีประสบการณ์)
 
 ```bash
 # โคลน repo
-git clone https://github.com/elizaos/eliza.git
+git clone https://github.com/ai16z/eliza.git
 
 # Checkout release ล่าสุด
 # โปรเจกต์นี้มีการอัปเดตอยู่บ่อยครั้ง เราแนะนำให้ checkout release ล่าสุดเสมอ
@@ -64,7 +64,7 @@ git checkout $(git describe --tags --abbrev=0)
 
 ### เริ่มใช้งาน Eliza ผ่าน Gitpod
 
-[![เปิดใน Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/elizaos/eliza/tree/main)
+[![เปิดใน Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/ai16z/eliza/tree/main)
 
 ### แก้ไขไฟล์ .env
 
@@ -87,6 +87,7 @@ sh scripts/start.sh
 ### แก้ไขไฟล์ตัวละคร
 
 1. เปิด `agent/src/character.ts` เพื่อแก้ไขตัวละครเริ่มต้น นำคอมเม้นออกและเริ่มแก้ไข
+
 
 2. การโหลดตัวละคร custom:
     - ใช้ `pnpm start --characters="path/to/your/character.json"`
@@ -115,15 +116,15 @@ pnpm install --include=optional sharp
 
 ### ชุมชนและข้อมูลการติดต่อ
 
-- [GitHub Issues](https://github.com/elizaos/eliza/issues). เหมาะสำหรับ: เมื่อปัญหาที่พบเมื่อใช้ Eliza และข้อเสนอแนะเกี่ยวกับฟีเจอร์เพิ่มเติม
-- [Discord](https://discord.gg/elizaos). เหมาะสำหรับ: แชร์ผลงานแอปพลิเคชั่นและพบปะกับคอมมูนิตี้
+-   [GitHub Issues](https://github.com/ai16z/eliza/issues). เหมาะสำหรับ: เมื่อปัญหาที่พบเมื่อใช้ Eliza และข้อเสนอแนะเกี่ยวกับฟีเจอร์เพิ่มเติม
+-   [Discord](https://discord.gg/ai16z). เหมาะสำหรับ: แชร์ผลงานแอปพลิเคชั่นและพบปะกับคอมมูนิตี้
 
 ## ผู้มีส่วนร่วม
 
-<a href="https://github.com/elizaos/eliza/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=elizaos/eliza" />
+<a href="https://github.com/ai16z/eliza/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ai16z/eliza" />
 </a>
 
 ## ประวัติดาว
 
-[![Star History Chart](https://api.star-history.com/svg?repos=elizaos/eliza&type=Date)](https://star-history.com/#elizaos/eliza&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=ai16z/eliza&type=Date)](https://star-history.com/#ai16z/eliza&Date)

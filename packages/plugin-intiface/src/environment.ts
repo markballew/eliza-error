@@ -1,4 +1,4 @@
-import { IAgentRuntime } from "@elizaos/eliza";
+import { IAgentRuntime } from "@ai16z/eliza";
 import { z } from "zod";
 
 export const intifaceEnvSchema = z

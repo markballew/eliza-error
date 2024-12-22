@@ -3,7 +3,7 @@ import {
     generateImage,
     generateText,
     generateObjectDeprecated,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import {
     ActionExample,
     HandlerCallback,
@@ -12,7 +12,7 @@ import {
     ModelClass,
     State,
     type Action,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import { idlFactory } from "../canisters/pick-pump/index.did";
 import { _SERVICE } from "../canisters/pick-pump/index.did.d";
 import { ActorCreator, CreateMemeTokenArg } from "../types";

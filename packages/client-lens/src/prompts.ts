@@ -2,7 +2,7 @@ import {
     Character,
     messageCompletionFooter,
     shouldRespondFooter,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import { AnyPublicationFragment } from "@lens-protocol/client";
 
 export const formatPublication = (publication: AnyPublicationFragment) => {

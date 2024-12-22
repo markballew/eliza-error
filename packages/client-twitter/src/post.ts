@@ -7,15 +7,14 @@ import {
     ModelClass,
     stringToUuid,
     parseBooleanFromText,
-} from "@elizaos/eliza";
-import { elizaLogger } from "@elizaos/eliza";
+} from "@ai16z/eliza";
+import { elizaLogger } from "@ai16z/eliza";
 import { ClientBase } from "./base.ts";
-import { postActionResponseFooter } from "@elizaos/eliza";
-import { generateTweetActions } from "@elizaos/eliza";
-import { IImageDescriptionService, ServiceType } from "@elizaos/eliza";
+import { postActionResponseFooter } from "@ai16z/eliza";
+import { generateTweetActions } from "@ai16z/eliza";
+import { IImageDescriptionService, ServiceType } from "@ai16z/eliza";
 import { buildConversationThread } from "./utils.ts";
 import { twitterMessageHandlerTemplate } from "./interactions.ts";
-import { DEFAULT_MAX_TWEET_LENGTH } from "./environment.ts";
 
 const twitterPostTemplate = `
 # Areas of Expertise
@@ -58,6 +57,8 @@ Tweet:
 {{currentTweet}}
 
 # Respond with qualifying action tags only.` + postActionResponseFooter;
+
+const MAX_TWEET_LENGTH = 240;
 
 /**
  * Truncate text to fit within the Twitter character limit, ensuring it ends at a complete sentence.
@@ -174,8 +175,7 @@ export class TwitterPostClient {
         generateNewTweetLoop();
 
         // Add check for ENABLE_ACTION_PROCESSING before starting the loop
-        const enableActionProcessing =
-            this.runtime.getSetting("ENABLE_ACTION_PROCESSING") ?? false;
+        const enableActionProcessing = this.runtime.getSetting("ENABLE_ACTION_PROCESSING") ?? false;
 
         if (enableActionProcessing) {
             processActionsLoop().catch((error) => {
@@ -280,8 +280,7 @@ export class TwitterPostClient {
             // Use the helper function to truncate to complete sentence
             const content = truncateToCompleteSentence(
                 cleanedContent,
-                parseInt(this.runtime.getSetting("MAX_TWEET_LENGTH")) ||
-                    DEFAULT_MAX_TWEET_LENGTH
+                MAX_TWEET_LENGTH
             );
 
             const removeQuotes = (str: string) =>

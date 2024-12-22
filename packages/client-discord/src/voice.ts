@@ -15,7 +15,7 @@ import {
     generateShouldRespond,
     ITranscriptionService,
     ISpeechService,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import {
     AudioPlayer,
     AudioReceiveStream,

@@ -11,7 +11,7 @@ import {
     generateObject,
     ModelClass,
     Provider,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import { WebhookSchema, isWebhookContent, WebhookContent } from "../types";
 import { webhookTemplate } from "../templates";
 import { appendWebhooksToCsv } from "../utils";

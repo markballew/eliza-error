@@ -4,13 +4,13 @@ import {
     Memory,
     State,
     HandlerCallback,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import {
     generateObject,
     composeContext,
     ModelClass,
     Content,
-} from "@elizaos/eliza";
+} from "@ai16z/eliza";
 import { createPublicClient, createWalletClient, http, parseCFX } from "cive";
 import { privateKeyToAccount } from "cive/accounts";
 import { testnet } from "cive/chains";

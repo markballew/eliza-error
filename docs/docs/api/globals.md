@@ -1,4 +1,4 @@
-# @elizaos/eliza
+# @ai16z/eliza
 
 ## Enumerations
 
