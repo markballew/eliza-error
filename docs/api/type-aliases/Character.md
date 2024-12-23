@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.6-alpha.4](../index.md) / Character
+[@ai16z/eliza v0.1.4-alpha.3](../index.md) / Character
 
 # Type Alias: Character
 
@@ -100,25 +100,13 @@ Optional prompt templates
 
 > `optional` **farcasterPostTemplate**: `string`
 
-### templates.lensPostTemplate?
-
-> `optional` **lensPostTemplate**: `string`
-
 ### templates.farcasterMessageHandlerTemplate?
 
 > `optional` **farcasterMessageHandlerTemplate**: `string`
 
-### templates.lensMessageHandlerTemplate?
-
-> `optional` **lensMessageHandlerTemplate**: `string`
-
 ### templates.farcasterShouldRespondTemplate?
 
 > `optional` **farcasterShouldRespondTemplate**: `string`
-
-### templates.lensShouldRespondTemplate?
-
-> `optional` **lensShouldRespondTemplate**: `string`
 
 ### templates.telegramMessageHandlerTemplate?
 
@@ -139,14 +127,6 @@ Optional prompt templates
 ### templates.discordMessageHandlerTemplate?
 
 > `optional` **discordMessageHandlerTemplate**: `string`
-
-### templates.slackMessageHandlerTemplate?
-
-> `optional` **slackMessageHandlerTemplate**: `string`
-
-### templates.slackShouldRespondTemplate?
-
-> `optional` **slackShouldRespondTemplate**: `string`
 
 ### bio
 
@@ -214,11 +194,11 @@ Optional configuration
 
 #### Index Signature
 
-\[`key`: `string`\]: `string`
+ \[`key`: `string`\]: `string`
 
-### settings.intiface?
+### settings.buttplug?
 
-> `optional` **intiface**: `boolean`
+> `optional` **buttplug**: `boolean`
 
 ### settings.voice?
 
@@ -276,7 +256,7 @@ New structured ElevenLabs config
 
 #### Index Signature
 
-\[`key`: `string`\]: `any`[]
+ \[`key`: `string`\]: `any`[]
 
 ### settings.chains.evm?
 
@@ -304,30 +284,6 @@ Optional client-specific config
 
 > `optional` **shouldIgnoreDirectMessages**: `boolean`
 
-### clientConfig.discord.shouldRespondOnlyToMentions?
-
-> `optional` **shouldRespondOnlyToMentions**: `boolean`
-
-### clientConfig.discord.messageSimilarityThreshold?
-
-> `optional` **messageSimilarityThreshold**: `number`
-
-### clientConfig.discord.isPartOfTeam?
-
-> `optional` **isPartOfTeam**: `boolean`
-
-### clientConfig.discord.teamAgentIds?
-
-> `optional` **teamAgentIds**: `string`[]
-
-### clientConfig.discord.teamLeaderId?
-
-> `optional` **teamLeaderId**: `string`
-
-### clientConfig.discord.teamMemberInterestKeywords?
-
-> `optional` **teamMemberInterestKeywords**: `string`[]
-
 ### clientConfig.telegram?
 
 > `optional` **telegram**: `object`
@@ -337,50 +293,6 @@ Optional client-specific config
 > `optional` **shouldIgnoreBotMessages**: `boolean`
 
 ### clientConfig.telegram.shouldIgnoreDirectMessages?
-
-> `optional` **shouldIgnoreDirectMessages**: `boolean`
-
-### clientConfig.telegram.shouldRespondOnlyToMentions?
-
-> `optional` **shouldRespondOnlyToMentions**: `boolean`
-
-### clientConfig.telegram.shouldOnlyJoinInAllowedGroups?
-
-> `optional` **shouldOnlyJoinInAllowedGroups**: `boolean`
-
-### clientConfig.telegram.allowedGroupIds?
-
-> `optional` **allowedGroupIds**: `string`[]
-
-### clientConfig.telegram.messageSimilarityThreshold?
-
-> `optional` **messageSimilarityThreshold**: `number`
-
-### clientConfig.telegram.isPartOfTeam?
-
-> `optional` **isPartOfTeam**: `boolean`
-
-### clientConfig.telegram.teamAgentIds?
-
-> `optional` **teamAgentIds**: `string`[]
-
-### clientConfig.telegram.teamLeaderId?
-
-> `optional` **teamLeaderId**: `string`
-
-### clientConfig.telegram.teamMemberInterestKeywords?
-
-> `optional` **teamMemberInterestKeywords**: `string`[]
-
-### clientConfig.slack?
-
-> `optional` **slack**: `object`
-
-### clientConfig.slack.shouldIgnoreBotMessages?
-
-> `optional` **shouldIgnoreBotMessages**: `boolean`
-
-### clientConfig.slack.shouldIgnoreDirectMessages?
 
 > `optional` **shouldIgnoreDirectMessages**: `boolean`
 
@@ -428,16 +340,6 @@ Optional Twitter profile
 
 > `optional` **nicknames**: `string`[]
 
-### nft?
-
-> `optional` **nft**: `object`
-
-Optional NFT prompt
-
-### nft.prompt
-
-> **prompt**: `string`
-
 ## Defined in
 
-[packages/core/src/types.ts:629](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L629)
+[packages/core/src/types.ts:607](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L607)

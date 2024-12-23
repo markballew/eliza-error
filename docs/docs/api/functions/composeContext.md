@@ -2,85 +2,44 @@
 
 > **composeContext**(`params`): `string`
 
-Composes a context string by replacing placeholders in a template with values from a state object. Supports both simple string replacement and the Handlebars templating engine.
+Composes a context string by replacing placeholders in a template with corresponding values from the state.
+
+This function takes a template string with placeholders in the format `{{placeholder}}` and a state object.
+It replaces each placeholder with the value from the state object that matches the placeholder's name.
+If a matching key is not found in the state object for a given placeholder, the placeholder is replaced with an empty string.
 
 ## Parameters
 
-### **params**: `Object`
+• **params**
 
-An object containing the following properties:
+The parameters for composing the context.
 
-- **state**: `State`  
-  The state object containing key-value pairs for replacing placeholders in the template.
+• **params.state**: [`State`](../interfaces/State.md)
 
-- **template**: `string`  
-  A string containing placeholders in the format `{{placeholder}}`.
+The state object containing values to replace the placeholders in the template.
 
-- **templatingEngine**: `"handlebars" | undefined` *(optional)*  
-  The templating engine to use. If set to `"handlebars"`, the Handlebars engine is used for template compilation. Defaults to `undefined` (simple string replacement).
+• **params.template**: `string`
+
+The template string containing placeholders to be replaced with state values.
 
 ## Returns
 
 `string`
 
-The context string with placeholders replaced by corresponding values from the state object. If a placeholder has no matching key in the state, it is replaced with an empty string.
+The composed context string with placeholders replaced by corresponding state values.
 
-## Examples
+## Example
 
-### Simple Example
-
-```javascript
+```ts
+// Given a state object and a template
 const state = { userName: "Alice", userAge: 30 };
-const template = "Hello, {{userName}}! You are {{userAge}} years old.";
+const template = "Hello, {{userName}}! You are {{userAge}} years old";
 
-// Simple string replacement
-const contextSimple = composeContext({ state, template });
-// Output: "Hello, Alice! You are 30 years old."
-
-// Handlebars templating
-const contextHandlebars = composeContext({ state, template, templatingEngine: 'handlebars' });
-// Output: "Hello, Alice! You are 30 years old."
+// Composing the context will result in:
+// "Hello, Alice! You are 30 years old."
+const context = composeContext({ state, template });
 ```
 
-### Advanced Example
+## Defined in
 
-```javascript
-const advancedTemplate = `
-  {{#if userAge}}
-    Hello, {{userName}}! 
-    {{#if (gt userAge 18)}}You are an adult.{{else}}You are a minor.{{/if}}
-  {{else}}
-    Hello! We don't know your age.
-  {{/if}}
-
-  {{#if favoriteColors.length}}
-    Your favorite colors are:
-    {{#each favoriteColors}}
-      - {{this}}
-    {{/each}}
-  {{else}}
-    You didn't specify any favorite colors.
-  {{/if}}
-`;
-
-const advancedState = {
-    userName: "Alice",
-    userAge: 30,
-    favoriteColors: ["blue", "green", "red"]
-};
-
-// Composing the context with Handlebars
-const advancedContextHandlebars = composeContext({
-    state: advancedState,
-    template: advancedTemplate,
-    templatingEngine: 'handlebars'
-});
-// Output:
-// Hello, Alice!
-// You are an adult.
-//
-// Your favorite colors are:
-// - blue
-// - green
-// - red
-```
+[packages/core/src/context.ts:24](https://github.com/ai16z/eliza/blob/7fcf54e7fb2ba027d110afcc319c0b01b3f181dc/packages/core/src/context.ts#L24)

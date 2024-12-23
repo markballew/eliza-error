@@ -4,13 +4,13 @@ import {
     Memory,
     State,
     HandlerCallback,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
-    generateObject,
+    generateObjectV2,
     composeContext,
     ModelClass,
     Content,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     createPublicClient,
     createWalletClient,
@@ -117,10 +117,10 @@ export const bridgeTransfer: Action = {
             template: confluxBridgeTransferTemplate,
         });
 
-        const content = await generateObject({
+        const content = await generateObjectV2({
             runtime,
             context,
-            modelClass: ModelClass.LARGE,
+            modelClass: ModelClass.SMALL,
             schema: TransferSchema,
         });
 

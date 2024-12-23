@@ -1,11 +1,11 @@
-import { elizaLogger, models } from "@elizaos/core";
-import { Service } from "@elizaos/core";
+import { elizaLogger, models } from "@ai16z/eliza";
+import { Service } from "@ai16z/eliza";
 import {
     IAgentRuntime,
     ModelProviderName,
     ServiceType,
     IImageDescriptionService,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     AutoProcessor,
     AutoTokenizer,
@@ -195,22 +195,21 @@ export class ImageDescriptionService
                     },
                 ];
 
-                const endpoint =
-                    models[this.runtime.imageModelProvider].endpoint ??
-                    "https://api.openai.com/v1";
-
-                const response = await fetch(endpoint + "/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${this.runtime.getSetting("OPENAI_API_KEY")}`,
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-4o-mini",
-                        messages: [{ role: "user", content }],
-                        max_tokens: isGif ? 500 : 300,
-                    }),
-                });
+                const response = await fetch(
+                    "https://api.openai.com/v1/chat/completions",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${this.runtime.getSetting("OPENAI_API_KEY")}`,
+                        },
+                        body: JSON.stringify({
+                            model: "gpt-4o-mini",
+                            messages: [{ role: "user", content }],
+                            max_tokens: isGif ? 500 : 300,
+                        }),
+                    }
+                );
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

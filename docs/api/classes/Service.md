@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.6-alpha.4](../index.md) / Service
+[@ai16z/eliza v0.1.4-alpha.3](../index.md) / Service
 
 # Class: `abstract` Service
 
@@ -11,8 +11,6 @@
 - [`IBrowserService`](../interfaces/IBrowserService.md)
 - [`ISpeechService`](../interfaces/ISpeechService.md)
 - [`IPdfService`](../interfaces/IPdfService.md)
-- [`IAwsS3Service`](../interfaces/IAwsS3Service.md)
-- [`ISlackService`](../interfaces/ISlackService.md)
 
 ## Constructors
 
@@ -38,9 +36,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1005](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L1005)
+[packages/core/src/types.ts:955](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L955)
 
----
+***
 
 ### serviceType
 
@@ -54,7 +52,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1016](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L1016)
+[packages/core/src/types.ts:966](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L966)
 
 ## Methods
 
@@ -64,7 +62,7 @@
 
 #### Type Parameters
 
-• **T** _extends_ [`Service`](Service.md)
+• **T** *extends* [`Service`](Service.md)
 
 #### Returns
 
@@ -72,9 +70,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:1009](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L1009)
+[packages/core/src/types.ts:959](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L959)
 
----
+***
 
 ### initialize()
 
@@ -92,4 +90,4 @@ Add abstract initialize method that must be implemented by derived classes
 
 #### Defined in
 
-[packages/core/src/types.ts:1021](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L1021)
+[packages/core/src/types.ts:971](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L971)

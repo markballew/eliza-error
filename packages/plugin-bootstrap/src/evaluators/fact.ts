@@ -1,13 +1,13 @@
-import { composeContext } from "@elizaos/core";
-import { generateObjectArray } from "@elizaos/core";
-import { MemoryManager } from "@elizaos/core";
+import { composeContext } from "@ai16z/eliza";
+import { generateObjectArray } from "@ai16z/eliza";
+import { MemoryManager } from "@ai16z/eliza";
 import {
     ActionExample,
     IAgentRuntime,
     Memory,
     ModelClass,
     Evaluator,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 
 export const formatFacts = (facts: Memory[]) => {
     const messageStrings = facts
@@ -64,7 +64,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
     const facts = await generateObjectArray({
         runtime,
         context,
-        modelClass: ModelClass.LARGE,
+        modelClass: ModelClass.SMALL,
     });
 
     const factsManager = new MemoryManager({

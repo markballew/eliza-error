@@ -1,8 +1,15 @@
 {
-    "extends": "../core/tsconfig.json",
     "compilerOptions": {
+        "target": "es2018",
+        "module": "commonjs",
+        "declaration": true,
         "outDir": "./dist",
-        "rootDir": "src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
         "baseUrl": ".",
         "types": [
             "node",
@@ -10,7 +17,7 @@
         ]
     },
     "include": [
-        "src/**/*.ts"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules",

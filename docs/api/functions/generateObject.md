@@ -1,27 +1,23 @@
-[@elizaos/core v0.1.6-alpha.4](../index.md) / generateObject
+[@ai16z/eliza v0.1.4-alpha.3](../index.md) / generateObject
 
 # Function: generateObject()
 
-> **generateObject**(`options`): `Promise`\<`GenerateObjectResult`\<`unknown`\>\>
-
-Generates structured objects from a prompt using specified AI models and configuration options.
+> **generateObject**(`__namedParameters`): `Promise`\<`any`\>
 
 ## Parameters
 
-• **options**: [`GenerationOptions`](../interfaces/GenerationOptions.md)
+• **\_\_namedParameters**
 
-Configuration options for generating objects.
+• **\_\_namedParameters.runtime**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
+
+• **\_\_namedParameters.context**: `string`
+
+• **\_\_namedParameters.modelClass**: `string`
 
 ## Returns
 
-`Promise`\<`GenerateObjectResult`\<`unknown`\>\>
-
-- A promise that resolves to an array of generated objects.
-
-## Throws
-
-- Throws an error if the provider is unsupported or if generation fails.
+`Promise`\<`any`\>
 
 ## Defined in
 
-[packages/core/src/generation.ts:1266](https://github.com/elizaos/eliza/blob/main/packages/core/src/generation.ts#L1266)
+[packages/core/src/generation.ts:666](https://github.com/ai16z/eliza/blob/main/packages/core/src/generation.ts#L666)

@@ -1,8 +1,7 @@
-import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
+import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
-import { getWalletKey } from "../keypairUtils";
 
 // Provider configuration
 const PROVIDER_CONFIG = {
@@ -371,13 +370,22 @@ const walletProvider: Provider = {
         _state?: State
     ): Promise<string | null> => {
         try {
-            const { publicKey } = await getWalletKey(runtime, false);
+            const publicKey = runtime.getSetting("SOLANA_PUBLIC_KEY");
+            if (!publicKey) {
+                console.error(
+                    "SOLANA_PUBLIC_KEY not configured, skipping wallet injection"
+                );
+                return "";
+            }
 
             const connection = new Connection(
                 runtime.getSetting("RPC_URL") || PROVIDER_CONFIG.DEFAULT_RPC
             );
 
-            const provider = new WalletProvider(connection, publicKey);
+            const provider = new WalletProvider(
+                connection,
+                new PublicKey(publicKey)
+            );
 
             return await provider.getFormattedPortfolio(runtime);
         } catch (error) {

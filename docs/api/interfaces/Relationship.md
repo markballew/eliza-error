@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.6-alpha.4](../index.md) / Relationship
+[@ai16z/eliza v0.1.4-alpha.3](../index.md) / Relationship
 
 # Interface: Relationship
 
@@ -14,9 +14,9 @@ Unique identifier
 
 #### Defined in
 
-[packages/core/src/types.ts:479](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L479)
+[packages/core/src/types.ts:469](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L469)
 
----
+***
 
 ### userA
 
@@ -26,9 +26,9 @@ First user ID
 
 #### Defined in
 
-[packages/core/src/types.ts:482](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L482)
+[packages/core/src/types.ts:472](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L472)
 
----
+***
 
 ### userB
 
@@ -38,9 +38,9 @@ Second user ID
 
 #### Defined in
 
-[packages/core/src/types.ts:485](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L485)
+[packages/core/src/types.ts:475](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L475)
 
----
+***
 
 ### userId
 
@@ -50,9 +50,9 @@ Primary user ID
 
 #### Defined in
 
-[packages/core/src/types.ts:488](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L488)
+[packages/core/src/types.ts:478](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L478)
 
----
+***
 
 ### roomId
 
@@ -62,9 +62,9 @@ Associated room ID
 
 #### Defined in
 
-[packages/core/src/types.ts:491](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L491)
+[packages/core/src/types.ts:481](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L481)
 
----
+***
 
 ### status
 
@@ -74,9 +74,9 @@ Relationship status
 
 #### Defined in
 
-[packages/core/src/types.ts:494](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L494)
+[packages/core/src/types.ts:484](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L484)
 
----
+***
 
 ### createdAt?
 
@@ -86,4 +86,4 @@ Optional creation timestamp
 
 #### Defined in
 
-[packages/core/src/types.ts:497](https://github.com/elizaos/eliza/blob/main/packages/core/src/types.ts#L497)
+[packages/core/src/types.ts:487](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L487)

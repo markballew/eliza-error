@@ -3,13 +3,13 @@ import {
     ActionExample,
     composeContext,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObject,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     ModelClass,
     State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     executeSwap as executeAvnuSwap,
     fetchQuotes,
@@ -17,7 +17,7 @@ import {
 } from "@avnu/avnu-sdk";
 
 import { getStarknetAccount } from "../utils/index.ts";
-import { validateStarknetConfig } from "../environment.ts";
+import { validateStarknetConfig } from "../enviroment.ts";
 
 interface SwapContent {
     sellTokenAddress: string;
@@ -105,7 +105,7 @@ export const executeSwap: Action = {
             template: swapTemplate,
         });
 
-        const response = await generateObjectDeprecated({
+        const response = await generateObject({
             runtime,
             context: swapContext,
             modelClass: ModelClass.MEDIUM,

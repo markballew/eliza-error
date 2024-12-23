@@ -2,20 +2,20 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import express, { Request as ExpressRequest } from "express";
 import multer, { File } from "multer";
-import { elizaLogger, generateCaption, generateImage } from "@elizaos/core";
-import { composeContext } from "@elizaos/core";
-import { generateMessageResponse } from "@elizaos/core";
-import { messageCompletionFooter } from "@elizaos/core";
-import { AgentRuntime } from "@elizaos/core";
+import { elizaLogger, generateCaption, generateImage } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza";
+import { generateMessageResponse } from "@ai16z/eliza";
+import { messageCompletionFooter } from "@ai16z/eliza";
+import { AgentRuntime } from "@ai16z/eliza";
 import {
     Content,
     Memory,
     ModelClass,
     Client,
     IAgentRuntime,
-} from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
-import { settings } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
+import { settings } from "@ai16z/eliza";
 import { createApiRouter } from "./api.ts";
 import * as fs from "fs";
 import * as path from "path";
@@ -51,11 +51,17 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 # Instructions: Write the next message for {{agentName}}.
 ` + messageCompletionFooter;
 
+export interface SimliClientConfig {
+    apiKey: string;
+    faceID: string;
+    handleSilence: boolean;
+    videoRef: any;
+    audioRef: any;
+}
 export class DirectClient {
     public app: express.Application;
-    private agents: Map<string, AgentRuntime>; // container management
+    private agents: Map<string, AgentRuntime>;
     private server: any; // Store server instance
-    public startAgent: Function; // Store startAgent functor
 
     constructor() {
         elizaLogger.log("DirectClient constructor");
@@ -66,7 +72,7 @@ export class DirectClient {
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
 
-        const apiRouter = createApiRouter(this.agents, this);
+        const apiRouter = createApiRouter(this.agents);
         this.app.use(apiRouter);
 
         // Define an interface that extends the Express Request interface
@@ -199,7 +205,7 @@ export class DirectClient {
                 const response = await generateMessageResponse({
                     runtime: runtime,
                     context,
-                    modelClass: ModelClass.LARGE,
+                    modelClass: ModelClass.SMALL,
                 });
 
                 // save response to memory
@@ -332,7 +338,7 @@ export class DirectClient {
                         fileResponse.headers
                             .get("content-disposition")
                             ?.split("filename=")[1]
-                            ?.replace(/"/g, /* " */ "") || "default_name.txt";
+                            ?.replace(/"/g, "") || "default_name.txt";
 
                     console.log("Saving as:", fileName);
 
@@ -372,7 +378,6 @@ export class DirectClient {
         );
     }
 
-    // agent/src/index.ts:startAgent calls this
     public registerAgent(runtime: AgentRuntime) {
         this.agents.set(runtime.agentId, runtime);
     }
@@ -383,9 +388,7 @@ export class DirectClient {
 
     public start(port: number) {
         this.server = this.app.listen(port, () => {
-            elizaLogger.success(
-                `REST API bound to 0.0.0.0:${port}. If running locally, access it at http://localhost:${port}.`
-            );
+            elizaLogger.success(`Server running at http://localhost:${port}/`);
         });
 
         // Handle graceful shutdown
@@ -427,7 +430,7 @@ export const DirectClientInterface: Client = {
         client.start(serverPort);
         return client;
     },
-    stop: async (_runtime: IAgentRuntime, client?: Client) => {
+    stop: async (_runtime: IAgentRuntime, client?: any) => {
         if (client instanceof DirectClient) {
             client.stop();
         }

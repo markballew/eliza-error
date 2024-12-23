@@ -2,8 +2,8 @@ import {
     composeContext,
     generateImage,
     generateText,
-    generateObjectDeprecated,
-} from "@elizaos/core";
+    generateObject,
+} from "@ai16z/eliza";
 import {
     ActionExample,
     HandlerCallback,
@@ -12,7 +12,7 @@ import {
     ModelClass,
     State,
     type Action,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { idlFactory } from "../canisters/pick-pump/index.did";
 import { _SERVICE } from "../canisters/pick-pump/index.did.d";
 import { ActorCreator, CreateMemeTokenArg } from "../types";
@@ -20,14 +20,17 @@ import { unwrapOption, wrapOption } from "../utils/common/types/options";
 import { unwrapRustResultMap } from "../utils/common/types/results";
 import { icpWalletProvider } from "../providers/wallet";
 import { uploadFileToWeb3Storage } from "../apis/uploadFile";
-import { createTokenTemplate, logoPromptTemplate } from "./prompts/token";
-import { CANISTER_IDS } from "../constants/canisters";
+import { createTokenTemplate, logoPromptTemplate } from './prompts/token';
+import { CANISTER_IDS } from '../constants/canisters';
 
 async function createTokenTransaction(
     creator: ActorCreator,
     tokenInfo: CreateMemeTokenArg
 ) {
-    const actor: _SERVICE = await creator(idlFactory, CANISTER_IDS.PICK_PUMP);
+    const actor: _SERVICE = await creator(
+        idlFactory,
+        CANISTER_IDS.PICK_PUMP
+    );
     const result = await actor.create_token({
         ...tokenInfo,
         name: tokenInfo.name,
@@ -120,9 +123,7 @@ export const executeCreateToken: Action = {
                 : message.content.text || ""
         ).toLowerCase();
 
-        return keywords.some((keyword) =>
-            messageText.includes(keyword.toLowerCase())
-        );
+        return keywords.some((keyword) => messageText.includes(keyword.toLowerCase()));
     },
     handler: async (
         runtime: IAgentRuntime,
@@ -148,7 +149,7 @@ export const executeCreateToken: Action = {
             template: createTokenTemplate,
         });
 
-        const response = await generateObjectDeprecated({
+        const response = await generateObject({
             runtime,
             context: createTokenContext,
             modelClass: ModelClass.LARGE,
@@ -165,7 +166,7 @@ export const executeCreateToken: Action = {
         const logoPrompt = await generateText({
             runtime,
             context: logoPromptContext,
-            modelClass: ModelClass.LARGE,
+            modelClass: ModelClass.SMALL,
         });
 
         const logo = await generateTokenLogo(logoPrompt, runtime);
