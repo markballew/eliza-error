@@ -23,7 +23,7 @@ import {
     elizaLogger,
     getEmbeddingConfig,
     DatabaseAdapter,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import path from "path";

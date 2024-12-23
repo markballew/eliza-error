@@ -1,4 +1,4 @@
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@ai16z/eliza";
 import {
     Action,
     HandlerCallback,
@@ -6,8 +6,8 @@ import {
     Memory,
     Plugin,
     State,
-} from "@elizaos/core";
-import { generateImage } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { generateImage } from "@ai16z/eliza";
 
 import fs from "fs";
 import path from "path";
@@ -207,7 +207,7 @@ const imageGeneration: Action = {
                                 source: "imageGeneration",
                                 description: "...", //caption.title,
                                 text: "...", //caption.description,
-                                contentType: "image/png",
+                                contentType: "image",
                             },
                         ],
                     },

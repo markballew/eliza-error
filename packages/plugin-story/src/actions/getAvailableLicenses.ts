@@ -7,7 +7,7 @@ import {
     type IAgentRuntime,
     type Memory,
     type State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { getAvailableLicensesTemplate, licenseIPTemplate } from "../templates";
 import { Address } from "viem";
 import { IPLicenseDetails, RESOURCE_TYPE } from "../types/api";

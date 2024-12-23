@@ -1,11 +1,11 @@
 import { Tweet } from "agent-twitter-client";
-import { getEmbeddingZeroVector } from "@elizaos/core";
-import { Content, Memory, UUID } from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
+import { getEmbeddingZeroVector } from "@ai16z/eliza";
+import { Content, Memory, UUID } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
 import { ClientBase } from "./base";
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@ai16z/eliza";
 import { DEFAULT_MAX_TWEET_LENGTH } from "./environment";
-import { Media } from "@elizaos/core";
+import { Media } from "@ai16z/eliza";
 import fs from "fs";
 import path from "path";
 
@@ -165,6 +165,16 @@ export async function buildConversationThread(
     return thread;
 }
 
+export function getMediaType(attachment: Media) {
+    if (attachment.contentType?.startsWith("video")) {
+        return "video";
+    } else if (attachment.contentType?.startsWith("image")) {
+        return "image";
+    } else {
+        throw new Error(`Unsupported media type`);
+    }
+}
+
 export async function sendTweet(
     client: ClientBase,
     content: Content,
@@ -197,14 +207,14 @@ export async function sendTweet(
                         const mediaBuffer = Buffer.from(
                             await response.arrayBuffer()
                         );
-                        const mediaType = attachment.contentType;
+                        const mediaType = getMediaType(attachment);
                         return { data: mediaBuffer, mediaType };
                     } else if (fs.existsSync(attachment.url)) {
                         // Handle local file paths
                         const mediaBuffer = await fs.promises.readFile(
                             path.resolve(attachment.url)
                         );
-                        const mediaType = attachment.contentType;
+                        const mediaType = getMediaType(attachment);
                         return { data: mediaBuffer, mediaType };
                     } else {
                         throw new Error(
