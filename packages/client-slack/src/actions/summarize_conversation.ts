@@ -4,9 +4,9 @@ import {
     splitChunks,
     trimTokens,
     parseJSONObjectFromText,
-} from "@elizaos/core";
-import { models } from "@elizaos/core";
-import { getActorDetails } from "@elizaos/core";
+} from "@elizaos/eliza";
+import { models } from "@elizaos/eliza";
+import { getActorDetails } from "@elizaos/eliza";
 import {
     Action,
     ActionExample,
@@ -18,7 +18,7 @@ import {
     ModelClass,
     State,
     elizaLogger,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { ISlackService, SLACK_SERVICE_TYPE } from "../types/slack-types";
 
 export const summarizationTemplate = `# Summarized so far (we are adding to this)

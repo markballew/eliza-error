@@ -1,4 +1,4 @@
-# @elizaos/core
+# @elizaos/eliza
 
 ## Enumerations
 

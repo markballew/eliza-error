@@ -1,4 +1,4 @@
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@elizaos/eliza";
 import {
     UserSigner,
     Address,

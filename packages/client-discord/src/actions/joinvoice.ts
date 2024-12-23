@@ -8,7 +8,7 @@ import {
     IAgentRuntime,
     Memory,
     State,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import {
     Channel,
     ChannelType,

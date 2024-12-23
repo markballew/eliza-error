@@ -8,7 +8,7 @@ import {
     Memory,
     ServiceType,
     stringToUuid,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import {
     saveBase64Image,
     saveHeuristImage,

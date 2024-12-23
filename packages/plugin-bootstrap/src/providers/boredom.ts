@@ -1,4 +1,4 @@
-import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/eliza";
 
 const boredomLevels = [
     {

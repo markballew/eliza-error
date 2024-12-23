@@ -15,7 +15,7 @@ import {
     type State,
     composeContext,
     generateObject,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 
 type GetOnChainActionsParams<TWalletClient extends WalletClient> = {
     wallet: TWalletClient;

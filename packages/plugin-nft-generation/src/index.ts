@@ -6,7 +6,7 @@ import {
     Memory,
     Plugin,
     State,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 
 import { createCollection } from "./handlers/createCollection.ts";
 import { createNFT } from "./handlers/createNFT.ts";

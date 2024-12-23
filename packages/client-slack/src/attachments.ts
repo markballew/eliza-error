@@ -2,7 +2,7 @@ import {
     generateText,
     trimTokens,
     parseJSONObjectFromText,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import {
     IAgentRuntime,
     IImageDescriptionService,
@@ -12,7 +12,7 @@ import {
     Media,
     ModelClass,
     ServiceType,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { WebClient } from "@slack/web-api";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";

@@ -10,13 +10,13 @@ import {
     State,
     elizaLogger,
     HandlerCallback,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import {
     slackMessageHandlerTemplate,
     slackShouldRespondTemplate,
 } from "./templates";
 import { WebClient } from "@slack/web-api";
-import { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@elizaos/eliza";
 
 export class MessageManager {
     private client: WebClient;

@@ -9,7 +9,7 @@ import {
     HandlerCallback,
     Content,
     type IAgentRuntime,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import type { LensClient } from "./client";
 import { toHex } from "viem";
 import { buildConversationThread, createPublicationMemory } from "./memory";

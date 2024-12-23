@@ -8,7 +8,7 @@ import {
     generateObject,
     ModelClass,
     elizaLogger,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 
 import { CreateResourceSchema, isCreateResourceContent } from "../types";
 

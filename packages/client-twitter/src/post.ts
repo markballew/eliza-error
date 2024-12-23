@@ -7,12 +7,12 @@ import {
     ModelClass,
     stringToUuid,
     parseBooleanFromText,
-} from "@elizaos/core";
-import { elizaLogger } from "@elizaos/core";
+} from "@elizaos/eliza";
+import { elizaLogger } from "@elizaos/eliza";
 import { ClientBase } from "./base.ts";
-import { postActionResponseFooter } from "@elizaos/core";
-import { generateTweetActions } from "@elizaos/core";
-import { IImageDescriptionService, ServiceType } from "@elizaos/core";
+import { postActionResponseFooter } from "@elizaos/eliza";
+import { generateTweetActions } from "@elizaos/eliza";
+import { IImageDescriptionService, ServiceType } from "@elizaos/eliza";
 import { buildConversationThread } from "./utils.ts";
 import { twitterMessageHandlerTemplate } from "./interactions.ts";
 import { DEFAULT_MAX_TWEET_LENGTH } from "./environment.ts";
