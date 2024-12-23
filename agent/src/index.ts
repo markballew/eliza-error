@@ -489,7 +489,7 @@ export async function createAgent(
     }
 
     let goatPlugin: any | undefined;
-    if (getSecret(character, "EVM_PRIVATE_KEY")) {
+    if (getSecret(character, "ALCHEMY_API_KEY")) {
         goatPlugin = await createGoatPlugin((secret) =>
             getSecret(character, secret)
         );
@@ -560,7 +560,7 @@ export async function createAgent(
             getSecret(character, "COINBASE_NOTIFICATION_URI")
                 ? webhookPlugin
                 : null,
-            goatPlugin,
+            getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
             getSecret(character, "FLOW_ADDRESS") &&
             getSecret(character, "FLOW_PRIVATE_KEY")
                 ? flowPlugin
