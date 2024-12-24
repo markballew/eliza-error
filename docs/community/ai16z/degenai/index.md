@@ -8,8 +8,8 @@ We can rebuild him
 
 ## Trading strategy
 
-- ai16z is the biggest holder of degenai (a pumpfun coin)
-    - Current plan for ai16z still is buybacks of degenai
+- elizaos is the biggest holder of degenai (a pumpfun coin)
+    - Current plan for elizaos still is buybacks of degenai
         - To-do: We need to surface this better (like a website)
     - DegenspartanAI also stacks his own coin as well
 - Shitposting while trading

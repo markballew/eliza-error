@@ -1,7 +1,6 @@
 import {
     ActionExample,
     HandlerCallback,
-    elizaLogger,
     IAgentRuntime,
     Memory,
     ModelClass,
@@ -35,7 +34,7 @@ async function checkStorageBalance(
         });
         return balance !== null && balance.total !== "0";
     } catch (error) {
-        elizaLogger.log(`Error checking storage balance: ${error}`);
+        console.log(`Error checking storage balance: ${error}`);
         return false;
     }
 }
@@ -143,7 +142,7 @@ async function swapToken(
 
         return transactions;
     } catch (error) {
-        elizaLogger.error("Error in swapToken:", error);
+        console.error("Error in swapToken:", error);
         throw error;
     }
 }
@@ -187,8 +186,8 @@ export const executeSwap: Action = {
         "TRADE_TOKENS_NEAR",
         "EXCHANGE_TOKENS_NEAR",
     ],
-    validate: async (_runtime: IAgentRuntime, message: Memory) => {
-        elizaLogger.log("Message:", message);
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
+        console.log("Message:", message);
         return true;
     },
     description: "Perform a token swap using Ref Finance.",
@@ -222,14 +221,14 @@ export const executeSwap: Action = {
             modelClass: ModelClass.LARGE,
         });
 
-        elizaLogger.log("Response:", response);
+        console.log("Response:", response);
 
         if (
             !response.inputTokenId ||
             !response.outputTokenId ||
             !response.amount
         ) {
-            elizaLogger.log("Missing required parameters, skipping swap");
+            console.log("Missing required parameters, skipping swap");
             const responseMsg = {
                 text: "I need the input token ID, output token ID, and amount to perform the swap",
             };
@@ -291,7 +290,7 @@ export const executeSwap: Action = {
                 }
             }
 
-            elizaLogger.log("Swap completed successfully!");
+            console.log("Swap completed successfully!");
             const txHashes = results.map((r) => r.transaction.hash).join(", ");
 
             const responseMsg = {
@@ -301,7 +300,7 @@ export const executeSwap: Action = {
             callback?.(responseMsg);
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token swap:", error);
+            console.error("Error during token swap:", error);
             const responseMsg = {
                 text: `Error during swap: ${error instanceof Error ? error.message : String(error)}`,
             };
