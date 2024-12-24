@@ -28,7 +28,7 @@ export class TransferAction {
             params.data = "0x";
         }
 
-        this.walletProvider.switchChain(params.fromChain);
+        await this.walletProvider.switchChain(params.fromChain);
 
         const walletClient = this.walletProvider.getWalletClient(
             params.fromChain
@@ -41,12 +41,12 @@ export class TransferAction {
                 value: parseEther(params.amount),
                 data: params.data as Hex,
                 kzg: {
-                    blobToKzgCommitment: function (_: ByteArray): ByteArray {
+                    blobToKzgCommitment: function (blob: ByteArray): ByteArray {
                         throw new Error("Function not implemented.");
                     },
                     computeBlobKzgProof: function (
-                        _blob: ByteArray,
-                        _commitment: ByteArray
+                        blob: ByteArray,
+                        commitment: ByteArray
                     ): ByteArray {
                         throw new Error("Function not implemented.");
                     },
@@ -81,7 +81,7 @@ const buildTransferDetails = async (
 
     const contextWithChains = context.replace(
         "SUPPORTED_CHAINS",
-        chains.map((item) => `"${item}"`).join("|")
+        chains.toString()
     );
 
     const transferDetails = (await generateObjectDeprecated({
@@ -109,9 +109,9 @@ export const transferAction = {
     description: "Transfer tokens between addresses on the same chain",
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
+        message: Memory,
         state: State,
-        _options: any,
+        options: any,
         callback?: HandlerCallback
     ) => {
         console.log("Transfer action handler called");
@@ -119,11 +119,24 @@ export const transferAction = {
         const action = new TransferAction(walletProvider);
 
         // Compose transfer context
-        const paramOptions = await buildTransferDetails(
+        const transferContext = composeContext({
             state,
+            template: transferTemplate,
+        });
+
+        // Generate transfer content
+        const content = await generateObjectDeprecated({
             runtime,
-            walletProvider
-        );
+            context: transferContext,
+            modelClass: ModelClass.LARGE,
+        });
+
+        const paramOptions: TransferParams = {
+            fromChain: content.fromChain,
+            toAddress: content.toAddress,
+            amount: content.amount,
+            data: content.data,
+        };
 
         try {
             const transferResp = await action.transfer(paramOptions);
@@ -135,7 +148,7 @@ export const transferAction = {
                         hash: transferResp.hash,
                         amount: formatEther(transferResp.value),
                         recipient: transferResp.to,
-                        chain: paramOptions.fromChain,
+                        chain: content.fromChain,
                     },
                 });
             }
