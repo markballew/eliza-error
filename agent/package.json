@@ -30,7 +30,6 @@
         "@elizaos/client-slack": "workspace:*",
         "@elizaos/core": "workspace:*",
         "@elizaos/plugin-0g": "workspace:*",
-        "@elizaos/plugin-abstract": "workspace:*",
         "@elizaos/plugin-aptos": "workspace:*",
         "@elizaos/plugin-bootstrap": "workspace:*",
         "@elizaos/plugin-intiface": "workspace:*",

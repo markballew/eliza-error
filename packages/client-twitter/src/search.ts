@@ -1,5 +1,5 @@
 import { SearchMode } from "agent-twitter-client";
-import {composeContext, elizaLogger} from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
 import { generateMessageResponse, generateText } from "@elizaos/core";
 import { messageCompletionFooter } from "@elizaos/core";
 import {
@@ -59,12 +59,10 @@ export class TwitterSearchClient {
     }
 
     private engageWithSearchTermsLoop() {
-        this.engageWithSearchTerms().then();
-        const randomMinutes = (Math.floor(Math.random() * (120 - 60 + 1)) + 60);
-        elizaLogger.log(`Next twitter search scheduled in ${randomMinutes} minutes`);
+        this.engageWithSearchTerms();
         setTimeout(
             () => this.engageWithSearchTermsLoop(),
-            randomMinutes * 60 * 1000
+            (Math.floor(Math.random() * (120 - 60 + 1)) + 60) * 60 * 1000
         );
     }
 
