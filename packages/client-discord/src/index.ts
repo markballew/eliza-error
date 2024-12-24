@@ -5,7 +5,7 @@ import {
     Character,
     Client as ElizaClient,
     IAgentRuntime,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import {
     Client,
     Events,

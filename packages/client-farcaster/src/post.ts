@@ -5,7 +5,7 @@ import {
     ModelClass,
     stringToUuid,
     elizaLogger,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { FarcasterClient } from "./client";
 import { formatTimeline, postTemplate } from "./prompts";
 import { castUuid, MAX_CAST_LENGTH } from "./utils";

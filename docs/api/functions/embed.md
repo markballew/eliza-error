@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.6-alpha.4](../index.md) / embed
+[@elizaos/eliza v0.1.6-alpha.4](../index.md) / embed
 
 # Function: embed()
 

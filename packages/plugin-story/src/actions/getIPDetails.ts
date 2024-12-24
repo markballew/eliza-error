@@ -7,7 +7,7 @@ import {
     type IAgentRuntime,
     type Memory,
     type State,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { getIPDetailsTemplate } from "../templates";
 import { Address } from "viem";
 import { Asset, RESOURCE_TYPE } from "../types/api";

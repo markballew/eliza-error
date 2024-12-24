@@ -7,7 +7,7 @@ import {
     type IAgentRuntime,
     type Memory,
     type State,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { WalletProvider } from "../providers/wallet";
 import { attachTermsTemplate } from "../templates";
 import {

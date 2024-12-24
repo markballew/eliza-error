@@ -12,7 +12,7 @@
         },
         "build": {
             "outputs": ["dist/**"],
-            "dependsOn": ["^@elizaos/core#build"]
+            "dependsOn": ["^@elizaos/eliza#build"]
         },
         "@elizaos/plugin-solana#build": {
             "outputs": ["dist/**"],

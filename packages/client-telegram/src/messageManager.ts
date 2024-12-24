@@ -1,8 +1,8 @@
 import { Message } from "@telegraf/types";
 import { Context, Telegraf } from "telegraf";
 
-import { composeContext, elizaLogger, ServiceType } from "@elizaos/core";
-import { getEmbeddingZeroVector } from "@elizaos/core";
+import { composeContext, elizaLogger, ServiceType } from "@elizaos/eliza";
+import { getEmbeddingZeroVector } from "@elizaos/eliza";
 import {
     Content,
     HandlerCallback,
@@ -13,11 +13,11 @@ import {
     State,
     UUID,
     Media,
-} from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
+} from "@elizaos/eliza";
+import { stringToUuid } from "@elizaos/eliza";
 
-import { generateMessageResponse, generateShouldRespond } from "@elizaos/core";
-import { messageCompletionFooter, shouldRespondFooter } from "@elizaos/core";
+import { generateMessageResponse, generateShouldRespond } from "@elizaos/eliza";
+import { messageCompletionFooter, shouldRespondFooter } from "@elizaos/eliza";
 
 import { cosineSimilarity } from "./utils";
 import {

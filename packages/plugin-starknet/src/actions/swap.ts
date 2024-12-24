@@ -9,7 +9,7 @@ import {
     Memory,
     ModelClass,
     State,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import {
     executeSwap as executeAvnuSwap,
     fetchQuotes,

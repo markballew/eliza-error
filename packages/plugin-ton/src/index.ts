@@ -1,4 +1,4 @@
-import { Plugin } from "@elizaos/core";
+import { Plugin } from "@elizaos/eliza";
 import transferAction from "./actions/transfer.ts";
 import { WalletProvider, nativeWalletProvider } from "./providers/wallet.ts";
 

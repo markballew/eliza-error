@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.6-alpha.4](../index.md) / KnowledgeItem
+[@elizaos/eliza v0.1.6-alpha.4](../index.md) / KnowledgeItem
 
 # Type Alias: KnowledgeItem
 

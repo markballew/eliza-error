@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Content } from "@elizaos/core";
+import { Content } from "@elizaos/eliza";
 
 export const TransferSchema = z.object({
     to: z.string(),

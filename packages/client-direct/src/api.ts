@@ -7,7 +7,7 @@ import {
     elizaLogger,
     getEnvVariable,
     validateCharacterConfig,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 
 import { REST, Routes } from "discord.js";
 import { DirectClient } from ".";

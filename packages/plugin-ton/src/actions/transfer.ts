@@ -8,7 +8,7 @@ import {
     type IAgentRuntime,
     type Memory,
     type State,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { z } from "zod";
 
 import {

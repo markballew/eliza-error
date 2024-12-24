@@ -3,7 +3,7 @@ import {
     IAwsS3Service,
     Service,
     ServiceType,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import {
     GetObjectCommand,
     PutObjectCommand,

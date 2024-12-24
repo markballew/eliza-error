@@ -1,5 +1,5 @@
-import { generateText, trimTokens } from "@elizaos/core";
-import { parseJSONObjectFromText } from "@elizaos/core";
+import { generateText, trimTokens } from "@elizaos/eliza";
+import { parseJSONObjectFromText } from "@elizaos/eliza";
 import {
     IAgentRuntime,
     IImageDescriptionService,
@@ -9,7 +9,7 @@ import {
     Media,
     ModelClass,
     ServiceType,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { Attachment, Collection } from "discord.js";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";

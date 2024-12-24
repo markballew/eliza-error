@@ -8,10 +8,10 @@ import {
     Content,
     ActionExample,
     generateObject,
-} from "@elizaos/core";
+} from "@elizaos/eliza";
 import { Indexer, ZgFile, getFlowContract } from "@0glabs/0g-ts-sdk";
 import { ethers } from "ethers";
-import { composeContext } from "@elizaos/core";
+import { composeContext } from "@elizaos/eliza";
 import { promises as fs } from "fs";
 
 import { uploadTemplate } from "../templates/upload";
