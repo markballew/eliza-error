@@ -5,6 +5,6 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
     clean: true,
-    format: ["esm"], // Ensure you're targeting CommonJS
-    external: [],
+    format: ["esm"],
+    external: ["dotenv", "fs", "path", "https", "http", "agentkeepalive"],
 });
