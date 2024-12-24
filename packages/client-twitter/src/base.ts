@@ -8,7 +8,7 @@ import {
     getEmbeddingZeroVector,
     elizaLogger,
     stringToUuid,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     QueryTweetsResponse,
     Scraper,
@@ -177,25 +177,22 @@ export class ClientBase extends EventEmitter {
         elizaLogger.log("Waiting for Twitter login");
         while (retries > 0) {
             try {
-                if (await this.twitterClient.isLoggedIn()) { // cookies are valid, no login required
+                await this.twitterClient.login(
+                    username,
+                    password,
+                    email,
+                    twitter2faSecret
+                );
+                if (await this.twitterClient.isLoggedIn()) {
                     elizaLogger.info("Successfully logged in.");
-                    break;
-                } else {
-                    await this.twitterClient.login(
-                        username,
-                        password,
-                        email,
-                        twitter2faSecret
-                    );
-                    if (await this.twitterClient.isLoggedIn()) {  // fresh login, store new cookies
-                        elizaLogger.info("Successfully logged in.");
+                    if (!cachedCookies) {
                         elizaLogger.info("Caching cookies");
                         await this.cacheCookies(
                             username,
                             await this.twitterClient.getCookies()
                         );
-                        break;
                     }
+                    break;
                 }
             } catch (error) {
                 elizaLogger.error(`Login attempt failed: ${error.message}`);

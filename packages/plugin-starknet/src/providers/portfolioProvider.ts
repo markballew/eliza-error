@@ -4,7 +4,7 @@ import {
     Memory,
     Provider,
     State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 
 import { fetchWithRetry, getStarknetAccount } from "../utils";
 import { ERC20Token } from "../utils/ERC20Token";

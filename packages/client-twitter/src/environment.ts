@@ -1,4 +1,4 @@
-import { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@ai16z/eliza";
 import { z } from "zod";
 
 export const DEFAULT_MAX_TWEET_LENGTH = 280;

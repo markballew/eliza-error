@@ -11,7 +11,7 @@ import {
     State,
     HandlerCallback,
     Plugin,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     TransferSchema,
     isTransferContent,

@@ -1,11 +1,11 @@
 import { Tweet } from "agent-twitter-client";
-import { getEmbeddingZeroVector } from "@elizaos/core";
-import { Content, Memory, UUID } from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
+import { getEmbeddingZeroVector } from "@ai16z/eliza";
+import { Content, Memory, UUID } from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
 import { ClientBase } from "./base";
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@ai16z/eliza";
 import { DEFAULT_MAX_TWEET_LENGTH } from "./environment";
-import { Media } from "@elizaos/core";
+import { Media } from "@ai16z/eliza";
 import fs from "fs";
 import path from "path";
 
