@@ -417,9 +417,6 @@ export interface Action {
 
     /** Validation function */
     validate: Validator;
-
-    /** Whether to suppress the initial message when this action is used */
-    suppressInitialMessage?: boolean;
 }
 
 /**
