@@ -52,9 +52,3 @@ tsup.config.bundled_*.mjs
 
 coverage
 .eslintcache
-
-agent/content
-
-eliza.manifest
-eliza.manifest.sgx
-eliza.sig

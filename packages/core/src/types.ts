@@ -757,6 +757,13 @@ export type Character = {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
         };
+        gitbook?: {
+            keywords?: {
+                projectTerms?: string[];
+                generalQueries?: string[];
+            };
+            documentTriggers?: string[];
+        };
     };
 
     /** Writing style guides */
@@ -992,12 +999,6 @@ export interface IMemoryManager {
 export type CacheOptions = {
     expires?: number;
 };
-
-export enum CacheStore {
-    REDIS = "redis",
-    DATABASE = "database",
-    FILESYSTEM = "filesystem",
-}
 
 export interface ICacheManager {
     get<T = unknown>(key: string): Promise<T | undefined>;

@@ -141,6 +141,7 @@ const client = await TwitterClientInterface.start(runtime);
 TWITTER_USERNAME = your_username;
 TWITTER_PASSWORD = your_password;
 TWITTER_EMAIL = your_email;
+TWITTER_COOKIES = your_cookies;
 ```
 
 ### Components
