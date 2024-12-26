@@ -7,7 +7,6 @@ import {
     ModelClass,
     stringToUuid,
     parseBooleanFromText,
-    TemplateType,
 } from "@elizaos/core";
 import { elizaLogger } from "@elizaos/core";
 import { ClientBase } from "./base.ts";
@@ -162,11 +161,11 @@ export class TwitterPostClient {
 
         if (
             this.runtime.getSetting("POST_IMMEDIATELY") != null &&
-            this.runtime.getSetting("POST_IMMEDIATELY") !== ""
+            this.runtime.getSetting("POST_IMMEDIATELY") != ""
         ) {
-            // Retrieve setting, default to false if not set or if the value is not "true"
-            postImmediately =
-                this.runtime.getSetting("POST_IMMEDIATELY") === "true" || false;
+            postImmediately = parseBooleanFromText(
+                this.runtime.getSetting("POST_IMMEDIATELY")
+            );
         }
 
         if (postImmediately) {
@@ -185,10 +184,10 @@ export class TwitterPostClient {
                     error
                 );
             });
-            generateNewTweetLoop();
         } else {
             elizaLogger.log("Action processing loop disabled by configuration");
         }
+        generateNewTweetLoop();
     }
 
     constructor(client: ClientBase, runtime: IAgentRuntime) {
@@ -380,7 +379,7 @@ export class TwitterPostClient {
     private async generateTweetContent(
         tweetState: any,
         options?: {
-            template?: TemplateType;
+            template?: string;
             context?: string;
         }
     ): Promise<string> {
