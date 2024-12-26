@@ -38,7 +38,6 @@
         "@elizaos/plugin-conflux": "workspace:*",
         "@elizaos/plugin-evm": "workspace:*",
         "@elizaos/plugin-flow": "workspace:*",
-        "@elizaos/plugin-gitbook": "workspace:*",
         "@elizaos/plugin-story": "workspace:*",
         "@elizaos/plugin-goat": "workspace:*",
         "@elizaos/plugin-icp": "workspace:*",
@@ -64,4 +63,3 @@
         "tsup": "8.3.5"
     }
 }
-
