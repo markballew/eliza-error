@@ -34,14 +34,11 @@ export const TwitterClientInterface: Client = {
 
         elizaLogger.log("Twitter client started");
 
-        const manager = new TwitterManager(runtime, runtime.getSetting("TWITTER_SEARCH_ENABLE").toLowerCase() === "true");
+        const manager = new TwitterManager(runtime, this.enableSearch);
 
         await manager.client.init();
 
         await manager.post.start();
-
-        if (manager.search)
-            await manager.search.start();
 
         await manager.interaction.start();
 

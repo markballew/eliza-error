@@ -1,7 +1,5 @@
-import { PassThrough } from "stream";
-import { Readable } from "node:stream";
-import { ReadableStream } from "node:stream/web";
-import { IAgentRuntime, ISpeechService, ServiceType } from "@ai16z/core";
+import { PassThrough, Readable } from "stream";
+import { IAgentRuntime, ISpeechService, ServiceType } from "@elizaos/core";
 import { getWavHeader } from "./audioUtils.ts";
 import { Service } from "@elizaos/core";
 import { validateNodeConfig } from "../environment.ts";
@@ -125,20 +123,17 @@ async function textToSpeech(runtime: IAgentRuntime, text: string) {
         }
 
         if (response) {
-            const webStream = ReadableStream.from(
-                response.body as ReadableStream
-            );
-            const reader = webStream.getReader();
-
+            const reader = response.body?.getReader();
             const readable = new Readable({
                 read() {
-                    reader.read().then(({ done, value }) => {
-                        if (done) {
-                            this.push(null);
-                        } else {
-                            this.push(value);
-                        }
-                    });
+                    reader && // eslint-disable-line
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                this.push(null);
+                            } else {
+                                this.push(value);
+                            }
+                        });
                 },
             });
 
