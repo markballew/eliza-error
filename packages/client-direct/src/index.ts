@@ -1,12 +1,12 @@
 import bodyParser from "body-parser";
 import cors from "cors";
 import express, { Request as ExpressRequest } from "express";
-import multer from "multer";
+import multer, { File } from "multer";
 import {
     elizaLogger,
     generateCaption,
     generateImage,
-    Media,
+    getEmbeddingZeroVector,
 } from "@elizaos/core";
 import { composeContext } from "@elizaos/core";
 import { generateMessageResponse } from "@elizaos/core";
@@ -24,23 +24,7 @@ import { settings } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
 import * as fs from "fs";
 import * as path from "path";
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(process.cwd(), "data", "uploads");
-        // Create the directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        cb(null, `${uniqueSuffix}-${file.originalname}`);
-    },
-});
-
-const upload = multer({ storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 export const messageHandlerTemplate =
     // {{goals}}
@@ -87,22 +71,12 @@ export class DirectClient {
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
 
-        // Serve both uploads and generated images
-        this.app.use(
-            "/media/uploads",
-            express.static(path.join(process.cwd(), "/data/uploads"))
-        );
-        this.app.use(
-            "/media/generated",
-            express.static(path.join(process.cwd(), "/generatedImages"))
-        );
-
         const apiRouter = createApiRouter(this.agents, this);
         this.app.use(apiRouter);
 
         // Define an interface that extends the Express Request interface
         interface CustomRequest extends ExpressRequest {
-            file?: Express.Multer.File;
+            file: File;
         }
 
         // Update the route handler to use CustomRequest instead of express.Request
@@ -159,7 +133,6 @@ export class DirectClient {
 
         this.app.post(
             "/:agentId/message",
-            upload.single("file"),
             async (req: express.Request, res: express.Response) => {
                 const agentId = req.params.agentId;
                 const roomId = stringToUuid(
@@ -194,29 +167,9 @@ export class DirectClient {
                 const text = req.body.text;
                 const messageId = stringToUuid(Date.now().toString());
 
-                const attachments: Media[] = [];
-                if (req.file) {
-                    const filePath = path.join(
-                        process.cwd(),
-                        "agent",
-                        "data",
-                        "uploads",
-                        req.file.filename
-                    );
-                    attachments.push({
-                        id: Date.now().toString(),
-                        url: filePath,
-                        title: req.file.originalname,
-                        source: "direct",
-                        description: `Uploaded file: ${req.file.originalname}`,
-                        text: "",
-                        contentType: req.file.mimetype,
-                    });
-                }
-
                 const content: Content = {
                     text,
-                    attachments,
+                    attachments: [],
                     source: "direct",
                     inReplyTo: undefined,
                 };
@@ -229,7 +182,8 @@ export class DirectClient {
                 };
 
                 const memory: Memory = {
-                    id: messageId,
+                    id: stringToUuid(messageId + "-" + userId),
+                    ...userMessage,
                     agentId: runtime.agentId,
                     userId,
                     roomId,
@@ -237,9 +191,10 @@ export class DirectClient {
                     createdAt: Date.now(),
                 };
 
+                await runtime.messageManager.addEmbeddingToMemory(memory);
                 await runtime.messageManager.createMemory(memory);
 
-                const state = await runtime.composeState(userMessage, {
+                let state = await runtime.composeState(userMessage, {
                     agentName: runtime.character.name,
                 });
 
@@ -254,15 +209,6 @@ export class DirectClient {
                     modelClass: ModelClass.LARGE,
                 });
 
-                // save response to memory
-                const responseMessage = {
-                    ...userMessage,
-                    userId: runtime.agentId,
-                    content: response,
-                };
-
-                await runtime.messageManager.createMemory(responseMessage);
-
                 if (!response) {
                     res.status(500).send(
                         "No response from generateMessageResponse"
@@ -270,7 +216,31 @@ export class DirectClient {
                     return;
                 }
 
+                // save response to memory
+                const responseMessage: Memory = {
+                    id: stringToUuid(messageId + "-" + runtime.agentId),
+                    ...userMessage,
+                    userId: runtime.agentId,
+                    content: response,
+                    embedding: getEmbeddingZeroVector(),
+                    createdAt: Date.now(),
+                };
+
+                await runtime.messageManager.createMemory(responseMessage);
+
+                state = await runtime.updateRecentMessageState(state);
+
                 let message = null as Content | null;
+
+                await runtime.processActions(
+                    memory,
+                    [responseMessage],
+                    state,
+                    async (newMessages) => {
+                        message = newMessages;
+                        return [memory];
+                    }
+                );
 
                 await runtime.evaluate(memory, state);
 
@@ -280,16 +250,6 @@ export class DirectClient {
                 );
                 const shouldSuppressInitialMessage =
                     action?.suppressInitialMessage;
-
-                const _result = await runtime.processActions(
-                    memory,
-                    [responseMessage],
-                    state,
-                    async (newMessages) => {
-                        message = newMessages;
-                        return [memory];
-                    }
-                );
 
                 if (!shouldSuppressInitialMessage) {
                     if (message) {
