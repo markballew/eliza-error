@@ -171,10 +171,11 @@ export class TwitterPostClient {
         if (postImmediately) {
             await this.generateNewTweet();
         }
+        generateNewTweetLoop();
 
         // Add check for ENABLE_ACTION_PROCESSING before starting the loop
         const enableActionProcessing =
-            this.runtime.getSetting("ENABLE_ACTION_PROCESSING") === "true" || false;
+            this.runtime.getSetting("ENABLE_ACTION_PROCESSING") ?? false;
 
         if (enableActionProcessing) {
             processActionsLoop().catch((error) => {
@@ -183,11 +184,10 @@ export class TwitterPostClient {
                     error
                 );
             });
+            generateNewTweetLoop();
         } else {
             elizaLogger.log("Action processing loop disabled by configuration");
         }
-        
-        generateNewTweetLoop();
     }
 
     constructor(client: ClientBase, runtime: IAgentRuntime) {
