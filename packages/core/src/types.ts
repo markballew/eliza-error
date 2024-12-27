@@ -417,9 +417,6 @@ export interface Action {
 
     /** Validation function */
     validate: Validator;
-
-    /** Whether to suppress the initial message when this action is used */
-    suppressInitialMessage?: boolean;
 }
 
 /**
@@ -626,14 +623,6 @@ export interface IAgentConfig {
     [key: string]: string;
 }
 
-export interface ModelConfiguration {
-    temperature?: number;
-    max_response_length?: number;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    maxInputTokens?: number;
-}
-
 /**
  * Configuration for an agent character
  */
@@ -668,7 +657,6 @@ export type Character = {
         continueMessageHandlerTemplate?: string;
         evaluationTemplate?: string;
         twitterSearchTemplate?: string;
-        twitterActionTemplate?: string;
         twitterPostTemplate?: string;
         twitterMessageHandlerTemplate?: string;
         twitterShouldRespondTemplate?: string;
@@ -718,20 +706,6 @@ export type Character = {
     settings?: {
         secrets?: { [key: string]: string };
         intiface?: boolean;
-        imageSettings?: {
-            steps?: number;
-            width?: number;
-            height?: number;
-            negativePrompt?: string;
-            numIterations?: number;
-            guidanceScale?: number;
-            seed?: number;
-            modelId?: string;
-            jobId?: string;
-            count?: number;
-            stylePreset?: string;
-            hideWatermark?: boolean;
-        };
         voice?: {
             model?: string; // For VITS
             url?: string; // Legacy VITS support
@@ -746,7 +720,6 @@ export type Character = {
             };
         };
         model?: string;
-        modelConfig?: ModelConfiguration;
         embeddingModel?: string;
         chains?: {
             evm?: any[];
@@ -782,6 +755,7 @@ export type Character = {
         slack?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
+
         };
     };
 
@@ -803,7 +777,7 @@ export type Character = {
     /** Optional NFT prompt */
     nft?: {
         prompt: string;
-    };
+    }
 };
 
 /**
@@ -1018,12 +992,6 @@ export interface IMemoryManager {
 export type CacheOptions = {
     expires?: number;
 };
-
-export enum CacheStore {
-    REDIS = "redis",
-    DATABASE = "database",
-    FILESYSTEM = "filesystem",
-}
 
 export interface ICacheManager {
     get<T = unknown>(key: string): Promise<T | undefined>;
