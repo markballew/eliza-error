@@ -6,7 +6,9 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import {
     generateObject as aiGenerateObject,
     generateText as aiGenerateText,
+    CoreTool,
     GenerateObjectResult,
+    StepResult as AIStepResult,
 } from "ai";
 import { Buffer } from "buffer";
 import { createOllama } from "ollama-ai-provider";
@@ -37,6 +39,9 @@ import {
 } from "./types.ts";
 import { fal } from "@fal-ai/client";
 
+type Tool = CoreTool<any, any>;
+type StepResult = AIStepResult<any>;
+
 /**
  * Send a message to the model for a text generateText - receive a string back and parse how you'd like
  * @param opts - The options for the generateText request.
@@ -54,11 +59,17 @@ export async function generateText({
     runtime,
     context,
     modelClass,
+    tools = {},
+    onStepFinish,
+    maxSteps = 1,
     stop,
 }: {
     runtime: IAgentRuntime;
     context: string;
     modelClass: string;
+    tools?: Record<string, Tool>;
+    onStepFinish?: (event: StepResult) => Promise<void> | void;
+    maxSteps?: number;
     stop?: string[];
 }): Promise<string> {
     if (!context) {
@@ -146,11 +157,22 @@ export async function generateText({
 
     elizaLogger.info("Selected model:", model);
 
-    const temperature = models[provider].settings.temperature;
-    const frequency_penalty = models[provider].settings.frequency_penalty;
-    const presence_penalty = models[provider].settings.presence_penalty;
-    const max_context_length = models[provider].settings.maxInputTokens;
-    const max_response_length = models[provider].settings.maxOutputTokens;
+    const modelConfiguration = runtime.character?.settings?.modelConfig;
+    const temperature =
+        modelConfiguration?.temperature ||
+        models[provider].settings.temperature;
+    const frequency_penalty =
+        modelConfiguration?.frequency_penalty ||
+        models[provider].settings.frequency_penalty;
+    const presence_penalty =
+        modelConfiguration?.presence_penalty ||
+        models[provider].settings.presence_penalty;
+    const max_context_length =
+        modelConfiguration?.maxInputTokens ||
+        models[provider].settings.maxInputTokens;
+    const max_response_length =
+        modelConfiguration?.max_response_length ||
+        models[provider].settings.maxOutputTokens;
 
     const apiKey = runtime.token;
 
@@ -192,6 +214,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -215,6 +240,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -241,6 +269,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -267,6 +298,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -297,6 +331,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -319,6 +356,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
@@ -370,6 +410,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
@@ -397,6 +440,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
@@ -422,7 +468,10 @@ export async function generateText({
                     const { text: ollamaResponse } = await aiGenerateText({
                         model: ollama,
                         prompt: context,
+                        tools: tools,
+                        onStepFinish: onStepFinish,
                         temperature: temperature,
+                        maxSteps: maxSteps,
                         maxTokens: max_response_length,
                         frequencyPenalty: frequency_penalty,
                         presencePenalty: presence_penalty,
@@ -448,8 +497,11 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
                     temperature: temperature,
                     maxTokens: max_response_length,
+                    maxSteps: maxSteps,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
                 });
@@ -497,6 +549,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -523,6 +578,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
+                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -548,7 +606,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
+                    tools: tools,
+                    onStepFinish: onStepFinish,
                     temperature: temperature,
+                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                 });
 
@@ -935,6 +996,8 @@ export const generateImage = async (
         seed?: number;
         modelId?: string;
         jobId?: string;
+        stylePreset?: string;
+        hideWatermark?: boolean;
     },
     runtime: IAgentRuntime
 ): Promise<{
@@ -950,14 +1013,30 @@ export const generateImage = async (
     });
 
     const apiKey =
-        runtime.imageModelProvider === runtime.modelProvider
-            ? runtime.token
-            : (runtime.getSetting("HEURIST_API_KEY") ??
-              runtime.getSetting("TOGETHER_API_KEY") ??
-              runtime.getSetting("FAL_API_KEY") ??
-              runtime.getSetting("OPENAI_API_KEY") ??
-              runtime.getSetting("VENICE_API_KEY"));
-
+    runtime.imageModelProvider === runtime.modelProvider
+        ? runtime.token
+        : (() => {
+            // First try to match the specific provider
+            switch (runtime.imageModelProvider) {
+                case ModelProviderName.HEURIST:
+                    return runtime.getSetting("HEURIST_API_KEY");
+                case ModelProviderName.TOGETHER:
+                    return runtime.getSetting("TOGETHER_API_KEY");
+                case ModelProviderName.FAL:
+                    return runtime.getSetting("FAL_API_KEY");
+                case ModelProviderName.OPENAI:
+                    return runtime.getSetting("OPENAI_API_KEY");
+                case ModelProviderName.VENICE:
+                    return runtime.getSetting("VENICE_API_KEY");
+                default:
+                    // If no specific match, try the fallback chain
+                    return (runtime.getSetting("HEURIST_API_KEY") ??
+                           runtime.getSetting("TOGETHER_API_KEY") ??
+                           runtime.getSetting("FAL_API_KEY") ??
+                           runtime.getSetting("OPENAI_API_KEY") ??
+                           runtime.getSetting("VENICE_API_KEY"));
+            }
+        })();
     try {
         if (runtime.imageModelProvider === ModelProviderName.HEURIST) {
             const response = await fetch(
@@ -1121,9 +1200,12 @@ export const generateImage = async (
                         model: data.modelId || "fluently-xl",
                         prompt: data.prompt,
                         negative_prompt: data.negativePrompt,
-                        width: data.width || 1024,
-                        height: data.height || 1024,
-                        steps: data.numIterations || 20,
+                        width: data.width,
+                        height: data.height,
+                        steps: data.numIterations,
+                        seed: data.seed,
+                        style_preset: data.stylePreset,
+                        hide_watermark: data.hideWatermark,
                     }),
                 }
             );
