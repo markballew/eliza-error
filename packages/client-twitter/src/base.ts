@@ -177,25 +177,22 @@ export class ClientBase extends EventEmitter {
         elizaLogger.log("Waiting for Twitter login");
         while (retries > 0) {
             try {
-                if (await this.twitterClient.isLoggedIn()) { // cookies are valid, no login required
+                await this.twitterClient.login(
+                    username,
+                    password,
+                    email,
+                    twitter2faSecret
+                );
+                if (await this.twitterClient.isLoggedIn()) {
                     elizaLogger.info("Successfully logged in.");
-                    break;
-                } else {
-                    await this.twitterClient.login(
-                        username,
-                        password,
-                        email,
-                        twitter2faSecret
-                    );
-                    if (await this.twitterClient.isLoggedIn()) {  // fresh login, store new cookies
-                        elizaLogger.info("Successfully logged in.");
+                    if (!cachedCookies) {
                         elizaLogger.info("Caching cookies");
                         await this.cacheCookies(
                             username,
                             await this.twitterClient.getCookies()
                         );
-                        break;
                     }
+                    break;
                 }
             } catch (error) {
                 elizaLogger.error(`Login attempt failed: ${error.message}`);
@@ -249,14 +246,12 @@ export class ClientBase extends EventEmitter {
         return homeTimeline.tweets;
     }
 
-    /**
-     * Fetch timeline for twitter account, optionally only from followed accounts
-     */
-    async fetchHomeTimeline(count: number, following?: boolean): Promise<Tweet[]> {
+    async fetchHomeTimeline(count: number): Promise<Tweet[]> {
         elizaLogger.debug("fetching home timeline");
-        const homeTimeline = following
-            ? await this.twitterClient.fetchFollowingTimeline(count, [])
-            : await this.twitterClient.fetchHomeTimeline(count, []);
+        const homeTimeline = await this.twitterClient.fetchHomeTimeline(
+            count,
+            []
+        );
 
         elizaLogger.debug(homeTimeline, { depth: Infinity });
         const processedTimeline = homeTimeline
@@ -313,8 +308,6 @@ export class ClientBase extends EventEmitter {
 
     async fetchTimelineForActions(count: number): Promise<Tweet[]> {
         elizaLogger.debug("fetching timeline for actions");
-
-        const agentUsername = this.runtime.getSetting("TWITTER_USERNAME");
         const homeTimeline = await this.twitterClient.fetchHomeTimeline(
             count,
             []
@@ -342,7 +335,7 @@ export class ClientBase extends EventEmitter {
                 tweet.legacy?.entities?.media?.filter(
                     (media) => media.type === "video"
                 ) || [],
-        })).filter(tweet => tweet.username !== agentUsername); // do not perform action on self-tweets
+        }));
     }
 
     async fetchSearchTweets(
