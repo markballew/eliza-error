@@ -209,7 +209,6 @@ export type Models = {
     [ModelProviderName.HYPERBOLIC]: Model;
     [ModelProviderName.VENICE]: Model;
     [ModelProviderName.AKASH_CHAT_API]: Model;
-    [ModelProviderName.LIVEPEER]: Model;
 };
 
 /**
@@ -239,7 +238,6 @@ export enum ModelProviderName {
     HYPERBOLIC = "hyperbolic",
     VENICE = "venice",
     AKASH_CHAT_API = "akash_chat_api",
-    LIVEPEER = "livepeer",
 }
 
 /**
@@ -844,7 +842,6 @@ export interface IDatabaseAdapter {
         tableName: string;
         agentId: UUID;
         roomIds: UUID[];
-        limit?: number;
     }): Promise<Memory[]>;
 
     getCachedEmbeddings(params: {
@@ -998,7 +995,7 @@ export interface IMemoryManager {
     ): Promise<{ embedding: number[]; levenshtein_score: number }[]>;
 
     getMemoryById(id: UUID): Promise<Memory | null>;
-    getMemoriesByRoomIds(params: { roomIds: UUID[], limit?: number }): Promise<Memory[]>;
+    getMemoriesByRoomIds(params: { roomIds: UUID[] }): Promise<Memory[]>;
     searchMemoriesByEmbedding(
         embedding: number[],
         opts: {
