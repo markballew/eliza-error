@@ -23,6 +23,7 @@ import {
     elizaLogger,
     getEmbeddingConfig,
     DatabaseAdapter,
+    EmbeddingProvider,
 } from "@elizaos/core";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -189,6 +190,19 @@ export class PostgresDatabaseAdapter
         try {
             await client.query("BEGIN");
 
+            // Set application settings for embedding dimension
+            const embeddingConfig = getEmbeddingConfig();
+            if (embeddingConfig.provider === EmbeddingProvider.OpenAI) {
+                await client.query("SET app.use_openai_embedding = 'true'");
+                await client.query("SET app.use_ollama_embedding = 'false'");
+            } else if (embeddingConfig.provider === EmbeddingProvider.Ollama) {
+                await client.query("SET app.use_openai_embedding = 'false'");
+                await client.query("SET app.use_ollama_embedding = 'true'");
+            } else {
+                await client.query("SET app.use_openai_embedding = 'false'");
+                await client.query("SET app.use_ollama_embedding = 'false'");
+            }
+
             // Check if schema already exists (check for a core table)
             const { rows } = await client.query(`
                 SELECT EXISTS (
@@ -286,6 +300,7 @@ export class PostgresDatabaseAdapter
         roomIds: UUID[];
         agentId?: UUID;
         tableName: string;
+        limit?: number;
     }): Promise<Memory[]> {
         return this.withDatabase(async () => {
             if (params.roomIds.length === 0) return [];
@@ -300,6 +315,15 @@ export class PostgresDatabaseAdapter
                 query += ` AND "agentId" = $${params.roomIds.length + 2}`;
                 queryParams = [...queryParams, params.agentId];
             }
+
+            // Add sorting, and conditionally add LIMIT if provided
+            query += ` ORDER BY "createdAt" DESC`;
+            if (params.limit) {
+                query += ` LIMIT $${queryParams.length + 1}`;
+                queryParams.push(params.limit.toString());
+            }
+
+            console.log(query, queryParams);
 
             const { rows } = await this.pool.query(query, queryParams);
             return rows.map((row) => ({
