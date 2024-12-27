@@ -58,6 +58,7 @@ import { tonPlugin } from "@elizaos/plugin-ton";
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
 import { abstractPlugin } from "@elizaos/plugin-abstract";
+import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -483,11 +484,7 @@ export async function createAgent(
     }
 
     let goatPlugin: any | undefined;
-<<<<<<< HEAD
-    if (getSecret(character, "EVM_PRIVATE_KEY")) {
-=======
     if (getSecret(character, "EVM_PROVIDER_URL")) {
->>>>>>> origin/develop
         goatPlugin = await createGoatPlugin((secret) =>
             getSecret(character, secret)
         );
@@ -559,14 +556,10 @@ export async function createAgent(
             getSecret(character, "COINBASE_NOTIFICATION_URI")
                 ? webhookPlugin
                 : null,
-<<<<<<< HEAD
-            goatPlugin,
-=======
             getSecret(character, "EVM_PROVIDER_URL") ? goatPlugin : null,
             getSecret(character, "ABSTRACT_PRIVATE_KEY")
                 ? abstractPlugin
                 : null,
->>>>>>> origin/develop
             getSecret(character, "FLOW_ADDRESS") &&
             getSecret(character, "FLOW_PRIVATE_KEY")
                 ? flowPlugin
@@ -580,6 +573,13 @@ export async function createAgent(
             getSecret(character, "TON_PRIVATE_KEY") ? tonPlugin : null,
             getSecret(character, "SUI_PRIVATE_KEY") ? suiPlugin : null,
             getSecret(character, "STORY_PRIVATE_KEY") ? storyPlugin : null,
+            getSecret(character, "SQUID_SDK_URL") &&
+            getSecret(character, "SQUID_INTEGRATOR_ID") &&
+            getSecret(character, "SQUID_EVM_ADDRESS") &&
+            getSecret(character, "SQUID_EVM_PRIVATE_KEY")
+                ? squidRouterPlugin
+                : null,
+
         ].filter(Boolean),
         providers: [],
         actions: [],
