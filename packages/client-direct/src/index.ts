@@ -2,25 +2,20 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import express, { Request as ExpressRequest } from "express";
 import multer, { File } from "multer";
-import {
-    elizaLogger,
-    generateCaption,
-    generateImage,
-    getEmbeddingZeroVector,
-} from "@elizaos/core";
-import { composeContext } from "@elizaos/core";
-import { generateMessageResponse } from "@elizaos/core";
-import { messageCompletionFooter } from "@elizaos/core";
-import { AgentRuntime } from "@elizaos/core";
+import { elizaLogger, generateCaption, generateImage } from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza";
+import { generateMessageResponse } from "@ai16z/eliza";
+import { messageCompletionFooter } from "@ai16z/eliza";
+import { AgentRuntime } from "@ai16z/eliza";
 import {
     Content,
     Memory,
     ModelClass,
     Client,
     IAgentRuntime,
-} from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
-import { settings } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
+import { settings } from "@ai16z/eliza";
 import { createApiRouter } from "./api.ts";
 import * as fs from "fs";
 import * as path from "path";
@@ -182,8 +177,7 @@ export class DirectClient {
                 };
 
                 const memory: Memory = {
-                    id: stringToUuid(messageId + "-" + userId),
-                    ...userMessage,
+                    id: messageId,
                     agentId: runtime.agentId,
                     userId,
                     roomId,
@@ -191,10 +185,9 @@ export class DirectClient {
                     createdAt: Date.now(),
                 };
 
-                await runtime.messageManager.addEmbeddingToMemory(memory);
                 await runtime.messageManager.createMemory(memory);
 
-                let state = await runtime.composeState(userMessage, {
+                const state = await runtime.composeState(userMessage, {
                     agentName: runtime.character.name,
                 });
 
@@ -209,6 +202,15 @@ export class DirectClient {
                     modelClass: ModelClass.LARGE,
                 });
 
+                // save response to memory
+                const responseMessage = {
+                    ...userMessage,
+                    userId: runtime.agentId,
+                    content: response,
+                };
+
+                await runtime.messageManager.createMemory(responseMessage);
+
                 if (!response) {
                     res.status(500).send(
                         "No response from generateMessageResponse"
@@ -216,23 +218,11 @@ export class DirectClient {
                     return;
                 }
 
-                // save response to memory
-                const responseMessage: Memory = {
-                    id: stringToUuid(messageId + "-" + runtime.agentId),
-                    ...userMessage,
-                    userId: runtime.agentId,
-                    content: response,
-                    embedding: getEmbeddingZeroVector(),
-                    createdAt: Date.now(),
-                };
-
-                await runtime.messageManager.createMemory(responseMessage);
-
-                state = await runtime.updateRecentMessageState(state);
-
                 let message = null as Content | null;
 
-                await runtime.processActions(
+                await runtime.evaluate(memory, state);
+
+                const _result = await runtime.processActions(
                     memory,
                     [responseMessage],
                     state,
@@ -242,27 +232,10 @@ export class DirectClient {
                     }
                 );
 
-                await runtime.evaluate(memory, state);
-
-                // Check if we should suppress the initial message
-                const action = runtime.actions.find(
-                    (a) => a.name === response.action
-                );
-                const shouldSuppressInitialMessage =
-                    action?.suppressInitialMessage;
-
-                if (!shouldSuppressInitialMessage) {
-                    if (message) {
-                        res.json([response, message]);
-                    } else {
-                        res.json([response]);
-                    }
+                if (message) {
+                    res.json([response, message]);
                 } else {
-                    if (message) {
-                        res.json([message]);
-                    } else {
-                        res.json([]);
-                    }
+                    res.json([response]);
                 }
             }
         );
