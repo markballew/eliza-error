@@ -417,9 +417,6 @@ export interface Action {
 
     /** Validation function */
     validate: Validator;
-
-    /** Whether to suppress the initial message when this action is used */
-    suppressInitialMessage?: boolean;
 }
 
 /**
@@ -626,14 +623,6 @@ export interface IAgentConfig {
     [key: string]: string;
 }
 
-export interface ModelConfiguration {
-    temperature?: number;
-    max_response_length?: number;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    maxInputTokens?: number;
-}
-
 /**
  * Configuration for an agent character
  */
@@ -718,20 +707,6 @@ export type Character = {
     settings?: {
         secrets?: { [key: string]: string };
         intiface?: boolean;
-        imageSettings?: {
-            steps?: number;
-            width?: number;
-            height?: number;
-            negativePrompt?: string;
-            numIterations?: number;
-            guidanceScale?: number;
-            seed?: number;
-            modelId?: string;
-            jobId?: string;
-            count?: number;
-            stylePreset?: string;
-            hideWatermark?: boolean;
-        };
         voice?: {
             model?: string; // For VITS
             url?: string; // Legacy VITS support
@@ -746,7 +721,6 @@ export type Character = {
             };
         };
         model?: string;
-        modelConfig?: ModelConfiguration;
         embeddingModel?: string;
         chains?: {
             evm?: any[];
