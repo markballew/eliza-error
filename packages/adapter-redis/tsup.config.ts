@@ -15,11 +15,7 @@ export default defineConfig({
         "https",
         "http",
         "agentkeepalive",
-        "chain-registry",
-        "bignumber.js",
-        "@cosmjs/stargate",
-        "@cosmjs/proto-signing",
-        "@cosmjs/cosmwasm-stargate",
-        "zod",
+        "uuid",
+        // Add other modules you want to externalize
     ],
 });
