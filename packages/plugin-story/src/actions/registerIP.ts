@@ -4,9 +4,9 @@ import {
     generateObjectDeprecated,
     HandlerCallback,
     ModelClass,
-    IAgentRuntime,
-    Memory,
-    State,
+    type IAgentRuntime,
+    type Memory,
+    type State,
 } from "@elizaos/core";
 import pinataSDK from "@pinata/sdk";
 import { RegisterIpResponse } from "@story-protocol/core-sdk";
