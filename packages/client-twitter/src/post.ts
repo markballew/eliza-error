@@ -6,6 +6,7 @@ import {
     IAgentRuntime,
     ModelClass,
     stringToUuid,
+    parseBooleanFromText,
     UUID,
 } from "@elizaos/core";
 import { elizaLogger } from "@elizaos/core";
@@ -105,8 +106,10 @@ export class TwitterPostClient {
     constructor(client: ClientBase, runtime: IAgentRuntime) {
         this.client = client;
         this.runtime = runtime;
-        this.twitterUsername = this.client.twitterConfig.TWITTER_USERNAME;
-        this.isDryRun = this.client.twitterConfig.TWITTER_DRY_RUN
+        this.twitterUsername = runtime.getSetting("TWITTER_USERNAME");
+        this.isDryRun = parseBooleanFromText(
+            runtime.getSetting("TWITTER_DRY_RUN") ?? "false"
+        );
 
         // Log configuration on initialization
         elizaLogger.log("Twitter Client Configuration:");
@@ -115,34 +118,34 @@ export class TwitterPostClient {
             `- Dry Run Mode: ${this.isDryRun ? "enabled" : "disabled"}`
         );
         elizaLogger.log(
-            `- Post Interval: ${this.client.twitterConfig.POST_INTERVAL_MIN}-${this.client.twitterConfig.POST_INTERVAL_MAX} minutes`
+            `- Post Interval: ${runtime.getSetting("POST_INTERVAL_MIN") || "90"}-${runtime.getSetting("POST_INTERVAL_MAX") || "180"} minutes`
         );
         elizaLogger.log(
-            `- Action Processing: ${this.client.twitterConfig.ENABLE_ACTION_PROCESSING ? "enabled" : "disabled"}`
+            `- Action Processing: ${parseBooleanFromText(runtime.getSetting("ENABLE_ACTION_PROCESSING") ?? "false") ? "enabled" : "disabled"}`
         );
         elizaLogger.log(
-            `- Action Interval: ${this.client.twitterConfig.ACTION_INTERVAL} seconds`
+            `- Action Interval: ${(parseInt(runtime.getSetting("ACTION_INTERVAL") ?? "300000") / 1000).toFixed(0)} seconds`
         );
         elizaLogger.log(
-            `- Post Immediately: ${this.client.twitterConfig.POST_IMMEDIATELY ? "enabled" : "disabled"}`
+            `- Post Immediately: ${parseBooleanFromText(runtime.getSetting("POST_IMMEDIATELY") ?? "false") ? "enabled" : "disabled"}`
         );
         elizaLogger.log(
-            `- Search Enabled: ${this.client.twitterConfig.TWITTER_SEARCH_ENABLE ? "enabled" : "disabled"}`
+            `- Search Enabled: ${parseBooleanFromText(runtime.getSetting("TWITTER_SEARCH_ENABLE") ?? "false") ? "enabled" : "disabled"}`
         );
 
-        const targetUsers = this.client.twitterConfig.TWITTER_TARGET_USERS;
+        const targetUsers = runtime.getSetting("TWITTER_TARGET_USERS");
         if (targetUsers) {
             elizaLogger.log(`- Target Users: ${targetUsers}`);
         }
 
         if (this.isDryRun) {
             elizaLogger.log(
-                "Twitter client initialized in dry run mode - no actual tweets should be posted"
+                "Twitter client initialized in dry run mode - no actual tweets will be posted"
             );
         }
     }
 
-    async start() {
+    async start(postImmediately: boolean = false) {
         if (!this.client.profile) {
             await this.client.init();
         }
@@ -153,8 +156,10 @@ export class TwitterPostClient {
             }>("twitter/" + this.twitterUsername + "/lastPost");
 
             const lastPostTimestamp = lastPost?.timestamp ?? 0;
-            const minMinutes = this.client.twitterConfig.POST_INTERVAL_MIN;
-            const maxMinutes = this.client.twitterConfig.POST_INTERVAL_MAX;
+            const minMinutes =
+                parseInt(this.runtime.getSetting("POST_INTERVAL_MIN")) || 90;
+            const maxMinutes =
+                parseInt(this.runtime.getSetting("POST_INTERVAL_MAX")) || 180;
             const randomMinutes =
                 Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) +
                 minMinutes;
@@ -172,7 +177,8 @@ export class TwitterPostClient {
         };
 
         const processActionsLoop = async () => {
-            const actionInterval = this.client.twitterConfig.ACTION_INTERVAL; // Defaults to 5 minutes
+            const actionInterval =
+                parseInt(this.runtime.getSetting("ACTION_INTERVAL")) || 300000; // Default to 5 minutes
 
             while (!this.stopProcessingActions) {
                 try {
@@ -184,7 +190,7 @@ export class TwitterPostClient {
                         );
                         // Wait for the full interval before next processing
                         await new Promise((resolve) =>
-                            setTimeout(resolve, actionInterval * 60 * 1000) // now in minutes
+                            setTimeout(resolve, actionInterval)
                         );
                     }
                 } catch (error) {
@@ -198,7 +204,16 @@ export class TwitterPostClient {
             }
         };
 
-        if (this.client.twitterConfig.POST_IMMEDIATELY) {
+        if (
+            this.runtime.getSetting("POST_IMMEDIATELY") != null &&
+            this.runtime.getSetting("POST_IMMEDIATELY") !== ""
+        ) {
+            // Retrieve setting, default to false if not set or if the value is not "true"
+            postImmediately =
+                this.runtime.getSetting("POST_IMMEDIATELY") === "true" || false;
+        }
+
+        if (postImmediately) {
             await this.generateNewTweet();
         }
 
@@ -210,7 +225,12 @@ export class TwitterPostClient {
             elizaLogger.log("Tweet generation loop disabled (dry run mode)");
         }
 
-        if (this.client.twitterConfig.ENABLE_ACTION_PROCESSING && !this.isDryRun) {
+        // Add check for ENABLE_ACTION_PROCESSING before starting the loop
+        const enableActionProcessing = parseBooleanFromText(
+            this.runtime.getSetting("ENABLE_ACTION_PROCESSING") ?? "false"
+        );
+
+        if (enableActionProcessing && !this.isDryRun) {
             processActionsLoop().catch((error) => {
                 elizaLogger.error(
                     "Fatal error in process actions loop:",
@@ -313,7 +333,8 @@ export class TwitterPostClient {
                 // Note Tweet failed due to authorization. Falling back to standard Tweet.
                 const truncateContent = truncateToCompleteSentence(
                     content,
-                    this.client.twitterConfig.MAX_TWEET_LENGTH
+                    parseInt(runtime.getSetting("MAX_TWEET_LENGTH")) ||
+                        DEFAULT_MAX_TWEET_LENGTH
                 );
                 return await this.sendStandardTweet(
                     client,
@@ -475,7 +496,10 @@ export class TwitterPostClient {
             }
 
             // Truncate the content to the maximum tweet length specified in the environment settings, ensuring the truncation respects sentence boundaries.
-            const maxTweetLength = this.client.twitterConfig.MAX_TWEET_LENGTH
+            const maxTweetLength = parseInt(
+                this.runtime.getSetting("MAX_TWEET_LENGTH"),
+                10
+            );
             if (maxTweetLength) {
                 cleanedContent = truncateToCompleteSentence(
                     cleanedContent,
