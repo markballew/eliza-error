@@ -14,22 +14,15 @@ interface EmbeddingOptions {
     provider?: string;
 }
 
-// Define the providers as a const object
-export const EMBEDDING_PROVIDERS = {
+export const EmbeddingProvider = {
     OpenAI: "OpenAI",
     Ollama: "Ollama",
     GaiaNet: "GaiaNet",
     BGE: "BGE",
 } as const;
 
-// Create type from the values
-export type EmbeddingProvider = typeof EMBEDDING_PROVIDERS[keyof typeof EMBEDDING_PROVIDERS];
-
-// If you need individual types, use type aliases instead of namespace
-export type OpenAIProvider = typeof EMBEDDING_PROVIDERS.OpenAI;
-export type OllamaProvider = typeof EMBEDDING_PROVIDERS.Ollama;
-export type GaiaNetProvider = typeof EMBEDDING_PROVIDERS.GaiaNet;
-export type BGEProvider = typeof EMBEDDING_PROVIDERS.BGE;
+export type EmbeddingProviderType =
+    (typeof EmbeddingProvider)[keyof typeof EmbeddingProvider];
 
 export type EmbeddingConfig = {
     readonly dimensions: number;
@@ -196,7 +189,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     if (config.provider === EmbeddingProvider.OpenAI) {
         return await getRemoteEmbedding(input, {
             model: config.model,
-            endpoint: "https://api.openai.com/v1",
+            endpoint: settings.OPENAI_API_URL || "https://api.openai.com/v1",
             apiKey: settings.OPENAI_API_KEY,
             dimensions: config.dimensions,
         });

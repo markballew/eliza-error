@@ -100,8 +100,9 @@ export class TwitterInteractionClient {
             this.handleTwitterInteractions();
             setTimeout(
                 handleTwitterInteractionsLoop,
-                // Defaults to 2 minutes
-                this.client.twitterConfig.TWITTER_POLL_INTERVAL * 1000
+                Number(
+                    this.runtime.getSetting("TWITTER_POLL_INTERVAL") || 120
+                ) * 1000 // Default to 2 minutes
             );
         };
         handleTwitterInteractionsLoop();
@@ -109,6 +110,8 @@ export class TwitterInteractionClient {
 
     async handleTwitterInteractions() {
         elizaLogger.log("Checking Twitter interactions");
+        // Read from environment variable, fallback to default list if not set
+        const targetUsersStr = this.runtime.getSetting("TWITTER_TARGET_USERS");
 
         const twitterUsername = this.client.profile.username;
         try {
@@ -127,8 +130,11 @@ export class TwitterInteractionClient {
             );
             let uniqueTweetCandidates = [...mentionCandidates];
             // Only process target users if configured
-            if (this.client.twitterConfig.TWITTER_TARGET_USERS.length) {
-                const TARGET_USERS = this.client.twitterConfig.TWITTER_TARGET_USERS;
+            if (targetUsersStr && targetUsersStr.trim()) {
+                const TARGET_USERS = targetUsersStr
+                    .split(",")
+                    .map((u) => u.trim())
+                    .filter((u) => u.length > 0); // Filter out empty strings after split
 
                 elizaLogger.log("Processing target users:", TARGET_USERS);
 
@@ -341,7 +347,7 @@ export class TwitterInteractionClient {
 
         let state = await this.runtime.composeState(message, {
             twitterClient: this.client.twitterClient,
-            twitterUserName: this.client.twitterConfig.TWITTER_USERNAME,
+            twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
             currentPost,
             formattedConversation,
         });
@@ -377,8 +383,18 @@ export class TwitterInteractionClient {
             this.client.saveRequestMessage(message, state);
         }
 
-        // get usernames into str
-        const validTargetUsersStr = this.client.twitterConfig.TWITTER_TARGET_USERS.join(",");
+        // 1. Get the raw target users string from settings
+        const targetUsersStr = this.runtime.getSetting("TWITTER_TARGET_USERS");
+
+        // 2. Process the string to get valid usernames
+        const validTargetUsersStr =
+            targetUsersStr && targetUsersStr.trim()
+                ? targetUsersStr
+                      .split(",") // Split by commas: "user1,user2" -> ["user1", "user2"]
+                      .map((u) => u.trim()) // Remove whitespace: [" user1 ", "user2 "] -> ["user1", "user2"]
+                      .filter((u) => u.length > 0)
+                      .join(",")
+                : "";
 
         const shouldRespondContext = composeContext({
             state,
@@ -434,7 +450,7 @@ export class TwitterInteractionClient {
                         this.client,
                         response,
                         message.roomId,
-                        this.client.twitterConfig.TWITTER_USERNAME,
+                        this.runtime.getSetting("TWITTER_USERNAME"),
                         tweet.id
                     );
                     return memories;
