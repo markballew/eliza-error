@@ -209,6 +209,7 @@ export type Models = {
     [ModelProviderName.HYPERBOLIC]: Model;
     [ModelProviderName.VENICE]: Model;
     [ModelProviderName.AKASH_CHAT_API]: Model;
+    [ModelProviderName.LIVEPEER]: Model;
 };
 
 /**
@@ -238,6 +239,7 @@ export enum ModelProviderName {
     HYPERBOLIC = "hyperbolic",
     VENICE = "venice",
     AKASH_CHAT_API = "akash_chat_api",
+    LIVEPEER = "livepeer",
 }
 
 /**
@@ -417,6 +419,9 @@ export interface Action {
 
     /** Validation function */
     validate: Validator;
+
+    /** Whether to suppress the initial message when this action is used */
+    suppressInitialMessage?: boolean;
 }
 
 /**
@@ -623,6 +628,14 @@ export interface IAgentConfig {
     [key: string]: string;
 }
 
+export interface ModelConfiguration {
+    temperature?: number;
+    max_response_length?: number;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    maxInputTokens?: number;
+}
+
 /**
  * Configuration for an agent character
  */
@@ -707,6 +720,20 @@ export type Character = {
     settings?: {
         secrets?: { [key: string]: string };
         intiface?: boolean;
+        imageSettings?: {
+            steps?: number;
+            width?: number;
+            height?: number;
+            negativePrompt?: string;
+            numIterations?: number;
+            guidanceScale?: number;
+            seed?: number;
+            modelId?: string;
+            jobId?: string;
+            count?: number;
+            stylePreset?: string;
+            hideWatermark?: boolean;
+        };
         voice?: {
             model?: string; // For VITS
             url?: string; // Legacy VITS support
@@ -721,6 +748,7 @@ export type Character = {
             };
         };
         model?: string;
+        modelConfig?: ModelConfiguration;
         embeddingModel?: string;
         chains?: {
             evm?: any[];
@@ -756,6 +784,13 @@ export type Character = {
         slack?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
+        };
+        gitbook?: {
+            keywords?: {
+                projectTerms?: string[];
+                generalQueries?: string[];
+            };
+            documentTriggers?: string[];
         };
     };
 
@@ -1056,6 +1091,8 @@ export interface IAgentRuntime {
     // but I think the real solution is forthcoming as a base client interface
     clients: Record<string, any>;
 
+    verifiableInferenceAdapter?: IVerifiableInferenceAdapter | null;
+
     initialize(): Promise<void>;
 
     registerMemoryManager(manager: IMemoryManager): void;
@@ -1242,4 +1279,62 @@ export interface ActionResponse {
 
 export interface ISlackService extends Service {
     client: any;
+}
+
+/**
+ * Available verifiable inference providers
+ */
+export enum VerifiableInferenceProvider {
+    RECLAIM = "reclaim",
+}
+
+/**
+ * Options for verifiable inference
+ */
+export interface VerifiableInferenceOptions {
+    /** Custom endpoint URL */
+    endpoint?: string;
+    /** Custom headers */
+    headers?: Record<string, string>;
+    /** Provider-specific options */
+    providerOptions?: Record<string, unknown>;
+}
+
+/**
+ * Result of a verifiable inference request
+ */
+export interface VerifiableInferenceResult {
+    /** Generated text */
+    text: string;
+    /** Proof data */
+    proof: unknown;
+    /** Provider information */
+    provider: VerifiableInferenceProvider;
+    /** Timestamp */
+    timestamp: number;
+}
+
+/**
+ * Interface for verifiable inference adapters
+ */
+export interface IVerifiableInferenceAdapter {
+    /**
+     * Generate text with verifiable proof
+     * @param context The input text/prompt
+     * @param modelClass The model class/name to use
+     * @param options Additional provider-specific options
+     * @returns Promise containing the generated text and proof data
+     */
+    generateText(
+        context: string,
+        modelClass: string,
+        options?: VerifiableInferenceOptions
+    ): Promise<VerifiableInferenceResult>;
+
+    /**
+     * Verify the proof of a generated response
+     * @param result The result containing response and proof to verify
+     * @returns Promise indicating if the proof is valid
+     */
+    verifyProof(result: VerifiableInferenceResult): Promise<boolean>;
 }

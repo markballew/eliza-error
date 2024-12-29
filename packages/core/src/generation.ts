@@ -34,6 +34,10 @@ import {
     ServiceType,
     SearchResponse,
     ActionResponse,
+    IVerifiableInferenceAdapter,
+    VerifiableInferenceOptions,
+    VerifiableInferenceResult,
+    VerifiableInferenceProvider,
 } from "./types.ts";
 import { fal } from "@fal-ai/client";
 
@@ -55,11 +59,18 @@ export async function generateText({
     context,
     modelClass,
     stop,
+    customSystemPrompt,
+    verifiableInference = process.env.VERIFIABLE_INFERENCE_ENABLED === "true",
+    verifiableInferenceOptions,
 }: {
     runtime: IAgentRuntime;
     context: string;
     modelClass: string;
     stop?: string[];
+    customSystemPrompt?: string;
+    verifiableInference?: boolean;
+    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }): Promise<string> {
     if (!context) {
         console.error("generateText context is empty");
@@ -71,7 +82,32 @@ export async function generateText({
     elizaLogger.info("Generating text with options:", {
         modelProvider: runtime.modelProvider,
         model: modelClass,
+        verifiableInference,
     });
+
+    // If verifiable inference is requested and adapter is provided, use it
+    if (verifiableInference && runtime.verifiableInferenceAdapter) {
+        try {
+            const result =
+                await runtime.verifiableInferenceAdapter.generateText(
+                    context,
+                    modelClass,
+                    verifiableInferenceOptions
+                );
+
+            // Verify the proof
+            const isValid =
+                await runtime.verifiableInferenceAdapter.verifyProof(result);
+            if (!isValid) {
+                throw new Error("Failed to verify inference proof");
+            }
+
+            return result.text;
+        } catch (error) {
+            elizaLogger.error("Error in verifiable inference:", error);
+            throw error;
+        }
+    }
 
     const provider = runtime.modelProvider;
     const endpoint =
@@ -146,11 +182,22 @@ export async function generateText({
 
     elizaLogger.info("Selected model:", model);
 
-    const temperature = models[provider].settings.temperature;
-    const frequency_penalty = models[provider].settings.frequency_penalty;
-    const presence_penalty = models[provider].settings.presence_penalty;
-    const max_context_length = models[provider].settings.maxInputTokens;
-    const max_response_length = models[provider].settings.maxOutputTokens;
+    const modelConfiguration = runtime.character?.settings?.modelConfig;
+    const temperature =
+        modelConfiguration?.temperature ||
+        models[provider].settings.temperature;
+    const frequency_penalty =
+        modelConfiguration?.frequency_penalty ||
+        models[provider].settings.frequency_penalty;
+    const presence_penalty =
+        modelConfiguration?.presence_penalty ||
+        models[provider].settings.presence_penalty;
+    const max_context_length =
+        modelConfiguration?.maxInputTokens ||
+        models[provider].settings.maxInputTokens;
+    const max_response_length =
+        modelConfiguration?.max_response_length ||
+        models[provider].settings.maxOutputTokens;
 
     const apiKey = runtime.token;
 
@@ -199,7 +246,7 @@ export async function generateText({
                 });
 
                 response = openaiResponse;
-                elizaLogger.debug("Received response from OpenAI model.");
+                console.log("Received response from OpenAI model.");
                 break;
             }
 
@@ -445,6 +492,7 @@ export async function generateText({
                     model: heurist.languageModel(model),
                     prompt: context,
                     system:
+                        customSystemPrompt ??
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
@@ -935,6 +983,8 @@ export const generateImage = async (
         seed?: number;
         modelId?: string;
         jobId?: string;
+        stylePreset?: string;
+        hideWatermark?: boolean;
     },
     runtime: IAgentRuntime
 ): Promise<{
@@ -952,12 +1002,33 @@ export const generateImage = async (
     const apiKey =
         runtime.imageModelProvider === runtime.modelProvider
             ? runtime.token
-            : (runtime.getSetting("HEURIST_API_KEY") ??
-              runtime.getSetting("TOGETHER_API_KEY") ??
-              runtime.getSetting("FAL_API_KEY") ??
-              runtime.getSetting("OPENAI_API_KEY") ??
-              runtime.getSetting("VENICE_API_KEY"));
-
+            : (() => {
+                  // First try to match the specific provider
+                  switch (runtime.imageModelProvider) {
+                      case ModelProviderName.HEURIST:
+                          return runtime.getSetting("HEURIST_API_KEY");
+                      case ModelProviderName.TOGETHER:
+                          return runtime.getSetting("TOGETHER_API_KEY");
+                      case ModelProviderName.FAL:
+                          return runtime.getSetting("FAL_API_KEY");
+                      case ModelProviderName.OPENAI:
+                          return runtime.getSetting("OPENAI_API_KEY");
+                      case ModelProviderName.VENICE:
+                          return runtime.getSetting("VENICE_API_KEY");
+                      case ModelProviderName.LIVEPEER:
+                          return runtime.getSetting("LIVEPEER_GATEWAY_URL");
+                      default:
+                          // If no specific match, try the fallback chain
+                          return (
+                              runtime.getSetting("HEURIST_API_KEY") ??
+                              runtime.getSetting("TOGETHER_API_KEY") ??
+                              runtime.getSetting("FAL_API_KEY") ??
+                              runtime.getSetting("OPENAI_API_KEY") ??
+                              runtime.getSetting("VENICE_API_KEY") ??
+                              runtime.getSetting("LIVEPEER_GATEWAY_URL")
+                          );
+                  }
+              })();
     try {
         if (runtime.imageModelProvider === ModelProviderName.HEURIST) {
             const response = await fetch(
@@ -1121,9 +1192,12 @@ export const generateImage = async (
                         model: data.modelId || "fluently-xl",
                         prompt: data.prompt,
                         negative_prompt: data.negativePrompt,
-                        width: data.width || 1024,
-                        height: data.height || 1024,
-                        steps: data.numIterations || 20,
+                        width: data.width,
+                        height: data.height,
+                        steps: data.numIterations,
+                        seed: data.seed,
+                        style_preset: data.stylePreset,
+                        hide_watermark: data.hideWatermark,
                     }),
                 }
             );
@@ -1144,6 +1218,65 @@ export const generateImage = async (
             });
 
             return { success: true, data: base64s };
+        } else if (runtime.imageModelProvider === ModelProviderName.LIVEPEER) {
+            if (!apiKey) {
+                throw new Error("Livepeer Gateway is not defined");
+            }
+            try {
+                const baseUrl = new URL(apiKey);
+                if (!baseUrl.protocol.startsWith("http")) {
+                    throw new Error("Invalid Livepeer Gateway URL protocol");
+                }
+                const response = await fetch(
+                    `${baseUrl.toString()}text-to-image`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            model_id:
+                                data.modelId || "ByteDance/SDXL-Lightning",
+                            prompt: data.prompt,
+                            width: data.width || 1024,
+                            height: data.height || 1024,
+                        }),
+                    }
+                );
+                const result = await response.json();
+                if (!result.images?.length) {
+                    throw new Error("No images generated");
+                }
+                const base64Images = await Promise.all(
+                    result.images.map(async (image) => {
+                        console.log("imageUrl console log", image.url);
+                        let imageUrl;
+                        if (image.url.includes("http")) {
+                            imageUrl = image.url;
+                        } else {
+                            imageUrl = `${apiKey}${image.url}`;
+                        }
+                        const imageResponse = await fetch(imageUrl);
+                        if (!imageResponse.ok) {
+                            throw new Error(
+                                `Failed to fetch image: ${imageResponse.statusText}`
+                            );
+                        }
+                        const blob = await imageResponse.blob();
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const base64 =
+                            Buffer.from(arrayBuffer).toString("base64");
+                        return `data:image/jpeg;base64,${base64}`;
+                    })
+                );
+                return {
+                    success: true,
+                    data: base64Images,
+                };
+            } catch (error) {
+                console.error(error);
+                return { success: false, error: error };
+            }
         } else {
             let targetSize = `${data.width}x${data.height}`;
             if (
@@ -1251,6 +1384,9 @@ export interface GenerationOptions {
     stop?: string[];
     mode?: "auto" | "json" | "tool";
     experimental_providerMetadata?: Record<string, unknown>;
+    verifiableInference?: boolean;
+    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }
 
 /**
@@ -1281,6 +1417,9 @@ export const generateObject = async ({
     schemaDescription,
     stop,
     mode = "json",
+    verifiableInference = false,
+    verifiableInferenceAdapter,
+    verifiableInferenceOptions,
 }: GenerationOptions): Promise<GenerateObjectResult<unknown>> => {
     if (!context) {
         const errorMessage = "generateObject context is empty";
@@ -1324,6 +1463,9 @@ export const generateObject = async ({
             runtime,
             context,
             modelClass,
+            verifiableInference,
+            verifiableInferenceAdapter,
+            verifiableInferenceOptions,
         });
 
         return response;
@@ -1349,6 +1491,9 @@ interface ProviderOptions {
     modelOptions: ModelSettings;
     modelClass: string;
     context: string;
+    verifiableInference?: boolean;
+    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }
 
 /**
@@ -1360,7 +1505,15 @@ interface ProviderOptions {
 export async function handleProvider(
     options: ProviderOptions
 ): Promise<GenerateObjectResult<unknown>> {
-    const { provider, runtime, context, modelClass } = options;
+    const {
+        provider,
+        runtime,
+        context,
+        modelClass,
+        verifiableInference,
+        verifiableInferenceAdapter,
+        verifiableInferenceOptions,
+    } = options;
     switch (provider) {
         case ModelProviderName.OPENAI:
         case ModelProviderName.ETERNALAI:
@@ -1411,7 +1564,7 @@ async function handleOpenAI({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const baseURL = models.openai.endpoint || undefined;
@@ -1421,7 +1574,7 @@ async function handleOpenAI({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1438,7 +1591,7 @@ async function handleAnthropic({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const anthropic = createAnthropic({ apiKey });
@@ -1447,7 +1600,7 @@ async function handleAnthropic({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1464,7 +1617,7 @@ async function handleGrok({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const grok = createOpenAI({ apiKey, baseURL: models.grok.endpoint });
@@ -1473,7 +1626,7 @@ async function handleGrok({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1490,7 +1643,7 @@ async function handleGroq({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const groq = createGroq({ apiKey });
@@ -1499,7 +1652,7 @@ async function handleGroq({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1516,7 +1669,7 @@ async function handleGoogle({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const google = createGoogleGenerativeAI();
@@ -1525,7 +1678,7 @@ async function handleGoogle({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1542,7 +1695,7 @@ async function handleRedPill({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const redPill = createOpenAI({ apiKey, baseURL: models.redpill.endpoint });
@@ -1551,7 +1704,7 @@ async function handleRedPill({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1568,7 +1721,7 @@ async function handleOpenRouter({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const openRouter = createOpenAI({
@@ -1580,7 +1733,7 @@ async function handleOpenRouter({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1596,7 +1749,7 @@ async function handleOllama({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
     provider,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
@@ -1609,7 +1762,7 @@ async function handleOllama({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
