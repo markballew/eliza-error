@@ -39,18 +39,16 @@ Recent interactions between {{agentName}} and other users:
 
 {{recentPosts}}
 
-# TASK: Generate a post/reply in the voice, style and perspective of {{agentName}} (@{{twitterUserName}}) while using the thread of tweets as additional context:
-
+# Task: Generate a post/reply in the voice, style and perspective of {{agentName}} (@{{twitterUserName}}) while using the thread of tweets as additional context:
 Current Post:
 {{currentPost}}
 
 Thread of Tweets You Are Replying To:
 {{formattedConversation}}
 
-# INSTRUCTIONS: Generate a post in the voice, style and perspective of {{agentName}} (@{{twitterUserName}}). You MUST include an action if the current post text includes a prompt that is similar to one of the available actions mentioned here:
-{{actionNames}}
 {{actions}}
-
+# Task: Generate a post in the voice, style and perspective of {{agentName}} (@{{twitterUserName}}). You MUST include an action if the current post text includes a prompt that is similar to one of the available actions mentioned here:
+{{actionNames}}
 Here is the current post text again. Remember to include an action if the current post text includes a prompt that asks for one of the available actions mentioned above (does not need to be exact)
 {{currentPost}}
 ` + messageCompletionFooter;
@@ -71,17 +69,18 @@ For other users:
 - {{agentName}} should STOP if conversation is concluded
 - {{agentName}} is in a room with other users and wants to be conversational, but not annoying.
 
-IMPORTANT:
-- {{agentName}} (aka @{{twitterUserName}}) is particularly sensitive about being annoying, so if there is any doubt, it is better to IGNORE than to RESPOND.
-- For users not in the priority list, {{agentName}} (@{{twitterUserName}}) should err on the side of IGNORE rather than RESPOND if in doubt.
-
-Recent Posts:
 {{recentPosts}}
 
-Current Post:
+IMPORTANT: For users not in the priority list, {{agentName}} (@{{twitterUserName}}) should err on the side of IGNORE rather than RESPOND if in doubt.
+
+{{recentPosts}}
+
+IMPORTANT: {{agentName}} (aka @{{twitterUserName}}) is particularly sensitive about being annoying, so if there is any doubt, it is better to IGNORE than to RESPOND.
+
 {{currentPost}}
 
 Thread of Tweets You Are Replying To:
+
 {{formattedConversation}}
 
 # INSTRUCTIONS: Respond with [RESPOND] if {{agentName}} should respond, or [IGNORE] if {{agentName}} should not respond to the last message and [STOP] if {{agentName}} should stop participating in the conversation.
@@ -100,8 +99,9 @@ export class TwitterInteractionClient {
             this.handleTwitterInteractions();
             setTimeout(
                 handleTwitterInteractionsLoop,
-                // Defaults to 2 minutes
-                this.client.twitterConfig.TWITTER_POLL_INTERVAL * 1000
+                Number(
+                    this.runtime.getSetting("TWITTER_POLL_INTERVAL") || 120
+                ) * 1000 // Default to 2 minutes
             );
         };
         handleTwitterInteractionsLoop();
@@ -109,6 +109,8 @@ export class TwitterInteractionClient {
 
     async handleTwitterInteractions() {
         elizaLogger.log("Checking Twitter interactions");
+        // Read from environment variable, fallback to default list if not set
+        const targetUsersStr = this.runtime.getSetting("TWITTER_TARGET_USERS");
 
         const twitterUsername = this.client.profile.username;
         try {
@@ -127,8 +129,11 @@ export class TwitterInteractionClient {
             );
             let uniqueTweetCandidates = [...mentionCandidates];
             // Only process target users if configured
-            if (this.client.twitterConfig.TWITTER_TARGET_USERS.length) {
-                const TARGET_USERS = this.client.twitterConfig.TWITTER_TARGET_USERS;
+            if (targetUsersStr && targetUsersStr.trim()) {
+                const TARGET_USERS = targetUsersStr
+                    .split(",")
+                    .map((u) => u.trim())
+                    .filter((u) => u.length > 0); // Filter out empty strings after split
 
                 elizaLogger.log("Processing target users:", TARGET_USERS);
 
@@ -341,7 +346,7 @@ export class TwitterInteractionClient {
 
         let state = await this.runtime.composeState(message, {
             twitterClient: this.client.twitterClient,
-            twitterUserName: this.client.twitterConfig.TWITTER_USERNAME,
+            twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
             currentPost,
             formattedConversation,
         });
@@ -377,8 +382,18 @@ export class TwitterInteractionClient {
             this.client.saveRequestMessage(message, state);
         }
 
-        // get usernames into str
-        const validTargetUsersStr = this.client.twitterConfig.TWITTER_TARGET_USERS.join(",");
+        // 1. Get the raw target users string from settings
+        const targetUsersStr = this.runtime.getSetting("TWITTER_TARGET_USERS");
+
+        // 2. Process the string to get valid usernames
+        const validTargetUsersStr =
+            targetUsersStr && targetUsersStr.trim()
+                ? targetUsersStr
+                      .split(",") // Split by commas: "user1,user2" -> ["user1", "user2"]
+                      .map((u) => u.trim()) // Remove whitespace: [" user1 ", "user2 "] -> ["user1", "user2"]
+                      .filter((u) => u.length > 0)
+                      .join(",")
+                : "";
 
         const shouldRespondContext = composeContext({
             state,
@@ -434,7 +449,7 @@ export class TwitterInteractionClient {
                         this.client,
                         response,
                         message.roomId,
-                        this.client.twitterConfig.TWITTER_USERNAME,
+                        this.runtime.getSetting("TWITTER_USERNAME"),
                         tweet.id
                     );
                     return memories;

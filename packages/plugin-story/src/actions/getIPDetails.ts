@@ -4,9 +4,9 @@ import {
     generateObjectDeprecated,
     HandlerCallback,
     ModelClass,
-    IAgentRuntime,
-    Memory,
-    State,
+    type IAgentRuntime,
+    type Memory,
+    type State,
 } from "@elizaos/core";
 import { getIPDetailsTemplate } from "../templates";
 import { Address } from "viem";
