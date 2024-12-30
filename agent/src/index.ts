@@ -7,7 +7,6 @@ import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
-import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import {
     AgentRuntime,
     CacheManager,
@@ -522,7 +521,6 @@ export async function createAgent(
         // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
-            webSearchPlugin,
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
                 ? confluxPlugin
                 : null,
