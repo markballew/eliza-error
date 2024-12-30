@@ -1,4 +1,4 @@
-import { messageCompletionFooter, shouldRespondFooter } from "@elizaos/core";
+import { messageCompletionFooter, shouldRespondFooter } from "@ai16z/eliza";
 
 export const discordShouldRespondTemplate =
     `# Task: Decide if {{agentName}} should respond.
@@ -8,48 +8,48 @@ About {{agentName}}:
 # INSTRUCTIONS: Determine if {{agentName}} should respond to the message and participate in the conversation. Do not comment. Just respond with "RESPOND" or "IGNORE" or "STOP".
 
 # RESPONSE EXAMPLES
-{{user1}}: I just saw a really great movie
-{{user2}}: Oh? Which movie?
+<user 1>: I just saw a really great movie
+<user 2>: Oh? Which movie?
 Result: [IGNORE]
 
 {{agentName}}: Oh, this is my favorite scene
-{{user1}}: sick
-{{user2}}: wait, why is it your favorite scene
+<user 1>: sick
+<user 2>: wait, why is it your favorite scene
 Result: [RESPOND]
 
-{{user1}}: stfu bot
+<user>: stfu bot
 Result: [STOP]
 
-{{user1}}: Hey {{agent}}, can you help me with something
+<user>: Hey {{agent}}, can you help me with something
 Result: [RESPOND]
 
-{{user1}}: {{agentName}} stfu plz
+<user>: {{agentName}} stfu plz
 Result: [STOP]
 
-{{user1}}: i need help
+<user>: i need help
 {{agentName}}: how can I help you?
-{{user1}}: no. i need help from someone else
+<user>: no. i need help from someone else
 Result: [IGNORE]
 
-{{user1}}: Hey {{agent}}, can I ask you a question
+<user>: Hey {{agent}}, can I ask you a question
 {{agentName}}: Sure, what is it
-{{user1}}: can you ask claude to create a basic react module that demonstrates a counter
+<user>: can you ask claude to create a basic react module that demonstrates a counter
 Result: [RESPOND]
 
-{{user1}}: {{agentName}} can you tell me a story
-{{user1}}: about a girl named elara
+<user>: {{agentName}} can you tell me a story
+<user>: {about a girl named elara
 {{agentName}}: Sure.
 {{agentName}}: Once upon a time, in a quaint little village, there was a curious girl named Elara.
 {{agentName}}: Elara was known for her adventurous spirit and her knack for finding beauty in the mundane.
-{{user1}}: I'm loving it, keep going
+<user>: I'm loving it, keep going
 Result: [RESPOND]
 
-{{user1}}: {{agentName}} stop responding plz
+<user>: {{agentName}} stop responding plz
 Result: [STOP]
 
-{{user1}}: okay, i want to test something. can you say marco?
+<user>: okay, i want to test something. can you say marco?
 {{agentName}}: marco
-{{user1}}: great. okay, now do it again
+<user>: great. okay, now do it again
 Result: [RESPOND]
 
 Response options are [RESPOND], [IGNORE] and [STOP].
