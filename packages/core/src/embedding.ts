@@ -14,29 +14,14 @@ interface EmbeddingOptions {
     provider?: string;
 }
 
-export const EmbeddingProvider = {
-    OpenAI: "OpenAI",
-    Ollama: "Ollama",
-    GaiaNet: "GaiaNet",
-    BGE: "BGE",
-} as const;
-
-export type EmbeddingProviderType =
-    (typeof EmbeddingProvider)[keyof typeof EmbeddingProvider];
-
-export type EmbeddingConfig = {
-    readonly dimensions: number;
-    readonly model: string;
-    readonly provider: EmbeddingProviderType;
-};
-
-export const getEmbeddingConfig = (): EmbeddingConfig => ({
+// Add the embedding configuration
+export const getEmbeddingConfig = () => ({
     dimensions:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
             ? 1536 // OpenAI
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
               ? 1024 // Ollama mxbai-embed-large
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+              :settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
                 ? 768 // GaiaNet
                 : 384, // BGE
     model:
@@ -186,16 +171,16 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     const isNode = typeof process !== "undefined" && process.versions?.node;
 
     // Determine which embedding path to use
-    if (config.provider === EmbeddingProvider.OpenAI) {
+    if (config.provider === "OpenAI") {
         return await getRemoteEmbedding(input, {
             model: config.model,
-            endpoint: settings.OPENAI_API_URL || "https://api.openai.com/v1",
+            endpoint: "https://api.openai.com/v1",
             apiKey: settings.OPENAI_API_KEY,
             dimensions: config.dimensions,
         });
     }
 
-    if (config.provider === EmbeddingProvider.Ollama) {
+    if (config.provider === "Ollama") {
         return await getRemoteEmbedding(input, {
             model: config.model,
             endpoint:
@@ -206,7 +191,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         });
     }
 
-    if (config.provider == EmbeddingProvider.GaiaNet) {
+    if (config.provider=="GaiaNet") {
         return await getRemoteEmbedding(input, {
             model: config.model,
             endpoint:
@@ -267,11 +252,9 @@ export async function embed(runtime: IAgentRuntime, input: string) {
                         return await import("fastembed");
                     } catch {
                         elizaLogger.error("Failed to load fastembed.");
-                        throw new Error(
-                            "fastembed import failed, falling back to remote embedding"
-                        );
+                        throw new Error("fastembed import failed, falling back to remote embedding");
                     }
-                })(),
+                })()
             ]);
 
             const [fs, { fileURLToPath }, fastEmbed] = moduleImports;
