@@ -21,13 +21,20 @@ export const EmbeddingProvider = {
     BGE: "BGE",
 } as const;
 
-export type EmbeddingProviderType =
+export type EmbeddingProvider =
     (typeof EmbeddingProvider)[keyof typeof EmbeddingProvider];
+
+export namespace EmbeddingProvider {
+    export type OpenAI = typeof EmbeddingProvider.OpenAI;
+    export type Ollama = typeof EmbeddingProvider.Ollama;
+    export type GaiaNet = typeof EmbeddingProvider.GaiaNet;
+    export type BGE = typeof EmbeddingProvider.BGE;
+}
 
 export type EmbeddingConfig = {
     readonly dimensions: number;
     readonly model: string;
-    readonly provider: EmbeddingProviderType;
+    readonly provider: EmbeddingProvider;
 };
 
 export const getEmbeddingConfig = (): EmbeddingConfig => ({
@@ -137,8 +144,6 @@ export function getEmbeddingZeroVector(): number[] {
         embeddingDimension = 1536; // OpenAI dimension
     } else if (settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true") {
         embeddingDimension = 1024; // Ollama mxbai-embed-large dimension
-    } else if (settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true") {
-        embeddingDimension = 768; // GaiaNet dimension
     }
 
     return Array(embeddingDimension).fill(0);
@@ -191,7 +196,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     if (config.provider === EmbeddingProvider.OpenAI) {
         return await getRemoteEmbedding(input, {
             model: config.model,
-            endpoint: settings.OPENAI_API_URL || "https://api.openai.com/v1",
+            endpoint: "https://api.openai.com/v1",
             apiKey: settings.OPENAI_API_KEY,
             dimensions: config.dimensions,
         });

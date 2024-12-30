@@ -31,7 +31,6 @@ interface Action {
     examples: ActionExample[][];
     handler: Handler;
     validate: Validator;
-    suppressInitialMessage?: boolean;
 }
 ```
 
@@ -152,7 +151,6 @@ interface Action {
         state?: State,
     ) => Promise<void>;
     examples: ActionExample[][];
-    suppressInitialMessage?: boolean;
 }
 ```
 
@@ -164,7 +162,6 @@ interface Action {
 - **validate**: Determines if the action can be executed
 - **handler**: Implements the action's behavior
 - **examples**: Demonstrates proper usage patterns
-- **suppressInitialMessage**: When true, suppresses the initial response message before processing the action. Useful for actions that generate their own responses (like image generation)
 
 ---
 
