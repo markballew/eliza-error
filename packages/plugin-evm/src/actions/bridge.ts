@@ -1,20 +1,13 @@
-import type { IAgentRuntime, Memory, State } from "@elizaos/core";
-import {
-    composeContext,
-    generateObjectDeprecated,
-    ModelClass,
-} from "@elizaos/core";
+import type { IAgentRuntime, Memory, State } from "@ai16z/eliza";
 import {
     createConfig,
     executeRoute,
     ExtendedChain,
     getRoutes,
 } from "@lifi/sdk";
-
-import { initWalletProvider, WalletProvider } from "../providers/wallet";
+import { WalletProvider } from "../providers/wallet";
 import { bridgeTemplate } from "../templates";
 import type { BridgeParams, Transaction } from "../types";
-import { parseEther } from "viem";
 
 export { bridgeTemplate };
 
@@ -61,7 +54,7 @@ export class BridgeAction {
             toChainId: this.walletProvider.getChainConfigs(params.toChain).id,
             fromTokenAddress: params.fromToken,
             toTokenAddress: params.toToken,
-            fromAmount: parseEther(params.amount).toString(),
+            fromAmount: params.amount,
             fromAddress: fromAddress,
             toAddress: params.toAddress || fromAddress,
         });
@@ -91,56 +84,16 @@ export const bridgeAction = {
     description: "Bridge tokens between different chains",
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
+        message: Memory,
         state: State,
-        _options: any,
-        callback?: any
+        options: any
     ) => {
-        console.log("Bridge action handler called");
-        const walletProvider = initWalletProvider(runtime);
+        const privateKey = runtime.getSetting(
+            "EVM_PRIVATE_KEY"
+        ) as `0x${string}`;
+        const walletProvider = new WalletProvider(privateKey);
         const action = new BridgeAction(walletProvider);
-
-        // Compose bridge context
-        const bridgeContext = composeContext({
-            state,
-            template: bridgeTemplate,
-        });
-        const content = await generateObjectDeprecated({
-            runtime,
-            context: bridgeContext,
-            modelClass: ModelClass.LARGE,
-        });
-
-        const bridgeOptions: BridgeParams = {
-            fromChain: content.fromChain,
-            toChain: content.toChain,
-            fromToken: content.token,
-            toToken: content.token,
-            toAddress: content.toAddress,
-            amount: content.amount,
-        };
-
-        try {
-            const bridgeResp = await action.bridge(bridgeOptions);
-            if (callback) {
-                callback({
-                    text: `Successfully bridge ${bridgeOptions.amount} ${bridgeOptions.fromToken} tokens from ${bridgeOptions.fromChain} to ${bridgeOptions.toChain}\nTransaction Hash: ${bridgeResp.hash}`,
-                    content: {
-                        success: true,
-                        hash: bridgeResp.hash,
-                        recipient: bridgeResp.to,
-                        chain: bridgeOptions.fromChain,
-                    },
-                });
-            }
-            return true;
-        } catch (error) {
-            console.error("Error in bridge handler:", error.message);
-            if (callback) {
-                callback({ text: `Error: ${error.message}` });
-            }
-            return false;
-        }
+        return action.bridge(options);
     },
     template: bridgeTemplate,
     validate: async (runtime: IAgentRuntime) => {

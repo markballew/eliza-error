@@ -17,7 +17,7 @@ describe("Transfer Action", () => {
         it("should initialize with wallet provider", () => {
             const ta = new TransferAction(wp);
 
-            expect(ta).toBeDefined();
+            expect(ta).to.toBeDefined();
         });
     });
     describe("Transfer", () => {
@@ -44,7 +44,7 @@ describe("Transfer Action", () => {
 });
 
 const prepareChains = () => {
-    const customChains: Record<string, Chain> = {};
+    let customChains: Record<string, Chain> = {};
     const chainNames = ["iotexTestnet"];
     chainNames.forEach(
         (chain) =>

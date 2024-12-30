@@ -8,7 +8,7 @@ import {
     getEmbeddingZeroVector,
     elizaLogger,
     stringToUuid,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     QueryTweetsResponse,
     Scraper,
@@ -16,7 +16,6 @@ import {
     Tweet,
 } from "agent-twitter-client";
 import { EventEmitter } from "events";
-import { TwitterConfig } from "./environment.ts";
 
 export function extractAnswer(text: string): string {
     const startIndex = text.indexOf("Answer: ") + 8;
@@ -86,7 +85,6 @@ export class ClientBase extends EventEmitter {
     static _twitterClients: { [accountIdentifier: string]: Scraper } = {};
     twitterClient: Scraper;
     runtime: IAgentRuntime;
-    twitterConfig: TwitterConfig;
     directions: string;
     lastCheckedTweetId: bigint | null = null;
     imageDescriptionService: IImageDescriptionService;
@@ -136,11 +134,10 @@ export class ClientBase extends EventEmitter {
         );
     }
 
-    constructor(runtime: IAgentRuntime, twitterConfig:TwitterConfig) {
+    constructor(runtime: IAgentRuntime) {
         super();
         this.runtime = runtime;
-        this.twitterConfig = twitterConfig;
-        const username = twitterConfig.TWITTER_USERNAME;
+        const username = this.runtime.getSetting("TWITTER_USERNAME");
         if (ClientBase._twitterClients[username]) {
             this.twitterClient = ClientBase._twitterClients[username];
         } else {
@@ -156,46 +153,50 @@ export class ClientBase extends EventEmitter {
     }
 
     async init() {
-        const username = this.twitterConfig.TWITTER_USERNAME;
-        const password = this.twitterConfig.TWITTER_PASSWORD;
-        const email = this.twitterConfig.TWITTER_EMAIL;
-        let retries = this.twitterConfig.TWITTER_RETRY_LIMIT
-        const twitter2faSecret = this.twitterConfig.TWITTER_2FA_SECRET;
+        //test
+        const username = this.runtime.getSetting("TWITTER_USERNAME");
+        const password = this.runtime.getSetting("TWITTER_PASSWORD");
+        const email = this.runtime.getSetting("TWITTER_EMAIL");
+        const twitter2faSecret =
+            this.runtime.getSetting("TWITTER_2FA_SECRET") || undefined;
+        const cookies = this.runtime.getSetting("TWITTER_COOKIES");
 
         if (!username) {
             throw new Error("Twitter username not configured");
         }
+        // Check for Twitter cookies
+        if (cookies) {
+            elizaLogger.debug("Using cookies from settings");
+            const cookiesArray = JSON.parse(cookies);
 
-        const cachedCookies = await this.getCachedCookies(username);
-
-        if (cachedCookies) {
-            elizaLogger.info("Using cached cookies");
-            await this.setCookiesFromArray(cachedCookies);
+            await this.setCookiesFromArray(cookiesArray);
+        } else {
+            elizaLogger.debug("No cookies found in settings");
+            elizaLogger.debug("Checking for cached cookies");
+            const cachedCookies = await this.getCachedCookies(username);
+            if (cachedCookies) {
+                await this.setCookiesFromArray(cachedCookies);
+            }
         }
 
         elizaLogger.log("Waiting for Twitter login");
+        let retries = 5; // Optional: Set a retry limit
         while (retries > 0) {
+            const cookies = await this.twitterClient.getCookies();
+            if ((await this.twitterClient.isLoggedIn()) && !!cookies) {
+                elizaLogger.info("Already logged in.");
+                await this.cacheCookies(username, cookies);
+                elizaLogger.info("Successfully logged in and cookies cached.");
+                break;
+            }
+
             try {
-                if (await this.twitterClient.isLoggedIn()) { // cookies are valid, no login required
-                    elizaLogger.info("Successfully logged in.");
-                    break;
-                } else {
-                    await this.twitterClient.login(
-                        username,
-                        password,
-                        email,
-                        twitter2faSecret
-                    );
-                    if (await this.twitterClient.isLoggedIn()) {  // fresh login, store new cookies
-                        elizaLogger.info("Successfully logged in.");
-                        elizaLogger.info("Caching cookies");
-                        await this.cacheCookies(
-                            username,
-                            await this.twitterClient.getCookies()
-                        );
-                        break;
-                    }
-                }
+                await this.twitterClient.login(
+                    username,
+                    password,
+                    email,
+                    twitter2faSecret
+                );
             } catch (error) {
                 elizaLogger.error(`Login attempt failed: ${error.message}`);
             }
@@ -248,14 +249,12 @@ export class ClientBase extends EventEmitter {
         return homeTimeline.tweets;
     }
 
-    /**
-     * Fetch timeline for twitter account, optionally only from followed accounts
-     */
-    async fetchHomeTimeline(count: number, following?: boolean): Promise<Tweet[]> {
+    async fetchHomeTimeline(count: number): Promise<Tweet[]> {
         elizaLogger.debug("fetching home timeline");
-        const homeTimeline = following
-            ? await this.twitterClient.fetchFollowingTimeline(count, [])
-            : await this.twitterClient.fetchHomeTimeline(count, []);
+        const homeTimeline = await this.twitterClient.fetchHomeTimeline(
+            count,
+            []
+        );
 
         elizaLogger.debug(homeTimeline, { depth: Infinity });
         const processedTimeline = homeTimeline
@@ -312,8 +311,6 @@ export class ClientBase extends EventEmitter {
 
     async fetchTimelineForActions(count: number): Promise<Tweet[]> {
         elizaLogger.debug("fetching timeline for actions");
-
-        const agentUsername = this.twitterConfig.TWITTER_USERNAME
         const homeTimeline = await this.twitterClient.fetchHomeTimeline(
             count,
             []
@@ -341,7 +338,7 @@ export class ClientBase extends EventEmitter {
                 tweet.legacy?.entities?.media?.filter(
                     (media) => media.type === "video"
                 ) || [],
-        })).filter(tweet => tweet.username !== agentUsername); // do not perform action on self-tweets
+        }));
     }
 
     async fetchSearchTweets(
@@ -509,7 +506,7 @@ export class ClientBase extends EventEmitter {
         }
 
         const timeline = await this.fetchHomeTimeline(cachedTimeline ? 10 : 50);
-        const username = this.twitterConfig.TWITTER_USERNAME;
+        const username = this.runtime.getSetting("TWITTER_USERNAME");
 
         // Get the most recent 20 mentions and interactions
         const mentionsAndInteractions = await this.fetchSearchTweets(
