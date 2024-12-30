@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.5](../index.md) / Character
+[@elizaos/core v0.1.7-alpha.1](../index.md) / Character
 
 # Type Alias: Character
 
@@ -83,6 +83,10 @@ Optional prompt templates
 ### templates.twitterSearchTemplate?
 
 > `optional` **twitterSearchTemplate**: `string`
+
+### templates.twitterActionTemplate?
+
+> `optional` **twitterActionTemplate**: `string`
 
 ### templates.twitterPostTemplate?
 
@@ -220,6 +224,58 @@ Optional configuration
 
 > `optional` **intiface**: `boolean`
 
+### settings.imageSettings?
+
+> `optional` **imageSettings**: `object`
+
+### settings.imageSettings.steps?
+
+> `optional` **steps**: `number`
+
+### settings.imageSettings.width?
+
+> `optional` **width**: `number`
+
+### settings.imageSettings.height?
+
+> `optional` **height**: `number`
+
+### settings.imageSettings.negativePrompt?
+
+> `optional` **negativePrompt**: `string`
+
+### settings.imageSettings.numIterations?
+
+> `optional` **numIterations**: `number`
+
+### settings.imageSettings.guidanceScale?
+
+> `optional` **guidanceScale**: `number`
+
+### settings.imageSettings.seed?
+
+> `optional` **seed**: `number`
+
+### settings.imageSettings.modelId?
+
+> `optional` **modelId**: `string`
+
+### settings.imageSettings.jobId?
+
+> `optional` **jobId**: `string`
+
+### settings.imageSettings.count?
+
+> `optional` **count**: `number`
+
+### settings.imageSettings.stylePreset?
+
+> `optional` **stylePreset**: `string`
+
+### settings.imageSettings.hideWatermark?
+
+> `optional` **hideWatermark**: `boolean`
+
 ### settings.voice?
 
 > `optional` **voice**: `object`
@@ -304,6 +360,10 @@ Optional client-specific config
 
 > `optional` **shouldIgnoreDirectMessages**: `boolean`
 
+### clientConfig.discord.shouldRespondOnlyToMentions?
+
+> `optional` **shouldRespondOnlyToMentions**: `boolean`
+
 ### clientConfig.discord.messageSimilarityThreshold?
 
 > `optional` **messageSimilarityThreshold**: `number`
@@ -335,6 +395,18 @@ Optional client-specific config
 ### clientConfig.telegram.shouldIgnoreDirectMessages?
 
 > `optional` **shouldIgnoreDirectMessages**: `boolean`
+
+### clientConfig.telegram.shouldRespondOnlyToMentions?
+
+> `optional` **shouldRespondOnlyToMentions**: `boolean`
+
+### clientConfig.telegram.shouldOnlyJoinInAllowedGroups?
+
+> `optional` **shouldOnlyJoinInAllowedGroups**: `boolean`
+
+### clientConfig.telegram.allowedGroupIds?
+
+> `optional` **allowedGroupIds**: `string`[]
 
 ### clientConfig.telegram.messageSimilarityThreshold?
 
@@ -424,4 +496,4 @@ Optional NFT prompt
 
 ## Defined in
 
-[packages/core/src/types.ts:627](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L627)
+[packages/core/src/types.ts:629](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L629)
