@@ -6,8 +6,7 @@ import {
     IAgentRuntime,
     ModelClass,
     stringToUuid,
-    TemplateType,
-    UUID
+    UUID,
 } from "@elizaos/core";
 import { elizaLogger } from "@elizaos/core";
 import { ClientBase } from "./base.ts";
@@ -525,7 +524,7 @@ export class TwitterPostClient {
     private async generateTweetContent(
         tweetState: any,
         options?: {
-            template?: TemplateType;
+            template?: string;
             context?: string;
         }
     ): Promise<string> {
