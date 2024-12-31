@@ -1226,26 +1226,21 @@ export interface IAwsS3Service extends Service {
     generateSignedUrl(fileName: string, expiresIn: number): Promise<string>;
 }
 
-export type SearchImage = {
-    url: string;
-    description?: string;
-};
-
 export type SearchResult = {
     title: string;
     url: string;
     content: string;
-    rawContent?: string;
     score: number;
-    publishedDate: string;
+    raw_content: string | null;
 };
 
 export type SearchResponse = {
-    answer?: string;
     query: string;
-    responseTime: number;
-    images: SearchImage[];
+    follow_up_questions: string[] | null;
+    answer: string | null;
+    images: string[];
     results: SearchResult[];
+    response_time: number;
 };
 
 export enum ServiceType {
