@@ -126,8 +126,6 @@ const config = {
           editUrl: "https://github.com/elizaos/eliza/tree/main/docs/",
           routeBasePath: "docs",
           exclude: ["**/_media/**"],
-	  showLastUpdateAuthor: true,
-          showLastUpdateTime: true
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -202,7 +200,7 @@ const config = {
             },
             {
               label: "Twitter",
-              href: "https://twitter.com/ai16zdao",
+              href: "https://twitter.com/elizaosdao",
             },
           ],
         },
@@ -216,6 +214,7 @@ const config = {
           ],
         },
       ],
+      copyright: `Copyright © ${new Date().getFullYear()} elizaos.ai`,
     },
     prism: {
       theme: prismThemes.github,

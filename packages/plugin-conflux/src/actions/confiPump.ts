@@ -213,8 +213,7 @@ export const confiPump: Action = {
             switch (contentObject.action) {
                 case "CREATE_TOKEN":
                     if (!isPumpCreateContent(contentObject)) {
-                        console.error("Invalid PumpCreateContent: ", contentObject);
-                        throw new Error("Invalid PumpCreateContent");
+                        throw new Error("Invalid content");
                     }
                     console.log(
                         "creating: ",
@@ -236,8 +235,7 @@ export const confiPump: Action = {
 
                 case "BUY_TOKEN":
                     if (!isPumpBuyContent(contentObject)) {
-                        console.error("Invalid PumpBuyContent: ", contentObject);
-                        throw new Error("Invalid PumpBuyContent");
+                        throw new Error("Invalid content");
                     }
                     value = parseUnits(
                         contentObject.params.value.toString(),
@@ -262,8 +260,7 @@ export const confiPump: Action = {
 
                 case "SELL_TOKEN":
                     if (!isPumpSellContent(contentObject)) {
-                        console.error("Invalid PumpSellContent: ", contentObject);
-                        throw new Error("Invalid PumpSellContent");
+                        throw new Error("Invalid content");
                     }
                     const tokenAddress = getAddress(
                         contentObject.params.tokenAddress as `0x${string}`
