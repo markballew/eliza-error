@@ -1,4 +1,5 @@
 import { PostgresDatabaseAdapter } from "@elizaos/adapter-postgres";
+import { RedisClient } from "@elizaos/adapter-redis";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
 import { AutoClientInterface } from "@elizaos/client-auto";
 import { DiscordClientInterface } from "@elizaos/client-discord";
@@ -10,6 +11,7 @@ import { TwitterClientInterface } from "@elizaos/client-twitter";
 import {
     AgentRuntime,
     CacheManager,
+    CacheStore,
     Character,
     Clients,
     DbCacheAdapter,
@@ -17,23 +19,22 @@ import {
     elizaLogger,
     FsCacheAdapter,
     IAgentRuntime,
+    ICacheManager,
     IDatabaseAdapter,
     IDatabaseCacheAdapter,
     ModelProviderName,
     settings,
     stringToUuid,
     validateCharacterConfig,
-    CacheStore,
-    Client,
-    ICacheManager,
 } from "@elizaos/core";
-import { RedisClient } from "@elizaos/adapter-redis";
 import { zgPlugin } from "@elizaos/plugin-0g";
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import createGoatPlugin from "@elizaos/plugin-goat";
 // import { intifacePlugin } from "@elizaos/plugin-intiface";
 import { DirectClient } from "@elizaos/client-direct";
+import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { aptosPlugin } from "@elizaos/plugin-aptos";
+import { birdeyePlugin } from "@elizaos/plugin-birdeye";
 import {
     advancedTradePlugin,
     coinbaseCommercePlugin,
@@ -44,29 +45,24 @@ import {
 } from "@elizaos/plugin-coinbase";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { evmPlugin } from "@elizaos/plugin-evm";
-import { storyPlugin } from "@elizaos/plugin-story";
 import { flowPlugin } from "@elizaos/plugin-flow";
-import { fuelPlugin } from "@elizaos/plugin-fuel";
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
-import { ThreeDGenerationPlugin } from "@elizaos/plugin-3d-generation";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
 import { createNodePlugin } from "@elizaos/plugin-node";
 import { solanaPlugin } from "@elizaos/plugin-solana";
+import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
 import { TEEMode, teePlugin } from "@elizaos/plugin-tee";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
-import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
-import { abstractPlugin } from "@elizaos/plugin-abstract";
-import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import Database from "better-sqlite3";
 import fs from "fs";
+import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
-import net from "net";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -182,25 +178,6 @@ export async function loadCharacters(
             try {
                 const character = JSON.parse(content);
                 validateCharacterConfig(character);
-
-                // .id isn't really valid
-                const characterId = character.id || character.name;
-                const characterPrefix = `CHARACTER.${characterId.toUpperCase().replace(/ /g, "_")}.`;
-
-                const characterSettings = Object.entries(process.env)
-                    .filter(([key]) => key.startsWith(characterPrefix))
-                    .reduce((settings, [key, value]) => {
-                        const settingKey = key.slice(characterPrefix.length);
-                        return { ...settings, [settingKey]: value };
-                    }, {});
-
-                if (Object.keys(characterSettings).length > 0) {
-                    character.settings = character.settings || {};
-                    character.settings.secrets = {
-                        ...characterSettings,
-                        ...character.settings.secrets,
-                    };
-                }
 
                 // Handle plugins
                 if (isAllStrings(character.plugins)) {
@@ -440,32 +417,12 @@ export async function initializeClients(
         if (slackClient) clients.slack = slackClient; // Use object property instead of push
     }
 
-    function determineClientType(client: Client): string {
-        // Check if client has a direct type identifier
-        if ("type" in client) {
-            return (client as any).type;
-        }
-
-        // Check constructor name
-        const constructorName = client.constructor?.name;
-        if (constructorName && !constructorName.includes("Object")) {
-            return constructorName.toLowerCase().replace("client", "");
-        }
-
-        // Fallback: Generate a unique identifier
-        return `client_${Date.now()}`;
-    }
-
     if (character.plugins?.length > 0) {
         for (const plugin of character.plugins) {
             if (plugin.clients) {
                 for (const client of plugin.clients) {
                     const startedClient = await client.start(runtime);
-                    const clientType = determineClientType(client);
-                    elizaLogger.debug(
-                        `Initializing client of type: ${clientType}`
-                    );
-                    clients[clientType] = startedClient;
+                    clients[client.name] = startedClient; // Assuming client has a name property
                 }
             }
         }
@@ -525,6 +482,7 @@ export async function createAgent(
                 ? confluxPlugin
                 : null,
             nodePlugin,
+            getSecret(character, "BIRDEYE_API_KEY") ? birdeyePlugin : null,
             getSecret(character, "SOLANA_PUBLIC_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
@@ -557,11 +515,9 @@ export async function createAgent(
             getSecret(character, "FAL_API_KEY") ||
             getSecret(character, "OPENAI_API_KEY") ||
             getSecret(character, "VENICE_API_KEY") ||
-            getSecret(character, "HEURIST_API_KEY") ||
-            getSecret(character, "LIVEPEER_GATEWAY_URL")
+            getSecret(character, "HEURIST_API_KEY")
                 ? imageGenerationPlugin
                 : null,
-            getSecret(character, "FAL_API_KEY") ? ThreeDGenerationPlugin : null,
             ...(getSecret(character, "COINBASE_API_KEY") &&
             getSecret(character, "COINBASE_PRIVATE_KEY")
                 ? [
@@ -590,16 +546,9 @@ export async function createAgent(
             getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
             getSecret(character, "MVX_PRIVATE_KEY") ? multiversxPlugin : null,
             getSecret(character, "ZKSYNC_PRIVATE_KEY") ? zksyncEraPlugin : null,
-            getSecret(character, "CRONOSZKEVM_PRIVATE_KEY")
-                ? cronosZkEVMPlugin
-                : null,
             getSecret(character, "TON_PRIVATE_KEY") ? tonPlugin : null,
             getSecret(character, "SUI_PRIVATE_KEY") ? suiPlugin : null,
             getSecret(character, "STORY_PRIVATE_KEY") ? storyPlugin : null,
-            getSecret(character, "FUEL_PRIVATE_KEY") ? fuelPlugin : null,
-            getSecret(character, "AVALANCHE_PRIVATE_KEY")
-                ? avalanchePlugin
-                : null,
         ].filter(Boolean),
         providers: [],
         actions: [],

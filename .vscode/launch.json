@@ -9,8 +9,14 @@
             "request": "launch",
             "name": "Launch via pnpm",
             "runtimeExecutable": "pnpm",
-            "runtimeArgs": ["run", "dev"],
-            "skipFiles": ["<node_internals>/**"]
-        }
+            "runtimeVersion": "23.3.0",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
     ]
 }
