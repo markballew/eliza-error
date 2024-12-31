@@ -8,7 +8,7 @@ import {
     Memory,
     ModelClass,
     settings,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import * as fs from "fs";
 import { validateStarknetConfig } from "../environment";
 
