@@ -6,6 +6,7 @@ import { DocumentationGenerator } from './DocumentationGenerator.js';
 import { Configuration } from './Configuration.js';
 import { AIService } from './AIService.js';
 import { GitManager } from './GitManager.js';
+import { PluginDocumentationGenerator } from './PluginDocumentationGenerator.js';
 
 /**
  * Main function for generating documentation.
@@ -46,7 +47,7 @@ async function main() {
             );
             const typeScriptParser = new TypeScriptParser();
             const jsDocAnalyzer = new JsDocAnalyzer(typeScriptParser);
-            const aiService = new AIService();
+            const aiService = new AIService(configuration);
             const jsDocGenerator = new JsDocGenerator(aiService);
 
             const documentationGenerator = new DocumentationGenerator(
@@ -59,8 +60,28 @@ async function main() {
                 aiService
             );
 
-            // Generate documentation
-            await documentationGenerator.generate(configuration.repository.pullNumber);
+            const pluginDocGenerator = new PluginDocumentationGenerator(
+                aiService,
+                gitManager,
+                configuration
+            );
+
+            const { todoItems, envUsages } = await documentationGenerator.analyzeCodebase();
+
+            // Generate JSDoc documentation first
+            const { documentedItems, branchName } = await documentationGenerator.generate(
+                configuration.repository.pullNumber
+            );
+
+            if (branchName) { // Only generate plugin docs if we have JSDoc changes
+                // Then generate plugin documentation on the same branch
+                await pluginDocGenerator.generate(
+                    documentedItems,
+                    branchName, // Use the same branch as JSDoc changes
+                    todoItems,
+                    envUsages
+                );
+            }
         } catch (error) {
             console.error('Error during documentation generation:', {
                 message: error instanceof Error ? error.message : String(error),
