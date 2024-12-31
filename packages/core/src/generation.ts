@@ -6,9 +6,7 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import {
     generateObject as aiGenerateObject,
     generateText as aiGenerateText,
-    CoreTool,
     GenerateObjectResult,
-    StepResult as AIStepResult,
 } from "ai";
 import { Buffer } from "buffer";
 import { createOllama } from "ollama-ai-provider";
@@ -39,9 +37,6 @@ import {
 } from "./types.ts";
 import { fal } from "@fal-ai/client";
 
-type Tool = CoreTool<any, any>;
-type StepResult = AIStepResult<any>;
-
 /**
  * Send a message to the model for a text generateText - receive a string back and parse how you'd like
  * @param opts - The options for the generateText request.
@@ -59,18 +54,12 @@ export async function generateText({
     runtime,
     context,
     modelClass,
-    tools = {},
-    onStepFinish,
-    maxSteps = 1,
     stop,
     customSystemPrompt,
 }: {
     runtime: IAgentRuntime;
     context: string;
     modelClass: string;
-    tools?: Record<string, Tool>;
-    onStepFinish?: (event: StepResult) => Promise<void> | void;
-    maxSteps?: number;
     stop?: string[];
     customSystemPrompt?: string;
 }): Promise<string> {
@@ -216,9 +205,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -242,9 +228,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -271,9 +254,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -300,9 +280,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -333,9 +310,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -358,9 +332,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
@@ -412,9 +383,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
@@ -442,9 +410,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
@@ -470,10 +435,7 @@ export async function generateText({
                     const { text: ollamaResponse } = await aiGenerateText({
                         model: ollama,
                         prompt: context,
-                        tools: tools,
-                        onStepFinish: onStepFinish,
                         temperature: temperature,
-                        maxSteps: maxSteps,
                         maxTokens: max_response_length,
                         frequencyPenalty: frequency_penalty,
                         presencePenalty: presence_penalty,
@@ -500,11 +462,8 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
                     temperature: temperature,
                     maxTokens: max_response_length,
-                    maxSteps: maxSteps,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
                 });
@@ -552,9 +511,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -581,9 +537,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -609,10 +562,7 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
                     temperature: temperature,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                 });
 
