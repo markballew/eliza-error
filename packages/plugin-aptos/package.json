@@ -9,17 +9,14 @@
     "@aptos-labs/ts-sdk": "^1.26.0",
     "bignumber": "1.1.0",
     "bignumber.js": "9.1.2",
-    "node-cache": "5.1.2"
-  },
-  "devDependencies": {
+    "node-cache": "5.1.2",
     "tsup": "8.3.5",
-    "vitest": "2.1.4",
-    "typescript": "^5.0.0"
+    "vitest": "2.1.4"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "lint": "eslint --fix --cache .",
+    "build": "tsup --format esm --dts",
+    "dev": "tsup --format esm --dts --watch",
+    "lint": "eslint --fix  --cache .",
     "test": "vitest run"
   },
   "peerDependencies": {
