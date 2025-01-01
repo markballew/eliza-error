@@ -10,7 +10,7 @@ on:
       root_directory:
         description: 'Only scans files in this directory (relative to repository root, e.g., packages/core/src)'
         required: true
-        default: 'packages/plugin-near/'
+        default: 'packages/core/src/test_resources'
         type: string
       excluded_directories:
         description: 'Directories to exclude from scanning (comma-separated, relative to root_directory)'
@@ -21,11 +21,6 @@ on:
         description: 'Pull Request Reviewers (comma-separated GitHub usernames)'
         required: true
         default: ''
-        type: string
-      branch:
-        description: 'Target branch for PR (defaults to develop)'
-        required: false
-        default: 'develop'
         type: string
 
 jobs:
@@ -54,7 +49,7 @@ jobs:
           run_install: false
 
       - name: Update lockfile
-        working-directory: scripts/jsdoc-automation
+        working-directory: packages/jsdoc-automation
         run: |
           echo "Updating lockfile..."
           pnpm install --no-frozen-lockfile
@@ -68,11 +63,11 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Install package dependencies
-        working-directory: scripts/jsdoc-automation
+        working-directory: packages/jsdoc-automation
         run: pnpm install --no-frozen-lockfile
 
       - name: Run documentation generator
-        working-directory: scripts/jsdoc-automation
+        working-directory: packages/jsdoc-automation
         run: |
           echo "Node version: $(node --version)"
           echo "NPM version: $(npm --version)"
@@ -84,4 +79,3 @@ jobs:
           INPUT_PULL_NUMBER: ${{ inputs.pull_number }}
           INPUT_EXCLUDED_DIRECTORIES: ${{ inputs.excluded_directories }}
           INPUT_REVIEWERS: ${{ inputs.reviewers }}
-          INPUT_BRANCH: ${{ inputs.branch }}

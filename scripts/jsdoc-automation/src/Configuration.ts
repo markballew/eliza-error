@@ -36,11 +36,10 @@ interface ConfigurationData {
 export class Configuration implements Omit<ConfigurationData, 'rootDirectory'> {
     private _rootDirectory!: ConfigurationData['rootDirectory'];
     private readonly repoRoot: string;
-    private _branch: string = 'develop';
 
     public excludedDirectories: string[] = [];
     public repository: Repository = {
-        owner: 'Ed-Marcavage',
+        owner: 'elizaOS',
         name: 'eliza',
         pullNumber: undefined
     };
@@ -50,6 +49,7 @@ export class Configuration implements Omit<ConfigurationData, 'rootDirectory'> {
     public pullRequestLabels: string[] = ['documentation', 'automated-pr'];
     public pullRequestReviewers: string[] = [];
     public excludedFiles: string[] = ["index.d.ts"];
+    public branch: string = 'develop';
 
     constructor() {
         this.repoRoot = getRepoRoot();
@@ -74,14 +74,6 @@ export class Configuration implements Omit<ConfigurationData, 'rootDirectory'> {
 
     public toAbsolutePath(relativePath: string): string {
         return path.resolve(this.repoRoot, relativePath);
-    }
-
-    get branch(): string {
-        return this._branch;
-    }
-
-    set branch(value: string) {
-        this._branch = value;
     }
 
     private loadConfiguration(): void {
@@ -144,9 +136,6 @@ export class Configuration implements Omit<ConfigurationData, 'rootDirectory'> {
             process.env.INPUT_REVIEWERS,
             []
         );
-
-        this._branch = process.env.INPUT_BRANCH || 'develop';
-        console.log('Using branch:', this._branch);
     }
 
     private parseCommaSeparatedInput(input: string | undefined, defaultValue: string[]): string[] {

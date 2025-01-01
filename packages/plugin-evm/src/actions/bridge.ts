@@ -97,7 +97,7 @@ export const bridgeAction = {
         callback?: any
     ) => {
         console.log("Bridge action handler called");
-        const walletProvider = await initWalletProvider(runtime);
+        const walletProvider = initWalletProvider(runtime);
         const action = new BridgeAction(walletProvider);
 
         // Compose bridge context
