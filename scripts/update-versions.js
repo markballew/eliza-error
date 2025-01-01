@@ -1,23 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const { execSync } = require('child_process');
 
 const packagesDir = path.join(__dirname, '../packages');
 const externalDirs = ['../agent', '../client', '../docs'];
 const lernaPath = path.join(__dirname, '../lerna.json');
-
-// Simple Logger
-function log(level, message) {
-  const timestamp = new Date().toISOString().split('T').join(' ').slice(0, 19);
-  console.log(`${timestamp} [${level.toUpperCase()}]: ${message}`);
-}
-
-// Helper to simplify file path for logs
-function simplifyPath(filePath) {
-  const relativePath = path.relative(path.join(__dirname, '..'), filePath);
-  return `/${relativePath.replace(/\\/g, '/')}`;
-}
 
 // Prompt for version input
 const rl = readline.createInterface({
@@ -34,21 +21,9 @@ function askVersion() {
   });
 }
 
-function runPrettier(filePaths) {
-  try {
-    execSync(`npx prettier --write ${filePaths.join(' ')}`, { stdio: 'ignore' });
-    log('info', `Formatted ${filePaths.length} files with Prettier.`);
-  } catch (error) {
-    log('error', `Failed to format files with Prettier: ${error.message}`);
-  }
-}
-
 // Update versions in all package.json files
 async function updateVersions() {
   const NEW_VERSION = await askVersion();
-  log('info', `Starting version update process to ${NEW_VERSION}.`);
-
-  const updatedFiles = [];
 
   const updateDirectory = (dirPath) => {
     const packagePath = path.join(dirPath, 'package.json');
@@ -60,13 +35,12 @@ async function updateVersions() {
       if (oldVersion) {
         packageJson.version = NEW_VERSION;
         fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + '\n');
-        log('info', `Updated ${simplifyPath(packagePath)}: ${oldVersion} -> ${packageJson.version}`);
-        updatedFiles.push(packagePath);
+        console.log(`Updated ${dirPath}: ${oldVersion} -> ${packageJson.version}`);
       } else {
-        log('warn', `Version not found in ${simplifyPath(packagePath)}`);
+        console.warn(`Version not found in ${dirPath}/package.json`);
       }
     } else {
-      log('warn', `No package.json found in ${simplifyPath(packagePath)}`);
+      console.warn(`No package.json found in ${dirPath}`);
     }
   };
 
@@ -75,7 +49,7 @@ async function updateVersions() {
     const packageDirs = fs.readdirSync(packagesDir);
     packageDirs.forEach((dir) => updateDirectory(path.join(packagesDir, dir)));
   } else {
-    log('warn', `Packages directory not found at ${packagesDir}`);
+    console.warn(`Packages directory not found at ${packagesDir}`);
   }
 
   // Update external folders
@@ -84,7 +58,7 @@ async function updateVersions() {
     if (fs.existsSync(fullPath)) {
       updateDirectory(fullPath);
     } else {
-      log('warn', `External directory not found: ${simplifyPath(fullPath)}`);
+      console.warn(`External directory not found: ${fullPath}`);
     }
   });
 
@@ -96,22 +70,13 @@ async function updateVersions() {
     if (oldVersion) {
       lernaJson.version = NEW_VERSION;
       fs.writeFileSync(lernaPath, JSON.stringify(lernaJson, null, 2) + '\n');
-      log('info', `Updated ${simplifyPath(lernaPath)}: ${oldVersion} -> ${lernaJson.version}`);
-      updatedFiles.push(lernaPath);
+      console.log(`Updated lerna.json: ${oldVersion} -> ${lernaJson.version}`);
     } else {
-      log('warn', `Version not found in ${simplifyPath(lernaPath)}`);
+      console.warn(`Version not found in lerna.json`);
     }
   } else {
-    log('warn', `lerna.json not found at ${lernaPath}`);
+    console.warn(`lerna.json not found at ${lernaPath}`);
   }
-
-  if (updatedFiles.length > 0) {
-    runPrettier(updatedFiles);
-  } else {
-    log('info', 'No files updated, skipping Prettier formatting.');
-  }
-
-  log('info', 'Version update process completed.');
 }
 
 updateVersions();
