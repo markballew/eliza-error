@@ -208,7 +208,7 @@ export class ImageDescriptionService
                 ];
 
                 const endpoint =
-                    models[this.runtime.imageVisionModelProvider].endpoint ??
+                    models[this.runtime.imageModelProvider].endpoint ??
                     "https://api.openai.com/v1";
 
                 const response = await fetch(endpoint + "/chat/completions", {
