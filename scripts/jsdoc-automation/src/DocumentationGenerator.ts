@@ -3,12 +3,13 @@ import { TypeScriptParser } from './TypeScriptParser.js';
 import { JsDocAnalyzer } from './JsDocAnalyzer.js';
 import { JsDocGenerator } from './JsDocGenerator.js';
 import type { TSESTree } from '@typescript-eslint/types';
-import { ASTQueueItem, FullModeFileChange, PrModeFileChange } from './types/index.js';
+import { ASTQueueItem, EnvUsage, FullModeFileChange, PrModeFileChange, TodoItem } from './types/index.js';
 import { GitManager } from './GitManager.js';
 import fs from 'fs';
 import { Configuration } from './Configuration.js';
 import path from 'path';
 import { AIService } from './AIService.js';
+import { PluginDocumentationGenerator } from './PluginDocumentationGenerator.js';
 
 /**
  * Class representing a Documentation Generator.
@@ -19,8 +20,9 @@ export class DocumentationGenerator {
     public existingJsDocQueue: ASTQueueItem[] = [];
     private hasChanges: boolean = false;
     private fileContents: Map<string, string> = new Map();
-    private branchName: string = '';
+    public branchName: string = '';
     private fileOffsets: Map<string, number> = new Map();
+    private typeScriptFiles: string[] = [];
 
     /**
      * Constructor for initializing the object with necessary dependencies.
@@ -41,8 +43,10 @@ export class DocumentationGenerator {
         public jsDocGenerator: JsDocGenerator,
         public gitManager: GitManager,
         public configuration: Configuration,
-        public aiService: AIService
-    ) { }
+        public aiService: AIService,
+    ) {
+        this.typeScriptFiles = this.directoryTraversal.traverse();
+    }
 
     /**
      * Asynchronously generates JSDoc comments for the TypeScript files based on the given pull request number or full mode.
@@ -50,7 +54,7 @@ export class DocumentationGenerator {
      * @param pullNumber - Optional. The pull request number to generate JSDoc comments for.
      * @returns A promise that resolves once the JSDoc generation process is completed.
      */
-    public async generate(pullNumber?: number): Promise<void> {
+    public async generate(pullNumber?: number): Promise<{ documentedItems: ASTQueueItem[], branchName: string | undefined }> {
         let fileChanges: PrModeFileChange[] | FullModeFileChange[] = [];
         this.fileOffsets.clear();
 
@@ -95,7 +99,6 @@ export class DocumentationGenerator {
             if (fileChange.status === 'deleted') continue;
 
             const filePath = this.configuration.toAbsolutePath(fileChange.filename);
-            console.log(`Processing file: ${filePath}`, 'resetting file offsets', 'from ', this.fileOffsets.get(filePath), 'to 0');
             this.fileOffsets.set(filePath, 0);
 
             // Load and store file content
@@ -137,6 +140,10 @@ export class DocumentationGenerator {
                     comment = await this.jsDocGenerator.generateComment(queueItem);
                 }
                 await this.updateFileWithJSDoc(queueItem.filePath, comment, queueItem.startLine);
+
+                queueItem.jsDoc = comment;
+                this.existingJsDocQueue.push(queueItem);
+
                 this.hasChanges = true;
             }
 
@@ -162,6 +169,10 @@ export class DocumentationGenerator {
                 });
             }
         }
+        return {
+            documentedItems: this.existingJsDocQueue,
+            branchName: this.branchName
+        };
     }
 
     /**
@@ -267,29 +278,56 @@ export class DocumentationGenerator {
         const modifiedFiles = Array.from(this.fileContents.keys());
         const filesContext = modifiedFiles.map(file => `- ${file}`).join('\n');
 
-        const prompt = `Generate a pull request title and description for adding JSDoc documentation.
-            Context:
-            - ${modifiedFiles.length} files were modified
-            - Files modified:\n${filesContext}
-            - This is ${pullNumber ? `related to PR #${pullNumber}` : 'a full repository documentation update'}
-            - This is an automated PR for adding JSDoc documentation
+        const prompt = `Create a JSON object for a pull request about JSDoc documentation updates.
+    The JSON must have exactly this format, with no extra fields or markdown formatting:
+    {
+        "title": "Brief title describing JSDoc updates",
+        "body": "Detailed description of changes"
+    }
 
-            Generate both a title and description. The description should be detailed and include:
-            1. A clear summary of changes
-            2. Summary of modified files
-            3. Instructions for reviewers
+    Context for generating the content:
+    - ${modifiedFiles.length} files were modified
+    - Files modified:\n${filesContext}
+    - This is ${pullNumber ? `related to PR #${pullNumber}` : 'a full repository documentation update'}
+    - This is an automated PR for adding JSDoc documentation
 
-            Format the response as a JSON object with 'title' and 'body' fields.`;
+    The title should be concise and follow conventional commit format.
+    The body should include:
+    1. A clear summary of changes
+    2. List of modified files
+    3. Brief instructions for reviewers
+
+    Return ONLY the JSON object, no other text.`;
 
         const response = await this.aiService.generateComment(prompt);
+
         try {
-            const content = JSON.parse(response);
+            // Clean up the response - remove any markdown formatting or extra text
+            const jsonStart = response.indexOf('{');
+            const jsonEnd = response.lastIndexOf('}') + 1;
+            if (jsonStart === -1 || jsonEnd === -1) {
+                throw new Error('No valid JSON object found in response');
+            }
+
+            const jsonStr = response.slice(jsonStart, jsonEnd)
+                .replace(/```json/g, '')
+                .replace(/```/g, '')
+                .trim();
+
+            const content = JSON.parse(jsonStr);
+
+            // Validate the parsed content
+            if (!content.title || !content.body || typeof content.title !== 'string' || typeof content.body !== 'string') {
+                throw new Error('Invalid JSON structure');
+            }
+
             return {
                 title: content.title,
                 body: content.body
             };
         } catch (error) {
-            console.error('Error parsing AI response for PR content generation, using default values');
+            console.error('Error parsing AI response for PR content:', error);
+            console.error('Raw response:', response);
             return {
                 title: `docs: Add JSDoc documentation${pullNumber ? ` for PR #${pullNumber}` : ''}`,
                 body: this.generateDefaultPRBody()
@@ -316,4 +354,30 @@ export class DocumentationGenerator {
         ### 🤖 Generated by Documentation Bot
         This is an automated PR created by the documentation generator tool.`;
     }
+
+     /**
+     * Analyzes TODOs and environment variables in the code
+     */
+     public async analyzeCodebase(): Promise<{ todoItems: TodoItem[], envUsages: EnvUsage[] }> {
+        const todoItems: TodoItem[] = [];
+        const envUsages: EnvUsage[] = [];
+
+        for (const filePath of this.typeScriptFiles) {
+            const ast = this.typeScriptParser.parse(filePath);
+            if (!ast) continue;
+
+            const sourceCode = fs.readFileSync(filePath, 'utf-8');
+
+            // Find TODOs
+            this.jsDocAnalyzer.findTodoComments(ast, ast.comments || [], sourceCode);
+            todoItems.push(...this.jsDocAnalyzer.todoItems);
+
+            // Find env usages
+            this.jsDocAnalyzer.findEnvUsages(ast, sourceCode);
+            envUsages.push(...this.jsDocAnalyzer.envUsages);
+        }
+
+        return { todoItems, envUsages };
+    }
+
 }
