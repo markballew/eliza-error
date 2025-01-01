@@ -165,9 +165,6 @@ export type Model = {
 
         /** Temperature setting */
         temperature: number;
-
-        /** Optional telemetry configuration (experimental) */
-        experimental_telemetry?: TelemetrySettings;
     };
 
     /** Optional image generation settings */
@@ -212,7 +209,6 @@ export type Models = {
     [ModelProviderName.HYPERBOLIC]: Model;
     [ModelProviderName.VENICE]: Model;
     [ModelProviderName.AKASH_CHAT_API]: Model;
-    [ModelProviderName.LIVEPEER]: Model;
 };
 
 /**
@@ -242,7 +238,6 @@ export enum ModelProviderName {
     HYPERBOLIC = "hyperbolic",
     VENICE = "venice",
     AKASH_CHAT_API = "akash_chat_api",
-    LIVEPEER = "livepeer",
 }
 
 /**
@@ -422,9 +417,6 @@ export interface Action {
 
     /** Validation function */
     validate: Validator;
-
-    /** Whether to suppress the initial message when this action is used */
-    suppressInitialMessage?: boolean;
 }
 
 /**
@@ -631,40 +623,6 @@ export interface IAgentConfig {
     [key: string]: string;
 }
 
-export type TelemetrySettings = {
-    /**
-     * Enable or disable telemetry. Disabled by default while experimental.
-     */
-    isEnabled?: boolean;
-    /**
-     * Enable or disable input recording. Enabled by default.
-     *
-     * You might want to disable input recording to avoid recording sensitive
-     * information, to reduce data transfers, or to increase performance.
-     */
-    recordInputs?: boolean;
-    /**
-     * Enable or disable output recording. Enabled by default.
-     *
-     * You might want to disable output recording to avoid recording sensitive
-     * information, to reduce data transfers, or to increase performance.
-     */
-    recordOutputs?: boolean;
-    /**
-     * Identifier for this function. Used to group telemetry data by function.
-     */
-    functionId?: string;
-};
-
-export interface ModelConfiguration {
-    temperature?: number;
-    max_response_length?: number;
-    frequency_penalty?: number;
-    presence_penalty?: number;
-    maxInputTokens?: number;
-    experimental_telemetry?: TelemetrySettings;
-}
-
 /**
  * Configuration for an agent character
  */
@@ -777,14 +735,12 @@ export type Character = {
             };
         };
         model?: string;
-        modelConfig?: ModelConfiguration;
         embeddingModel?: string;
         chains?: {
             evm?: any[];
             solana?: any[];
             [key: string]: any[];
         };
-        transcription?: TranscriptionProvider;
     };
 
     /** Optional client-specific config */
@@ -814,13 +770,6 @@ export type Character = {
         slack?: {
             shouldIgnoreBotMessages?: boolean;
             shouldIgnoreDirectMessages?: boolean;
-        };
-        gitbook?: {
-            keywords?: {
-                projectTerms?: string[];
-                generalQueries?: string[];
-            };
-            documentTriggers?: string[];
         };
     };
 
@@ -1256,26 +1205,21 @@ export interface IAwsS3Service extends Service {
     generateSignedUrl(fileName: string, expiresIn: number): Promise<string>;
 }
 
-export type SearchImage = {
-    url: string;
-    description?: string;
-};
-
 export type SearchResult = {
     title: string;
     url: string;
     content: string;
-    rawContent?: string;
     score: number;
-    publishedDate?: string;
+    raw_content: string | null;
 };
 
 export type SearchResponse = {
-    answer?: string;
     query: string;
-    responseTime: number;
-    images: SearchImage[];
+    follow_up_questions: string[] | null;
+    answer: string | null;
+    images: string[];
     results: SearchResult[];
+    response_time: number;
 };
 
 export enum ServiceType {
@@ -1312,10 +1256,4 @@ export interface ActionResponse {
 
 export interface ISlackService extends Service {
     client: any;
-}
-
-export enum TranscriptionProvider {
-    OpenAI = "openai",
-    Deepgram = "deepgram",
-    Local = "local",
 }

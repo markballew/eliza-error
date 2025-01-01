@@ -1,4 +1,4 @@
-import { IAgentRuntime, Provider, Memory, State } from "@elizaos/core";
+import type { IAgentRuntime, Provider, Memory, State } from "@elizaos/core";
 import {
     createPublicClient,
     createWalletClient,
