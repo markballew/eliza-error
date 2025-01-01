@@ -665,8 +665,6 @@ export interface ModelConfiguration {
     experimental_telemetry?: TelemetrySettings;
 }
 
-export type TemplateType = string | ((options: { state: State }) => string);
-
 /**
  * Configuration for an agent character
  */
@@ -694,30 +692,30 @@ export type Character = {
 
     /** Optional prompt templates */
     templates?: {
-        goalsTemplate?: TemplateType;
-        factsTemplate?: TemplateType;
-        messageHandlerTemplate?: TemplateType;
-        shouldRespondTemplate?: TemplateType;
-        continueMessageHandlerTemplate?: TemplateType;
-        evaluationTemplate?: TemplateType;
-        twitterSearchTemplate?: TemplateType;
-        twitterActionTemplate?: TemplateType;
-        twitterPostTemplate?: TemplateType;
-        twitterMessageHandlerTemplate?: TemplateType;
-        twitterShouldRespondTemplate?: TemplateType;
-        farcasterPostTemplate?: TemplateType;
-        lensPostTemplate?: TemplateType;
-        farcasterMessageHandlerTemplate?: TemplateType;
-        lensMessageHandlerTemplate?: TemplateType;
-        farcasterShouldRespondTemplate?: TemplateType;
-        lensShouldRespondTemplate?: TemplateType;
-        telegramMessageHandlerTemplate?: TemplateType;
-        telegramShouldRespondTemplate?: TemplateType;
-        discordVoiceHandlerTemplate?: TemplateType;
-        discordShouldRespondTemplate?: TemplateType;
-        discordMessageHandlerTemplate?: TemplateType;
-        slackMessageHandlerTemplate?: TemplateType;
-        slackShouldRespondTemplate?: TemplateType;
+        goalsTemplate?: string;
+        factsTemplate?: string;
+        messageHandlerTemplate?: string;
+        shouldRespondTemplate?: string;
+        continueMessageHandlerTemplate?: string;
+        evaluationTemplate?: string;
+        twitterSearchTemplate?: string;
+        twitterActionTemplate?: string;
+        twitterPostTemplate?: string;
+        twitterMessageHandlerTemplate?: string;
+        twitterShouldRespondTemplate?: string;
+        farcasterPostTemplate?: string;
+        lensPostTemplate?: string;
+        farcasterMessageHandlerTemplate?: string;
+        lensMessageHandlerTemplate?: string;
+        farcasterShouldRespondTemplate?: string;
+        lensShouldRespondTemplate?: string;
+        telegramMessageHandlerTemplate?: string;
+        telegramShouldRespondTemplate?: string;
+        discordVoiceHandlerTemplate?: string;
+        discordShouldRespondTemplate?: string;
+        discordMessageHandlerTemplate?: string;
+        slackMessageHandlerTemplate?: string;
+        slackShouldRespondTemplate?: string;
     };
 
     /** Character biography */
@@ -1258,6 +1256,14 @@ export interface IAwsS3Service extends Service {
     generateSignedUrl(fileName: string, expiresIn: number): Promise<string>;
 }
 
+export interface ITokenizationService extends Service {
+    trimTokens(
+        context: string,
+        maxTokens: number,
+        model?: string
+    ): Promise<string>;
+}
+
 export type SearchImage = {
     url: string;
     description?: string;
@@ -1292,6 +1298,7 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
+    TOKENIZATION = "tokenization",
 }
 
 export enum LoggingLevel {
@@ -1316,6 +1323,11 @@ export interface ISlackService extends Service {
     client: any;
 }
 
+export enum TokenizerType {
+    Auto = "auto",
+    TikToken = "tiktoken",
+}
+  
 export enum TranscriptionProvider {
     OpenAI = "openai",
     Deepgram = "deepgram",
