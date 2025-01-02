@@ -1,6 +1,5 @@
 import { ByteArray, formatEther, parseEther, type Hex } from "viem";
 import {
-    Action,
     composeContext,
     generateObjectDeprecated,
     HandlerCallback,
@@ -13,6 +12,8 @@ import {
 import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import type { Transaction, TransferParams } from "../types";
 import { transferTemplate } from "../templates";
+
+export { transferTemplate };
 
 // Exported for tests
 export class TransferAction {
@@ -71,17 +72,21 @@ const buildTransferDetails = async (
     runtime: IAgentRuntime,
     wp: WalletProvider
 ): Promise<TransferParams> => {
-    const chains = Object.keys(wp.chains);
-    state.supportedChains = chains.map((item) => `"${item}"`).join("|");
-
     const context = composeContext({
         state,
         template: transferTemplate,
     });
 
+    const chains = Object.keys(wp.chains);
+
+    const contextWithChains = context.replace(
+        "SUPPORTED_CHAINS",
+        chains.map((item) => `"${item}"`).join("|")
+    );
+
     const transferDetails = (await generateObjectDeprecated({
         runtime,
-        context,
+        context: contextWithChains,
         modelClass: ModelClass.SMALL,
     })) as TransferParams;
 
@@ -99,22 +104,16 @@ const buildTransferDetails = async (
     return transferDetails;
 };
 
-export const transferAction: Action = {
+export const transferAction = {
     name: "transfer",
     description: "Transfer tokens between addresses on the same chain",
     handler: async (
         runtime: IAgentRuntime,
-        message: Memory,
+        _message: Memory,
         state: State,
         _options: any,
         callback?: HandlerCallback
     ) => {
-        if (!state) {
-            state = (await runtime.composeState(message)) as State;
-        } else {
-            state = await runtime.updateRecentMessageState(state);
-        }
-
         console.log("Transfer action handler called");
         const walletProvider = await initWalletProvider(runtime);
         const action = new TransferAction(walletProvider);
@@ -152,6 +151,7 @@ export const transferAction: Action = {
             return false;
         }
     },
+    template: transferTemplate,
     validate: async (runtime: IAgentRuntime) => {
         const privateKey = runtime.getSetting("EVM_PRIVATE_KEY");
         return typeof privateKey === "string" && privateKey.startsWith("0x");
