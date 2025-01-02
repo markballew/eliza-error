@@ -395,7 +395,7 @@ export const models: Models = {
         },
     },
     [ModelProviderName.VOLENGINE]: {
-        endpoint: settings.VOLENGINE_API_URL || "https://open.volcengineapi.com/api/v3/",
+        endpoint: "https://open.volcengineapi.com/api/v3/",
         settings: {
             stop: [],
             maxInputTokens: 128000,
@@ -405,21 +405,10 @@ export const models: Models = {
             temperature: 0.6,
         },
         model: {
-            [ModelClass.SMALL]:
-                settings.SMALL_VOLENGINE_MODEL ||
-                settings.VOLENGINE_MODEL ||
-                "doubao-lite-128k",
-            [ModelClass.MEDIUM]:
-                settings.MEDIUM_VOLENGINE_MODEL ||
-                settings.VOLENGINE_MODEL ||
-                "doubao-pro-128k",
-            [ModelClass.LARGE]:
-                settings.LARGE_VOLENGINE_MODEL ||
-                settings.VOLENGINE_MODEL ||
-                "doubao-pro-256k",
-            [ModelClass.EMBEDDING]:
-                settings.VOLENGINE_EMBEDDING_MODEL ||
-                "doubao-embedding",
+            [ModelClass.SMALL]: "doubao-lite-128k",
+            [ModelClass.MEDIUM]: "doubao-pro-128k",
+            [ModelClass.LARGE]: "doubao-pro-128k",
+            [ModelClass.EMBEDDING]: "doubao-embedding",
         },
     },
     [ModelProviderName.NANOGPT]: {
