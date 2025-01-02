@@ -687,6 +687,10 @@ export type Character = {
     /** Image model provider to use, if different from modelProvider */
     imageModelProvider?: ModelProviderName;
 
+
+    /** Image Vision model provider to use, if different from modelProvider */
+    imageVisionModelProvider?: ModelProviderName;
+
     /** Optional model endpoint override */
     modelEndpointOverride?: string;
 
@@ -1100,6 +1104,7 @@ export interface IAgentRuntime {
     token: string | null;
     modelProvider: ModelProviderName;
     imageModelProvider: ModelProviderName;
+    imageVisionModelProvider: ModelProviderName;
     character: Character;
     providers: Provider[];
     actions: Action[];
@@ -1120,8 +1125,6 @@ export interface IAgentRuntime {
     // any could be EventEmitter
     // but I think the real solution is forthcoming as a base client interface
     clients: Record<string, any>;
-
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter | null;
 
     initialize(): Promise<void>;
 
@@ -1320,62 +1323,4 @@ export enum TranscriptionProvider {
     OpenAI = "openai",
     Deepgram = "deepgram",
     Local = "local",
-}
-
-/**
- * Available verifiable inference providers
- */
-export enum VerifiableInferenceProvider {
-    RECLAIM = "reclaim",
-}
-
-/**
- * Options for verifiable inference
- */
-export interface VerifiableInferenceOptions {
-    /** Custom endpoint URL */
-    endpoint?: string;
-    /** Custom headers */
-    headers?: Record<string, string>;
-    /** Provider-specific options */
-    providerOptions?: Record<string, unknown>;
-}
-
-/**
- * Result of a verifiable inference request
- */
-export interface VerifiableInferenceResult {
-    /** Generated text */
-    text: string;
-    /** Proof data */
-    proof: unknown;
-    /** Provider information */
-    provider: VerifiableInferenceProvider;
-    /** Timestamp */
-    timestamp: number;
-}
-
-/**
- * Interface for verifiable inference adapters
- */
-export interface IVerifiableInferenceAdapter {
-    /**
-     * Generate text with verifiable proof
-     * @param context The input text/prompt
-     * @param modelClass The model class/name to use
-     * @param options Additional provider-specific options
-     * @returns Promise containing the generated text and proof data
-     */
-    generateText(
-        context: string,
-        modelClass: string,
-        options?: VerifiableInferenceOptions
-    ): Promise<VerifiableInferenceResult>;
-
-    /**
-     * Verify the proof of a generated response
-     * @param result The result containing response and proof to verify
-     * @returns Promise indicating if the proof is valid
-     */
-    verifyProof(result: VerifiableInferenceResult): Promise<boolean>;
 }

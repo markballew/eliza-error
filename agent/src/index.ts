@@ -7,7 +7,7 @@ import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
-import { ReclaimAdapter } from "@elizaos/adapter-reclaim";
+import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import {
     AgentRuntime,
     CacheManager,
@@ -27,6 +27,7 @@ import {
     CacheStore,
     Client,
     ICacheManager,
+    parseBooleanFromText,
 } from "@elizaos/core";
 import { RedisClient } from "@elizaos/adapter-redis";
 import { zgPlugin } from "@elizaos/plugin-0g";
@@ -513,22 +514,6 @@ export async function createAgent(
         );
     }
 
-    // Initialize Reclaim adapter if environment variables are present
-    let verifiableInferenceAdapter;
-    if (
-        process.env.RECLAIM_APP_ID &&
-        process.env.RECLAIM_APP_SECRET &&
-        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
-    ) {
-        verifiableInferenceAdapter = new ReclaimAdapter({
-            appId: process.env.RECLAIM_APP_ID,
-            appSecret: process.env.RECLAIM_APP_SECRET,
-            modelProvider: character.modelProvider,
-            token,
-        });
-        elizaLogger.log("Verifiable inference adapter initialized");
-    }
-
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -538,6 +523,10 @@ export async function createAgent(
         // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
+            parseBooleanFromText(getSecret(character, "ENABLE_WEBSEARCH")) ===
+            true
+                ? webSearchPlugin
+                : null,
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
                 ? confluxPlugin
                 : null,
@@ -624,7 +613,6 @@ export async function createAgent(
         managers: [],
         cacheManager: cache,
         fetch: logFetch,
-        verifiableInferenceAdapter,
     });
 }
 
