@@ -7,6 +7,8 @@ import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
+import { webSearchPlugin } from "@elizaos/plugin-web-search";
+import { OpacityAdapter } from "@elizaos/plugin-opacity";
 import {
     AgentRuntime,
     CacheManager,
@@ -26,6 +28,7 @@ import {
     CacheStore,
     Client,
     ICacheManager,
+    parseBooleanFromText,
 } from "@elizaos/core";
 import { RedisClient } from "@elizaos/adapter-redis";
 import { zgPlugin } from "@elizaos/plugin-0g";
@@ -61,6 +64,7 @@ import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
 import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
+import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -512,6 +516,24 @@ export async function createAgent(
         );
     }
 
+    // Initialize Opacity adapter if environment variables are present
+    let verifiableInferenceAdapter;
+    if (
+        process.env.OPACITY_TEAM_ID &&
+        process.env.OPACITY_CLOUDFLARE_NAME &&
+        process.env.OPACITY_PROVER_URL &&
+        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
+    ) {
+        verifiableInferenceAdapter = new OpacityAdapter({
+            teamId: process.env.OPACITY_TEAM_ID,
+            teamName: process.env.OPACITY_CLOUDFLARE_NAME,
+            opacityProverUrl: process.env.OPACITY_PROVER_URL,
+            modelProvider: character.modelProvider,
+            token: token,
+        });
+        elizaLogger.log("Verifiable inference adapter initialized");
+    }
+
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -521,10 +543,15 @@ export async function createAgent(
         // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
+            parseBooleanFromText(getSecret(character, "ENABLE_WEBSEARCH")) ===
+            true
+                ? webSearchPlugin
+                : null,
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
                 ? confluxPlugin
                 : null,
             nodePlugin,
+            getSecret(character, "TAVILY_API_KEY") ? webSearchPlugin : null,
             getSecret(character, "SOLANA_PUBLIC_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
@@ -607,6 +634,7 @@ export async function createAgent(
         managers: [],
         cacheManager: cache,
         fetch: logFetch,
+        verifiableInferenceAdapter,
     });
 }
 
