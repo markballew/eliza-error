@@ -103,12 +103,6 @@ export class AgentRuntime implements IAgentRuntime {
      */
     imageModelProvider: ModelProviderName;
 
-
-     /**
-     * The model to use for describing images.
-     */
-    imageVisionModelProvider: ModelProviderName;
-
     /**
      * Fetch function to use
      * Some environments may not have access to the global fetch function and need a custom fetch override.
@@ -329,16 +323,6 @@ export class AgentRuntime implements IAgentRuntime {
             "Selected image model provider:",
             this.imageModelProvider
         );
-
-        this.imageVisionModelProvider =
-        this.character.imageVisionModelProvider ?? this.modelProvider;
-
-        elizaLogger.info("Selected model provider:", this.modelProvider);
-         elizaLogger.info(
-            "Selected image model provider:",
-            this.imageVisionModelProvider
-         );
-
 
         // Validate model provider
         if (!Object.values(ModelProviderName).includes(this.modelProvider)) {
@@ -937,11 +921,18 @@ Text: ${attachment.text}
             ]);
 
             // Check the existing memories in the database
-            return await this.messageManager.getMemoriesByRoomIds({
-                // filter out the current room id from rooms
-                roomIds: rooms.filter((room) => room !== roomId),
-                limit: 20
-            });
+            const existingMemories =
+                await this.messageManager.getMemoriesByRoomIds({
+                    // filter out the current room id from rooms
+                    roomIds: rooms.filter((room) => room !== roomId),
+                });
+
+            // Sort messages by timestamp in descending order
+            existingMemories.sort((a, b) => b.createdAt - a.createdAt);
+
+            // Take the most recent messages
+            const recentInteractionsData = existingMemories.slice(0, 20);
+            return recentInteractionsData;
         };
 
         const recentInteractions =
