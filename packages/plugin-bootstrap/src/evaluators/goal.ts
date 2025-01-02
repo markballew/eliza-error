@@ -1,7 +1,7 @@
-import { composeContext } from "@elizaos/core";
-import { generateText } from "@elizaos/core";
-import { getGoals } from "@elizaos/core";
-import { parseJsonArrayFromText } from "@elizaos/core";
+import { composeContext } from "@ai16z/eliza";
+import { generateText } from "@ai16z/eliza";
+import { getGoals } from "@ai16z/eliza";
+import { parseJsonArrayFromText } from "@ai16z/eliza";
 import {
     IAgentRuntime,
     Memory,
@@ -10,7 +10,7 @@ import {
     type Goal,
     type State,
     Evaluator,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 
 const goalsTemplate = `TASK: Update Goal
 Analyze the conversation and update the status of the goals based on the new information provided.
@@ -55,6 +55,12 @@ async function handler(
     state: State | undefined,
     options: { [key: string]: unknown } = { onlyInProgress: true }
 ): Promise<Goal[]> {
+    // get goals
+    let goalsData = await getGoals({
+        runtime,
+        roomId: message.roomId,
+        onlyInProgress: options.onlyInProgress as boolean,
+    });
 
     state = (await runtime.composeState(message)) as State;
     const context = composeContext({
@@ -73,10 +79,10 @@ async function handler(
     const updates = parseJsonArrayFromText(response);
 
     // get goals
-    const goalsData = await getGoals({
+    goalsData = await getGoals({
         runtime,
         roomId: message.roomId,
-        onlyInProgress: options.onlyInProgress as boolean,
+        onlyInProgress: true,
     });
 
     // Apply the updates to the goals

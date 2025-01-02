@@ -10,11 +10,11 @@ import {
     Memory,
     ModelClass,
     Evaluator,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { TrustScoreManager } from "../providers/trustScoreProvider.ts";
 import { TokenProvider } from "../providers/token.ts";
 import { WalletProvider } from "../providers/wallet.ts";
-import { TrustScoreDatabase } from "@elizaos/plugin-trustdb";
+import { TrustScoreDatabase } from "@ai16z/plugin-trustdb";
 import { Connection } from "@solana/web3.js";
 import { getWalletKey } from "../keypairUtils.ts";
 

@@ -5,7 +5,7 @@ import {
     http,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import type { IAgentRuntime, Provider, Memory, State } from "@elizaos/core";
+import type { IAgentRuntime, Provider, Memory, State } from "@ai16z/eliza";
 import type {
     Address,
     WalletClient,
@@ -211,8 +211,8 @@ export const initWalletProvider = (runtime: IAgentRuntime) => {
 export const evmWalletProvider: Provider = {
     async get(
         runtime: IAgentRuntime,
-        _message: Memory,
-        _state?: State
+        message: Memory,
+        state?: State
     ): Promise<string | null> {
         try {
             const walletProvider = initWalletProvider(runtime);
