@@ -2,7 +2,7 @@ import {
     Character,
     messageCompletionFooter,
     shouldRespondFooter,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import type { Cast } from "./types";
 
 export const formatCast = (cast: Cast) => {
@@ -36,7 +36,7 @@ About {{agentName}} (@{{farcasterUsername}}):
 {{characterPostExamples}}`;
 
 export const postTemplate =
-    headerTemplate +
+headerTemplate +
     `
 # Task: Generate a post in the voice and style of {{agentName}}, aka @{{farcasterUsername}}
 Write a single sentence post that is {{adjective}} about {{topic}} (without mentioning {{topic}} directly), from the perspective of {{agentName}}.
