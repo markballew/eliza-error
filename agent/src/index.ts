@@ -1,4 +1,5 @@
 import { PostgresDatabaseAdapter } from "@elizaos/adapter-postgres";
+import { RedisClient } from "@elizaos/adapter-redis";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
 import { AutoClientInterface } from "@elizaos/client-auto";
 import { DiscordClientInterface } from "@elizaos/client-discord";
@@ -7,35 +8,36 @@ import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
-import { OpacityAdapter } from "@elizaos/plugin-opacity";
 import {
     AgentRuntime,
     CacheManager,
+    CacheStore,
     Character,
+    Client,
     Clients,
     DbCacheAdapter,
     defaultCharacter,
     elizaLogger,
     FsCacheAdapter,
     IAgentRuntime,
+    ICacheManager,
     IDatabaseAdapter,
     IDatabaseCacheAdapter,
     ModelProviderName,
     settings,
     stringToUuid,
     validateCharacterConfig,
-    CacheStore,
-    Client,
-    ICacheManager,
-    parseBooleanFromText,
 } from "@elizaos/core";
-import { RedisClient } from "@elizaos/adapter-redis";
 import { zgPlugin } from "@elizaos/plugin-0g";
+
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import createGoatPlugin from "@elizaos/plugin-goat";
 // import { intifacePlugin } from "@elizaos/plugin-intiface";
 import { DirectClient } from "@elizaos/client-direct";
+import { ThreeDGenerationPlugin } from "@elizaos/plugin-3d-generation";
+import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { aptosPlugin } from "@elizaos/plugin-aptos";
+import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import {
     advancedTradePlugin,
     coinbaseCommercePlugin,
@@ -44,33 +46,32 @@ import {
     tradePlugin,
     webhookPlugin,
 } from "@elizaos/plugin-coinbase";
+import { coinmarketcapPlugin } from "@elizaos/plugin-coinmarketcap";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
+import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
+import { echoChamberPlugin } from "@elizaos/plugin-echochambers";
 import { evmPlugin } from "@elizaos/plugin-evm";
-import { storyPlugin } from "@elizaos/plugin-story";
 import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
+
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
-import { ThreeDGenerationPlugin } from "@elizaos/plugin-3d-generation";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
 import { createNodePlugin } from "@elizaos/plugin-node";
 import { solanaPlugin } from "@elizaos/plugin-solana";
+import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
 import { TEEMode, teePlugin } from "@elizaos/plugin-tee";
 import { tonPlugin } from "@elizaos/plugin-ton";
-import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
-import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
-import { abstractPlugin } from "@elizaos/plugin-abstract";
-import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
-import { echoChamberPlugin } from "@elizaos/plugin-echochambers";
+import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import Database from "better-sqlite3";
 import fs from "fs";
+import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
-import net from "net";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -517,24 +518,6 @@ export async function createAgent(
         );
     }
 
-    // Initialize Opacity adapter if environment variables are present
-    let verifiableInferenceAdapter;
-    if (
-        process.env.OPACITY_TEAM_ID &&
-        process.env.OPACITY_CLOUDFLARE_NAME &&
-        process.env.OPACITY_PROVER_URL &&
-        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
-    ) {
-        verifiableInferenceAdapter = new OpacityAdapter({
-            teamId: process.env.OPACITY_TEAM_ID,
-            teamName: process.env.OPACITY_CLOUDFLARE_NAME,
-            opacityProverUrl: process.env.OPACITY_PROVER_URL,
-            modelProvider: character.modelProvider,
-            token: token,
-        });
-        elizaLogger.log("Verifiable inference adapter initialized");
-    }
-
     return new AgentRuntime({
         databaseAdapter: db,
         token,
@@ -575,6 +558,9 @@ export async function createAgent(
                 ? nftGenerationPlugin
                 : null,
             getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
+            getSecret(character, "COINMARKETCAP_API_KEY")
+                ? coinmarketcapPlugin
+                : null,
             getSecret(character, "COINBASE_COMMERCE_KEY")
                 ? coinbaseCommercePlugin
                 : null,
@@ -635,7 +621,6 @@ export async function createAgent(
         managers: [],
         cacheManager: cache,
         fetch: logFetch,
-        verifiableInferenceAdapter,
     });
 }
 
