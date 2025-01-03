@@ -3,8 +3,9 @@ import {
     ModelClass,
     elizaLogger,
     generateText,
-    trimTokens,
     parseJSONObjectFromText,
+    ServiceType,
+    ITokenizationService,
 } from "@elizaos/core";
 import {
     ChannelType,
@@ -47,7 +48,10 @@ export async function generateSummary(
     text: string
 ): Promise<{ title: string; description: string }> {
     // make sure text is under 128k characters
-    text = trimTokens(text, 100000, "gpt-4o-mini"); // TODO: clean this up
+    const tokenizationService = runtime.getService<ITokenizationService>(
+        ServiceType.TOKENIZATION
+    );
+    text = await tokenizationService.trimTokens(text, 100000);
 
     const prompt = `Please generate a concise summary for the following text:
 
