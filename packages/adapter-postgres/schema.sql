@@ -10,25 +10,9 @@
 -- DROP TABLE IF EXISTS rooms CASCADE;
 -- DROP TABLE IF EXISTS accounts CASCADE;
 
--- Create extensions schema first
-CREATE SCHEMA IF NOT EXISTS extensions;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_extension
-        WHERE extname = 'vector'
-    ) THEN
-        CREATE EXTENSION vector
-        SCHEMA extensions;
-    END IF;
-END $$;
-
+CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
-
--- Add extensions schema to search path
-SET search_path TO public, extensions;
 
 -- Create a function to determine vector dimension
 CREATE OR REPLACE FUNCTION get_embedding_dimension()
@@ -63,28 +47,20 @@ CREATE TABLE IF NOT EXISTS rooms (
     "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-DO $$
-DECLARE
-    vector_dim INTEGER;
-BEGIN
-    vector_dim := get_embedding_dimension();
-
-    EXECUTE format('
-        CREATE TABLE IF NOT EXISTS memories (
-            "id" UUID PRIMARY KEY,
-            "type" TEXT NOT NULL,
-            "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-            "content" JSONB NOT NULL,
-            "embedding" vector(%s),
-            "userId" UUID REFERENCES accounts("id"),
-            "agentId" UUID REFERENCES accounts("id"),
-            "roomId" UUID REFERENCES rooms("id"),
-            "unique" BOOLEAN DEFAULT true NOT NULL,
-            CONSTRAINT fk_room FOREIGN KEY ("roomId") REFERENCES rooms("id") ON DELETE CASCADE,
-            CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES accounts("id") ON DELETE CASCADE,
-            CONSTRAINT fk_agent FOREIGN KEY ("agentId") REFERENCES accounts("id") ON DELETE CASCADE
-        )', vector_dim);
-END $$;
+CREATE TABLE IF NOT EXISTS memories (
+    "id" UUID PRIMARY KEY,
+    "type" TEXT NOT NULL,
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "content" JSONB NOT NULL,
+    "embedding" vector(get_embedding_dimension()),  -- Dynamic vector size
+    "userId" UUID REFERENCES accounts("id"),
+    "agentId" UUID REFERENCES accounts("id"),
+    "roomId" UUID REFERENCES rooms("id"),
+    "unique" BOOLEAN DEFAULT true NOT NULL,
+    CONSTRAINT fk_room FOREIGN KEY ("roomId") REFERENCES rooms("id") ON DELETE CASCADE,
+    CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES accounts("id") ON DELETE CASCADE,
+    CONSTRAINT fk_agent FOREIGN KEY ("agentId") REFERENCES accounts("id") ON DELETE CASCADE
+);
 
 CREATE TABLE IF NOT EXISTS  goals (
     "id" UUID PRIMARY KEY,

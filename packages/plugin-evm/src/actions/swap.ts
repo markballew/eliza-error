@@ -1,20 +1,14 @@
-import type { IAgentRuntime, Memory, State } from "@elizaos/core";
+import type { IAgentRuntime, Memory, State } from "@ai16z/eliza";
 import {
-    composeContext,
-    generateObjectDeprecated,
-    ModelClass,
-} from "@elizaos/core";
-import {
+    ChainId,
     createConfig,
     executeRoute,
     ExtendedChain,
     getRoutes,
 } from "@lifi/sdk";
-
-import { initWalletProvider, WalletProvider } from "../providers/wallet";
+import { WalletProvider } from "../providers/wallet";
 import { swapTemplate } from "../templates";
 import type { SwapParams, Transaction } from "../types";
-import { parseEther } from "viem";
 
 export { swapTemplate };
 
@@ -67,7 +61,7 @@ export class SwapAction {
             toChainId: this.walletProvider.getChainConfigs(params.chain).id,
             fromTokenAddress: params.fromToken,
             toTokenAddress: params.toToken,
-            fromAmount: parseEther(params.amount).toString(),
+            fromAmount: params.amount,
             fromAddress: fromAddress,
             options: {
                 slippage: params.slippage || 0.5,
@@ -89,7 +83,7 @@ export class SwapAction {
             from: fromAddress,
             to: routes.routes[0].steps[0].estimate
                 .approvalAddress as `0x${string}`,
-            value: 0n,
+            value: BigInt(params.amount),
             data: process.data as `0x${string}`,
             chainId: this.walletProvider.getChainConfigs(params.chain).id,
         };
@@ -101,48 +95,18 @@ export const swapAction = {
     description: "Swap tokens on the same chain",
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
+        message: Memory,
         state: State,
-        _options: any,
+        options: any,
         callback?: any
     ) => {
-        console.log("Swap action handler called");
-        const walletProvider = initWalletProvider(runtime);
-        const action = new SwapAction(walletProvider);
-
-        // Compose swap context
-        const swapContext = composeContext({
-            state,
-            template: swapTemplate,
-        });
-        const content = await generateObjectDeprecated({
-            runtime,
-            context: swapContext,
-            modelClass: ModelClass.LARGE,
-        });
-
-        const swapOptions: SwapParams = {
-            chain: content.chain,
-            fromToken: content.inputToken,
-            toToken: content.outputToken,
-            amount: content.amount,
-            slippage: content.slippage,
-        };
-
         try {
-            const swapResp = await action.swap(swapOptions);
-            if (callback) {
-                callback({
-                    text: `Successfully swap ${swapOptions.amount} ${swapOptions.fromToken} tokens to ${swapOptions.toToken}\nTransaction Hash: ${swapResp.hash}`,
-                    content: {
-                        success: true,
-                        hash: swapResp.hash,
-                        recipient: swapResp.to,
-                        chain: content.chain,
-                    },
-                });
-            }
-            return true;
+            const privateKey = runtime.getSetting(
+                "EVM_PRIVATE_KEY"
+            ) as `0x${string}`;
+            const walletProvider = new WalletProvider(privateKey);
+            const action = new SwapAction(walletProvider);
+            return await action.swap(options);
         } catch (error) {
             console.error("Error in swap handler:", error.message);
             if (callback) {
