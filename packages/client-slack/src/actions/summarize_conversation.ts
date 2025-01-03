@@ -2,6 +2,7 @@ import {
     composeContext,
     generateText,
     splitChunks,
+    trimTokens,
     parseJSONObjectFromText,
 } from "@elizaos/core";
 import { models } from "@elizaos/core";
@@ -17,8 +18,6 @@ import {
     ModelClass,
     State,
     elizaLogger,
-    ServiceType,
-    ITokenizationService,
 } from "@elizaos/core";
 import { ISlackService, SLACK_SERVICE_TYPE } from "../types/slack-types";
 
@@ -273,9 +272,6 @@ const summarizeAction: Action = {
 
         currentState.memoriesWithAttachments = formattedMemories;
         currentState.objective = objective;
-        const tokenizationService = runtime.getService<ITokenizationService>(
-            ServiceType.TOKENIZATION
-        );
 
         // Only process one chunk at a time and stop after getting a valid summary
         for (let i = 0; i < chunks.length; i++) {
@@ -283,14 +279,13 @@ const summarizeAction: Action = {
             currentState.currentSummary = currentSummary;
             currentState.currentChunk = chunk;
 
-            const template = await tokenizationService.trimTokens(
-                summarizationTemplate,
-                chunkSize + 500
-            );
-
             const context = composeContext({
                 state: currentState,
-                template,
+                template: trimTokens(
+                    summarizationTemplate,
+                    chunkSize + 500,
+                    "gpt-4o-mini"
+                ),
             });
 
             const summary = await generateText({

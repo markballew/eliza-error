@@ -687,6 +687,7 @@ export type Character = {
     /** Image model provider to use, if different from modelProvider */
     imageModelProvider?: ModelProviderName;
 
+
     /** Image Vision model provider to use, if different from modelProvider */
     imageVisionModelProvider?: ModelProviderName;
 
@@ -1260,8 +1261,23 @@ export interface IAwsS3Service extends Service {
     generateSignedUrl(fileName: string, expiresIn: number): Promise<string>;
 }
 
-export interface ITokenizationService extends Service {
-    trimTokens(context: string, maxTokens: number): Promise<string>;
+
+export interface UploadIrysResult {
+    success: boolean;
+    url?: string;
+    error?: string;
+}
+
+export interface DataIrysFetchedFromGQL {
+    success: boolean;
+    data: any;
+    error?: string;
+}
+
+export interface IIrysService extends Service {
+    uploadDataOnIrys(data: any): Promise<UploadIrysResult>;
+    getDataFromAnAgent(agentsWalletPublicKeys: string[]): Promise<DataIrysFetchedFromGQL>;
+    uploadFileOrImageOnIrys(data: string): Promise<UploadIrysResult>;
 }
 
 export type SearchImage = {
@@ -1298,7 +1314,7 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
-    TOKENIZATION = "tokenization",
+    IRYS = "irys",
 }
 
 export enum LoggingLevel {
@@ -1321,11 +1337,6 @@ export interface ActionResponse {
 
 export interface ISlackService extends Service {
     client: any;
-}
-
-export enum TokenizerType {
-    Auto = "auto",
-    TikToken = "tiktoken",
 }
 
 export enum TranscriptionProvider {
