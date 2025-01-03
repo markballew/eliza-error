@@ -3,7 +3,7 @@ import {
     IAgentRuntime,
     Memory,
     type Action,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 
 export const noneAction: Action = {
     name: "NONE",
