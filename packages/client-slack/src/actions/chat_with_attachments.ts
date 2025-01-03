@@ -1,6 +1,7 @@
 import {
     composeContext,
     generateText,
+    trimTokens,
     parseJSONObjectFromText,
 } from "@elizaos/core";
 import { models } from "@elizaos/core";
@@ -14,8 +15,6 @@ import {
     Memory,
     ModelClass,
     State,
-    ServiceType,
-    ITokenizationService,
 } from "@elizaos/core";
 
 export const summarizationTemplate = `# Summarized so far (we are adding to this)
@@ -201,17 +200,13 @@ const summarizeAction: Action = {
         currentState.attachmentsWithText = attachmentsWithText;
         currentState.objective = objective;
 
-        const tokenizationService = runtime.getService<ITokenizationService>(
-            ServiceType.TOKENIZATION
-        );
-        const template = await tokenizationService.trimTokens(
-            summarizationTemplate,
-            chunkSize + 500,
-            model.model[ModelClass.SMALL] || "gpt-4o-mini"
-        );
         const context = composeContext({
             state: currentState,
-            template,
+            template: trimTokens(
+                summarizationTemplate,
+                chunkSize + 500,
+                "gpt-4o-mini"
+            ),
         });
 
         const summary = await generateText({
