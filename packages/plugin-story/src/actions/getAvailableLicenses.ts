@@ -4,10 +4,10 @@ import {
     generateObjectDeprecated,
     HandlerCallback,
     ModelClass,
-    IAgentRuntime,
-    Memory,
-    State,
-} from "@elizaos/core";
+    type IAgentRuntime,
+    type Memory,
+    type State,
+} from "@ai16z/eliza";
 import { getAvailableLicensesTemplate, licenseIPTemplate } from "../templates";
 import { Address } from "viem";
 import { IPLicenseDetails, RESOURCE_TYPE } from "../types/api";
