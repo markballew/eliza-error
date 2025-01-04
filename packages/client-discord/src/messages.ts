@@ -1,5 +1,5 @@
-import { composeContext, composeRandomUser } from "@elizaos/core";
-import { generateMessageResponse, generateShouldRespond } from "@elizaos/core";
+import { composeContext } from "@ai16z/eliza";
+import { generateMessageResponse, generateShouldRespond } from "@ai16z/eliza";
 import {
     Content,
     HandlerCallback,
@@ -13,15 +13,15 @@ import {
     ServiceType,
     State,
     UUID,
-} from "@elizaos/core";
-import { stringToUuid, getEmbeddingZeroVector } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { stringToUuid, getEmbeddingZeroVector } from "@ai16z/eliza";
 import {
     ChannelType,
     Client,
     Message as DiscordMessage,
     TextChannel,
 } from "discord.js";
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@ai16z/eliza";
 import { AttachmentManager } from "./attachments.ts";
 import { VoiceManager } from "./voice.ts";
 import {
@@ -389,16 +389,11 @@ export class MessageManager {
                         discordMessageHandlerTemplate,
                 });
 
-                // simulate discord typing while generating a response
-                const stopTyping = this.simulateTyping(message)
-
                 const responseContent = await this._generateResponse(
                     memory,
                     state,
                     context
-                ).finally(() => {
-                    stopTyping()
-                });
+                );
 
                 responseContent.text = responseContent.text?.trim();
                 responseContent.inReplyTo = stringToUuid(
@@ -1233,7 +1228,7 @@ export class MessageManager {
                 this.runtime.character.templates
                     ?.discordShouldRespondTemplate ||
                 this.runtime.character.templates?.shouldRespondTemplate ||
-                composeRandomUser(discordShouldRespondTemplate, 2),
+                discordShouldRespondTemplate,
         });
 
         const response = await generateShouldRespond({
@@ -1311,28 +1306,5 @@ export class MessageManager {
 
         const data = await response.json();
         return data.username;
-    }
-
-    /**
-     * Simulate discord typing while generating a response;
-     * returns a function to interrupt the typing loop
-     *
-     * @param message
-     */
-    private simulateTyping(message: DiscordMessage) {
-        let typing = true;
-
-        const typingLoop = async () => {
-            while (typing) {
-                await message.channel.sendTyping();
-                await new Promise((resolve) => setTimeout(resolve, 3000));
-            }
-        };
-
-        typingLoop();
-
-        return function stopTyping() {
-            typing = false
-        }
     }
 }

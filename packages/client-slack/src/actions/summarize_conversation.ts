@@ -4,9 +4,9 @@ import {
     splitChunks,
     trimTokens,
     parseJSONObjectFromText,
-} from "@elizaos/core";
-import { models } from "@elizaos/core";
-import { getActorDetails } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { models } from "@ai16z/eliza";
+import { getActorDetails } from "@ai16z/eliza";
 import {
     Action,
     ActionExample,
@@ -18,7 +18,7 @@ import {
     ModelClass,
     State,
     elizaLogger,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { ISlackService, SLACK_SERVICE_TYPE } from "../types/slack-types";
 
 export const summarizationTemplate = `# Summarized so far (we are adding to this)
@@ -279,15 +279,13 @@ const summarizeAction: Action = {
             currentState.currentSummary = currentSummary;
             currentState.currentChunk = chunk;
 
-            const template = await trimTokens(
-                summarizationTemplate,
-                chunkSize + 500,
-                runtime
-            );
-
             const context = composeContext({
                 state: currentState,
-                template,
+                template: trimTokens(
+                    summarizationTemplate,
+                    chunkSize + 500,
+                    "gpt-4o-mini"
+                ),
             });
 
             const summary = await generateText({

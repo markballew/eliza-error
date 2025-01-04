@@ -1,4 +1,4 @@
-import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
+import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
@@ -377,7 +377,10 @@ const walletProvider: Provider = {
                 runtime.getSetting("RPC_URL") || PROVIDER_CONFIG.DEFAULT_RPC
             );
 
-            const provider = new WalletProvider(connection, publicKey);
+            const provider = new WalletProvider(
+                connection,
+                publicKey
+            );
 
             return await provider.getFormattedPortfolio(runtime);
         } catch (error) {
