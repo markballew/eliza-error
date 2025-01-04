@@ -687,6 +687,7 @@ export type Character = {
     /** Image model provider to use, if different from modelProvider */
     imageModelProvider?: ModelProviderName;
 
+
     /** Image Vision model provider to use, if different from modelProvider */
     imageVisionModelProvider?: ModelProviderName;
 
@@ -1294,6 +1295,7 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
+    GOPLUS_SECURITY = "goplus_security",
 }
 
 export enum LoggingLevel {
@@ -1316,11 +1318,6 @@ export interface ActionResponse {
 
 export interface ISlackService extends Service {
     client: any;
-}
-
-export enum TokenizerType {
-    Auto = "auto",
-    TikToken = "tiktoken",
 }
 
 export enum TranscriptionProvider {

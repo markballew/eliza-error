@@ -200,14 +200,13 @@ const summarizeAction: Action = {
         currentState.attachmentsWithText = attachmentsWithText;
         currentState.objective = objective;
 
-        const template = await trimTokens(
-            summarizationTemplate,
-            chunkSize + 500,
-            runtime
-        );
         const context = composeContext({
             state: currentState,
-            template,
+            template: trimTokens(
+                summarizationTemplate,
+                chunkSize + 500,
+                "gpt-4o-mini"
+            ),
         });
 
         const summary = await generateText({
