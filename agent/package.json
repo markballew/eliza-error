@@ -1,6 +1,6 @@
 {
     "name": "@elizaos/agent",
-    "version": "0.1.7",
+    "version": "0.1.7-alpha.2",
     "main": "src/index.ts",
     "type": "module",
     "scripts": {
@@ -34,6 +34,7 @@
         "@elizaos/plugin-abstract": "workspace:*",
         "@elizaos/plugin-aptos": "workspace:*",
         "@elizaos/plugin-bootstrap": "workspace:*",
+        "@elizaos/plugin-birdeye": "workspace:*",
         "@elizaos/plugin-intiface": "workspace:*",
         "@elizaos/plugin-coinbase": "workspace:*",
         "@elizaos/plugin-conflux": "workspace:*",
