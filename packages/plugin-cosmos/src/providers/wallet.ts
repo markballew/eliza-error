@@ -8,7 +8,7 @@ import {
     ModelClass,
     Provider,
     State,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { Chain } from "../types";
 import { balanceTemplate } from "../templates";

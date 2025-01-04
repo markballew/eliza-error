@@ -1,5 +1,5 @@
 import { cosmosWalletProvider } from "./providers/wallet.ts";
-import type { Plugin } from "@ai16z/eliza";
+import type { Plugin } from "@elizaos/core";
 import { balanceAction } from "./actions/walletProviderTestAction.ts";
 
 export const cosmosPlugin: Plugin = {
