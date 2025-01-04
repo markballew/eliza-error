@@ -107,7 +107,7 @@ export const swapAction = {
         callback?: any
     ) => {
         console.log("Swap action handler called");
-        const walletProvider = await initWalletProvider(runtime);
+        const walletProvider = initWalletProvider(runtime);
         const action = new SwapAction(walletProvider);
 
         // Compose swap context

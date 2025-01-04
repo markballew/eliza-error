@@ -1,10 +1,4 @@
-import {
-    IAgentRuntime,
-    Memory,
-    Provider,
-    State,
-    elizaLogger,
-} from "@elizaos/core";
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 import { KeyPair, keyStores, connect, Account, utils } from "near-api-js";
 import BigNumber from "bignumber.js";
 import { KeyPairString } from "near-api-js/lib/utils";
@@ -57,7 +51,7 @@ export class WalletProvider implements Provider {
         try {
             return await this.getFormattedPortfolio(runtime);
         } catch (error) {
-            elizaLogger.error("Error in wallet provider:", error);
+            console.error("Error in wallet provider:", error);
             return null;
         }
     }
@@ -108,7 +102,7 @@ export class WalletProvider implements Provider {
                 }
                 return await response.json();
             } catch (error) {
-                elizaLogger.error(`Attempt ${i + 1} failed:`, error);
+                console.error(`Attempt ${i + 1} failed:`, error);
                 lastError = error as Error;
                 if (i < PROVIDER_CONFIG.MAX_RETRIES - 1) {
                     await new Promise((resolve) =>
@@ -131,7 +125,7 @@ export class WalletProvider implements Provider {
             const cachedValue = this.cache.get<WalletPortfolio>(cacheKey);
 
             if (cachedValue) {
-                elizaLogger.log("Cache hit for fetchPortfolioValue");
+                console.log("Cache hit for fetchPortfolioValue");
                 return cachedValue;
             }
 
@@ -166,7 +160,7 @@ export class WalletProvider implements Provider {
             this.cache.set(cacheKey, portfolio);
             return portfolio;
         } catch (error) {
-            elizaLogger.error("Error fetching portfolio:", error);
+            console.error("Error fetching portfolio:", error);
             throw error;
         }
     }
@@ -187,7 +181,7 @@ export class WalletProvider implements Provider {
             this.cache.set(cacheKey, price);
             return price;
         } catch (error) {
-            elizaLogger.error("Error fetching NEAR price:", error);
+            console.error("Error fetching NEAR price:", error);
             return 0;
         }
     }
@@ -220,7 +214,7 @@ export class WalletProvider implements Provider {
             const portfolio = await this.fetchPortfolioValue(runtime);
             return this.formatPortfolio(runtime, portfolio);
         } catch (error) {
-            elizaLogger.error("Error generating portfolio report:", error);
+            console.error("Error generating portfolio report:", error);
             return "Unable to fetch wallet information. Please try again later.";
         }
     }
@@ -240,7 +234,7 @@ const walletProvider: Provider = {
             const provider = new WalletProvider(accountId);
             return await provider.getFormattedPortfolio(runtime);
         } catch (error) {
-            elizaLogger.error("Error in wallet provider:", error);
+            console.error("Error in wallet provider:", error);
             return null;
         }
     },
