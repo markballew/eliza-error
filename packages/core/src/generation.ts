@@ -6,15 +6,12 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import {
     generateObject as aiGenerateObject,
     generateText as aiGenerateText,
-    CoreTool,
     GenerateObjectResult,
-    StepResult as AIStepResult,
 } from "ai";
 import { Buffer } from "buffer";
 import { createOllama } from "ollama-ai-provider";
 import OpenAI from "openai";
 import { encodingForModel, TiktokenModel } from "js-tiktoken";
-import { AutoTokenizer } from "@huggingface/transformers";
 import Together from "together-ai";
 import { ZodSchema } from "zod";
 import { elizaLogger } from "./index.ts";
@@ -37,122 +34,12 @@ import {
     ServiceType,
     SearchResponse,
     ActionResponse,
-    TelemetrySettings,
-    TokenizerType,
+    IVerifiableInferenceAdapter,
+    VerifiableInferenceOptions,
+    VerifiableInferenceResult,
+    VerifiableInferenceProvider,
 } from "./types.ts";
 import { fal } from "@fal-ai/client";
-import { tavily } from "@tavily/core";
-
-type Tool = CoreTool<any, any>;
-type StepResult = AIStepResult<any>;
-
-/**
- * Trims the provided text context to a specified token limit using a tokenizer model and type.
- *
- * The function dynamically determines the truncation method based on the tokenizer settings
- * provided by the runtime. If no tokenizer settings are defined, it defaults to using the
- * TikToken truncation method with the "gpt-4o" model.
- *
- * @async
- * @function trimTokens
- * @param {string} context - The text to be tokenized and trimmed.
- * @param {number} maxTokens - The maximum number of tokens allowed after truncation.
- * @param {IAgentRuntime} runtime - The runtime interface providing tokenizer settings.
- *
- * @returns {Promise<string>} A promise that resolves to the trimmed text.
- *
- * @throws {Error} Throws an error if the runtime settings are invalid or missing required fields.
- *
- * @example
- * const trimmedText = await trimTokens("This is an example text", 50, runtime);
- * console.log(trimmedText); // Output will be a truncated version of the input text.
- */
-export async function trimTokens(
-    context: string,
-    maxTokens: number,
-    runtime: IAgentRuntime
-) {
-    if (!context) return "";
-    if (maxTokens <= 0) throw new Error("maxTokens must be positive");
-
-    const tokenizerModel = runtime.getSetting("TOKENIZER_MODEL");
-    const tokenizerType = runtime.getSetting("TOKENIZER_TYPE");
-
-    if (!tokenizerModel || !tokenizerType) {
-        // Default to TikToken truncation using the "gpt-4o" model if tokenizer settings are not defined
-        return truncateTiktoken("gpt-4o", context, maxTokens);
-    }
-
-    // Choose the truncation method based on tokenizer type
-    if (tokenizerType === TokenizerType.Auto) {
-        return truncateAuto(tokenizerModel, context, maxTokens);
-    }
-
-    if (tokenizerType === TokenizerType.TikToken) {
-        return truncateTiktoken(
-            tokenizerModel as TiktokenModel,
-            context,
-            maxTokens
-        );
-    }
-
-    elizaLogger.warn(`Unsupported tokenizer type: ${tokenizerType}`);
-    return truncateTiktoken("gpt-4o", context, maxTokens);
-}
-
-async function truncateAuto(
-    modelPath: string,
-    context: string,
-    maxTokens: number
-) {
-    try {
-        const tokenizer = await AutoTokenizer.from_pretrained(modelPath);
-        const tokens = tokenizer.encode(context);
-
-        // If already within limits, return unchanged
-        if (tokens.length <= maxTokens) {
-            return context;
-        }
-
-        // Keep the most recent tokens by slicing from the end
-        const truncatedTokens = tokens.slice(-maxTokens);
-
-        // Decode back to text - js-tiktoken decode() returns a string directly
-        return tokenizer.decode(truncatedTokens);
-    } catch (error) {
-        elizaLogger.error("Error in trimTokens:", error);
-        // Return truncated string if tokenization fails
-        return context.slice(-maxTokens * 4); // Rough estimate of 4 chars per token
-    }
-}
-
-async function truncateTiktoken(
-    model: TiktokenModel,
-    context: string,
-    maxTokens: number
-) {
-    try {
-        const encoding = encodingForModel(model);
-
-        // Encode the text into tokens
-        const tokens = encoding.encode(context);
-
-        // If already within limits, return unchanged
-        if (tokens.length <= maxTokens) {
-            return context;
-        }
-
-        // Keep the most recent tokens by slicing from the end
-        const truncatedTokens = tokens.slice(-maxTokens);
-
-        // Decode back to text - js-tiktoken decode() returns a string directly
-        return encoding.decode(truncatedTokens);
-    } catch (error) {
-        elizaLogger.error("Error in trimTokens:", error);
-        // Return truncated string if tokenization fails
-        return context.slice(-maxTokens * 4); // Rough estimate of 4 chars per token
-    }
-}
 
 /**
  * Send a message to the model for a text generateText - receive a string back and parse how you'd like
@@ -171,20 +58,19 @@ export async function generateText({
     runtime,
     context,
     modelClass,
-    tools = {},
-    onStepFinish,
-    maxSteps = 1,
     stop,
     customSystemPrompt,
+    verifiableInference = process.env.VERIFIABLE_INFERENCE_ENABLED === "true",
+    verifiableInferenceOptions,
 }: {
     runtime: IAgentRuntime;
     context: string;
     modelClass: string;
-    tools?: Record<string, Tool>;
-    onStepFinish?: (event: StepResult) => Promise<void> | void;
-    maxSteps?: number;
     stop?: string[];
     customSystemPrompt?: string;
+    verifiableInference?: boolean;
+    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }): Promise<string> {
     if (!context) {
         console.error("generateText context is empty");
@@ -196,7 +82,32 @@ export async function generateText({
     elizaLogger.info("Generating text with options:", {
         modelProvider: runtime.modelProvider,
         model: modelClass,
+        verifiableInference,
     });
+
+    // If verifiable inference is requested and adapter is provided, use it
+    if (verifiableInference && runtime.verifiableInferenceAdapter) {
+        try {
+            const result =
+                await runtime.verifiableInferenceAdapter.generateText(
+                    context,
+                    modelClass,
+                    verifiableInferenceOptions
+                );
+
+            // Verify the proof
+            const isValid =
+                await runtime.verifiableInferenceAdapter.verifyProof(result);
+            if (!isValid) {
+                throw new Error("Failed to verify inference proof");
+            }
+
+            return result.text;
+        } catch (error) {
+            elizaLogger.error("Error in verifiable inference:", error);
+            throw error;
+        }
+    }
 
     const provider = runtime.modelProvider;
     const endpoint =
@@ -287,9 +198,6 @@ export async function generateText({
     const max_response_length =
         modelConfiguration?.max_response_length ||
         models[provider].settings.maxOutputTokens;
-    const experimental_telemetry =
-        modelConfiguration?.experimental_telemetry ||
-        models[provider].settings.experimental_telemetry;
 
     const apiKey = runtime.token;
 
@@ -297,8 +205,7 @@ export async function generateText({
         elizaLogger.debug(
             `Trimming context to max length of ${max_context_length} tokens.`
         );
-
-        context = await trimTokens(context, max_context_length, runtime);
+        context = await trimTokens(context, max_context_length, "gpt-4o");
 
         let response: string;
 
@@ -310,6 +217,7 @@ export async function generateText({
         switch (provider) {
             // OPENAI & LLAMACLOUD shared same structure.
             case ModelProviderName.OPENAI:
+            case ModelProviderName.ETERNALAI:
             case ModelProviderName.ALI_BAILIAN:
             case ModelProviderName.VOLENGINE:
             case ModelProviderName.LLAMACLOUD:
@@ -331,56 +239,6 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
-                    temperature: temperature,
-                    maxTokens: max_response_length,
-                    frequencyPenalty: frequency_penalty,
-                    presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
-                });
-
-                response = openaiResponse;
-                elizaLogger.debug("Received response from OpenAI model.");
-                break;
-            }
-
-            case ModelProviderName.ETERNALAI: {
-                elizaLogger.debug("Initializing EternalAI model.");
-                const openai = createOpenAI({
-                    apiKey,
-                    baseURL: endpoint,
-                    fetch: async (url: string, options: any) => {
-                        const fetching = await runtime.fetch(url, options);
-                        if (
-                            parseBooleanFromText(
-                                runtime.getSetting("ETERNAL_AI_LOG_REQUEST")
-                            )
-                        ) {
-                            elizaLogger.info(
-                                "Request data: ",
-                                JSON.stringify(options, null, 2)
-                            );
-                            const clonedResponse = fetching.clone();
-                            clonedResponse.json().then((data) => {
-                                elizaLogger.info(
-                                    "Response data: ",
-                                    JSON.stringify(data, null, 2)
-                                );
-                            });
-                        }
-                        return fetching;
-                    },
-                });
-
-                const { text: openaiResponse } = await aiGenerateText({
-                    model: openai.languageModel(model),
-                    prompt: context,
-                    system:
-                        runtime.character.system ??
-                        settings.SYSTEM_PROMPT ??
-                        undefined,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -388,13 +246,12 @@ export async function generateText({
                 });
 
                 response = openaiResponse;
-                elizaLogger.debug("Received response from EternalAI model.");
+                console.log("Received response from OpenAI model.");
                 break;
             }
 
             case ModelProviderName.GOOGLE: {
                 const google = createGoogleGenerativeAI({
-                    apiKey,
                     fetch: runtime.fetch,
                 });
 
@@ -405,14 +262,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = googleResponse;
@@ -435,14 +288,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = anthropicResponse;
@@ -465,14 +314,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = anthropicResponse;
@@ -499,14 +344,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = grokResponse;
@@ -525,13 +366,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = groqResponse;
@@ -580,13 +417,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = redpillResponse;
@@ -611,13 +444,9 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = openrouterResponse;
@@ -640,14 +469,10 @@ export async function generateText({
                     const { text: ollamaResponse } = await aiGenerateText({
                         model: ollama,
                         prompt: context,
-                        tools: tools,
-                        onStepFinish: onStepFinish,
                         temperature: temperature,
-                        maxSteps: maxSteps,
                         maxTokens: max_response_length,
                         frequencyPenalty: frequency_penalty,
                         presencePenalty: presence_penalty,
-                        experimental_telemetry: experimental_telemetry,
                     });
 
                     response = ollamaResponse;
@@ -671,14 +496,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
                     temperature: temperature,
                     maxTokens: max_response_length,
-                    maxSteps: maxSteps,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = heuristResponse;
@@ -724,14 +545,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = openaiResponse;
@@ -754,14 +571,10 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
-                    maxSteps: maxSteps,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
-                    experimental_telemetry: experimental_telemetry,
                 });
 
                 response = galadrielResponse;
@@ -783,10 +596,7 @@ export async function generateText({
                         runtime.character.system ??
                         settings.SYSTEM_PROMPT ??
                         undefined,
-                    tools: tools,
-                    onStepFinish: onStepFinish,
                     temperature: temperature,
-                    maxSteps: maxSteps,
                     maxTokens: max_response_length,
                 });
 
@@ -806,6 +616,45 @@ export async function generateText({
     } catch (error) {
         elizaLogger.error("Error in generateText:", error);
         throw error;
+    }
+}
+
+/**
+ * Truncate the context to the maximum length allowed by the model.
+ * @param context The text to truncate
+ * @param maxTokens Maximum number of tokens to keep
+ * @param model The tokenizer model to use
+ * @returns The truncated text
+ */
+export function trimTokens(
+    context: string,
+    maxTokens: number,
+    model: TiktokenModel
+): string {
+    if (!context) return "";
+    if (maxTokens <= 0) throw new Error("maxTokens must be positive");
+
+    // Get the tokenizer for the model
+    const encoding = encodingForModel(model);
+
+    try {
+        // Encode the text into tokens
+        const tokens = encoding.encode(context);
+
+        // If already within limits, return unchanged
+        if (tokens.length <= maxTokens) {
+            return context;
+        }
+
+        // Keep the most recent tokens by slicing from the end
+        const truncatedTokens = tokens.slice(-maxTokens);
+
+        // Decode back to text - js-tiktoken decode() returns a string directly
+        return encoding.decode(truncatedTokens);
+    } catch (error) {
+        console.error("Error in trimTokens:", error);
+        // Return truncated string if tokenization fails
+        return context.slice(-maxTokens * 4); // Rough estimate of 4 chars per token
     }
 }
 
@@ -1090,10 +939,9 @@ export async function generateMessageResponse({
     context: string;
     modelClass: string;
 }): Promise<Content> {
-    const provider = runtime.modelProvider;
-    const max_context_length = models[provider].settings.maxInputTokens;
-
-    context = await trimTokens(context, max_context_length, runtime);
+    const max_context_length =
+        models[runtime.modelProvider].settings.maxInputTokens;
+    context = trimTokens(context, max_context_length, "gpt-4o");
     let retryLength = 1000; // exponential backoff
     while (true) {
         try {
@@ -1491,20 +1339,34 @@ export const generateWebSearch = async (
     query: string,
     runtime: IAgentRuntime
 ): Promise<SearchResponse> => {
+    const apiUrl = "https://api.tavily.com/search";
+    const apiKey = runtime.getSetting("TAVILY_API_KEY");
+
     try {
-        const apiKey = runtime.getSetting("TAVILY_API_KEY") as string;
-        if (!apiKey) {
-            throw new Error("TAVILY_API_KEY is not set");
-        }
-        const tvly = tavily({ apiKey });
-        const response = await tvly.search(query, {
-            includeAnswer: true,
-            maxResults: 3, // 5 (default)
-            topic: "general", // "general"(default) "news"
-            searchDepth: "basic", // "basic"(default) "advanced"
-            includeImages: false, // false (default) true
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                api_key: apiKey,
+                query,
+                include_answer: true,
+                max_results: 3, // 5 (default)
+                topic: "general", // "general"(default) "news"
+                search_depth: "basic", // "basic"(default) "advanced"
+                include_images: false, // false (default) true
+            }),
         });
-        return response;
+
+        if (!response.ok) {
+            throw new elizaLogger.error(
+                `HTTP error! status: ${response.status}`
+            );
+        }
+
+        const data: SearchResponse = await response.json();
+        return data;
     } catch (error) {
         elizaLogger.error("Error:", error);
     }
@@ -1522,6 +1384,9 @@ export interface GenerationOptions {
     stop?: string[];
     mode?: "auto" | "json" | "tool";
     experimental_providerMetadata?: Record<string, unknown>;
+    verifiableInference?: boolean;
+    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }
 
 /**
@@ -1534,7 +1399,6 @@ interface ModelSettings {
     frequencyPenalty: number;
     presencePenalty: number;
     stop?: string[];
-    experimental_telemetry?: TelemetrySettings;
 }
 
 /**
@@ -1553,6 +1417,9 @@ export const generateObject = async ({
     schemaDescription,
     stop,
     mode = "json",
+    verifiableInference = false,
+    verifiableInferenceAdapter,
+    verifiableInferenceOptions,
 }: GenerationOptions): Promise<GenerateObjectResult<unknown>> => {
     if (!context) {
         const errorMessage = "generateObject context is empty";
@@ -1561,18 +1428,19 @@ export const generateObject = async ({
     }
 
     const provider = runtime.modelProvider;
-    const model = models[provider].model[modelClass];
+    const model = models[provider].model[modelClass] as TiktokenModel;
+    if (!model) {
+        throw new Error(`Unsupported model class: ${modelClass}`);
+    }
     const temperature = models[provider].settings.temperature;
     const frequency_penalty = models[provider].settings.frequency_penalty;
     const presence_penalty = models[provider].settings.presence_penalty;
     const max_context_length = models[provider].settings.maxInputTokens;
     const max_response_length = models[provider].settings.maxOutputTokens;
-    const experimental_telemetry =
-        models[provider].settings.experimental_telemetry;
     const apiKey = runtime.token;
 
     try {
-        context = await trimTokens(context, max_context_length, runtime);
+        context = trimTokens(context, max_context_length, model);
 
         const modelOptions: ModelSettings = {
             prompt: context,
@@ -1581,7 +1449,6 @@ export const generateObject = async ({
             frequencyPenalty: frequency_penalty,
             presencePenalty: presence_penalty,
             stop: stop || models[provider].settings.stop,
-            experimental_telemetry: experimental_telemetry,
         };
 
         const response = await handleProvider({
@@ -1596,6 +1463,9 @@ export const generateObject = async ({
             runtime,
             context,
             modelClass,
+            verifiableInference,
+            verifiableInferenceAdapter,
+            verifiableInferenceOptions,
         });
 
         return response;
@@ -1621,6 +1491,9 @@ interface ProviderOptions {
     modelOptions: ModelSettings;
     modelClass: string;
     context: string;
+    verifiableInference?: boolean;
+    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }
 
 /**
@@ -1632,7 +1505,15 @@ interface ProviderOptions {
 export async function handleProvider(
     options: ProviderOptions
 ): Promise<GenerateObjectResult<unknown>> {
-    const { provider, runtime, context, modelClass } = options;
+    const {
+        provider,
+        runtime,
+        context,
+        modelClass,
+        verifiableInference,
+        verifiableInferenceAdapter,
+        verifiableInferenceOptions,
+    } = options;
     switch (provider) {
         case ModelProviderName.OPENAI:
         case ModelProviderName.ETERNALAI:
@@ -1683,7 +1564,7 @@ async function handleOpenAI({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const baseURL = models.openai.endpoint || undefined;
@@ -1693,7 +1574,7 @@ async function handleOpenAI({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1710,7 +1591,7 @@ async function handleAnthropic({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const anthropic = createAnthropic({ apiKey });
@@ -1719,7 +1600,7 @@ async function handleAnthropic({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1736,7 +1617,7 @@ async function handleGrok({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const grok = createOpenAI({ apiKey, baseURL: models.grok.endpoint });
@@ -1745,7 +1626,7 @@ async function handleGrok({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1762,7 +1643,7 @@ async function handleGroq({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const groq = createGroq({ apiKey });
@@ -1771,7 +1652,7 @@ async function handleGroq({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1788,7 +1669,7 @@ async function handleGoogle({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const google = createGoogleGenerativeAI();
@@ -1797,7 +1678,7 @@ async function handleGoogle({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1814,7 +1695,7 @@ async function handleRedPill({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const redPill = createOpenAI({ apiKey, baseURL: models.redpill.endpoint });
@@ -1823,7 +1704,7 @@ async function handleRedPill({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1840,7 +1721,7 @@ async function handleOpenRouter({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const openRouter = createOpenAI({
@@ -1852,7 +1733,7 @@ async function handleOpenRouter({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
@@ -1868,7 +1749,7 @@ async function handleOllama({
     schema,
     schemaName,
     schemaDescription,
-    mode,
+    mode = "json",
     modelOptions,
     provider,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
@@ -1881,7 +1762,7 @@ async function handleOllama({
         schema,
         schemaName,
         schemaDescription,
-        mode,
+        mode: "json",
         ...modelOptions,
     });
 }
