@@ -1,16 +1,16 @@
 # Eliza - Multi-agent simulation framework
 
-# https://github.com/elizaOS/eliza
+# https://github.com/elizaos/eliza
 
 # Visit https://eliza.builders for support
 
 ## 🌍 README Translations
 
-[中文说明](./README_CN.md) | [Deutsch](./README_DE.md) | [Français](./README_FR.md) | [ไทย](./README_TH.md) | [Español](README_ES.md)
+[中文说明](./README_CN.md) | [Deutsch](./README_DE.md) | [Français](./README_FR.md) | [ไทย](./README_TH.md)
 
 # dev branch
 
-<img src="static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
+<img src="./docs/static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
 
 _As seen powering [@DegenSpartanAI](https://x.com/degenspartanai) and [@MarcAIndreessen](https://x.com/pmairca)_
 
@@ -179,13 +179,3 @@ Tests are written using Jest and can be found in `src/**/*.test.ts` files. The t
 - Run tests in sequence (--runInBand)
 
 To create new tests, add a `.test.ts` file adjacent to the code you're testing.
-
-## Docs Updates
-
-Please make sure to vetify if the documentation provided is correct. In order to do so, please run the docs service.
-
-```console
-docker compose -f docker-compose-docs.yaml up --build
-```
-
-The docusaurus server will get started and you can verify it locally at https://localhost:3000/eliza.

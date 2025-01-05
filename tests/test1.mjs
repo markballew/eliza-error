@@ -1,5 +1,10 @@
-import assert from "assert";
-import { send, log, logError, runIntegrationTest } from "./testLibrary.mjs";
+import assert from 'assert';
+import {
+    send,
+    log,
+    logError,
+    runIntegrationTest
+} from "./testLibrary.mjs";
 
 async function helloTrump() {
     const reply = await send("Hi");
