@@ -243,7 +243,6 @@ export enum ModelProviderName {
     VENICE = "venice",
     AKASH_CHAT_API = "akash_chat_api",
     LIVEPEER = "livepeer",
-    INFERA = "infera",
 }
 
 /**
@@ -1295,7 +1294,6 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
-    GOPLUS_SECURITY = "goplus_security",
 }
 
 export enum LoggingLevel {
