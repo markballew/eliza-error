@@ -43,6 +43,17 @@
 - 🎮 Video Game NPCs
 - 🧠 Trading
 
+## 💰 If you plan to launch a token
+
+This framework is the number one open source project on github, we are enabling the next generation of human-machine interface but we still need your help to ensure the code is of the utmost quality with response rapid to critical issues that will affect our builder community at large.
+
+To ensure sustainable development and continued innovation, we ask contributions of 5-10% of initial token distributions from successful launches.
+
+All contributions are publicly tracked on-chain and used exclusively for ecosystem development.
+
+### ⚠️ Don't forget to tip the big guy 10%: ⚠️
+[AM84n1iLdxgVTAyENBcLdjXoyvjentTbu5Q6EpKV1PeG](https://solscan.io/account/AM84n1iLdxgVTAyENBcLdjXoyvjentTbu5Q6EpKV1PeG)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -95,6 +106,7 @@ cp .env.example .env
 ```
 
 Note: .env is optional. If you're planning to run multiple distinct agents, you can pass secrets through the character JSON
+Note: .env is optional. If you're planning to run multiple distinct agents, you can pass secrets through the character JSON
 
 ### Automatically Start Eliza
 
@@ -137,6 +149,7 @@ pnpm install --include=optional sharp
 
 - [GitHub Issues](https://github.com/elizaos/eliza/issues). Best for: bugs you encounter using Eliza, and feature proposals.
 - [Discord](https://discord.gg/ai16z). Best for: sharing your applications and hanging out with the community.
+- [Developer Discord](https://discord.gg/3f67SH4rXT). Best for: getting help and plugin development.
 
 ## Contributors
 
