@@ -106,9 +106,7 @@ export class TrustScoreManager {
     }> {
         const processedData: ProcessedTokenData =
             await this.tokenProvider.getProcessedTokenData();
-        elizaLogger.log(
-            `Fetched processed token data for token: ${tokenAddress}`
-        );
+        elizaLogger.log(`Fetched processed token data for token: ${tokenAddress}`);
 
         const recommenderMetrics =
             await this.trustScoreDb.getRecommenderMetrics(recommenderId);
@@ -292,18 +290,14 @@ export class TrustScoreManager {
         const unique_wallet_24h = processedData.tradeData.unique_wallet_24h;
         const volume_24h = processedData.tradeData.volume_24h;
         const suspiciousVolume = unique_wallet_24h / volume_24h > 0.5;
-        elizaLogger.log(
-            `Fetched processed token data for token: ${tokenAddress}`
-        );
+        elizaLogger.log(`Fetched processed token data for token: ${tokenAddress}`);
         return suspiciousVolume;
     }
 
     async sustainedGrowth(tokenAddress: string): Promise<boolean> {
         const processedData: ProcessedTokenData =
             await this.tokenProvider.getProcessedTokenData();
-        elizaLogger.log(
-            `Fetched processed token data for token: ${tokenAddress}`
-        );
+        elizaLogger.log(`Fetched processed token data for token: ${tokenAddress}`);
 
         return processedData.tradeData.volume_24h_change_percent > 50;
     }
@@ -311,9 +305,7 @@ export class TrustScoreManager {
     async isRapidDump(tokenAddress: string): Promise<boolean> {
         const processedData: ProcessedTokenData =
             await this.tokenProvider.getProcessedTokenData();
-        elizaLogger.log(
-            `Fetched processed token data for token: ${tokenAddress}`
-        );
+        elizaLogger.log(`Fetched processed token data for token: ${tokenAddress}`);
 
         return processedData.tradeData.trade_24h_change_percent < -50;
     }
@@ -321,9 +313,7 @@ export class TrustScoreManager {
     async checkTrustScore(tokenAddress: string): Promise<TokenSecurityData> {
         const processedData: ProcessedTokenData =
             await this.tokenProvider.getProcessedTokenData();
-        elizaLogger.log(
-            `Fetched processed token data for token: ${tokenAddress}`
-        );
+        elizaLogger.log(`Fetched processed token data for token: ${tokenAddress}`);
 
         return {
             ownerBalance: processedData.security.ownerBalance,
@@ -641,10 +631,7 @@ export const trustScoreProvider: Provider = {
                 await trustScoreDb.getRecommenderMetrics(userId);
 
             if (!recommenderMetrics) {
-                elizaLogger.error(
-                    "No recommender metrics found for user:",
-                    userId
-                );
+                elizaLogger.error("No recommender metrics found for user:", userId);
                 return "";
             }
 
