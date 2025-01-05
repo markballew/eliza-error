@@ -167,12 +167,12 @@ export class TranscriptionService
             try {
                 fs.accessSync("/usr/local/cuda/bin/nvcc", fs.constants.X_OK);
                 this.isCudaAvailable = true;
-                elizaLogger.log(
+                console.log(
                     "CUDA detected. Transcription will use CUDA acceleration."
                 );
                 // eslint-disable-next-line
             } catch (_error) {
-                elizaLogger.log(
+                console.log(
                     "CUDA not detected. Transcription will run on CPU."
                 );
             }
@@ -185,16 +185,16 @@ export class TranscriptionService
             );
             if (fs.existsSync(cudaPath)) {
                 this.isCudaAvailable = true;
-                elizaLogger.log(
+                console.log(
                     "CUDA detected. Transcription will use CUDA acceleration."
                 );
             } else {
-                elizaLogger.log(
+                console.log(
                     "CUDA not detected. Transcription will run on CPU."
                 );
             }
         } else {
-            elizaLogger.log(
+            console.log(
                 "CUDA not supported on this platform. Transcription will run on CPU."
             );
         }
