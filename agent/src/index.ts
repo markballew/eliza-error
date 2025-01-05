@@ -7,7 +7,6 @@ import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
-import { ReclaimAdapter } from "@elizaos/adapter-reclaim";
 import {
     AgentRuntime,
     CacheManager,
@@ -27,6 +26,7 @@ import {
     CacheStore,
     Client,
     ICacheManager,
+    parseBooleanFromText,
 } from "@elizaos/core";
 import { RedisClient } from "@elizaos/adapter-redis";
 import { zgPlugin } from "@elizaos/plugin-0g";
@@ -62,13 +62,15 @@ import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
 import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
+import { webSearchPlugin } from "@elizaos/plugin-web-search";
+import { echoChamberPlugin } from "@elizaos/plugin-echochambers";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
 import net from "net";
-
+import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
@@ -507,26 +509,11 @@ export async function createAgent(
     }
 
     let goatPlugin: any | undefined;
-    if (getSecret(character, "EVM_PROVIDER_URL")) {
+
+    if (getSecret(character, "EVM_PRIVATE_KEY")) {
         goatPlugin = await createGoatPlugin((secret) =>
             getSecret(character, secret)
         );
-    }
-
-    // Initialize Reclaim adapter if environment variables are present
-    let verifiableInferenceAdapter;
-    if (
-        process.env.RECLAIM_APP_ID &&
-        process.env.RECLAIM_APP_SECRET &&
-        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
-    ) {
-        verifiableInferenceAdapter = new ReclaimAdapter({
-            appId: process.env.RECLAIM_APP_ID,
-            appSecret: process.env.RECLAIM_APP_SECRET,
-            modelProvider: character.modelProvider,
-            token,
-        });
-        console.log("Verifiable inference adapter initialized");
     }
 
     return new AgentRuntime({
@@ -542,6 +529,7 @@ export async function createAgent(
                 ? confluxPlugin
                 : null,
             nodePlugin,
+            getSecret(character, "TAVILY_API_KEY") ? webSearchPlugin : null,
             getSecret(character, "SOLANA_PUBLIC_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
@@ -591,12 +579,15 @@ export async function createAgent(
             ...(teeMode !== TEEMode.OFF && walletSecretSalt
                 ? [teePlugin, solanaPlugin]
                 : []),
+            (teeMode !== TEEMode.OFF && walletSecretSalt &&getSecret(character,"VLOG")
+                ? verifiableLogPlugin
+                : null),
             getSecret(character, "COINBASE_API_KEY") &&
             getSecret(character, "COINBASE_PRIVATE_KEY") &&
             getSecret(character, "COINBASE_NOTIFICATION_URI")
                 ? webhookPlugin
                 : null,
-            getSecret(character, "EVM_PROVIDER_URL") ? goatPlugin : null,
+            goatPlugin,
             getSecret(character, "ABSTRACT_PRIVATE_KEY")
                 ? abstractPlugin
                 : null,
@@ -617,6 +608,10 @@ export async function createAgent(
             getSecret(character, "AVALANCHE_PRIVATE_KEY")
                 ? avalanchePlugin
                 : null,
+            getSecret(character, "ECHOCHAMBERS_API_URL") &&
+            getSecret(character, "ECHOCHAMBERS_API_KEY")
+                ? echoChamberPlugin
+                : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -624,7 +619,6 @@ export async function createAgent(
         managers: [],
         cacheManager: cache,
         fetch: logFetch,
-        verifiableInferenceAdapter,
     });
 }
 

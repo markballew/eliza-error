@@ -44,9 +44,6 @@ import {
     type Actor,
     type Evaluator,
     type Memory,
-    IVerifiableInferenceAdapter,
-    VerifiableInferenceOptions,
-    VerifiableInferenceProvider,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 
@@ -106,6 +103,12 @@ export class AgentRuntime implements IAgentRuntime {
      */
     imageModelProvider: ModelProviderName;
 
+
+     /**
+     * The model to use for describing images.
+     */
+    imageVisionModelProvider: ModelProviderName;
+
     /**
      * Fetch function to use
      * Some environments may not have access to the global fetch function and need a custom fetch override.
@@ -146,8 +149,6 @@ export class AgentRuntime implements IAgentRuntime {
     memoryManagers: Map<string, IMemoryManager> = new Map();
     cacheManager: ICacheManager;
     clients: Record<string, any>;
-
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -230,7 +231,6 @@ export class AgentRuntime implements IAgentRuntime {
         speechModelPath?: string;
         cacheManager: ICacheManager;
         logging?: boolean;
-        verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
     }) {
         elizaLogger.info("Initializing AgentRuntime with options:", {
             character: opts.character?.name,
@@ -330,6 +330,16 @@ export class AgentRuntime implements IAgentRuntime {
             this.imageModelProvider
         );
 
+        this.imageVisionModelProvider =
+        this.character.imageVisionModelProvider ?? this.modelProvider;
+
+        elizaLogger.info("Selected model provider:", this.modelProvider);
+         elizaLogger.info(
+            "Selected image model provider:",
+            this.imageVisionModelProvider
+         );
+
+
         // Validate model provider
         if (!Object.values(ModelProviderName).includes(this.modelProvider)) {
             elizaLogger.error("Invalid model provider:", this.modelProvider);
@@ -380,8 +390,6 @@ export class AgentRuntime implements IAgentRuntime {
         (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
             this.registerEvaluator(evaluator);
         });
-
-        this.verifiableInferenceAdapter = opts.verifiableInferenceAdapter;
     }
 
     async initialize() {
@@ -418,27 +426,22 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     async stop() {
-        elizaLogger.debug("runtime::stop - character", this.character);
-        // stop services, they don't have a stop function
+      elizaLogger.debug('runtime::stop - character', this.character)
+      // stop services, they don't have a stop function
         // just initialize
 
-        // plugins
+      // plugins
         // have actions, providers, evaluators (no start/stop)
         // services (just initialized), clients
 
-        // client have a start
-        for (const cStr in this.clients) {
-            const c = this.clients[cStr];
-            elizaLogger.log(
-                "runtime::stop - requesting",
-                cStr,
-                "client stop for",
-                this.character.name
-            );
-            c.stop();
-        }
-        // we don't need to unregister with directClient
-        // don't need to worry about knowledge
+      // client have a start
+      for(const cStr in this.clients) {
+        const c = this.clients[cStr]
+        elizaLogger.log('runtime::stop - requesting', cStr, 'client stop for', this.character.name)
+        c.stop()
+      }
+      // we don't need to unregister with directClient
+      // don't need to worry about knowledge
     }
 
     /**
@@ -658,7 +661,6 @@ export class AgentRuntime implements IAgentRuntime {
             runtime: this,
             context,
             modelClass: ModelClass.SMALL,
-            verifiableInferenceAdapter: this.verifiableInferenceAdapter,
         });
 
         const evaluators = parseJsonArrayFromText(
@@ -1290,14 +1292,6 @@ Text: ${attachment.text}
             recentMessagesData,
             attachments: formattedAttachments,
         } as State;
-    }
-
-    getVerifiableInferenceAdapter(): IVerifiableInferenceAdapter | undefined {
-        return this.verifiableInferenceAdapter;
-    }
-
-    setVerifiableInferenceAdapter(adapter: IVerifiableInferenceAdapter): void {
-        this.verifiableInferenceAdapter = adapter;
     }
 }
 
