@@ -64,7 +64,6 @@ import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import { echoChamberPlugin } from "@elizaos/plugin-echochambers";
-import { letzAIPlugin } from "@elizaos/plugin-letzai";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
@@ -350,11 +349,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.GOOGLE_GENERATIVE_AI_API_KEY ||
                 settings.GOOGLE_GENERATIVE_AI_API_KEY
             );
-        case ModelProviderName.LETZAI:
-            return (
-                character.settings?.secrets?.LETZAI_API_KEY ||
-                settings.LETZAI_API_KEY
-            );
         default:
             const errorMessage = `Failed to get token - unsupported model provider: ${provider}`;
             elizaLogger.error(errorMessage);
@@ -615,7 +609,6 @@ export async function createAgent(
             getSecret(character, "ECHOCHAMBERS_API_KEY")
                 ? echoChamberPlugin
                 : null,
-            getSecret(character, "LETZAI_API_KEY") ? letzAIPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
