@@ -214,22 +214,14 @@ export async function sendTweet(
         }
         const result = await client.requestQueue.add(async () =>
             isLongTweet
-                ? client.twitterClient.sendLongTweet(
-                      chunk.trim(),
-                      previousTweetId,
-                      mediaData
-                  )
-                : client.twitterClient.sendTweet(
-                      chunk.trim(),
-                      previousTweetId,
-                      mediaData
-                  )
+                ? client.twitterClient.sendLongTweet(chunk.trim(), previousTweetId, mediaData)
+                : client.twitterClient.sendTweet(chunk.trim(), previousTweetId, mediaData)
         );
 
         const body = await result.json();
         const tweetResult = isLongTweet
-            ? body.data.notetweet_create.tweet_results.result
-            : body.data.create_tweet.tweet_results.result;
+            ? body?.data?.notetweet_create?.tweet_results?.result
+            : body?.data?.create_tweet?.tweet_results?.result;
 
         // if we have a response
         if (tweetResult) {
@@ -253,10 +245,7 @@ export async function sendTweet(
             sentTweets.push(finalTweet);
             previousTweetId = finalTweet.id;
         } else {
-            elizaLogger.error("Error sending tweet chunk:", {
-                chunk,
-                response: body,
-            });
+            elizaLogger.error("Error sending tweet chunk:", { chunk, response: body });
         }
 
         // Wait a bit between tweets to avoid rate limiting issues
