@@ -132,11 +132,11 @@ export async function loadCharacters(
     let characterPaths = charactersArg
         ?.split(",")
         .map((filePath) => filePath.trim());
-    const loadedCharacters: Character[] = [];
+    const loadedCharacters = [];
 
     if (characterPaths?.length > 0) {
         for (const characterPath of characterPaths) {
-            let content: string | null = null;
+            let content = null;
             let resolvedPath = "";
 
             // Try different path resolutions in order
@@ -246,7 +246,7 @@ export async function loadCharacters(
 export function getTokenForProvider(
     provider: ModelProviderName,
     character: Character
-): string | undefined {
+): string {
     switch (provider) {
         // no key needed for llama_local or gaianet
         case ModelProviderName.LLAMALOCAL:
@@ -541,6 +541,23 @@ export async function createAgent(
     //     });
     //     elizaLogger.log("Verifiable inference adapter initialized");
     // }
+    // Initialize Opacity adapter if environment variables are present
+    let verifiableInferenceAdapter;
+    if (
+        process.env.OPACITY_TEAM_ID &&
+        process.env.OPACITY_CLOUDFLARE_NAME &&
+        process.env.OPACITY_PROVER_URL &&
+        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
+    ) {
+        verifiableInferenceAdapter = new OpacityAdapter({
+            teamId: process.env.OPACITY_TEAM_ID,
+            teamName: process.env.OPACITY_CLOUDFLARE_NAME,
+            opacityProverUrl: process.env.OPACITY_PROVER_URL,
+            modelProvider: character.modelProvider,
+            token: token,
+        });
+        elizaLogger.log("Verifiable inference adapter initialized");
+    }
 
     return new AgentRuntime({
         databaseAdapter: db,
@@ -655,11 +672,6 @@ export async function createAgent(
 }
 
 function initializeFsCache(baseDir: string, character: Character) {
-    if (!character?.id) {
-        throw new Error(
-            "initializeFsCache requires id to be set in character definition"
-        );
-    }
     const cacheDir = path.resolve(baseDir, character.id, "cache");
 
     const cache = new CacheManager(new FsCacheAdapter(cacheDir));
@@ -667,11 +679,6 @@ function initializeFsCache(baseDir: string, character: Character) {
 }
 
 function initializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
-    if (!character?.id) {
-        throw new Error(
-            "initializeFsCache requires id to be set in character definition"
-        );
-    }
     const cache = new CacheManager(new DbCacheAdapter(db, character.id));
     return cache;
 }
@@ -687,11 +694,6 @@ function initializeCache(
             if (process.env.REDIS_URL) {
                 elizaLogger.info("Connecting to Redis...");
                 const redisClient = new RedisClient(process.env.REDIS_URL);
-                if (!character?.id) {
-                    throw new Error(
-                        "CacheStore.REDIS requires id to be set in character definition"
-                    );
-                }
                 return new CacheManager(
                     new DbCacheAdapter(redisClient, character.id) // Using DbCacheAdapter since RedisClient also implements IDatabaseCacheAdapter
                 );
@@ -711,11 +713,6 @@ function initializeCache(
 
         case CacheStore.FILESYSTEM:
             elizaLogger.info("Using File System Cache...");
-            if (!baseDir) {
-                throw new Error(
-                    "baseDir must be provided for CacheStore.FILESYSTEM."
-                );
-            }
             return initializeFsCache(baseDir, character);
 
         default:
