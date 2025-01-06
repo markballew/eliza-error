@@ -55,6 +55,7 @@ async function handler(
     state: State | undefined,
     options: { [key: string]: unknown } = { onlyInProgress: true }
 ): Promise<Goal[]> {
+
     state = (await runtime.composeState(message)) as State;
     const context = composeContext({
         state,
@@ -69,7 +70,7 @@ async function handler(
     });
 
     // Parse the JSON response to extract goal updates
-    const updates = parseJsonArrayFromText<Goal>(response);
+    const updates = parseJsonArrayFromText(response);
 
     // get goals
     const goalsData = await getGoals({
@@ -115,16 +116,12 @@ async function handler(
 
     // Update goals in the database
     for (const goal of updatedGoals) {
-        // @ts-expect-error todo
         const id = goal.id;
         // delete id from goal
-        // @ts-expect-error todo
         if (goal.id) delete goal.id;
-        // @ts-expect-error todo
         await runtime.databaseAdapter.updateGoal({ ...goal, id });
     }
 
-    // @ts-expect-error todo
     return updatedGoals; // Return updated goals for further processing or logging
 }
 

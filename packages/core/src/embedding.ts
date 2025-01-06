@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getEmbeddingModelSettings, getEndpoint } from "./models.ts";
+import { models } from "./models.ts";
 import { IAgentRuntime, ModelProviderName } from "./types.ts";
 import settings from "./settings.ts";
 import elizaLogger from "./logger.ts";
@@ -31,29 +31,21 @@ export type EmbeddingConfig = {
 };
 
 export const getEmbeddingConfig = (): EmbeddingConfig => ({
-    // @ts-expect-error todo
     dimensions:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
-            // @ts-expect-error todo
-            ? getEmbeddingModelSettings(ModelProviderName.OPENAI).dimensions
+            ? 1536 // OpenAI
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              // @ts-expect-error todo
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).dimensions
+              ? 1024 // Ollama mxbai-embed-large
               : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                // @ts-expect-error todo
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET)
-                      .dimensions
+                ? 768 // GaiaNet
                 : 384, // BGE
     model:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
-            // @ts-expect-error todo
-            ? getEmbeddingModelSettings(ModelProviderName.OPENAI).name
+            ? "text-embedding-3-small"
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              // @ts-expect-error todo
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).name
+              ? settings.OLLAMA_EMBEDDING_MODEL || "mxbai-embed-large"
               : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                // @ts-expect-error todo
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET).name
+                ? settings.GAIANET_EMBEDDING_MODEL || "nomic-embed"
                 : "BGE-small-en-v1.5",
     provider:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
@@ -142,20 +134,11 @@ export function getEmbeddingZeroVector(): number[] {
     let embeddingDimension = 384; // Default BGE dimension
 
     if (settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true") {
-        // @ts-expect-error todo
-        embeddingDimension = getEmbeddingModelSettings(
-            ModelProviderName.OPENAI
-        ).dimensions; // OpenAI dimension
+        embeddingDimension = 1536; // OpenAI dimension
     } else if (settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true") {
-        // @ts-expect-error todo
-        embeddingDimension = getEmbeddingModelSettings(
-            ModelProviderName.OLLAMA
-        ).dimensions; // Ollama mxbai-embed-large dimension
+        embeddingDimension = 1024; // Ollama mxbai-embed-large dimension
     } else if (settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true") {
-        // @ts-expect-error todo
-        embeddingDimension = getEmbeddingModelSettings(
-            ModelProviderName.GAIANET
-        ).dimensions; // GaiaNet dimension
+        embeddingDimension = 768; // GaiaNet dimension
     }
 
     return Array(embeddingDimension).fill(0);
@@ -219,7 +202,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
             model: config.model,
             endpoint:
                 runtime.character.modelEndpointOverride ||
-                getEndpoint(ModelProviderName.OLLAMA),
+                models[ModelProviderName.OLLAMA].endpoint,
             isOllama: true,
             dimensions: config.dimensions,
         });
@@ -230,11 +213,10 @@ export async function embed(runtime: IAgentRuntime, input: string) {
             model: config.model,
             endpoint:
                 runtime.character.modelEndpointOverride ||
-                getEndpoint(ModelProviderName.GAIANET) ||
+                models[ModelProviderName.GAIANET].endpoint ||
                 settings.SMALL_GAIANET_SERVER_URL ||
                 settings.MEDIUM_GAIANET_SERVER_URL ||
                 settings.LARGE_GAIANET_SERVER_URL,
-            // @ts-expect-error todo
             apiKey: settings.GAIANET_API_KEY || runtime.token,
             dimensions: config.dimensions,
         });
@@ -257,8 +239,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         model: config.model,
         endpoint:
             runtime.character.modelEndpointOverride ||
-            getEndpoint(runtime.character.modelProvider),
-        // @ts-expect-error todo
+            models[runtime.character.modelProvider].endpoint,
         apiKey: runtime.token,
         dimensions: config.dimensions,
     });

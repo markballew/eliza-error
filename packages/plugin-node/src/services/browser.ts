@@ -7,7 +7,6 @@ import { stringToUuid } from "@elizaos/core";
 import { PlaywrightBlocker } from "@cliqz/adblocker-playwright";
 import CaptchaSolver from "capsolver-npm";
 import { Browser, BrowserContext, chromium, Page } from "playwright";
-import { elizaLogger } from "@elizaos/core";
 
 async function generateSummary(
     runtime: IAgentRuntime,
@@ -170,12 +169,11 @@ export class BrowserService extends Service implements IBrowserService {
 
         try {
             if (!this.context) {
-                elizaLogger.log(
+                console.log(
                     "Browser context not initialized. Call initializeBrowser() first."
                 );
             }
 
-            // @ts-expect-error todo
             page = await this.context.newPage();
 
             // Enable stealth mode
@@ -191,10 +189,9 @@ export class BrowserService extends Service implements IBrowserService {
             const response = await page.goto(url, { waitUntil: "networkidle" });
 
             if (!response) {
-                elizaLogger.error("Failed to load the page");
+                console.log("Failed to load the page");
             }
 
-            // @ts-expect-error todo
             if (response.status() === 403 || response.status() === 404) {
                 return await this.tryAlternativeSources(url, runtime);
             }
@@ -219,7 +216,7 @@ export class BrowserService extends Service implements IBrowserService {
             });
             return content;
         } catch (error) {
-            elizaLogger.error("Error:", error);
+            console.error("Error:", error);
             return {
                 title: url,
                 description: "Error, could not fetch content",
@@ -279,7 +276,7 @@ export class BrowserService extends Service implements IBrowserService {
                 }, solution.gRecaptchaResponse);
             }
         } catch (error) {
-            elizaLogger.error("Error solving CAPTCHA:", error);
+            console.error("Error solving CAPTCHA:", error);
         }
     }
 
@@ -315,7 +312,7 @@ export class BrowserService extends Service implements IBrowserService {
         try {
             return await this.fetchPageContent(archiveUrl, runtime);
         } catch (error) {
-            elizaLogger.error("Error fetching from Internet Archive:", error);
+            console.error("Error fetching from Internet Archive:", error);
         }
 
         // Try Google Search as a last resort
@@ -323,10 +320,8 @@ export class BrowserService extends Service implements IBrowserService {
         try {
             return await this.fetchPageContent(googleSearchUrl, runtime);
         } catch (error) {
-            elizaLogger.error("Error fetching from Google Search:", error);
-            elizaLogger.error(
-                "Failed to fetch content from alternative sources"
-            );
+            console.error("Error fetching from Google Search:", error);
+            console.error("Failed to fetch content from alternative sources");
             return {
                 title: url,
                 description:
