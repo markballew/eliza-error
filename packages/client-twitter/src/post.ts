@@ -126,7 +126,7 @@ export class TwitterPostClient {
             `- Action Processing: ${this.client.twitterConfig.ENABLE_ACTION_PROCESSING ? "enabled" : "disabled"}`
         );
         elizaLogger.log(
-            `- Action Interval: ${this.client.twitterConfig.ACTION_INTERVAL} minutes`
+            `- Action Interval: ${this.client.twitterConfig.ACTION_INTERVAL} seconds`
         );
         elizaLogger.log(
             `- Post Immediately: ${this.client.twitterConfig.POST_IMMEDIATELY ? "enabled" : "disabled"}`
@@ -185,7 +185,7 @@ export class TwitterPostClient {
                     if (results) {
                         elizaLogger.log(`Processed ${results.length} tweets`);
                         elizaLogger.log(
-                            `Next action processing scheduled in ${actionInterval} minutes`
+                            `Next action processing scheduled in ${actionInterval / 1000} seconds`
                         );
                         // Wait for the full interval before next processing
                         await new Promise((resolve) =>
