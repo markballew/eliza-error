@@ -6,5 +6,7 @@ export default defineConfig({
     sourcemap: true,
     clean: true,
     format: ["esm"],
-    external: ["@elizaos/core"],
+    external: [
+        "@elizaos/core"
+    ],
 });
