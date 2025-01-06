@@ -1,10 +1,4 @@
-import {
-    IAgentRuntime,
-    Memory,
-    Provider,
-    State,
-    elizaLogger,
-} from "@elizaos/core";
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 import { Keypair } from "@solana/web3.js";
 import crypto from "crypto";
 import { DeriveKeyResponse, TappdClient } from "@phala/dstack-sdk";
@@ -29,19 +23,19 @@ class DeriveKeyProvider {
         switch (teeMode) {
             case TEEMode.LOCAL:
                 endpoint = "http://localhost:8090";
-                elizaLogger.log(
+                console.log(
                     "TEE: Connecting to local simulator at localhost:8090"
                 );
                 break;
             case TEEMode.DOCKER:
                 endpoint = "http://host.docker.internal:8090";
-                elizaLogger.log(
+                console.log(
                     "TEE: Connecting to simulator via Docker at host.docker.internal:8090"
                 );
                 break;
             case TEEMode.PRODUCTION:
                 endpoint = undefined;
-                elizaLogger.log(
+                console.log(
                     "TEE: Running in production mode without simulator"
                 );
                 break;
@@ -64,11 +58,9 @@ class DeriveKeyProvider {
             publicKey,
         };
         const reportdata = JSON.stringify(deriveKeyData);
-        elizaLogger.log(
-            "Generating Remote Attestation Quote for Derive Key..."
-        );
+        console.log("Generating Remote Attestation Quote for Derive Key...");
         const quote = await this.raProvider.generateAttestation(reportdata);
-        elizaLogger.log("Remote Attestation Quote generated successfully!");
+        console.log("Remote Attestation Quote generated successfully!");
         return quote;
     }
 
@@ -78,18 +70,18 @@ class DeriveKeyProvider {
     ): Promise<DeriveKeyResponse> {
         try {
             if (!path || !subject) {
-                elizaLogger.error(
+                console.error(
                     "Path and Subject are required for key derivation"
                 );
             }
 
-            elizaLogger.log("Deriving Raw Key in TEE...");
+            console.log("Deriving Raw Key in TEE...");
             const derivedKey = await this.client.deriveKey(path, subject);
 
-            elizaLogger.log("Raw Key Derived Successfully!");
+            console.log("Raw Key Derived Successfully!");
             return derivedKey;
         } catch (error) {
-            elizaLogger.error("Error deriving raw key:", error);
+            console.error("Error deriving raw key:", error);
             throw error;
         }
     }
@@ -101,12 +93,12 @@ class DeriveKeyProvider {
     ): Promise<{ keypair: Keypair; attestation: RemoteAttestationQuote }> {
         try {
             if (!path || !subject) {
-                elizaLogger.error(
+                console.error(
                     "Path and Subject are required for key derivation"
                 );
             }
 
-            elizaLogger.log("Deriving Key in TEE...");
+            console.log("Deriving Key in TEE...");
             const derivedKey = await this.client.deriveKey(path, subject);
             const uint8ArrayDerivedKey = derivedKey.asUint8Array();
 
@@ -121,11 +113,11 @@ class DeriveKeyProvider {
                 agentId,
                 keypair.publicKey.toBase58()
             );
-            elizaLogger.log("Key Derived Successfully!");
+            console.log("Key Derived Successfully!");
 
             return { keypair, attestation };
         } catch (error) {
-            elizaLogger.error("Error deriving key:", error);
+            console.error("Error deriving key:", error);
             throw error;
         }
     }
@@ -140,12 +132,12 @@ class DeriveKeyProvider {
     }> {
         try {
             if (!path || !subject) {
-                elizaLogger.error(
+                console.error(
                     "Path and Subject are required for key derivation"
                 );
             }
 
-            elizaLogger.log("Deriving ECDSA Key in TEE...");
+            console.log("Deriving ECDSA Key in TEE...");
             const deriveKeyResponse: DeriveKeyResponse =
                 await this.client.deriveKey(path, subject);
             const hex = keccak256(deriveKeyResponse.asUint8Array());
@@ -156,11 +148,11 @@ class DeriveKeyProvider {
                 agentId,
                 keypair.address
             );
-            elizaLogger.log("ECDSA Key Derived Successfully!");
+            console.log("ECDSA Key Derived Successfully!");
 
             return { keypair, attestation };
         } catch (error) {
-            elizaLogger.error("Error deriving ecdsa key:", error);
+            console.error("Error deriving ecdsa key:", error);
             throw error;
         }
     }
@@ -174,7 +166,7 @@ const deriveKeyProvider: Provider = {
         try {
             // Validate wallet configuration
             if (!runtime.getSetting("WALLET_SECRET_SALT")) {
-                elizaLogger.error(
+                console.error(
                     "Wallet secret salt is not configured in settings"
                 );
                 return "";
@@ -198,11 +190,11 @@ const deriveKeyProvider: Provider = {
                     evm: evmKeypair.keypair.address,
                 });
             } catch (error) {
-                elizaLogger.error("Error creating PublicKey:", error);
+                console.error("Error creating PublicKey:", error);
                 return "";
             }
         } catch (error) {
-            elizaLogger.error("Error in derive key provider:", error.message);
+            console.error("Error in derive key provider:", error.message);
             return `Failed to fetch derive key information: ${error instanceof Error ? error.message : "Unknown error"}`;
         }
     },
