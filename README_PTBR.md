@@ -4,38 +4,38 @@
 
 ## Funcionalidades
 
-- 🛠 Conectores completos para Discord, Twitter e Telegram
-- 👥 Suporte a múltiplos agentes e salas
-- 📚 Ingestão e interação fácil com seus documentos
-- 💾 Memória recuperável e armazenamento de documentos
-- 🚀 Altamente extensível - crie suas próprias ações e clientes para estender as capacidades
-- ☁️ Suporta muitos modelos, incluindo Llama local, OpenAI, Anthropic, Groq e mais
-- 📦 Funciona perfeitamente!
+-   🛠 Conectores completos para Discord, Twitter e Telegram
+-   👥 Suporte a múltiplos agentes e salas
+-   📚 Ingestão e interação fácil com seus documentos
+-   💾 Memória recuperável e armazenamento de documentos
+-   🚀 Altamente extensível - crie suas próprias ações e clientes para estender as capacidades
+-   ☁️ Suporta muitos modelos, incluindo Llama local, OpenAI, Anthropic, Groq e mais
+-   📦 Funciona perfeitamente!
 
 ## Para que posso usá-lo?
 
-- 🤖 Chatbots
-- 🕵️ Agentes autônomos
-- 📈 Gestão de processos empresariais
-- 🎮 NPCs em jogos de vídeo
+-   🤖 Chatbots
+-   🕵️ Agentes autônomos
+-   📈 Gestão de processos empresariais
+-   🎮 NPCs em jogos de vídeo
 
 # Começando
 
 **Pré-requisitos (OBRIGATÓRIO):**
 
-- [Python 2.7+](https://www.python.org/downloads/)
-- [Node.js 23.3+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- [pnpm](https://pnpm.io/installation)
+-   [Python 2.7+](https://www.python.org/downloads/)
+-   [Node.js 23.3+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+-   [pnpm](https://pnpm.io/installation)
 
 ### Edite o arquivo .env
 
-- Copie .env.example para .env e preencha os valores apropriados
-- Edite as variáveis de ambiente do TWITTER para adicionar o nome de usuário e senha do seu bot
+-   Copie .env.example para .env e preencha os valores apropriados
+-   Edite as variáveis de ambiente do TWITTER para adicionar o nome de usuário e senha do seu bot
 
 ### Edite o arquivo de personagem
 
-- Confira o arquivo `src/core/defaultCharacter.ts` - você pode modificá-lo
-- Você também pode carregar personagens com o comando `pnpm start --characters="path/to/your/character.json"` e executar múltiplos bots ao mesmo tempo.
+-   Confira o arquivo `src/core/defaultCharacter.ts` - você pode modificá-lo
+-   Você também pode carregar personagens com o comando `pnpm start --characters="path/to/your/character.json"` e executar múltiplos bots ao mesmo tempo.
 
 Após configurar o arquivo .env e o arquivo de personagem, você pode iniciar o bot com o seguinte comando:
 
@@ -175,9 +175,9 @@ pnpm test:sqljs    # Executar testes com SQL.js
 
 Os testes são escritos usando Jest e podem ser encontrados em arquivos `src/**/*.test.ts`. O ambiente de teste está configurado para:
 
-- Carregar variáveis de ambiente de `.env.test`
-- Usar um tempo limite de 2 minutos para testes de longa duração
-- Suportar módulos ESM
-- Executar testes em sequência (--runInBand)
+-   Carregar variáveis de ambiente de `.env.test`
+-   Usar um tempo limite de 2 minutos para testes de longa duração
+-   Suportar módulos ESM
+-   Executar testes em sequência (--runInBand)
 
 Para criar novos testes, adicione um arquivo `.test.ts` adjacente ao código que você está testando.

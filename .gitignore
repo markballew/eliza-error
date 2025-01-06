@@ -50,7 +50,6 @@ tsup.config.bundled_*.mjs
 
 .turbo
 .cursorrules
-.pnpm-store
 
 coverage
 .eslintcache
