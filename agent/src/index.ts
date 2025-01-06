@@ -37,7 +37,6 @@ import { DirectClient } from "@elizaos/client-direct";
 import { ThreeDGenerationPlugin } from "@elizaos/plugin-3d-generation";
 import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { aptosPlugin } from "@elizaos/plugin-aptos";
-import { alloraPlugin } from "@elizaos/plugin-allora";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import { binancePlugin } from "@elizaos/plugin-binance";
 import {
@@ -650,7 +649,6 @@ export async function createAgent(
             getSecret(character, "OPEN_WEATHER_API_KEY")
                 ? openWeatherPlugin
                 : null,
-            getSecret(character, "ALLORA_API_KEY") ? alloraPlugin : null
         ].filter(Boolean),
         providers: [],
         actions: [],
