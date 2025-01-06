@@ -263,7 +263,7 @@ export class LensClient {
 
             return timeline;
         } catch (error) {
-            elizaLogger.error(error);
+            console.log(error);
             throw new Error("client-lens:: getTimeline");
         }
     }
@@ -305,7 +305,7 @@ export class LensClient {
     private async createPostMomoka(
         contentURI: string
     ): Promise<BroadcastResult | undefined> {
-        elizaLogger.log("createPostMomoka");
+        console.log("createPostMomoka");
         // gasless + signless if they enabled the lens profile manager
         if (this.authenticatedProfile?.signless) {
             const broadcastResult = await this.core.publication.postOnMomoka({
@@ -319,7 +319,7 @@ export class LensClient {
             await this.core.publication.createMomokaPostTypedData({
                 contentURI,
             });
-        elizaLogger.log("typedDataResult", typedDataResult);
+        console.log("typedDataResult", typedDataResult);
         const { id, typedData } = typedDataResult.unwrap();
 
         const signedTypedData = await this.account.signTypedData({

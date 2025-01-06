@@ -20,23 +20,13 @@ describe("Actions", () => {
                     },
                 ],
                 [
-                    {
-                        user: "user1",
-                        content: { text: "Hey {{user2}}, how are you?" },
-                    },
-                    {
-                        user: "user2",
-                        content: { text: "I'm good {{user1}}, thanks!" },
-                    },
+                    { user: "user1", content: { text: "Hey {{user2}}, how are you?" } },
+                    { user: "user2", content: { text: "I'm good {{user1}}, thanks!" } },
                 ],
             ],
             similes: ["say hi", "welcome"],
-            handler: async () => {
-                throw new Error("Not implemented");
-            },
-            validate: async () => {
-                throw new Error("Not implemented");
-            },
+            handler: async () => { throw new Error("Not implemented"); },
+            validate: async () => { throw new Error("Not implemented"); },
         },
         {
             name: "farewell",
@@ -48,38 +38,24 @@ describe("Actions", () => {
                 ],
             ],
             similes: ["say bye", "leave"],
-            handler: async () => {
-                throw new Error("Not implemented");
-            },
-            validate: async () => {
-                throw new Error("Not implemented");
-            },
+            handler: async () => { throw new Error("Not implemented"); },
+            validate: async () => { throw new Error("Not implemented"); },
         },
         {
             name: "help",
             description: "Get assistance",
             examples: [
                 [
-                    {
-                        user: "user1",
-                        content: { text: "Can you help me {{user2}}?" },
-                    },
+                    { user: "user1", content: { text: "Can you help me {{user2}}?" } },
                     {
                         user: "user2",
-                        content: {
-                            text: "Of course {{user1}}, what do you need?",
-                            action: "assist",
-                        },
+                        content: { text: "Of course {{user1}}, what do you need?", action: "assist" }
                     },
                 ],
             ],
             similes: ["assist", "support"],
-            handler: async () => {
-                throw new Error("Not implemented");
-            },
-            validate: async () => {
-                throw new Error("Not implemented");
-            },
+            handler: async () => { throw new Error("Not implemented"); },
+            validate: async () => { throw new Error("Not implemented"); },
         },
     ];
 
@@ -110,13 +86,8 @@ describe("Actions", () => {
 
     describe("formatActionNames", () => {
         it("should format action names correctly", () => {
-            const formatted = formatActionNames([
-                mockActions[0],
-                mockActions[1],
-            ]);
-            expect(formatted).toMatch(
-                /^(greet|farewell)(, (greet|farewell))?$/
-            );
+            const formatted = formatActionNames([mockActions[0], mockActions[1]]);
+            expect(formatted).toMatch(/^(greet|farewell)(, (greet|farewell))?$/);
         });
 
         it("should handle single action", () => {
@@ -152,7 +123,7 @@ describe("Actions", () => {
 
     describe("Action Structure", () => {
         it("should validate action structure", () => {
-            mockActions.forEach((action) => {
+            mockActions.forEach(action => {
                 expect(action).toHaveProperty("name");
                 expect(action).toHaveProperty("description");
                 expect(action).toHaveProperty("examples");
@@ -165,9 +136,9 @@ describe("Actions", () => {
         });
 
         it("should validate example structure", () => {
-            mockActions.forEach((action) => {
-                action.examples.forEach((example) => {
-                    example.forEach((message) => {
+            mockActions.forEach(action => {
+                action.examples.forEach(example => {
+                    example.forEach(message => {
                         expect(message).toHaveProperty("user");
                         expect(message).toHaveProperty("content");
                         expect(message.content).toHaveProperty("text");
@@ -177,7 +148,7 @@ describe("Actions", () => {
         });
 
         it("should have unique action names", () => {
-            const names = mockActions.map((action) => action.name);
+            const names = mockActions.map(action => action.name);
             const uniqueNames = new Set(names);
             expect(names.length).toBe(uniqueNames.size);
         });

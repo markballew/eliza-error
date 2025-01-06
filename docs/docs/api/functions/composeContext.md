@@ -16,7 +16,7 @@ An object containing the following properties:
 - **template**: `string`  
   A string containing placeholders in the format `{{placeholder}}`.
 
-- **templatingEngine**: `"handlebars" | undefined` _(optional)_  
+- **templatingEngine**: `"handlebars" | undefined` *(optional)*  
   The templating engine to use. If set to `"handlebars"`, the Handlebars engine is used for template compilation. Defaults to `undefined` (simple string replacement).
 
 ## Returns
@@ -38,11 +38,7 @@ const contextSimple = composeContext({ state, template });
 // Output: "Hello, Alice! You are 30 years old."
 
 // Handlebars templating
-const contextHandlebars = composeContext({
-    state,
-    template,
-    templatingEngine: "handlebars",
-});
+const contextHandlebars = composeContext({ state, template, templatingEngine: 'handlebars' });
 // Output: "Hello, Alice! You are 30 years old."
 ```
 
@@ -70,14 +66,14 @@ const advancedTemplate = `
 const advancedState = {
     userName: "Alice",
     userAge: 30,
-    favoriteColors: ["blue", "green", "red"],
+    favoriteColors: ["blue", "green", "red"]
 };
 
 // Composing the context with Handlebars
 const advancedContextHandlebars = composeContext({
     state: advancedState,
     template: advancedTemplate,
-    templatingEngine: "handlebars",
+    templatingEngine: 'handlebars'
 });
 // Output:
 // Hello, Alice!
