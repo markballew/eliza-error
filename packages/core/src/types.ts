@@ -1337,7 +1337,7 @@ export interface ISlackService extends Service {
  * Available verifiable inference providers
  */
 export enum VerifiableInferenceProvider {
-    RECLAIM = "reclaim",
+    OPACITY = "opacity",
 }
 
 /**
@@ -1358,18 +1358,21 @@ export interface VerifiableInferenceOptions {
 export interface VerifiableInferenceResult {
     /** Generated text */
     text: string;
-    /** Proof data */
-    proof: unknown;
+    /** Proof id */
+    id: string;
     /** Provider information */
     provider: VerifiableInferenceProvider;
     /** Timestamp */
     timestamp: number;
+    /** Proof */
+    proof: any;
 }
 
 /**
  * Interface for verifiable inference adapters
  */
 export interface IVerifiableInferenceAdapter {
+    options: any;
     /**
      * Generate text with verifiable proof
      * @param context The input text/prompt
