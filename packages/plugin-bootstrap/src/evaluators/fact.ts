@@ -1,13 +1,13 @@
-import { composeContext } from "@ai16z/eliza";
-import { generateObjectArray } from "@ai16z/eliza";
-import { MemoryManager } from "@ai16z/eliza";
+import { composeContext } from "@elizaos/core";
+import { generateObjectArray } from "@elizaos/core";
+import { MemoryManager } from "@elizaos/core";
 import {
     ActionExample,
     IAgentRuntime,
     Memory,
     ModelClass,
     Evaluator,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 
 export const formatFacts = (facts: Memory[]) => {
     const messageStrings = facts
@@ -92,6 +92,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
     for (const fact of filteredFacts) {
         const factMemory = await factsManager.addEmbeddingToMemory({
             userId: agentId!,
+            // @ts-expect-error todo
             agentId,
             content: { text: fact },
             roomId,
@@ -162,7 +163,7 @@ None`,
                     },
                 },
             ] as ActionExample[],
-            outcome: `{ "claim": "{{user1}} is from Oakland", "type": "fact", "in_bio": false, "already_known": false },`,
+            outcome: `{ "claim": "{{user2}} is from Oakland", "type": "fact", "in_bio": false, "already_known": false },`,
         },
         {
             context: `Actors in the scene:

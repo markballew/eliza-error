@@ -1,10 +1,10 @@
 import {
     composeContext,
     elizaLogger,
-    generateObjectV2,
+    generateObject,
     ModelClass,
     Provider,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import {
     Action,
     HandlerCallback,
@@ -12,7 +12,7 @@ import {
     Memory,
     Plugin,
     State,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import { ChargeContent, ChargeSchema, isChargeContent } from "../types";
 import { chargeTemplate, getChargeTemplate } from "../templates";
 import { getWalletDetails } from "../utils";
@@ -30,6 +30,7 @@ interface ChargeRequest {
 }
 
 export async function createCharge(apiKey: string, params: ChargeRequest) {
+    elizaLogger.debug("Starting createCharge function");
     try {
         const response = await fetch(url, {
             method: "POST",
@@ -47,13 +48,14 @@ export async function createCharge(apiKey: string, params: ChargeRequest) {
         const data = await response.json();
         return data.data;
     } catch (error) {
-        console.error("Error creating charge:", error);
+        elizaLogger.error("Error creating charge:", error);
         throw error;
     }
 }
 
 // Function to fetch all charges
 export async function getAllCharges(apiKey: string) {
+    elizaLogger.debug("Starting getAllCharges function");
     try {
         const response = await fetch(url, {
             method: "GET",
@@ -72,13 +74,14 @@ export async function getAllCharges(apiKey: string) {
         const data = await response.json();
         return data.data;
     } catch (error) {
-        console.error("Error fetching charges:", error);
+        elizaLogger.error("Error fetching charges:", error);
         throw error;
     }
 }
 
 // Function to fetch details of a specific charge
 export async function getChargeDetails(apiKey: string, chargeId: string) {
+    elizaLogger.debug("Starting getChargeDetails function");
     const getUrl = `${url}${chargeId}`;
 
     try {
@@ -99,7 +102,7 @@ export async function getChargeDetails(apiKey: string, chargeId: string) {
         const data = await response.json();
         return data;
     } catch (error) {
-        console.error(
+        elizaLogger.error(
             `Error fetching charge details for ID ${chargeId}:`,
             error
         );
@@ -123,7 +126,8 @@ export const createCoinbaseChargeAction: Action = {
         "GET_CHARGE_STATUS",
         "LIST_CHARGES",
     ],
-    description: "Create and manage payment charges using Coinbase Commerce. Supports fixed and dynamic pricing, multiple currencies (USD, EUR, USDC), and provides charge status tracking and management features.",
+    description:
+        "Create and manage payment charges using Coinbase Commerce. Supports fixed and dynamic pricing, multiple currencies (USD, EUR, USDC), and provides charge status tracking and management features.",
     validate: async (runtime: IAgentRuntime, _message: Memory) => {
         const coinbaseCommerceKeyOk = !!runtime.getSetting(
             "COINBASE_COMMERCE_KEY"
@@ -139,7 +143,7 @@ export const createCoinbaseChargeAction: Action = {
         _options: any,
         callback: HandlerCallback
     ) => {
-        elizaLogger.log("Composing state for message:", message);
+        elizaLogger.info("Composing state for message:", message);
         if (!state) {
             state = (await runtime.composeState(message)) as State;
         } else {
@@ -151,7 +155,7 @@ export const createCoinbaseChargeAction: Action = {
             template: chargeTemplate,
         });
 
-        const chargeDetails = await generateObjectV2({
+        const chargeDetails = await generateObject({
             runtime,
             context,
             modelClass: ModelClass.LARGE,
@@ -171,13 +175,14 @@ export const createCoinbaseChargeAction: Action = {
             return;
         }
 
-        elizaLogger.log("Charge details received:", chargeDetails);
+        elizaLogger.info("Charge details received:", chargeDetails);
 
         // Initialize Coinbase Commerce client
-
+        elizaLogger.debug("Starting Coinbase Commerce client initialization");
         try {
             // Create a charge
             const chargeResponse = await createCharge(
+                // @ts-expect-error todo
                 runtime.getSetting("COINBASE_COMMERCE_KEY"),
                 {
                     local_price: {
@@ -190,7 +195,7 @@ export const createCoinbaseChargeAction: Action = {
                 }
             );
 
-            elizaLogger.log(
+            elizaLogger.info(
                 "Coinbase Commerce charge created:",
                 chargeResponse
             );
@@ -332,17 +337,18 @@ export const getAllChargesAction: Action = {
         callback: HandlerCallback
     ) => {
         try {
-            elizaLogger.log("Composing state for message:", message);
+            elizaLogger.info("Composing state for message:", message);
             if (!state) {
                 state = (await runtime.composeState(message)) as State;
             } else {
                 state = await runtime.updateRecentMessageState(state);
             }
             const charges = await getAllCharges(
+                // @ts-expect-error todo
                 runtime.getSetting("COINBASE_COMMERCE_KEY")
             );
 
-            elizaLogger.log("Fetched all charges:", charges);
+            elizaLogger.info("Fetched all charges:", charges);
 
             callback(
                 {
@@ -396,7 +402,7 @@ export const getChargeDetailsAction: Action = {
         _options: any,
         callback: HandlerCallback
     ) => {
-        elizaLogger.log("Composing state for message:", message);
+        elizaLogger.info("Composing state for message:", message);
         if (!state) {
             state = (await runtime.composeState(message)) as State;
         } else {
@@ -407,7 +413,7 @@ export const getChargeDetailsAction: Action = {
             state,
             template: getChargeTemplate,
         });
-        const chargeDetails = await generateObjectV2({
+        const chargeDetails = await generateObject({
             runtime,
             context,
             modelClass: ModelClass.LARGE,
@@ -429,11 +435,12 @@ export const getChargeDetailsAction: Action = {
 
         try {
             const chargeDetails = await getChargeDetails(
+                // @ts-expect-error todo
                 runtime.getSetting("COINBASE_COMMERCE_KEY"),
                 charge.id
             );
 
-            elizaLogger.log("Fetched charge details:", chargeDetails);
+            elizaLogger.info("Fetched charge details:", chargeDetails);
 
             callback(
                 {
@@ -485,7 +492,9 @@ export const getChargeDetailsAction: Action = {
 
 export const chargeProvider: Provider = {
     get: async (runtime: IAgentRuntime, _message: Memory) => {
+        elizaLogger.debug("Starting chargeProvider.get function");
         const charges = await getAllCharges(
+            // @ts-expect-error todo
             runtime.getSetting("COINBASE_COMMERCE_KEY")
         );
         // Ensure API key is available
@@ -503,16 +512,16 @@ export const chargeProvider: Provider = {
                 privateKey: coinbasePrivateKey,
             });
             const { balances, transactions } = await getWalletDetails(runtime);
-            elizaLogger.log("Current Balances:", balances);
-            elizaLogger.log("Last Transactions:", transactions);
+            elizaLogger.info("Current Balances:", balances);
+            elizaLogger.info("Last Transactions:", transactions);
         }
-        const formattedCharges = charges.map(charge => ({
+        const formattedCharges = charges.map((charge) => ({
             id: charge.id,
             name: charge.name,
             description: charge.description,
             pricing: charge.pricing,
         }));
-        elizaLogger.log("Charges:", formattedCharges);
+        elizaLogger.info("Charges:", formattedCharges);
         return { charges: formattedCharges, balances, transactions };
     },
 };

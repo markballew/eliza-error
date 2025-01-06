@@ -1,22 +1,23 @@
 import {
+    ActionExample,
+    booleanFooter,
     composeContext,
+    Content,
+    elizaLogger,
+    Evaluator,
     generateObjectArray,
     generateTrueOrFalse,
-    MemoryManager,
-    booleanFooter,
-    ActionExample,
-    Content,
     IAgentRuntime,
     Memory,
+    MemoryManager,
     ModelClass,
-    Evaluator,
-} from "@ai16z/eliza";
-import { TrustScoreManager } from "../providers/trustScoreProvider.ts";
-import { TokenProvider } from "../providers/token.ts";
-import { WalletProvider } from "../providers/wallet.ts";
-import { TrustScoreDatabase } from "@ai16z/plugin-trustdb";
+} from "@elizaos/core";
+import { TrustScoreDatabase } from "@elizaos/plugin-trustdb";
 import { Connection } from "@solana/web3.js";
 import { getWalletKey } from "../keypairUtils.ts";
+import { TokenProvider } from "../providers/token.ts";
+import { TrustScoreManager } from "../providers/trustScoreProvider.ts";
+import { WalletProvider } from "../providers/wallet.ts";
 
 const shouldProcessTemplate =
     `# Task: Decide if the recent messages should be processed for token recommendations.
@@ -81,6 +82,12 @@ Response should be a JSON object array inside a JSON markdown block. Correct res
 async function handler(runtime: IAgentRuntime, message: Memory) {
     console.log("Evaluating for trust");
     const state = await runtime.composeState(message);
+
+    // if the database type is postgres, we don't want to run this because it relies on sql queries that are currently specific to sqlite. This check can be removed once the trust score provider is updated to work with postgres.
+    if (runtime.getSetting("POSTGRES_URL")) {
+        elizaLogger.warn("skipping trust evaluator because db is postgres");
+        return [];
+    }
 
     const { agentId, roomId } = state;
 
@@ -154,6 +161,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
                 runtime.getSetting("RPC_URL") ||
                     "https://api.mainnet-beta.solana.com"
             ),
+            // @ts-expect-error todo
             publicKey
         );
         const tokenProvider = new TokenProvider(
@@ -204,6 +212,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
         const user = participants.find(async (actor) => {
             const user = await runtime.databaseAdapter.getAccountById(actor);
             return (
+                // @ts-expect-error todo
                 user.name.toLowerCase().trim() ===
                 rec.recommender.toLowerCase().trim()
             );
@@ -215,6 +224,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
         }
 
         const account = await runtime.databaseAdapter.getAccountById(user);
+        // @ts-expect-error todo
         const userId = account.id;
 
         const recMemory = {
@@ -225,6 +235,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
             createdAt: Date.now(),
         };
 
+        // @ts-expect-error todo
         await recommendationsManager.createMemory(recMemory, true);
 
         console.log("recommendationsManager", rec);

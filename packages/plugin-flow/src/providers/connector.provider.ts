@@ -4,7 +4,7 @@ import {
     Memory,
     Provider,
     State,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 
 import FlowConnector, { NetworkType } from "./utils/flow.connector";
 
@@ -38,6 +38,7 @@ async function _createFlowConnector(
 ): Promise<FlowConnector> {
     const rpcEndpoint = runtime.getSetting("FLOW_ENDPOINT_URL");
     const network = runtime.getSetting("FLOW_NETWORK") as NetworkType;
+    // @ts-expect-error todo
     const instance = new FlowConnector(flowJSON, network, rpcEndpoint);
     await instance.onModuleInit();
     return instance;
@@ -49,6 +50,7 @@ async function _createFlowConnector(
  */
 export async function getFlowConnectorInstance(
     runtime: IAgentRuntime,
+    // @ts-expect-error todo
     inputedFlowJSON: { [key: string]: unknown } = undefined
 ): Promise<FlowConnector> {
     let connector: FlowConnector;

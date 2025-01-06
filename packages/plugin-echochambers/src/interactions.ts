@@ -13,7 +13,7 @@ import {
     stringToUuid,
     elizaLogger,
     getEmbeddingZeroVector,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import { EchoChamberClient } from "./echoChamberClient";
 import { ChatMessage } from "./types";
 
@@ -209,6 +209,7 @@ export class InteractionClient {
             message.content.toLowerCase().includes(room.topic.toLowerCase());
 
         // Always process if mentioned, otherwise check relevance
+        // @ts-expect-error todo
         return isMentioned || isRelevantToTopic;
     }
 
@@ -314,6 +315,7 @@ export class InteractionClient {
 
             // Check if we've already processed this message
             const existing = await this.runtime.messageManager.getMemoryById(
+                // @ts-expect-error todo
                 memory.id
             );
             if (existing) {
@@ -362,7 +364,7 @@ export class InteractionClient {
             const response = await generateMessageResponse({
                 runtime: this.runtime,
                 context: responseContext,
-                modelClass: ModelClass.SMALL,
+                modelClass: ModelClass.LARGE,
             });
 
             if (!response || !response.text) {

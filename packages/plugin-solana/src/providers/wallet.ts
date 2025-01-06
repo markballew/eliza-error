@@ -1,4 +1,4 @@
-import { IAgentRuntime, Memory, Provider, State } from "@ai16z/eliza";
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
@@ -103,8 +103,10 @@ export class WalletProvider {
 
         console.error(
             "All attempts failed. Throwing the last error:",
+            // @ts-expect-error todo
             lastError
         );
+        // @ts-expect-error todo
         throw lastError;
     }
 
@@ -377,10 +379,8 @@ const walletProvider: Provider = {
                 runtime.getSetting("RPC_URL") || PROVIDER_CONFIG.DEFAULT_RPC
             );
 
-            const provider = new WalletProvider(
-                connection,
-                publicKey
-            );
+            // @ts-expect-error todo
+            const provider = new WalletProvider(connection, publicKey);
 
             return await provider.getFormattedPortfolio(runtime);
         } catch (error) {
