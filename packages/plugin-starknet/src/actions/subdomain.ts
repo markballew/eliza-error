@@ -9,10 +9,10 @@ import {
     State,
     type Action,
     composeContext,
-    generateObjectDeprecated,
+    generateObjectDEPRECATED,
     Content,
     elizaLogger,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { getStarknetAccount } from "../utils";
 import { validateStarknetConfig } from "../environment";
 import { getTransferSubdomainCall, isStarkDomain } from "../utils/starknetId";
@@ -107,7 +107,7 @@ export default {
         });
 
         // Generate transfer content
-        const content = await generateObjectDeprecated({
+        const content = await generateObjectDEPRECATED({
             runtime,
             context: transferContext,
             modelClass: ModelClass.MEDIUM,

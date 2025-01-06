@@ -1,10 +1,4 @@
-import {
-    Evaluator,
-    IAgentRuntime,
-    Memory,
-    State,
-    elizaLogger,
-} from "@elizaos/core";
+import { Evaluator, IAgentRuntime, Memory, State, elizaLogger } from "@ai16z/eliza";
 
 export const sampleEvaluator: Evaluator = {
     alwaysRun: false,
@@ -19,12 +13,12 @@ export const sampleEvaluator: Evaluator = {
                     input: "This is an important message",
                     output: {
                         score: 1,
-                        reason: "Memory contains important content.",
-                    },
-                },
+                        reason: "Memory contains important content."
+                    }
+                }
             ],
-            outcome: "Memory should be evaluated as important",
-        },
+            outcome: "Memory should be evaluated as important"
+        }
     ],
     handler: async (runtime: IAgentRuntime, memory: Memory, state: State) => {
         // Evaluation logic for the evaluator
@@ -35,13 +29,13 @@ export const sampleEvaluator: Evaluator = {
             elizaLogger.log("Important content found in memory.");
             return {
                 score: 1,
-                reason: "Memory contains important content.",
+                reason: "Memory contains important content."
             };
         } else {
             elizaLogger.log("No important content found in memory.");
             return {
                 score: 0,
-                reason: "Memory does not contain important content.",
+                reason: "Memory does not contain important content."
             };
         }
     },
@@ -49,5 +43,5 @@ export const sampleEvaluator: Evaluator = {
     validate: async (runtime: IAgentRuntime, memory: Memory, state: State) => {
         // Validation logic for the evaluator
         return true;
-    },
+    }
 };

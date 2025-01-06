@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.7-alpha.1](../index.md) / Relationship
+[@ai16z/eliza v0.1.5-alpha.3](../index.md) / Relationship
 
 # Interface: Relationship
 
@@ -14,7 +14,7 @@ Unique identifier
 
 #### Defined in
 
-[packages/core/src/types.ts:479](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L479)
+[packages/core/src/types.ts:471](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L471)
 
 ***
 
@@ -26,7 +26,7 @@ First user ID
 
 #### Defined in
 
-[packages/core/src/types.ts:482](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L482)
+[packages/core/src/types.ts:474](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L474)
 
 ***
 
@@ -38,7 +38,7 @@ Second user ID
 
 #### Defined in
 
-[packages/core/src/types.ts:485](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L485)
+[packages/core/src/types.ts:477](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L477)
 
 ***
 
@@ -50,7 +50,7 @@ Primary user ID
 
 #### Defined in
 
-[packages/core/src/types.ts:488](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L488)
+[packages/core/src/types.ts:480](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L480)
 
 ***
 
@@ -62,7 +62,7 @@ Associated room ID
 
 #### Defined in
 
-[packages/core/src/types.ts:491](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L491)
+[packages/core/src/types.ts:483](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L483)
 
 ***
 
@@ -74,7 +74,7 @@ Relationship status
 
 #### Defined in
 
-[packages/core/src/types.ts:494](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L494)
+[packages/core/src/types.ts:486](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L486)
 
 ***
 
@@ -86,4 +86,4 @@ Optional creation timestamp
 
 #### Defined in
 
-[packages/core/src/types.ts:497](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L497)
+[packages/core/src/types.ts:489](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L489)

@@ -1,11 +1,11 @@
-import { elizaLogger, models } from "@elizaos/core";
-import { Service } from "@elizaos/core";
+import { elizaLogger, models } from "@ai16z/eliza";
+import { Service } from "@ai16z/eliza";
 import {
     IAgentRuntime,
     ModelProviderName,
     ServiceType,
     IImageDescriptionService,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     AutoProcessor,
     AutoTokenizer,
@@ -43,7 +43,7 @@ export class ImageDescriptionService
     }
 
     async initialize(runtime: IAgentRuntime): Promise<void> {
-        elizaLogger.log("Initializing ImageDescriptionService");
+        console.log("Initializing ImageDescriptionService");
         this.runtime = runtime;
     }
 
@@ -141,8 +141,6 @@ export class ImageDescriptionService
                 const { filePath } =
                     await this.extractFirstFrameFromGif(imageUrl);
                 imageData = fs.readFileSync(filePath);
-            } else if (fs.existsSync(imageUrl)) {
-                imageData = fs.readFileSync(imageUrl);
             } else {
                 const response = await fetch(imageUrl);
                 if (!response.ok) {
@@ -163,8 +161,7 @@ export class ImageDescriptionService
                 imageUrl,
                 imageData,
                 prompt,
-                isGif,
-                true
+                isGif
             );
 
             const [title, ...descriptionParts] = text.split("\n");
@@ -182,56 +179,39 @@ export class ImageDescriptionService
         imageUrl: string,
         imageData: Buffer,
         prompt: string,
-        isGif: boolean = false,
-        isLocalFile: boolean = false
+        isGif: boolean
     ): Promise<string> {
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                const shouldUseBase64 = (isGif || isLocalFile)&& !(this.runtime.imageModelProvider === ModelProviderName.OPENAI);
-                const mimeType = isGif
-                    ? "png"
-                    : path.extname(imageUrl).slice(1) || "jpeg";
-
-                const base64Data = imageData.toString("base64");
-                const imageUrlToUse = shouldUseBase64
-                    ? `data:image/${mimeType};base64,${base64Data}`
-                    : imageUrl;
-
                 const content = [
                     { type: "text", text: prompt },
                     {
                         type: "image_url",
                         image_url: {
-                            url: imageUrlToUse,
+                            url: isGif
+                                ? `data:image/png;base64,${imageData.toString("base64")}`
+                                : imageUrl,
                         },
                     },
                 ];
-                // If model provider is openai, use the endpoint, otherwise use the default openai endpoint.
-                const endpoint =
-                    this.runtime.imageModelProvider === ModelProviderName.OPENAI
-                    ? models[this.runtime.imageModelProvider].endpoint
-                    : "https://api.openai.com/v1";
-                const response = await fetch(endpoint + "/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${this.runtime.getSetting("OPENAI_API_KEY")}`,
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-4o-mini",
-                        messages: [{ role: "user", content }],
-                        max_tokens: shouldUseBase64 ? 500 : 300,
-                    }),
-                });
+
+                const response = await fetch(
+                    "https://api.openai.com/v1/chat/completions",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${this.runtime.getSetting("OPENAI_API_KEY")}`,
+                        },
+                        body: JSON.stringify({
+                            model: "gpt-4o-mini",
+                            messages: [{ role: "user", content }],
+                            max_tokens: isGif ? 500 : 300,
+                        }),
+                    }
+                );
 
                 if (!response.ok) {
-                    const responseText = await response.text();
-                    elizaLogger.error(
-                        "OpenAI API error:",
-                        response.status,
-                        "-",
-                        responseText
-                    );
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
@@ -239,9 +219,7 @@ export class ImageDescriptionService
                 return data.choices[0].message.content;
             } catch (error) {
                 elizaLogger.error(
-                    "OpenAI request failed (attempt",
-                    attempt + 1,
-                    "):",
+                    `OpenAI request failed (attempt ${attempt + 1}):`,
                     error
                 );
                 if (attempt === 2) throw error;

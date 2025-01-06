@@ -1,7 +1,7 @@
 import { SearchMode } from "agent-twitter-client";
-import {composeContext, elizaLogger} from "@elizaos/core";
-import { generateMessageResponse, generateText } from "@elizaos/core";
-import { messageCompletionFooter } from "@elizaos/core";
+import { composeContext } from "@ai16z/eliza";
+import { generateMessageResponse, generateText } from "@ai16z/eliza";
+import { messageCompletionFooter } from "@ai16z/eliza";
 import {
     Content,
     HandlerCallback,
@@ -10,8 +10,8 @@ import {
     ModelClass,
     ServiceType,
     State,
-} from "@elizaos/core";
-import { stringToUuid } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { stringToUuid } from "@ai16z/eliza";
 import { ClientBase } from "./base";
 import { buildConversationThread, sendTweet, wait } from "./utils.ts";
 
@@ -45,13 +45,11 @@ Your response should not contain any questions. Brief, concise statements only. 
 export class TwitterSearchClient {
     client: ClientBase;
     runtime: IAgentRuntime;
-    twitterUsername: string;
     private respondedTweets: Set<string> = new Set();
 
     constructor(client: ClientBase, runtime: IAgentRuntime) {
         this.client = client;
         this.runtime = runtime;
-        this.twitterUsername = this.client.twitterConfig.TWITTER_USERNAME;
     }
 
     async start() {
@@ -59,12 +57,10 @@ export class TwitterSearchClient {
     }
 
     private engageWithSearchTermsLoop() {
-        this.engageWithSearchTerms().then();
-        const randomMinutes = (Math.floor(Math.random() * (120 - 60 + 1)) + 60);
-        elizaLogger.log(`Next twitter search scheduled in ${randomMinutes} minutes`);
+        this.engageWithSearchTerms();
         setTimeout(
             () => this.engageWithSearchTermsLoop(),
-            randomMinutes * 60 * 1000
+            (Math.floor(Math.random() * (120 - 60 + 1)) + 60) * 60 * 1000
         );
     }
 
@@ -112,13 +108,13 @@ export class TwitterSearchClient {
 
             const prompt = `
   Here are some tweets related to the search term "${searchTerm}":
-
+  
   ${[...slicedTweets, ...homeTimeline]
       .filter((tweet) => {
           // ignore tweets where any of the thread tweets contain a tweet by the bot
           const thread = tweet.thread;
           const botTweet = thread.find(
-              (t) => t.username === this.twitterUsername
+              (t) => t.username === this.runtime.getSetting("TWITTER_USERNAME")
           );
           return !botTweet;
       })
@@ -130,7 +126,7 @@ export class TwitterSearchClient {
   `
       )
       .join("\n")}
-
+  
   Which tweet is the most interesting and relevant for Ruby to reply to? Please provide only the ID of the tweet in your response.
   Notes:
     - Respond to English tweets only
@@ -159,7 +155,10 @@ export class TwitterSearchClient {
 
             console.log("Selected tweet to reply to:", selectedTweet?.text);
 
-            if (selectedTweet.username === this.twitterUsername) {
+            if (
+                selectedTweet.username ===
+                this.runtime.getSetting("TWITTER_USERNAME")
+            ) {
                 console.log("Skipping tweet from bot itself");
                 return;
             }
@@ -209,7 +208,11 @@ export class TwitterSearchClient {
             // Fetch replies and retweets
             const replies = selectedTweet.thread;
             const replyContext = replies
-                .filter((reply) => reply.username !== this.twitterUsername)
+                .filter(
+                    (reply) =>
+                        reply.username !==
+                        this.runtime.getSetting("TWITTER_USERNAME")
+                )
                 .map((reply) => `@${reply.username}: ${reply.text}`)
                 .join("\n");
 
@@ -234,10 +237,10 @@ export class TwitterSearchClient {
 
             let state = await this.runtime.composeState(message, {
                 twitterClient: this.client.twitterClient,
-                twitterUserName: this.twitterUsername,
+                twitterUserName: this.runtime.getSetting("TWITTER_USERNAME"),
                 timeline: formattedHomeTimeline,
                 tweetContext: `${tweetBackground}
-
+  
   Original Post:
   By @${selectedTweet.username}
   ${selectedTweet.text}${replyContext.length > 0 && `\nReplies to original post:\n${replyContext}`}
@@ -258,7 +261,7 @@ export class TwitterSearchClient {
             const responseContent = await generateMessageResponse({
                 runtime: this.runtime,
                 context,
-                modelClass: ModelClass.LARGE,
+                modelClass: ModelClass.SMALL,
             });
 
             responseContent.inReplyTo = message.id;
@@ -279,7 +282,7 @@ export class TwitterSearchClient {
                         this.client,
                         response,
                         message.roomId,
-                        this.twitterUsername,
+                        this.runtime.getSetting("TWITTER_USERNAME"),
                         tweetId
                     );
                     return memories;

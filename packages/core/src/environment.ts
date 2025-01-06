@@ -124,11 +124,6 @@ export const CharacterSchema = z.object({
             nicknames: z.array(z.string()).optional(),
         })
         .optional(),
-    nft: z
-        .object({
-            prompt: z.string().optional(),
-        })
-        .optional(),
 });
 
 // Type inference

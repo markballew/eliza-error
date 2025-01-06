@@ -8,17 +8,16 @@ import {
     HandlerCallback,
     State,
     composeContext,
-    generateObject,
+    generateObjectV2,
     ModelClass,
     Provider,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { WebhookSchema, isWebhookContent, WebhookContent } from "../types";
 import { webhookTemplate } from "../templates";
 import { appendWebhooksToCsv } from "../utils";
 
 export const webhookProvider: Provider = {
     get: async (runtime: IAgentRuntime, _message: Memory) => {
-        elizaLogger.debug("Starting webhookProvider.get function");
         try {
             Coinbase.configure({
                 apiKeyName:
@@ -31,7 +30,7 @@ export const webhookProvider: Provider = {
 
             // List all webhooks
             const resp = await Webhook.list();
-            elizaLogger.info("Listing all webhooks:", resp.data);
+            elizaLogger.log("Listing all webhooks:", resp.data);
 
             return {
                 webhooks: resp.data.map((webhook: Webhook) => ({
@@ -54,7 +53,7 @@ export const createWebhookAction: Action = {
     name: "CREATE_WEBHOOK",
     description: "Create a new webhook using the Coinbase SDK.",
     validate: async (runtime: IAgentRuntime, _message: Memory) => {
-        elizaLogger.info("Validating runtime for CREATE_WEBHOOK...");
+        elizaLogger.log("Validating runtime for CREATE_WEBHOOK...");
         return (
             !!(
                 runtime.character.settings.secrets?.COINBASE_API_KEY ||
@@ -77,7 +76,7 @@ export const createWebhookAction: Action = {
         _options: any,
         callback: HandlerCallback
     ) => {
-        elizaLogger.debug("Starting CREATE_WEBHOOK handler...");
+        elizaLogger.log("Starting CREATE_WEBHOOK handler...");
 
         try {
             Coinbase.configure({
@@ -94,7 +93,7 @@ export const createWebhookAction: Action = {
                 template: webhookTemplate,
             });
 
-            const webhookDetails = await generateObject({
+            const webhookDetails = await generateObjectV2({
                 runtime,
                 context,
                 modelClass: ModelClass.LARGE,
@@ -111,11 +110,8 @@ export const createWebhookAction: Action = {
                 return;
             }
 
-            const { networkId, eventType, eventFilters, eventTypeFilter } =
-                webhookDetails.object as WebhookContent;
-            const notificationUri =
-                runtime.getSetting("COINBASE_NOTIFICATION_URI") ??
-                process.env.COINBASE_NOTIFICATION_URI;
+            const { networkId, eventType, eventFilters, eventTypeFilter } = webhookDetails.object as WebhookContent;
+            const notificationUri = runtime.getSetting("COINBASE_NOTIFICATION_URI") ?? process.env.COINBASE_NOTIFICATION_URI;
 
             if (!notificationUri) {
                 callback(
@@ -126,23 +122,9 @@ export const createWebhookAction: Action = {
                 );
                 return;
             }
-            elizaLogger.info("Creating webhook with details:", {
-                networkId,
-                notificationUri,
-                eventType,
-                eventTypeFilter,
-                eventFilters,
-            });
-            const webhook = await Webhook.create({
-                networkId,
-                notificationUri,
-                eventType,
-                eventFilters,
-            });
-            elizaLogger.info(
-                "Webhook created successfully:",
-                webhook.toString()
-            );
+            elizaLogger.log("Creating webhook with details:", {networkId, notificationUri, eventType, eventTypeFilter, eventFilters});
+            const webhook = await Webhook.create({networkId, notificationUri, eventType, eventFilters});
+            elizaLogger.log("Webhook created successfully:", webhook.toString());
             callback(
                 {
                     text: `Webhook created successfully: ${webhook.toString()}`,
@@ -150,7 +132,7 @@ export const createWebhookAction: Action = {
                 []
             );
             await appendWebhooksToCsv([webhook]);
-            elizaLogger.info("Webhook appended to CSV successfully");
+            elizaLogger.log("Webhook appended to CSV successfully");
         } catch (error) {
             elizaLogger.error("Error during webhook creation:", error);
             callback(
@@ -178,7 +160,7 @@ export const createWebhookAction: Action = {
                 },
             },
         ],
-    ],
+    ]
 };
 
 export const webhookPlugin: Plugin = {

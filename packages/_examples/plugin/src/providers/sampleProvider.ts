@@ -3,8 +3,8 @@ import {
     IAgentRuntime,
     Memory,
     State,
-    elizaLogger,
-} from "@elizaos/core";
+    elizaLogger
+} from "@ai16z/eliza";
 
 export const sampleProvider: Provider = {
     get: async (runtime: IAgentRuntime, message: Memory, state: State) => {

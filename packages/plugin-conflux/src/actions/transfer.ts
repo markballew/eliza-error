@@ -4,13 +4,13 @@ import {
     Memory,
     State,
     HandlerCallback,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
-    generateObject,
+    generateObjectV2,
     composeContext,
     ModelClass,
     Content,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { createPublicClient, createWalletClient, http, parseCFX } from "cive";
 import { privateKeyToAccount } from "cive/accounts";
 import { testnet } from "cive/chains";
@@ -94,7 +94,7 @@ export const transfer: Action = {
             template: confluxTransferTemplate,
         });
 
-        const content = await generateObject({
+        const content = await generateObjectV2({
             runtime,
             context,
             modelClass: ModelClass.SMALL,

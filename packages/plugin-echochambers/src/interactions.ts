@@ -13,7 +13,7 @@ import {
     stringToUuid,
     elizaLogger,
     getEmbeddingZeroVector,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { EchoChamberClient } from "./echoChamberClient";
 import { ChatMessage } from "./types";
 
@@ -362,7 +362,7 @@ export class InteractionClient {
             const response = await generateMessageResponse({
                 runtime: this.runtime,
                 context: responseContext,
-                modelClass: ModelClass.LARGE,
+                modelClass: ModelClass.SMALL,
             });
 
             if (!response || !response.text) {
