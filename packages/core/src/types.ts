@@ -1167,7 +1167,7 @@ export interface IAgentRuntime {
         state?: State,
         didRespond?: boolean,
         callback?: HandlerCallback
-    ): Promise<string[] | null>;
+    ): Promise<string[]>;
 
     ensureParticipantExists(userId: UUID, roomId: UUID): Promise<void>;
 
@@ -1338,6 +1338,7 @@ export interface ISlackService extends Service {
  */
 export enum VerifiableInferenceProvider {
     RECLAIM = "reclaim",
+    PRIMUS = "primus",
 }
 
 /**
@@ -1400,9 +1401,4 @@ export enum TranscriptionProvider {
     OpenAI = "openai",
     Deepgram = "deepgram",
     Local = "local",
-}
-
-export enum ActionTimelineType {
-    ForYou = "foryou",
-    Following = "following",
 }

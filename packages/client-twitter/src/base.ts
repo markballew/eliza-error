@@ -8,7 +8,6 @@ import {
     getEmbeddingZeroVector,
     elizaLogger,
     stringToUuid,
-    ActionTimelineType,
 } from "@elizaos/core";
 import {
     QueryTweetsResponse,
@@ -318,16 +317,14 @@ export class ClientBase extends EventEmitter {
         return processedTimeline;
     }
 
-    async fetchTimelineForActions(): Promise<Tweet[]> {
+    async fetchTimelineForActions(count: number): Promise<Tweet[]> {
         elizaLogger.debug("fetching timeline for actions");
 
         const agentUsername = this.twitterConfig.TWITTER_USERNAME;
-
-        const homeTimeline =
-            this.twitterConfig.ACTION_TIMELINE_TYPE ===
-            ActionTimelineType.Following
-                ? await this.twitterClient.fetchFollowingTimeline(20, [])
-                : await this.twitterClient.fetchHomeTimeline(20, []);
+        const homeTimeline = await this.twitterClient.fetchHomeTimeline(
+            count,
+            []
+        );
 
         return homeTimeline
             .map((tweet) => ({
