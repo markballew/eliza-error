@@ -56,6 +56,7 @@
         "@elizaos/plugin-solana-agentkit": "workspace:*",
         "@elizaos/plugin-starknet": "workspace:*",
         "@elizaos/plugin-stargaze": "workspace:*",
+        "@elizaos/plugin-giphy": "workspace:*",
         "@elizaos/plugin-ton": "workspace:*",
         "@elizaos/plugin-sui": "workspace:*",
         "@elizaos/plugin-tee": "workspace:*",
