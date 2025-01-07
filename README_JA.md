@@ -97,6 +97,7 @@ TWITTER_USERNAME= # アカウントのユーザー名
 TWITTER_PASSWORD= # アカウントのパスワード
 TWITTER_EMAIL= # アカウントのメール
 
+X_SERVER_URL=
 XAI_API_KEY=
 XAI_MODEL=
 
@@ -144,7 +145,7 @@ CUDA Toolkit、cuDNN、cuBLASをインストールしていることを確認し
 
 ### ローカルでの実行
 
-XAI_MODELを追加し、[Llamaでの実行](#run-with-llama)のオプションのいずれかに設定 - XAI_API_KEYを空白のままにしておくと、huggingfaceからモデルをダウンロードし、ローカルでクエリを実行します。
+XAI_MODELを追加し、[Llamaでの実行](#run-with-llama)のオプションのいずれかに設定 - X_SERVER_URLとXAI_API_KEYを空白のままにしておくと、huggingfaceからモデルをダウンロードし、ローカルでクエリを実行します。
 
 # クライアント
 
