@@ -22,9 +22,9 @@ The parameters for composing the context.
 
 The state object containing values to replace the placeholders in the template.
 
-• **params.template**: `string` | `Function`
+• **params.template**: `string`
 
-The template string or function returning a string containing placeholders to be replaced with state values.
+The template string containing placeholders to be replaced with state values.
 
 • **params.templatingEngine?**: `"handlebars"`
 

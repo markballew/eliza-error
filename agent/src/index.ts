@@ -33,12 +33,12 @@ import { zgPlugin } from "@elizaos/plugin-0g";
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import createGoatPlugin from "@elizaos/plugin-goat";
 // import { intifacePlugin } from "@elizaos/plugin-intiface";
+import { genLayerPlugin } from "@elizaos/plugin-genlayer";
 import { DirectClient } from "@elizaos/client-direct";
 import { ThreeDGenerationPlugin } from "@elizaos/plugin-3d-generation";
 import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { aptosPlugin } from "@elizaos/plugin-aptos";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
-import { binancePlugin } from "@elizaos/plugin-binance";
 import {
     advancedTradePlugin,
     coinbaseCommercePlugin,
@@ -53,25 +53,22 @@ import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
 import { evmPlugin } from "@elizaos/plugin-evm";
 import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
-//import { genLayerPlugin } from "@elizaos/plugin-genlayer";
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
 import { createNodePlugin } from "@elizaos/plugin-node";
 import { solanaPlugin } from "@elizaos/plugin-solana";
-import { solanaAgentkitPlguin } from "@elizaos/plugin-solana-agentkit";
 import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
 import { TEEMode, teePlugin } from "@elizaos/plugin-tee";
 import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
+import { stargazePlugin } from "@elizaos/plugin-stargaze";
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import { availPlugin } from "@elizaos/plugin-avail";
 import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
-import { stargazePlugin } from "@elizaos/plugin-stargaze";
-import { obsidianPlugin } from "@elizaos/plugin-obsidian";
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
@@ -564,9 +561,6 @@ export async function createAgent(
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? solanaPlugin
                 : null,
-            getSecret(character, "SOLANA_PRIVATE_KEY")
-                ? solanaAgentkitPlguin
-                : null,
             (getSecret(character, "NEAR_ADDRESS") ||
                 getSecret(character, "NEAR_WALLET_PUBLIC_KEY")) &&
             getSecret(character, "NEAR_WALLET_SECRET_KEY")
@@ -618,10 +612,6 @@ export async function createAgent(
             getSecret(character, "ABSTRACT_PRIVATE_KEY")
                 ? abstractPlugin
                 : null,
-            getSecret(character, "BINANCE_API_KEY") &&
-            getSecret(character, "BINANCE_SECRET_KEY")
-                ? binancePlugin
-                : null,
             getSecret(character, "FLOW_ADDRESS") &&
             getSecret(character, "FLOW_PRIVATE_KEY")
                 ? flowPlugin
@@ -645,15 +635,14 @@ export async function createAgent(
                 ? echoChambersPlugin
                 : null,
             getSecret(character, "STARGAZE_ENDPOINT") ? stargazePlugin : null,
-            //getSecret(character, "GENLAYER_PRIVATE_KEY")
-            //    ? genLayerPlugin
-            //    : null,
-            //getSecret(character, "AVAIL_SEED") ? availPlugin : null,
-            //getSecret(character, "AVAIL_APP_ID") ? availPlugin : null,
+            getSecret(character, "GENLAYER_PRIVATE_KEY")
+                ? genLayerPlugin
+                : null,
+            getSecret(character, "AVAIL_SEED") ? availPlugin : null,
+            getSecret(character, "AVAIL_APP_ID") ? availPlugin : null,
             getSecret(character, "OPEN_WEATHER_API_KEY")
                 ? openWeatherPlugin
                 : null,
-            getSecret(character, "OBSIDIAN_API_TOKEN") ? obsidianPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],

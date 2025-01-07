@@ -355,7 +355,7 @@ export async function generateText({
                         const fetching = await runtime.fetch(url, options);
                         if (
                             parseBooleanFromText(
-                                runtime.getSetting("ETERNALAI_LOG")
+                                runtime.getSetting("ETERNAL_AI_LOG_REQUEST")
                             )
                         ) {
                             elizaLogger.info(

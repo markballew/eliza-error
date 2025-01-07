@@ -99,6 +99,7 @@ TWITTER_USERNAME= # Korisničko ime naloga
 TWITTER_PASSWORD= # Lozinka naloga
 TWITTER_EMAIL= # Email naloga
 
+X_SERVER_URL=
 XAI_API_KEY=
 XAI_MODEL=
 
@@ -120,7 +121,7 @@ BIRDEYE_API_KEY=
 
 SOL_ADDRESS=So11111111111111111111111111111111111111112
 SLIPPAGE=1
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=
 
 ## Telegram
@@ -144,7 +145,7 @@ Uverite se da imate instaliran CUDA Toolkit, uključujući cuDNN i cuBLAS.
 
 ### Lokalno Pokretanje
 
-Dodajte XAI_MODEL i konfigurišite ga sa jednom od opcija iz [Pokretanje sa Llama](#pokretanje-sa-llama) - možete ostaviti XAI_API_KEY praznim, preuzeće model sa HuggingFace i izvršiti upite lokalno
+Dodajte XAI_MODEL i konfigurišite ga sa jednom od opcija iz [Pokretanje sa Llama](#pokretanje-sa-llama) - možete ostaviti X_SERVER_URL i XAI_API_KEY praznim, preuzeće model sa HuggingFace i izvršiti upite lokalno
 
 # Klijenti
 
