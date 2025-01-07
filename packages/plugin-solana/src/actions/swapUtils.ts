@@ -9,12 +9,12 @@ import {
     TokenAmount,
     VersionedTransaction,
 } from "@solana/web3.js";
-import { settings } from "@ai16z/eliza";
+import { settings } from "@elizaos/core";
 
 const solAddress = settings.SOL_ADDRESS;
 const SLIPPAGE = settings.SLIPPAGE;
 const connection = new Connection(
-    settings.RPC_URL || "https://api.mainnet-beta.solana.com"
+    settings.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com"
 );
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
