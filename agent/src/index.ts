@@ -51,10 +51,9 @@ import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
 import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
 import { evmPlugin } from "@elizaos/plugin-evm";
-import { createCosmosPlugin } from "@ai16z/plugin-cosmos";
 import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
-import { genLayerPlugin } from "@elizaos/plugin-genlayer";
+//import { genLayerPlugin } from "@elizaos/plugin-genlayer";
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
@@ -69,10 +68,10 @@ import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
-
 import { availPlugin } from "@elizaos/plugin-avail";
 import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
+import { obsidianPlugin } from "@elizaos/plugin-obsidian";
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
@@ -578,9 +577,6 @@ export async function createAgent(
                 getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
                 : null,
-            getSecret(character, "COSMOS_RECOVERY_PHRASE") &&
-                getSecret(character, "COSMOS_AVAILABLE_CHAINS") &&
-                createCosmosPlugin(),
             (getSecret(character, "SOLANA_PUBLIC_KEY") ||
                 (getSecret(character, "WALLET_PUBLIC_KEY") &&
                     !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith(
@@ -649,14 +645,15 @@ export async function createAgent(
                 ? echoChambersPlugin
                 : null,
             getSecret(character, "STARGAZE_ENDPOINT") ? stargazePlugin : null,
-            getSecret(character, "GENLAYER_PRIVATE_KEY")
-                ? genLayerPlugin
-                : null,
-            getSecret(character, "AVAIL_SEED") ? availPlugin : null,
-            getSecret(character, "AVAIL_APP_ID") ? availPlugin : null,
+            //getSecret(character, "GENLAYER_PRIVATE_KEY")
+            //    ? genLayerPlugin
+            //    : null,
+            //getSecret(character, "AVAIL_SEED") ? availPlugin : null,
+            //getSecret(character, "AVAIL_APP_ID") ? availPlugin : null,
             getSecret(character, "OPEN_WEATHER_API_KEY")
                 ? openWeatherPlugin
                 : null,
+            getSecret(character, "OBSIDIAN_API_TOKEN") ? obsidianPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
