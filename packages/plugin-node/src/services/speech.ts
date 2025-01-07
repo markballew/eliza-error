@@ -115,9 +115,7 @@ async function textToSpeech(runtime: IAgentRuntime, text: string) {
                 status === 401 &&
                 errorBody.detail?.status === "quota_exceeded"
             ) {
-                elizaLogger.log(
-                    "ElevenLabs quota exceeded, falling back to VITS"
-                );
+                console.log("ElevenLabs quota exceeded, falling back to VITS");
                 throw new Error("QUOTA_EXCEEDED");
             }
 
@@ -179,12 +177,12 @@ async function textToSpeech(runtime: IAgentRuntime, text: string) {
 
             let wavStream: Readable;
             if (audio instanceof Buffer) {
-                elizaLogger.log("audio is a buffer");
+                console.log("audio is a buffer");
                 wavStream = Readable.from(audio);
             } else if ("audioChannels" in audio && "sampleRate" in audio) {
-                elizaLogger.log("audio is a RawAudio");
+                console.log("audio is a RawAudio");
                 const floatBuffer = Buffer.from(audio.audioChannels[0].buffer);
-                elizaLogger.log("buffer length: ", floatBuffer.length);
+                console.log("buffer length: ", floatBuffer.length);
 
                 // Get the sample rate from the RawAudio object
                 const sampleRate = audio.sampleRate;
@@ -223,12 +221,12 @@ async function textToSpeech(runtime: IAgentRuntime, text: string) {
 async function processVitsAudio(audio: any): Promise<Readable> {
     let wavStream: Readable;
     if (audio instanceof Buffer) {
-        elizaLogger.log("audio is a buffer");
+        console.log("audio is a buffer");
         wavStream = Readable.from(audio);
     } else if ("audioChannels" in audio && "sampleRate" in audio) {
-        elizaLogger.log("audio is a RawAudio");
+        console.log("audio is a RawAudio");
         const floatBuffer = Buffer.from(audio.audioChannels[0].buffer);
-        elizaLogger.log("buffer length: ", floatBuffer.length);
+        console.log("buffer length: ", floatBuffer.length);
 
         const sampleRate = audio.sampleRate;
         const floatArray = new Float32Array(floatBuffer.buffer);
