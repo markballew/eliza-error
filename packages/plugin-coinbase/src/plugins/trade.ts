@@ -1,4 +1,4 @@
-import { Coinbase } from "@coinbase/coinbase-sdk";
+import { Coinbase} from "@coinbase/coinbase-sdk";
 import {
     Action,
     Plugin,
@@ -8,10 +8,10 @@ import {
     HandlerCallback,
     State,
     composeContext,
-    generateObject,
+    generateObjectV2,
     ModelClass,
     Provider,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { executeTradeAndCharityTransfer, getWalletDetails } from "../utils";
 import { tradeTemplate } from "../templates";
 import { isTradeContent, TradeContent, TradeSchema } from "../types";
@@ -30,7 +30,6 @@ const tradeCsvFilePath = path.join(baseDir, "trades.csv");
 
 export const tradeProvider: Provider = {
     get: async (runtime: IAgentRuntime, _message: Memory) => {
-        elizaLogger.debug("Starting tradeProvider.get function");
         try {
             Coinbase.configure({
                 apiKeyName:
@@ -40,7 +39,7 @@ export const tradeProvider: Provider = {
                     runtime.getSetting("COINBASE_PRIVATE_KEY") ??
                     process.env.COINBASE_PRIVATE_KEY,
             });
-            elizaLogger.info("Reading CSV file from:", tradeCsvFilePath);
+            elizaLogger.log("Reading CSV file from:", tradeCsvFilePath);
 
             // Check if the file exists; if not, create it with headers
             if (!fs.existsSync(tradeCsvFilePath)) {
@@ -58,7 +57,7 @@ export const tradeProvider: Provider = {
                     ],
                 });
                 await csvWriter.writeRecords([]); // Create an empty file with headers
-                elizaLogger.info("New CSV file created with headers.");
+                elizaLogger.log("New CSV file created with headers.");
             }
 
             // Read and parse the CSV file
@@ -68,10 +67,10 @@ export const tradeProvider: Provider = {
                 skip_empty_lines: true,
             });
 
-            elizaLogger.info("Parsed CSV records:", records);
+            elizaLogger.log("Parsed CSV records:", records);
             const { balances, transactions } = await getWalletDetails(runtime);
-            elizaLogger.info("Current Balances:", balances);
-            elizaLogger.info("Last Transactions:", transactions);
+            elizaLogger.log("Current Balances:", balances);
+            elizaLogger.log("Last Transactions:", transactions);
             return {
                 currentTrades: records.map((record: any) => ({
                     network: record["Network"] || undefined,
@@ -97,7 +96,7 @@ export const executeTradeAction: Action = {
     description:
         "Execute a trade between two assets using the Coinbase SDK and log the result.",
     validate: async (runtime: IAgentRuntime, _message: Memory) => {
-        elizaLogger.info("Validating runtime for EXECUTE_TRADE...");
+        elizaLogger.log("Validating runtime for EXECUTE_TRADE...");
         return (
             !!(
                 runtime.character.settings.secrets?.COINBASE_API_KEY ||
@@ -116,7 +115,7 @@ export const executeTradeAction: Action = {
         _options: any,
         callback: HandlerCallback
     ) => {
-        elizaLogger.debug("Starting EXECUTE_TRADE handler...");
+        elizaLogger.log("Starting EXECUTE_TRADE handler...");
 
         try {
             Coinbase.configure({
@@ -133,7 +132,7 @@ export const executeTradeAction: Action = {
                 template: tradeTemplate,
             });
 
-            const tradeDetails = await generateObject({
+            const tradeDetails = await generateObjectV2({
                 runtime,
                 context,
                 modelClass: ModelClass.LARGE,
@@ -166,13 +165,7 @@ export const executeTradeAction: Action = {
                 return;
             }
 
-            const { trade, transfer } = await executeTradeAndCharityTransfer(
-                runtime,
-                network,
-                amount,
-                sourceAsset,
-                targetAsset
-            );
+            const { trade, transfer } = await executeTradeAndCharityTransfer(runtime, network, amount, sourceAsset, targetAsset);
 
             let responseText = `Trade executed successfully:
 - Network: ${network}
@@ -188,7 +181,10 @@ export const executeTradeAction: Action = {
                 responseText += "\n(Note: Charity transfer was not completed)";
             }
 
-            callback({ text: responseText }, []);
+            callback(
+                { text: responseText },
+                []
+            );
         } catch (error) {
             elizaLogger.error("Error during trade execution:", error);
             callback(
@@ -286,13 +282,13 @@ export const executeTradeAction: Action = {
         ],
     ],
     similes: [
-        "EXECUTE_TRADE", // Primary action name
-        "SWAP_TOKENS", // For token swaps
-        "CONVERT_CURRENCY", // For currency conversion
-        "EXCHANGE_ASSETS", // For asset exchange
-        "MARKET_BUY", // For buying assets
-        "MARKET_SELL", // For selling assets
-        "TRADE_CRYPTO", // Generic crypto trading
+        "EXECUTE_TRADE",         // Primary action name
+        "SWAP_TOKENS",          // For token swaps
+        "CONVERT_CURRENCY",     // For currency conversion
+        "EXCHANGE_ASSETS",      // For asset exchange
+        "MARKET_BUY",          // For buying assets
+        "MARKET_SELL",         // For selling assets
+        "TRADE_CRYPTO",        // Generic crypto trading
     ],
 };
 

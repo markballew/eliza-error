@@ -3,25 +3,18 @@ export * from "./types.ts";
 
 import {
     Account,
-    Actor,
-    DatabaseAdapter,
-    GoalStatus,
-    IDatabaseCacheAdapter,
-    Participant,
-    type Goal,
+    Actor, DatabaseAdapter, GoalStatus, IDatabaseCacheAdapter, Participant, type Goal,
     type Memory,
     type Relationship,
-    type UUID,
-} from "@elizaos/core";
+    type UUID
+} from "@ai16z/eliza";
 import { v4 } from "uuid";
 import { sqliteTables } from "./sqliteTables.ts";
 import { Database } from "./types.ts";
-import { elizaLogger } from "@elizaos/core";
 
 export class SqlJsDatabaseAdapter
     extends DatabaseAdapter<Database>
-    implements IDatabaseCacheAdapter
-{
+    implements IDatabaseCacheAdapter {
     constructor(db: Database) {
         super();
         this.db = db;
@@ -89,9 +82,9 @@ export class SqlJsDatabaseAdapter
             params.agentId,
             ...params.roomIds,
         ];
-        elizaLogger.log({ queryParams });
+        console.log({ queryParams });
         stmt.bind(queryParams);
-        elizaLogger.log({ queryParams });
+        console.log({ queryParams });
 
         const memories: Memory[] = [];
         while (stmt.step()) {
@@ -163,7 +156,7 @@ export class SqlJsDatabaseAdapter
             stmt.free();
             return true;
         } catch (error) {
-            elizaLogger.error("Error creating account", error);
+            console.log("Error creating account", error);
             return false;
         }
     }
@@ -634,7 +627,7 @@ export class SqlJsDatabaseAdapter
             stmt.run([roomId ?? (v4() as UUID)]);
             stmt.free();
         } catch (error) {
-            elizaLogger.error("Error creating room", error);
+            console.log("Error creating room", error);
         }
         return roomId as UUID;
     }
@@ -686,7 +679,7 @@ export class SqlJsDatabaseAdapter
             stmt.free();
             return true;
         } catch (error) {
-            elizaLogger.error("Error adding participant", error);
+            console.log("Error adding participant", error);
             return false;
         }
     }
@@ -700,7 +693,7 @@ export class SqlJsDatabaseAdapter
             stmt.free();
             return true;
         } catch (error) {
-            elizaLogger.error("Error removing participant", error);
+            console.log("Error removing participant", error);
             return false;
         }
     }
@@ -736,7 +729,7 @@ export class SqlJsDatabaseAdapter
             }
             stmt.free();
         } catch (error) {
-            elizaLogger.error("Error fetching relationship", error);
+            console.log("Error fetching relationship", error);
         }
         return relationship;
     }
@@ -799,7 +792,7 @@ export class SqlJsDatabaseAdapter
             stmt.free();
             return true;
         } catch (error) {
-            elizaLogger.error("Error removing cache", error);
+            console.log("Error removing cache", error);
             return false;
         }
     }

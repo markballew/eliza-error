@@ -1,4 +1,4 @@
-import { Client, IAgentRuntime, elizaLogger } from "@elizaos/core";
+import { Client, IAgentRuntime } from "@ai16z/eliza";
 
 export class AutoClient {
     interval: NodeJS.Timeout;
@@ -10,7 +10,7 @@ export class AutoClient {
         // start a loop that runs every x seconds
         this.interval = setInterval(
             async () => {
-                elizaLogger.log("running auto client...");
+                console.log("running auto client...");
             },
             60 * 60 * 1000
         ); // 1 hour in milliseconds

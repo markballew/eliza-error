@@ -7,13 +7,13 @@ import {
     composeContext,
     Content,
     elizaLogger,
-    generateObjectDeprecated,
+    generateObjectDEPRECATED,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     ModelClass,
     State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { getStarknetAccount } from "../utils";
 import { ERC20Token } from "../utils/ERC20Token";
 import { validateStarknetConfig } from "../environment";
@@ -136,7 +136,7 @@ export default {
         });
 
         // Generate transfer content
-        const content = await generateObjectDeprecated({
+        const content = await generateObjectDEPRECATED({
             runtime,
             context: transferContext,
             modelClass: ModelClass.MEDIUM,
