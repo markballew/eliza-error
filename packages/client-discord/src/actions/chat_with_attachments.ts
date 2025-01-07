@@ -1,5 +1,6 @@
-import { composeContext, getModelSettings } from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
 import { generateText, trimTokens } from "@elizaos/core";
+import { models } from "@elizaos/core";
 import { parseJSONObjectFromText } from "@elizaos/core";
 import {
     Action,
@@ -184,11 +185,8 @@ const summarizeAction = {
 
         let currentSummary = "";
 
-        const modelSettings = getModelSettings(
-            runtime.character.modelProvider,
-            ModelClass.SMALL
-        );
-        const chunkSize = modelSettings.maxOutputTokens;
+        const model = models[runtime.character.modelProvider];
+        const chunkSize = model.settings.maxOutputTokens;
 
         state.attachmentsWithText = attachmentsWithText;
         state.objective = objective;
