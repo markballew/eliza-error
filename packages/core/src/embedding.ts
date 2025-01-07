@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getEmbeddingModelSettings, getEndpoint } from "./models.ts";
+import { models } from "./models.ts";
 import { IAgentRuntime, ModelProviderName } from "./types.ts";
 import settings from "./settings.ts";
 import elizaLogger from "./logger.ts";
@@ -14,39 +14,23 @@ interface EmbeddingOptions {
     provider?: string;
 }
 
-export const EmbeddingProvider = {
-    OpenAI: "OpenAI",
-    Ollama: "Ollama",
-    GaiaNet: "GaiaNet",
-    BGE: "BGE",
-} as const;
-
-export type EmbeddingProviderType =
-    (typeof EmbeddingProvider)[keyof typeof EmbeddingProvider];
-
-export type EmbeddingConfig = {
-    readonly dimensions: number;
-    readonly model: string;
-    readonly provider: EmbeddingProviderType;
-};
-
-export const getEmbeddingConfig = (): EmbeddingConfig => ({
+// Add the embedding configuration
+export const getEmbeddingConfig = () => ({
     dimensions:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
-            ? getEmbeddingModelSettings(ModelProviderName.OPENAI).dimensions
+            ? 1536 // OpenAI
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).dimensions
-              : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET)
-                      .dimensions
+              ? 1024 // Ollama mxbai-embed-large
+              :settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
+                ? 768 // GaiaNet
                 : 384, // BGE
     model:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
-            ? getEmbeddingModelSettings(ModelProviderName.OPENAI).name
+            ? "text-embedding-3-small"
             : settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true"
-              ? getEmbeddingModelSettings(ModelProviderName.OLLAMA).name
+              ? settings.OLLAMA_EMBEDDING_MODEL || "mxbai-embed-large"
               : settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true"
-                ? getEmbeddingModelSettings(ModelProviderName.GAIANET).name
+                ? settings.GAIANET_EMBEDDING_MODEL || "nomic-embed"
                 : "BGE-small-en-v1.5",
     provider:
         settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true"
@@ -135,17 +119,9 @@ export function getEmbeddingZeroVector(): number[] {
     let embeddingDimension = 384; // Default BGE dimension
 
     if (settings.USE_OPENAI_EMBEDDING?.toLowerCase() === "true") {
-        embeddingDimension = getEmbeddingModelSettings(
-            ModelProviderName.OPENAI
-        ).dimensions; // OpenAI dimension
+        embeddingDimension = 1536; // OpenAI dimension
     } else if (settings.USE_OLLAMA_EMBEDDING?.toLowerCase() === "true") {
-        embeddingDimension = getEmbeddingModelSettings(
-            ModelProviderName.OLLAMA
-        ).dimensions; // Ollama mxbai-embed-large dimension
-    } else if (settings.USE_GAIANET_EMBEDDING?.toLowerCase() === "true") {
-        embeddingDimension = getEmbeddingModelSettings(
-            ModelProviderName.GAIANET
-        ).dimensions; // GaiaNet dimension
+        embeddingDimension = 1024; // Ollama mxbai-embed-large dimension
     }
 
     return Array(embeddingDimension).fill(0);
@@ -195,32 +171,32 @@ export async function embed(runtime: IAgentRuntime, input: string) {
     const isNode = typeof process !== "undefined" && process.versions?.node;
 
     // Determine which embedding path to use
-    if (config.provider === EmbeddingProvider.OpenAI) {
+    if (config.provider === "OpenAI") {
         return await getRemoteEmbedding(input, {
             model: config.model,
-            endpoint: settings.OPENAI_API_URL || "https://api.openai.com/v1",
+            endpoint: "https://api.openai.com/v1",
             apiKey: settings.OPENAI_API_KEY,
             dimensions: config.dimensions,
         });
     }
 
-    if (config.provider === EmbeddingProvider.Ollama) {
+    if (config.provider === "Ollama") {
         return await getRemoteEmbedding(input, {
             model: config.model,
             endpoint:
                 runtime.character.modelEndpointOverride ||
-                getEndpoint(ModelProviderName.OLLAMA),
+                models[ModelProviderName.OLLAMA].endpoint,
             isOllama: true,
             dimensions: config.dimensions,
         });
     }
 
-    if (config.provider == EmbeddingProvider.GaiaNet) {
+    if (config.provider=="GaiaNet") {
         return await getRemoteEmbedding(input, {
             model: config.model,
             endpoint:
                 runtime.character.modelEndpointOverride ||
-                getEndpoint(ModelProviderName.GAIANET) ||
+                models[ModelProviderName.GAIANET].endpoint ||
                 settings.SMALL_GAIANET_SERVER_URL ||
                 settings.MEDIUM_GAIANET_SERVER_URL ||
                 settings.LARGE_GAIANET_SERVER_URL,
@@ -246,7 +222,7 @@ export async function embed(runtime: IAgentRuntime, input: string) {
         model: config.model,
         endpoint:
             runtime.character.modelEndpointOverride ||
-            getEndpoint(runtime.character.modelProvider),
+            models[runtime.character.modelProvider].endpoint,
         apiKey: runtime.token,
         dimensions: config.dimensions,
     });
@@ -276,11 +252,9 @@ export async function embed(runtime: IAgentRuntime, input: string) {
                         return await import("fastembed");
                     } catch {
                         elizaLogger.error("Failed to load fastembed.");
-                        throw new Error(
-                            "fastembed import failed, falling back to remote embedding"
-                        );
+                        throw new Error("fastembed import failed, falling back to remote embedding");
                     }
-                })(),
+                })()
             ]);
 
             const [fs, { fileURLToPath }, fastEmbed] = moduleImports;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Content } from "@ai16z/eliza";
 
 export const TransferSchema = z.object({
     to: z.string(),
@@ -63,13 +64,25 @@ export function isPumpContent(object: any): object is PumpContent {
 }
 
 export function isPumpCreateContent(object: any): object is PumpCreateContent {
-    return PumpCreateSchema.safeParse(object).success;
+    if (PumpCreateSchema.safeParse(object).success) {
+        return true;
+    }
+    console.error("Invalid content: ", object);
+    return false;
 }
 
 export function isPumpBuyContent(object: any): object is PumpBuyContent {
-    return PumpBuySchema.safeParse(object).success;
+    if (PumpBuySchema.safeParse(object).success) {
+        return true;
+    }
+    console.error("Invalid content: ", object);
+    return false;
 }
 
 export function isPumpSellContent(object: any): object is PumpSellContent {
-    return PumpSellSchema.safeParse(object).success;
+    if (PumpSellSchema.safeParse(object).success) {
+        return true;
+    }
+    console.error("Invalid content: ", object);
+    return false;
 }

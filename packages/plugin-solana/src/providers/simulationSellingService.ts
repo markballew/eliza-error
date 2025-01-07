@@ -3,12 +3,12 @@ import {
     TokenPerformance,
     // TradePerformance,
     TokenRecommendation,
-} from "@elizaos/plugin-trustdb";
+} from "@ai16z/plugin-trustdb";
 import { Connection, PublicKey } from "@solana/web3.js";
 // Assuming TokenProvider and IAgentRuntime are available
 import { TokenProvider } from "./token.ts";
-// import { settings } from "@elizaos/core";
-import { IAgentRuntime } from "@elizaos/core";
+// import { settings } from "@ai16z/eliza";
+import { IAgentRuntime } from "@ai16z/eliza";
 import { WalletProvider } from "./wallet.ts";
 import * as amqp from "amqplib";
 import { ProcessedTokenData } from "../types/token.ts";
@@ -39,7 +39,8 @@ export class SimulationSellingService {
     constructor(runtime: IAgentRuntime, trustScoreDb: TrustScoreDatabase) {
         this.trustScoreDb = trustScoreDb;
 
-        this.connection = new Connection(runtime.getSetting("SOLANA_RPC_URL"));
+        this.connection = new Connection(runtime.getSetting("RPC_URL"));
+        this.initializeWalletProvider();
         this.baseMint = new PublicKey(
             runtime.getSetting("BASE_MINT") ||
                 "So11111111111111111111111111111111111111112"
@@ -50,7 +51,6 @@ export class SimulationSellingService {
         this.sonarBe = runtime.getSetting("SONAR_BE");
         this.sonarBeToken = runtime.getSetting("SONAR_BE_TOKEN");
         this.runtime = runtime;
-        this.initializeWalletProvider();
     }
     /**
      * Initializes the RabbitMQ connection and starts consuming messages.
@@ -294,7 +294,7 @@ export class SimulationSellingService {
                 sell_recommender_id,
             });
             const response = await fetch(
-                `${this.sonarBe}/elizaos-sol/startProcess`,
+                `${this.sonarBe}/ai16z-sol/startProcess`,
                 {
                     method: "POST",
                     headers: {
@@ -328,7 +328,7 @@ export class SimulationSellingService {
 
     private stopProcessInTheSonarBackend(tokenAddress: string) {
         try {
-            return fetch(`${this.sonarBe}/elizaos-sol/stopProcess`, {
+            return fetch(`${this.sonarBe}/ai16z-sol/stopProcess`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

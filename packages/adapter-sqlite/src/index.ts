@@ -1,7 +1,7 @@
 export * from "./sqliteTables.ts";
 export * from "./sqlite_vec.ts";
 
-import { DatabaseAdapter, IDatabaseCacheAdapter } from "@elizaos/core";
+import { DatabaseAdapter, IDatabaseCacheAdapter } from "@ai16z/eliza";
 import {
     Account,
     Actor,
@@ -11,7 +11,7 @@ import {
     type Memory,
     type Relationship,
     type UUID,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { Database } from "better-sqlite3";
 import { v4 } from "uuid";
 import { load } from "./sqlite_vec.ts";
@@ -215,19 +215,13 @@ export class SqliteDatabaseAdapter
         const content = JSON.stringify(memory.content);
         const createdAt = memory.createdAt ?? Date.now();
 
-        let embeddingValue: Float32Array = new Float32Array(384);
-        // If embedding is not available, we just load an array with a length of 384
-        if (memory?.embedding && memory?.embedding?.length > 0) {
-            embeddingValue = new Float32Array(memory.embedding);
-        }
-
         // Insert the memory with the appropriate 'unique' value
         const sql = `INSERT OR REPLACE INTO memories (id, type, content, embedding, userId, roomId, agentId, \`unique\`, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         this.db.prepare(sql).run(
             memory.id ?? v4(),
             tableName,
             content,
-            embeddingValue,
+            new Float32Array(memory.embedding!), // Store as Float32Array
             memory.userId,
             memory.roomId,
             memory.agentId,
@@ -254,8 +248,8 @@ export class SqliteDatabaseAdapter
 
         let sql = `
             SELECT *, vec_distance_L2(embedding, ?) AS similarity
-            FROM memories
-            WHERE type = ?
+            FROM memories 
+            WHERE type = ? 
             AND roomId = ?`;
 
         if (params.unique) {
@@ -346,24 +340,24 @@ export class SqliteDatabaseAdapter
         // First get content text and calculate Levenshtein distance
         const sql = `
             WITH content_text AS (
-                SELECT
+                SELECT 
                     embedding,
                     json_extract(
                         json(content),
                         '$.' || ? || '.' || ?
                     ) as content_text
-                FROM memories
+                FROM memories 
                 WHERE type = ?
                 AND json_extract(
                     json(content),
                     '$.' || ? || '.' || ?
                 ) IS NOT NULL
             )
-            SELECT
+            SELECT 
                 embedding,
                 length(?) + length(content_text) - (
                     length(?) + length(content_text) - (
-                        length(replace(lower(?), lower(content_text), '')) +
+                        length(replace(lower(?), lower(content_text), '')) + 
                         length(replace(lower(content_text), lower(?), ''))
                     ) / 2
                 ) as levenshtein_score

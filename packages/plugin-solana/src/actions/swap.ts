@@ -9,7 +9,7 @@ import {
     settings,
     State,
     type Action,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import { getWalletKey } from "../keypairUtils.ts";
@@ -47,7 +47,7 @@ async function swapToken(
         });
 
         const quoteResponse = await fetch(
-            `https://quote-api.jup.ag/v6/quote?inputMint=${inputTokenCA}&outputMint=${outputTokenCA}&amount=${adjustedAmount}&dynamicSlippage=true&maxAccounts=64`
+            `https://quote-api.jup.ag/v6/quote?inputMint=${inputTokenCA}&outputMint=${outputTokenCA}&amount=${adjustedAmount}&slippageBps=50`
         );
         const quoteData = await quoteResponse.json();
 
@@ -62,13 +62,10 @@ async function swapToken(
 
         const swapRequestBody = {
             quoteResponse: quoteData,
-            userPublicKey: walletPublicKey.toBase58(),
+            userPublicKey: walletPublicKey.toString(),
+            wrapAndUnwrapSol: true,
+            computeUnitPriceMicroLamports: 2000000,
             dynamicComputeUnitLimit: true,
-            dynamicSlippage: true,
-            priorityLevelWithMaxLamports: {
-                maxLamports: 4000000,
-                priorityLevel: "veryHigh"
-            }
         };
 
         console.log("Requesting swap with body:", swapRequestBody);
