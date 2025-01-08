@@ -99,6 +99,7 @@ TWITTER_USERNAME= # Nome de usuário da conta
 TWITTER_PASSWORD= # Senha da conta
 TWITTER_EMAIL= # Email da conta
 
+X_SERVER_URL=
 XAI_API_KEY=
 XAI_MODEL=
 
@@ -121,7 +122,7 @@ BIRDEYE_API_KEY=
 
 SOL_ADDRESS=So11111111111111111111111111111111111111112
 SLIPPAGE=1
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=
 
 
@@ -146,7 +147,7 @@ Asigurați-vă că ați instalat CUDA Toolkit, inclusiv cuDNN și cuBLAS.
 
 ### Rularea locală
 
-Adăugați `XAI_MODEL` și setați-l la una dintre opțiunile de mai sus din [Rularea cu Llama](#rularea-cu-llama) – puteți lăsa `XAI_API_KEY` necompletate, modelul va fi descărcat de pe Hugging Face și interogările vor fi făcute local.
+Adăugați `XAI_MODEL` și setați-l la una dintre opțiunile de mai sus din [Rularea cu Llama](#rularea-cu-llama) – puteți lăsa `X_SERVER_URL` și `XAI_API_KEY` necompletate, modelul va fi descărcat de pe Hugging Face și interogările vor fi făcute local.
 
 # Clienți
 

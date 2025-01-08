@@ -5,7 +5,7 @@ import {
     State,
     elizaLogger,
 } from "@elizaos/core";
-import { TdxQuoteResponse, TappdClient, TdxQuoteHashAlgorithms } from "@phala/dstack-sdk";
+import { TdxQuoteResponse, TappdClient } from "@phala/dstack-sdk";
 import { RemoteAttestationQuote, TEEMode } from "../types/tee";
 
 class RemoteAttestationProvider {
@@ -44,13 +44,12 @@ class RemoteAttestationProvider {
     }
 
     async generateAttestation(
-        reportData: string,
-        hashAlgorithm?: TdxQuoteHashAlgorithms
+        reportData: string
     ): Promise<RemoteAttestationQuote> {
         try {
             elizaLogger.log("Generating attestation for: ", reportData);
             const tdxQuote: TdxQuoteResponse =
-                await this.client.tdxQuote(reportData, hashAlgorithm);
+                await this.client.tdxQuote(reportData);
             const rtmrs = tdxQuote.replayRtmrs();
             elizaLogger.log(
                 `rtmr0: ${rtmrs[0]}\nrtmr1: ${rtmrs[1]}\nrtmr2: ${rtmrs[2]}\nrtmr3: ${rtmrs[3]}f`
@@ -81,7 +80,7 @@ const remoteAttestationProvider: Provider = {
 
         try {
             elizaLogger.log("Generating attestation for: ", agentId);
-            const attestation = await provider.generateAttestation(agentId, 'raw');
+            const attestation = await provider.generateAttestation(agentId);
             return `Your Agent's remote attestation is: ${JSON.stringify(attestation)}`;
         } catch (error) {
             console.error("Error in remote attestation provider:", error);

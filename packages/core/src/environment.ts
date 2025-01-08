@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { ModelProviderName, Clients } from "./types";
-import elizaLogger from "./logger";
 
 // TODO: TO COMPLETE
 export const envSchema = z.object({
@@ -138,26 +137,11 @@ export function validateCharacterConfig(json: unknown): CharacterConfig {
         return CharacterSchema.parse(json);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const groupedErrors = error.errors.reduce(
-                (acc, err) => {
-                    const path = err.path.join(".");
-                    if (!acc[path]) {
-                        acc[path] = [];
-                    }
-                    acc[path].push(err.message);
-                    return acc;
-                },
-                {} as Record<string, string[]>
-            );
-
-            Object.entries(groupedErrors).forEach(([field, messages]) => {
-                elizaLogger.error(
-                    `Validation errors in ${field}: ${messages.join(" - ")}`
-                );
-            });
-
+            const errorMessages = error.errors
+                .map((err) => `${err.path.join(".")}: ${err.message}`)
+                .join("\n");
             throw new Error(
-                "Character configuration validation failed. Check logs for details."
+                `Character configuration validation failed:\n${errorMessages}`
             );
         }
         throw error;

@@ -95,6 +95,7 @@ TWITTER_USERNAME= # Account username
 TWITTER_PASSWORD= # Account password
 TWITTER_EMAIL= # Account email
 
+X_SERVER_URL=
 XAI_API_KEY=
 XAI_MODEL=
 
@@ -117,7 +118,7 @@ BIRDEYE_API_KEY=
 
 SOL_ADDRESS=So11111111111111111111111111111111111111112
 SLIPPAGE=1
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=
 
 
