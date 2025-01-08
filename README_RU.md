@@ -6,39 +6,39 @@
 
 <div align="center">
 
-  📖 [Документация](https://ai16z.github.io/eliza/) | 🎯 [Примеры](https://github.com/thejoven/awesome-eliza)
+📖 [Документация](https://elizaos.github.io/eliza/) | 🎯 [Примеры](https://github.com/thejoven/awesome-eliza)
 
 </div>
 
 ## ✨ Особенности
 
--   🛠 Полноценные коннекторы для Discord, Twitter и Telegram
--   👥 Поддержка нескольких агентов и комнат
--   📚 Простое добавление и взаимодействие с вашими документами
--   💾 Запоминание контекта и хранилище документов
--   🚀 Высокая маштабируемость - создавайте свои собственные действия и клиенты для расширения возможностей
--   ☁️ Поддерживает множество моделей, включая локальные Llama, OpenAI, Anthropic, Groq и другие
--   📦 Простота в работе!
+- 🛠 Полноценные коннекторы для Discord, Twitter и Telegram
+- 👥 Поддержка нескольких агентов и комнат
+- 📚 Простое добавление и взаимодействие с вашими документами
+- 💾 Запоминание контекта и хранилище документов
+- 🚀 Высокая маштабируемость - создавайте свои собственные действия и клиенты для расширения возможностей
+- ☁️ Поддерживает множество моделей, включая локальные Llama, OpenAI, Anthropic, Groq и другие
+- 📦 Простота в работе!
 
 ## 🎯 Для чего это можно использовать?
 
--   🤖 Чат-боты
--   🕵️ Автономные агенты
--   📈 Обработка бизнес-процессов
--   🎮 NPC в видеоиграх
--   🧠 Торговля
+- 🤖 Чат-боты
+- 🕵️ Автономные агенты
+- 📈 Обработка бизнес-процессов
+- 🎮 NPC в видеоиграх
+- 🧠 Торговля
 
 ## 🌍 Переводы
 
 <details>
 <summary>Доступные языки</summary>
 
--   [中文说明](./README_CN.md)
--   [日本語の説明](./README_JA.md)
--   [한국어 설명](./README_KOR.md)
--   [Instructions en français](./README_FR.md)
--   [Instruções em português](./README_PTBR.md)
--   [Инструкция на русском](./README_RU.md)
+- [中文说明](./README_CN.md)
+- [日本語の説明](./README_JA.md)
+- [한국어 설명](./README_KOR.md)
+- [Instructions en français](./README_FR.md)
+- [Instruções em português](./README_PTBR.md)
+- [Инструкция на русском](./README_RU.md)
 
 </details><br>
 
@@ -46,14 +46,14 @@
 
 **Необходимые условия (ОБЯЗАТЕЛЬНО):**
 
--   [Python 2.7+](https://www.python.org/downloads/)
--   [Node.js 23.3+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
--   [pnpm](https://pnpm.io/installation)
+- [Python 2.7+](https://www.python.org/downloads/)
+- [Node.js 23.3+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+- [pnpm](https://pnpm.io/installation)
     > **Для Windows пользователей:** требуется WSL
 
 ### Редактирование файла .env
 
--   Скопируйте `.env.example` в `.env` и заполните соответствующими значениями
+- Скопируйте `.env.example` в `.env` и заполните соответствующими значениями
 
 ```bash
 cp .env.example .env
@@ -114,9 +114,7 @@ TWITTER_DRY_RUN=false
 TWITTER_USERNAME= # Имя пользователя аккаунта
 TWITTER_PASSWORD= # Пароль аккаунта
 TWITTER_EMAIL= # Email аккаунта
-TWITTER_COOKIES= # Cookies аккаунта
 
-X_SERVER_URL=
 XAI_API_KEY=
 XAI_MODEL=
 
@@ -139,7 +137,7 @@ BIRDEYE_API_KEY= # API-ключ для BirdEye
 
 SOL_ADDRESS=So11111111111111111111111111111111111111112
 SLIPPAGE=1
-RPC_URL=https://api.mainnet-beta.solana.com
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY= # API-ключ Helius
 
 
@@ -165,7 +163,7 @@ npx --no node-llama-cpp source download --gpu cuda
 
 ### Локальный запуск
 
-Добавьте `XAI_MODEL` и установите его в одно из вышеуказанных значений из [Запуск с Llama](#run-with-llama). Вы можете оставить `X_SERVER_URL` и `XAI_API_KEY` пустыми — модель будет загружена с huggingface и обработана локально.
+Добавьте `XAI_MODEL` и установите его в одно из вышеуказанных значений из [Запуск с Llama](#run-with-llama). Вы можете оставить `XAI_API_KEY` пустыми — модель будет загружена с huggingface и обработана локально.
 
 # Клиенты
 
@@ -175,15 +173,15 @@ npx --no node-llama-cpp source download --gpu cuda
 
 ### Сообщество и контакты
 
--   [GitHub Issues](https://github.com/ai16z/eliza/issues). Лучше всего подходит для: сообщений об ошибках при использовании Eliza и предложений новых функций.
--   [Discord](https://discord.gg/ai16z). Лучше всего подходит для: обмена своими приложениями и общения с сообществом.
+- [GitHub Issues](https://github.com/elizaos/eliza/issues). Лучше всего подходит для: сообщений об ошибках при использовании Eliza и предложений новых функций.
+- [Discord](https://discord.gg/ai16z). Лучше всего подходит для: обмена своими приложениями и общения с сообществом.
 
 ## Контрибьюторы
 
-<a href="https://github.com/ai16z/eliza/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ai16z/eliza" />
+<a href="https://github.com/elizaos/eliza/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=elizaos/eliza" />
 </a>
 
 ## История звёзд
 
-[![График истории звёзд](https://api.star-history.com/svg?repos=ai16z/eliza&type=Date)](https://star-history.com/#ai16z/eliza&Date)
+[![График истории звёзд](https://api.star-history.com/svg?repos=elizaos/eliza&type=Date)](https://star-history.com/#elizaos/eliza&Date)

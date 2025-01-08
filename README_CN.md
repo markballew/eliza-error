@@ -4,44 +4,95 @@
 
 ## 功能
 
--   🛠 支持discord/推特/telegram连接
--   👥 支持多模态agent
--   📚 简单的导入文档并与文档交互
--   💾 可检索的内存和文档存储
--   🚀 高可拓展性，你可以自定义客户端和行为来进行功能拓展
--   ☁️ 多模型支持，包括Llama、OpenAI、Grok、Anthropic等
--   📦 简单好用
+- 🛠 支持discord/推特/telegram连接
+- 👥 支持多模态agent
+- 📚 简单的导入文档并与文档交互
+- 💾 可检索的内存和文档存储
+- 🚀 高可拓展性，你可以自定义客户端和行为来进行功能拓展
+- ☁️ 多模型支持，包括Llama、OpenAI、Grok、Anthropic等
+- 📦 简单好用
 
 你可以用Eliza做什么？
 
--   🤖 聊天机器人
--   🕵️ 自主Agents
--   📈 业务流程自动化处理
--   🎮 游戏NPC
+- 🤖 聊天机器人
+- 🕵️ 自主Agents
+- 📈 业务流程自动化处理
+- 🎮 游戏NPC
 
 # 开始使用
 
-**前置要求（必须）:**
+**前置要求(必须):**
 
--   [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
--   Nodejs安装
--   [pnpm](https://pnpm.io/installation)
--   使用pnpm
+- [Python 2.7+](https://www.python.org/downloads/)
+- [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+- [pnpm](https://pnpm.io/installation)
 
-### 编辑.env文件
+以下是两种基础的Eliza下载方案, 请根据情况自行选择。
 
--   -   将 .env.example 复制为 .env 并填写适当的值
--   编辑推特环境并输入你的推特账号和密码
-
-### 编辑角色文件
-
--   查看文件 `src/core/defaultCharacter.ts` - 您可以修改它
--   您也可以使用 `node --loader ts-node/esm src/index.ts --characters="path/to/your/character.json"` 加载角色并同时运行多个机器人。
-
-在完成账号和角色文件的配置后，输入以下命令行启动你的bot：
+## (A) 使用启动器(Starter): 推荐
 
 ```
+git clone https://github.com/elizaos/eliza-starter.git
+cd eliza-starter
+cp .env.example .env
+```
+
+## (B) 手动启动Eliza: 仅在您知道自己在做什么时才推荐
+
+```
+git clone https://github.com/elizaos/eliza.git
+cd eliza
+# 切换最新发布的版本(Checkout the latest release)
+# Eliza的迭代速度非常快, 所以我们建议经常性的切换到最新的发布版本以免出现问题(This project iterates fast, so we recommend checking out the latest release)
+git checkout $(git describe --tags --abbrev=0)
+```
+
+在将代码下载到本地后, 我们要做两件事:
+
+### 1. 编辑.env文件(环境变量)
+
+- 将 `.env.example` 复制为 `.env` 并在其中填写适当的值
+- 编辑推特环境并输入你的推特账号和密码
+
+**最简化配置方案**:
+
+```
+OPENAI_API_KEY=sk-xxx # 配置OpenAI 的API, sk-开头, 注意, 目前不支持AzureOpenAI!
+
+## 如配置Twitter/X, 则需配置
+# Twitter/X Configuration
+TWITTER_DRY_RUN=false
+TWITTER_USERNAME=abc         # Your Twitter/X account username
+TWITTER_PASSWORD=abc         # Your Twitter/X account password
+TWITTER_EMAIL= xxx@gmail.com # Your Twitter/X account email
+TWITTER_COOKIES= ''          # Your Twitter/X cookies, copy from broswer
+TWITTER_2FA_SECRET=          # Two-factor authentication
+```
+
+### 2. 编辑角色文件
+
+- 标准的角色个性定义在文件 `characters/*.character.json`中, 您可以修改它或者直接使用它。
+- 您也可以使用 `node --loader ts-node/esm src/index.ts --characters="path/to/your/character.json"` 加载角色并同时运行多个机器人。
+- 需要说明的是, 在`characters/*.character.json`中, `clients字段对应**服务**, 默认可选`"twitter", "discord", "telegram"`等, 如果在`clients`中填入了如"twitter"等内容, 则需要在
+上面的`env`配置对应的环境变量。对`discord`和`telegram`同理。
+
+```
+{
+    "name": "trump",
+    "clients": ["twitter"],
+    "modelProvider": "openai",
+```
+
+在完成环境变量和角色文件的配置后，输入以下命令行启动你的bot：
+
+```
+(A) 使用启动器(Starter)
+sh scripts/start.sh
+
+
+(B) 手动启动Eliza
 pnpm i
+pnpm build
 pnpm start
 ```
 
@@ -53,13 +104,55 @@ pnpm start
 
 ## 配置不同的大模型
 
-### 配置Llama
+您可以使用不同的大模型来驱动您的AI Agent，切换不同大模型需要两步：
 
-您可以通过设置 `XAI_MODEL` 环境变量为 `meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo` 或 `meta-llama/Meta-Llama-3.1-405B-Instruct` 来运行 Llama 70B 或 405B 模型
+1. 确认您在`.env`文件内配置了对应的大模型API Key或对应的访问配置，例如如果您想使用OpenAI，则需要找到`OPENAI_API_KEY`参数，并填入您的OpenAI API Key，并以此类推。
+2. 在您的*Character*文件里找到`modelProvider`，并更改这里的内容，例如如果想要切换到Claude，则需要填入`anthropic`,以此来表明您将使用anthropic大模型作为您的对应Agent的Provider.
+
+在`.env`文件内您可以找到不同大模型的详细配置，包括设定具体想要使用对应提供商的哪个模型，下方我们给出了两个实例：
 
 ### 配置OpenAI
 
-您可以通过设置 `XAI_MODEL` 环境变量为 `gpt-4o-mini` 或 `gpt-4o` 来运行 OpenAI 模型
+首先您需要在Character文件内指定model provider
+
+```json
+    "name": "C-3PO",
+    "clients": [],
+    "modelProvider": "openai"
+    ...
+```
+
+其次请在`env`文件内配置相关参数
+
+```
+# AI Model API Keys
+OPENAI_API_KEY=                 # OpenAI API key, starting with sk-
+SMALL_OPENAI_MODEL=             # Default: gpt-4o-mini
+MEDIUM_OPENAI_MODEL=            # Default: gpt-4o
+LARGE_OPENAI_MODEL=             # Default: gpt-4o
+EMBEDDING_OPENAI_MODEL=         # Default: text-embedding-3-small
+IMAGE_OPENAI_MODEL=             # Default: dall-e-3
+
+```
+
+### 配置Anthorpic
+
+```json
+    "name": "C-3PO",
+    "clients": [],
+    "modelProvider": "anthropic"
+    ...
+```
+
+其次请在`env`文件内配置相关参数
+
+```
+# Anthropic Configuration
+ANTHROPIC_API_KEY=              # For Claude
+SMALL_ANTHROPIC_MODEL=          # Default: claude-3-haiku-20240307
+MEDIUM_ANTHROPIC_MODEL=         # Default: claude-3-5-sonnet-20241022
+LARGE_ANTHROPIC_MODEL=          # Default: claude-3-5-sonnet-20241022
+```
 
 ## 其他要求
 
@@ -94,9 +187,7 @@ TWITTER_DRY_RUN=false
 TWITTER_USERNAME= # Account username
 TWITTER_PASSWORD= # Account password
 TWITTER_EMAIL= # Account email
-TWITTER_COOKIES= # Account cookies
 
-X_SERVER_URL=
 XAI_API_KEY=
 XAI_MODEL=
 
@@ -119,7 +210,7 @@ BIRDEYE_API_KEY=
 
 SOL_ADDRESS=So11111111111111111111111111111111111111112
 SLIPPAGE=1
-RPC_URL=https://api.mainnet-beta.solana.com
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=
 
 
@@ -145,7 +236,7 @@ npx --no node-llama-cpp source download --gpu cuda
 ### 本地运行
 
 添加 XAI_MODEL 并将其设置为上述 [使用 Llama 运行](#run-with-llama) 中的选项之一
-您可以将 X_SERVER_URL 和 XAI_API_KEY 留空，它会从 huggingface 下载模型并在本地查询
+您可以将 XAI_API_KEY 留空，它会从 huggingface 下载模型并在本地查询
 
 # 客户端
 
@@ -171,9 +262,9 @@ pnpm test:sqljs    # Run tests with SQL.js
 
 测试使用 Jest 编写，位于 src/\*_/_.test.ts 文件中。测试环境配置如下：
 
--   从 .env.test 加载环境变量
--   使用 2 分钟的超时时间来运行长时间运行的测试
--   支持 ESM 模块
--   按顺序运行测试 (--runInBand)
+- 从 .env.test 加载环境变量
+- 使用 2 分钟的超时时间来运行长时间运行的测试
+- 支持 ESM 模块
+- 按顺序运行测试 (--runInBand)
 
 要创建新测试，请在要测试的代码旁边添加一个 .test.ts 文件。
