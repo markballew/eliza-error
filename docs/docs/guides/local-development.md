@@ -8,53 +8,29 @@ This guide covers setting up and working with Eliza in a development environment
 
 ## Prerequisites
 
-You can develop either in a **dev container** or directly on your **host machine**.
-
-### Requirements:
+Before you begin, ensure you have:
 
 ```bash
 # Required
-Node.js (v23+; not required if using the dev container)
-pnpm (not required if using the dev container)
+Node.js 23+
+pnpm
 Git
 
-VS Code (mandatory for using the dev container or coding)
-Docker (mandatory for using the dev container or database development)
-CUDA Toolkit (optional, for GPU acceleration)
+# Optional but recommended
+VS Code
+Docker (for database development)
+CUDA Toolkit (for GPU acceleration)
 ```
 
 ## Initial Setup
 
 ### 1. Repository Setup
 
-Clone the repository and navigate to the project directory:
-
 ```bash
 # Clone the repository
 git clone https://github.com/elizaos/eliza.git
 cd eliza
-```
 
-### 2. (Optional) Run Inside a Dev Container
-
-1. Open the project directory in **VS Code**:
-   ```bash
-   code .
-   ```
-
-2. In the bottom-right corner, you'll see a popup:
-   **"Reopen in Container"** – Click it.
-
-   - If you don't see the popup or miss it, press `F1`, type:
-     **"Reopen in Container"**, and select it.
-
-3. Wait for the container to initialize.
-
-4. Open a terminal (hotkey: `Ctrl+Shift+\``) and run commands from the **container terminal** going forward.
-
-### 3. Setup dependencies
-
-```bash
 # Install dependencies
 pnpm install
 
@@ -62,7 +38,7 @@ pnpm install
 pnpm install --include=optional sharp
 ```
 
-### 4. Environment Configuration
+### 2. Environment Configuration
 
 Create your development environment file:
 
@@ -75,9 +51,12 @@ Configure essential development variables:
 ```bash
 # Minimum required for local development
 OPENAI_API_KEY=sk-*           # Optional, for OpenAI features
+X_SERVER_URL=                 # Leave blank for local inference
+XAI_API_KEY=                 # Leave blank for local inference
+XAI_MODEL=meta-llama/Llama-3.1-7b-instruct  # Local model
 ```
 
-### 5. Local Model Setup
+### 3. Local Model Setup
 
 For local inference without API dependencies:
 
@@ -127,15 +106,9 @@ pnpm run dev --characters="characters/my-character.json"
 pnpm start:client
 ```
 
-NOTE: If you are using devcontainer, add --host argument to client:
-```
-pnpm start:client --host
-```
-
 Look for the message:
 `  ➜  Local:   http://localhost:5173/`
 Click on that link or open a browser window to that location. Once you do that you should see the chat interface connect with the system and you can start interacting with your character.
-
 
 ## Database Development
 
@@ -473,5 +446,5 @@ npx knowledge2character <character-file> <knowledge-file>
 
 - [Configuration Guide](./configuration.md) for setup details
 - [Advanced Usage](./advanced.md) for complex features
-- [API Documentation](../../api/index.md) for complete API reference
+- [API Documentation](/api) for complete API reference
 - [Contributing Guide](../contributing.md) for contribution guidelines
