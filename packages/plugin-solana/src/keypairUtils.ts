@@ -1,7 +1,7 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { DeriveKeyProvider, TEEMode } from "@elizaos/plugin-tee";
 import bs58 from "bs58";
-import { IAgentRuntime, elizaLogger } from "@elizaos/core";
+import { IAgentRuntime } from "@elizaos/core";
 
 export interface KeypairResult {
     keypair?: Keypair;
@@ -55,16 +55,16 @@ export async function getWalletKey(
             const secretKey = bs58.decode(privateKeyString);
             return { keypair: Keypair.fromSecretKey(secretKey) };
         } catch (e) {
-            elizaLogger.log("Error decoding base58 private key:", e);
+            console.log("Error decoding base58 private key:", e);
             try {
                 // Then try base64
-                elizaLogger.log("Try decoding base64 instead");
+                console.log("Try decoding base64 instead");
                 const secretKey = Uint8Array.from(
                     Buffer.from(privateKeyString, "base64")
                 );
                 return { keypair: Keypair.fromSecretKey(secretKey) };
             } catch (e2) {
-                elizaLogger.error("Error decoding private key: ", e2);
+                console.error("Error decoding private key: ", e2);
                 throw new Error("Invalid private key format");
             }
         }
