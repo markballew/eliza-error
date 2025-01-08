@@ -256,17 +256,14 @@ export class MessageManager {
                           )
                         : undefined,
                     attachments: event.text
-                        ? [
-                              {
-                                  id: stringToUuid(`${event.ts}-attachment`),
-                                  url: "", // Since this is text content, no URL is needed
-                                  title: "Text Attachment",
-                                  source: "slack",
-                                  description:
-                                      "Text content from Slack message",
-                                  text: cleanedText,
-                              },
-                          ]
+                        ? [{
+                            id: stringToUuid(`${event.ts}-attachment`),
+                            url: '',  // Since this is text content, no URL is needed
+                            title: 'Text Attachment',
+                            source: 'slack',
+                            description: 'Text content from Slack message',
+                            text: cleanedText
+                        }]
                         : undefined,
                 };
 
