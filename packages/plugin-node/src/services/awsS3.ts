@@ -3,7 +3,6 @@ import {
     IAwsS3Service,
     Service,
     ServiceType,
-    elizaLogger,
 } from "@elizaos/core";
 import {
     GetObjectCommand,
@@ -33,7 +32,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
     private runtime: IAgentRuntime | null = null;
 
     async initialize(runtime: IAgentRuntime): Promise<void> {
-        elizaLogger.log("Initializing AwsS3Service");
+        console.log("Initializing AwsS3Service");
         this.runtime = runtime;
         this.fileUploadPath = runtime.getSetting("AWS_S3_UPLOAD_PATH") ?? "";
     }
