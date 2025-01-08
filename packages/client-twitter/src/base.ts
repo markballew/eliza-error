@@ -318,7 +318,7 @@ export class ClientBase extends EventEmitter {
         return processedTimeline;
     }
 
-    async fetchTimelineForActions(count: number): Promise<Tweet[]> {
+    async fetchTimelineForActions(): Promise<Tweet[]> {
         elizaLogger.debug("fetching timeline for actions");
 
         const agentUsername = this.twitterConfig.TWITTER_USERNAME;
@@ -326,8 +326,8 @@ export class ClientBase extends EventEmitter {
         const homeTimeline =
             this.twitterConfig.ACTION_TIMELINE_TYPE ===
             ActionTimelineType.Following
-                ? await this.twitterClient.fetchFollowingTimeline(count, [])
-                : await this.twitterClient.fetchHomeTimeline(count, []);
+                ? await this.twitterClient.fetchFollowingTimeline(20, [])
+                : await this.twitterClient.fetchHomeTimeline(20, []);
 
         return homeTimeline
             .map((tweet) => ({
@@ -357,11 +357,7 @@ export class ClientBase extends EventEmitter {
                         (media) => media.type === "video"
                     ) || [],
             }))
-            .filter((tweet) => tweet.username !== agentUsername) // do not perform action on self-tweets
-            .slice(0, count);
-        // TODO: Once the 'count' parameter is fixed in the 'fetchTimeline' method of the 'agent-twitter-client',
-        // this workaround can be removed.
-        // Related issue: https://github.com/elizaOS/agent-twitter-client/issues/43
+            .filter((tweet) => tweet.username !== agentUsername); // do not perform action on self-tweets
     }
 
     async fetchSearchTweets(

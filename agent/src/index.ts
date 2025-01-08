@@ -1,7 +1,6 @@
 import { PostgresDatabaseAdapter } from "@elizaos/adapter-postgres";
 import { RedisClient } from "@elizaos/adapter-redis";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
-import { PGLiteDatabaseAdapter } from "@elizaos/adapter-pglite";
 import { AutoClientInterface } from "@elizaos/client-auto";
 import { DiscordClientInterface } from "@elizaos/client-discord";
 import { FarcasterAgentClient } from "@elizaos/client-farcaster";
@@ -9,9 +8,7 @@ import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
-//import { ReclaimAdapter } from "@elizaos/plugin-reclaim";
-import { PrimusAdapter } from "@elizaos/plugin-primus";
-
+// import { ReclaimAdapter } from "@elizaos/plugin-reclaim";
 import {
     AgentRuntime,
     CacheManager,
@@ -40,7 +37,6 @@ import { DirectClient } from "@elizaos/client-direct";
 import { ThreeDGenerationPlugin } from "@elizaos/plugin-3d-generation";
 import { abstractPlugin } from "@elizaos/plugin-abstract";
 import { aptosPlugin } from "@elizaos/plugin-aptos";
-import { alloraPlugin } from "@elizaos/plugin-allora";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
 import { binancePlugin } from "@elizaos/plugin-binance";
 import {
@@ -51,12 +47,10 @@ import {
     tradePlugin,
     webhookPlugin,
 } from "@elizaos/plugin-coinbase";
-import { coinPricePlugin } from "@elizaos/plugin-coinprice";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
 import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
 import { evmPlugin } from "@elizaos/plugin-evm";
-import { createCosmosPlugin } from "@elizaos/plugin-cosmos";
 import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
 import { genLayerPlugin } from "@elizaos/plugin-genlayer";
@@ -66,27 +60,24 @@ import { nearPlugin } from "@elizaos/plugin-near";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
 import { createNodePlugin } from "@elizaos/plugin-node";
 import { solanaPlugin } from "@elizaos/plugin-solana";
-import { solanaAgentkitPlguin } from "@elizaos/plugin-solana-agentkit";
 import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
 import { TEEMode, teePlugin } from "@elizaos/plugin-tee";
 import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
-import { echoChamberPlugin } from "@elizaos/plugin-echochambers";
-import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
+
 import { availPlugin } from "@elizaos/plugin-avail";
 import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
-import { artheraPlugin } from "@elizaos/plugin-arthera";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
-import { obsidianPlugin } from "@elizaos/plugin-obsidian";
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
+import { OpacityAdapter } from "@elizaos/plugin-opacity";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -398,13 +389,6 @@ function initializeDatabase(dataDir: string) {
             });
 
         return db;
-    } else if (process.env.PGLITE_DATA_DIR) {
-        elizaLogger.info("Initializing PgLite adapter...");
-        // `dataDir: memory://` for in memory pg
-        const db = new PGLiteDatabaseAdapter({
-            dataDir: process.env.PGLITE_DATA_DIR,
-        });
-        return db;
     } else {
         const filePath =
             process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
@@ -518,7 +502,11 @@ export async function createAgent(
     cache: ICacheManager,
     token: string
 ): Promise<AgentRuntime> {
-    elizaLogger.log(`Creating runtime for character ${character.name}`);
+    elizaLogger.success(
+        elizaLogger.successesTitle,
+        "Creating runtime for character",
+        character.name
+    );
 
     nodePlugin ??= createNodePlugin();
 
@@ -556,18 +544,27 @@ export async function createAgent(
     //     });
     //     elizaLogger.log("Verifiable inference adapter initialized");
     // }
+    // Initialize Opacity adapter if environment variables are present
     let verifiableInferenceAdapter;
     if (
-        process.env.PRIMUS_APP_ID &&
-        process.env.PRIMUS_APP_SECRET &&
-        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"){
-            verifiableInferenceAdapter = new PrimusAdapter({
-                appId: process.env.PRIMUS_APP_ID,
-                appSecret: process.env.PRIMUS_APP_SECRET,
-                modelProvider: character.modelProvider,
-                token,
-            });
-            elizaLogger.log("Verifiable inference primus adapter initialized");
+        process.env.OPACITY_TEAM_ID &&
+        process.env.OPACITY_CLOUDFLARE_NAME &&
+        process.env.OPACITY_PROVER_URL &&
+        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
+    ) {
+        verifiableInferenceAdapter = new OpacityAdapter({
+            teamId: process.env.OPACITY_TEAM_ID,
+            teamName: process.env.OPACITY_CLOUDFLARE_NAME,
+            opacityProverUrl: process.env.OPACITY_PROVER_URL,
+            modelProvider: character.modelProvider,
+            token: token,
+        });
+        elizaLogger.log("Verifiable inference adapter initialized");
+        elizaLogger.log("teamId", process.env.OPACITY_TEAM_ID);
+        elizaLogger.log("teamName", process.env.OPACITY_CLOUDFLARE_NAME);
+        elizaLogger.log("opacityProverUrl", process.env.OPACITY_PROVER_URL);
+        elizaLogger.log("modelProvider", character.modelProvider);
+        elizaLogger.log("token", token);
     }
 
     return new AgentRuntime({
@@ -583,15 +580,11 @@ export async function createAgent(
                 ? confluxPlugin
                 : null,
             nodePlugin,
-            coinPricePlugin,
             getSecret(character, "TAVILY_API_KEY") ? webSearchPlugin : null,
             getSecret(character, "SOLANA_PUBLIC_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
                 !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? solanaPlugin
-                : null,
-            getSecret(character, "SOLANA_PRIVATE_KEY")
-                ? solanaAgentkitPlguin
                 : null,
             (getSecret(character, "NEAR_ADDRESS") ||
                 getSecret(character, "NEAR_WALLET_PUBLIC_KEY")) &&
@@ -603,9 +596,6 @@ export async function createAgent(
                 getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
                 : null,
-            getSecret(character, "COSMOS_RECOVERY_PHRASE") &&
-                getSecret(character, "COSMOS_AVAILABLE_CHAINS") &&
-                createCosmosPlugin(),
             (getSecret(character, "SOLANA_PUBLIC_KEY") ||
                 (getSecret(character, "WALLET_PUBLIC_KEY") &&
                     !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith(
@@ -663,7 +653,6 @@ export async function createAgent(
                 : null,
             getSecret(character, "TEE_MARLIN") ? teeMarlinPlugin : null,
             getSecret(character, "TON_PRIVATE_KEY") ? tonPlugin : null,
-            getSecret(character, "THIRDWEB_SECRET_KEY") ? thirdwebPlugin : null,
             getSecret(character, "SUI_PRIVATE_KEY") ? suiPlugin : null,
             getSecret(character, "STORY_PRIVATE_KEY") ? storyPlugin : null,
             getSecret(character, "FUEL_PRIVATE_KEY") ? fuelPlugin : null,
@@ -678,18 +667,11 @@ export async function createAgent(
             getSecret(character, "GENLAYER_PRIVATE_KEY")
                 ? genLayerPlugin
                 : null,
-            getSecret(character, "AVAIL_SEED") &&
-            getSecret(character, "AVAIL_APP_ID")
-                ? availPlugin
-                : null,
+            getSecret(character, "AVAIL_SEED") ? availPlugin : null,
+            getSecret(character, "AVAIL_APP_ID") ? availPlugin : null,
             getSecret(character, "OPEN_WEATHER_API_KEY")
                 ? openWeatherPlugin
                 : null,
-            getSecret(character, "OBSIDIAN_API_TOKEN") ? obsidianPlugin : null,
-            getSecret(character, "ARTHERA_PRIVATE_KEY")?.startsWith("0x")
-                ? artheraPlugin
-                : null,
-            getSecret(character, "ALLORA_API_KEY") ? alloraPlugin : null,
         ].filter(Boolean),
         providers: [],
         actions: [],

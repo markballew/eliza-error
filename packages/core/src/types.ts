@@ -678,8 +678,6 @@ export interface ModelConfiguration {
     experimental_telemetry?: TelemetrySettings;
 }
 
-export type TemplateType = string | ((options: { state: State }) => string);
-
 /**
  * Configuration for an agent character
  */
@@ -710,30 +708,30 @@ export type Character = {
 
     /** Optional prompt templates */
     templates?: {
-        goalsTemplate?: TemplateType;
-        factsTemplate?: TemplateType;
-        messageHandlerTemplate?: TemplateType;
-        shouldRespondTemplate?: TemplateType;
-        continueMessageHandlerTemplate?: TemplateType;
-        evaluationTemplate?: TemplateType;
-        twitterSearchTemplate?: TemplateType;
-        twitterActionTemplate?: TemplateType;
-        twitterPostTemplate?: TemplateType;
-        twitterMessageHandlerTemplate?: TemplateType;
-        twitterShouldRespondTemplate?: TemplateType;
-        farcasterPostTemplate?: TemplateType;
-        lensPostTemplate?: TemplateType;
-        farcasterMessageHandlerTemplate?: TemplateType;
-        lensMessageHandlerTemplate?: TemplateType;
-        farcasterShouldRespondTemplate?: TemplateType;
-        lensShouldRespondTemplate?: TemplateType;
-        telegramMessageHandlerTemplate?: TemplateType;
-        telegramShouldRespondTemplate?: TemplateType;
-        discordVoiceHandlerTemplate?: TemplateType;
-        discordShouldRespondTemplate?: TemplateType;
-        discordMessageHandlerTemplate?: TemplateType;
-        slackMessageHandlerTemplate?: TemplateType;
-        slackShouldRespondTemplate?: TemplateType;
+        goalsTemplate?: string;
+        factsTemplate?: string;
+        messageHandlerTemplate?: string;
+        shouldRespondTemplate?: string;
+        continueMessageHandlerTemplate?: string;
+        evaluationTemplate?: string;
+        twitterSearchTemplate?: string;
+        twitterActionTemplate?: string;
+        twitterPostTemplate?: string;
+        twitterMessageHandlerTemplate?: string;
+        twitterShouldRespondTemplate?: string;
+        farcasterPostTemplate?: string;
+        lensPostTemplate?: string;
+        farcasterMessageHandlerTemplate?: string;
+        lensMessageHandlerTemplate?: string;
+        farcasterShouldRespondTemplate?: string;
+        lensShouldRespondTemplate?: string;
+        telegramMessageHandlerTemplate?: string;
+        telegramShouldRespondTemplate?: string;
+        discordVoiceHandlerTemplate?: string;
+        discordShouldRespondTemplate?: string;
+        discordMessageHandlerTemplate?: string;
+        slackMessageHandlerTemplate?: string;
+        slackShouldRespondTemplate?: string;
     };
 
     /** Character biography */
@@ -1340,8 +1338,7 @@ export interface ISlackService extends Service {
  * Available verifiable inference providers
  */
 export enum VerifiableInferenceProvider {
-    RECLAIM = "reclaim",
-    PRIMUS = "primus",
+    OPACITY = "opacity",
 }
 
 /**
@@ -1362,8 +1359,10 @@ export interface VerifiableInferenceOptions {
 export interface VerifiableInferenceResult {
     /** Generated text */
     text: string;
-    /** Proof data */
-    proof: unknown;
+    /** Proof */
+    proof: any;
+    /** Proof id */
+    id?: string;
     /** Provider information */
     provider: VerifiableInferenceProvider;
     /** Timestamp */
@@ -1374,6 +1373,7 @@ export interface VerifiableInferenceResult {
  * Interface for verifiable inference adapters
  */
 export interface IVerifiableInferenceAdapter {
+    options: any;
     /**
      * Generate text with verifiable proof
      * @param context The input text/prompt
