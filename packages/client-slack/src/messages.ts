@@ -10,13 +10,13 @@ import {
     State,
     elizaLogger,
     HandlerCallback,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import {
     slackMessageHandlerTemplate,
     slackShouldRespondTemplate,
 } from "./templates";
 import { WebClient } from "@slack/web-api";
-import { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@ai16z/eliza";
 
 export class MessageManager {
     private client: WebClient;
@@ -254,16 +254,6 @@ export class MessageManager {
                         ? stringToUuid(
                               `${event.thread_ts}-${this.runtime.agentId}`
                           )
-                        : undefined,
-                    attachments: event.text
-                        ? [{
-                            id: stringToUuid(`${event.ts}-attachment`),
-                            url: '',  // Since this is text content, no URL is needed
-                            title: 'Text Attachment',
-                            source: 'slack',
-                            description: 'Text content from Slack message',
-                            text: cleanedText
-                        }]
                         : undefined,
                 };
 

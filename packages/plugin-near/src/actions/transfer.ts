@@ -6,11 +6,10 @@ import {
     Memory,
     ModelClass,
     State,
-    elizaLogger,
     type Action,
     composeContext,
     generateObject,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { connect, keyStores, utils } from "near-api-js";
 import { KeyPairString } from "near-api-js/lib/utils";
 import { utils as nearUtils } from "near-api-js";
@@ -133,7 +132,7 @@ export const executeTransfer: Action = {
 
         // Validate transfer content
         if (!isTransferContent(runtime, content)) {
-            elizaLogger.error("Invalid content for TRANSFER_NEAR action.");
+            console.error("Invalid content for TRANSFER_NEAR action.");
             if (callback) {
                 callback({
                     text: "Unable to process transfer request. Invalid content provided.",
@@ -164,7 +163,7 @@ export const executeTransfer: Action = {
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during NEAR transfer:", error);
+            console.error("Error during NEAR transfer:", error);
             if (callback) {
                 callback({
                     text: `Error transferring NEAR: ${error}`,
