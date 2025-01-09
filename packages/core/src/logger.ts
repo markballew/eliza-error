@@ -265,6 +265,7 @@ class ElizaLogger {
 }
 
 export const elizaLogger = new ElizaLogger();
+elizaLogger.clear();
 elizaLogger.closeByNewLine = true;
 elizaLogger.useIcons = true;
 

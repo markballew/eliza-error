@@ -3,7 +3,7 @@ import { Models, ModelProviderName, ModelClass } from "./types.ts";
 
 export const models: Models = {
     [ModelProviderName.OPENAI]: {
-        endpoint: settings.OPENAI_API_URL || "https://api.openai.com/v1",
+        endpoint: "https://api.openai.com/v1",
         settings: {
             stop: [],
             maxInputTokens: 128000,
@@ -395,7 +395,7 @@ export const models: Models = {
         },
     },
     [ModelProviderName.VOLENGINE]: {
-        endpoint: settings.VOLENGINE_API_URL || "https://open.volcengineapi.com/api/v3/",
+        endpoint: "https://open.volcengineapi.com/api/v3/",
         settings: {
             stop: [],
             maxInputTokens: 128000,
@@ -405,21 +405,10 @@ export const models: Models = {
             temperature: 0.6,
         },
         model: {
-            [ModelClass.SMALL]:
-                settings.SMALL_VOLENGINE_MODEL ||
-                settings.VOLENGINE_MODEL ||
-                "doubao-lite-128k",
-            [ModelClass.MEDIUM]:
-                settings.MEDIUM_VOLENGINE_MODEL ||
-                settings.VOLENGINE_MODEL ||
-                "doubao-pro-128k",
-            [ModelClass.LARGE]:
-                settings.LARGE_VOLENGINE_MODEL ||
-                settings.VOLENGINE_MODEL ||
-                "doubao-pro-256k",
-            [ModelClass.EMBEDDING]:
-                settings.VOLENGINE_EMBEDDING_MODEL ||
-                "doubao-embedding",
+            [ModelClass.SMALL]: "doubao-lite-128k",
+            [ModelClass.MEDIUM]: "doubao-pro-128k",
+            [ModelClass.LARGE]: "doubao-pro-128k",
+            [ModelClass.EMBEDDING]: "doubao-embedding",
         },
     },
     [ModelProviderName.NANOGPT]: {
@@ -495,39 +484,6 @@ export const models: Models = {
             [ModelClass.LARGE]:
                 settings.LARGE_AKASH_CHAT_API_MODEL ||
                 "Meta-Llama-3-1-405B-Instruct-FP8",
-        },
-    },
-    [ModelProviderName.LIVEPEER]: {
-        settings: {
-            stop: [],
-            maxInputTokens: 128000,
-            maxOutputTokens: 8192,
-            repetition_penalty: 0.4,
-            temperature: 0.7,
-        },
-        // livepeer endpoint is handled from the sdk
-        model: {
-            [ModelClass.SMALL]: "",
-            [ModelClass.MEDIUM]: "",
-            [ModelClass.LARGE]: "",
-            [ModelClass.EMBEDDING]: "",
-            [ModelClass.IMAGE]: settings.LIVEPEER_IMAGE_MODEL || "ByteDance/SDXL-Lightning",
-        },
-    },
-    [ModelProviderName.DEEPSEEK]: {
-        endpoint: settings.DEEPSEEK_API_URL || "https://api.deepseek.com",
-        settings: {
-            stop: [],
-            maxInputTokens: 128000,
-            maxOutputTokens: 8192,
-            frequency_penalty: 0.0,
-            presence_penalty: 0.0,
-            temperature: 0.7,
-        },
-        model: {
-            [ModelClass.SMALL]: settings.SMALL_DEEPSEEK_MODEL || "deepseek-chat",
-            [ModelClass.MEDIUM]: settings.MEDIUM_DEEPSEEK_MODEL || "deepseek-chat",
-            [ModelClass.LARGE]: settings.LARGE_DEEPSEEK_MODEL || "deepseek-chat",
         },
     },
 };
