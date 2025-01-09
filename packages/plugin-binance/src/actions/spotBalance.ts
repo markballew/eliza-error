@@ -47,7 +47,7 @@ export const spotBalance: Action = {
         try {
             await validateBinanceConfig(runtime);
             return true;
-        } catch {
+        } catch (error) {
             return false;
         }
     },

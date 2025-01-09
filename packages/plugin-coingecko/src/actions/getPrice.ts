@@ -3,7 +3,7 @@ import {
     composeContext,
     Content,
     elizaLogger,
-    generateObject,
+    generateObjectDeprecated,
     HandlerCallback,
     IAgentRuntime,
     Memory,
@@ -12,65 +12,28 @@ import {
     type Action,
 } from "@elizaos/core";
 import axios from "axios";
-import { z } from "zod";
-import { getApiConfig, validateCoingeckoConfig } from "../environment";
-import { getCoinsData } from "../providers/coinsProvider";
+import { validateCoingeckoConfig } from "../environment";
 import { getPriceTemplate } from "../templates/price";
+import { normalizeCoinId } from "../utils/coin";
 
-interface CurrencyData {
-    [key: string]: number;
-    usd?: number;
-    eur?: number;
-    usd_market_cap?: number;
-    eur_market_cap?: number;
-    usd_24h_vol?: number;
-    eur_24h_vol?: number;
-    usd_24h_change?: number;
-    eur_24h_change?: number;
-    last_updated_at?: number;
-}
-
-interface PriceResponse {
-    [coinId: string]: CurrencyData;
-}
-
-export const GetPriceSchema = z.object({
-    coinIds: z.union([z.string(), z.array(z.string())]),
-    currency: z.union([z.string(), z.array(z.string())]).default(["usd"]),
-    include_market_cap: z.boolean().default(false),
-    include_24hr_vol: z.boolean().default(false),
-    include_24hr_change: z.boolean().default(false),
-    include_last_updated_at: z.boolean().default(false)
-});
-
-export type GetPriceContent = z.infer<typeof GetPriceSchema> & Content;
-
-export const isGetPriceContent = (obj: any): obj is GetPriceContent => {
-    return GetPriceSchema.safeParse(obj).success;
-};
-
-function formatCoinIds(input: string | string[]): string {
-    if (Array.isArray(input)) {
-        return input.join(',');
-    }
-    return input;
+export interface GetPriceContent extends Content {
+    coinId: string;
+    currency: string;
 }
 
 export default {
     name: "GET_PRICE",
     similes: [
-        "COIN_PRICE_CHECK",
-        "SPECIFIC_COINS_PRICE",
-        "COIN_PRICE_LOOKUP",
-        "SELECTED_COINS_PRICE",
-        "PRICE_DETAILS",
-        "COIN_PRICE_DATA"
+        "CHECK_PRICE",
+        "PRICE_CHECK",
+        "GET_CRYPTO_PRICE",
+        "CHECK_CRYPTO_PRICE",
     ],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoingeckoConfig(runtime);
         return true;
     },
-    description: "Get price and basic market data for one or more specific cryptocurrencies (by name/symbol)",
+    description: "Get the current price of a cryptocurrency from CoinGecko",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -80,6 +43,7 @@ export default {
     ): Promise<boolean> => {
         elizaLogger.log("Starting CoinGecko GET_PRICE handler...");
 
+        // Initialize or update state
         if (!state) {
             state = (await runtime.composeState(message)) as State;
         } else {
@@ -87,194 +51,78 @@ export default {
         }
 
         try {
+            // Compose price check context
             elizaLogger.log("Composing price context...");
             const priceContext = composeContext({
                 state,
                 template: getPriceTemplate,
             });
 
-            elizaLogger.log("Generating content from template...");
-            const result = await generateObject({
+            elizaLogger.log("Composing content...");
+            const content = (await generateObjectDeprecated({
                 runtime,
                 context: priceContext,
                 modelClass: ModelClass.LARGE,
-                schema: GetPriceSchema
-            });
+            })) as unknown as GetPriceContent;
 
-            if (!isGetPriceContent(result.object)) {
-                elizaLogger.error("Invalid price request format");
-                return false;
+            // Validate content structure first
+            if (!content || typeof content !== "object") {
+                throw new Error("Invalid response format from model");
             }
 
-            const content = result.object;
-            elizaLogger.log("Generated content:", content);
+            // Get and validate coin ID
+            const coinId = content.coinId
+                ? normalizeCoinId(content.coinId)
+                : null;
+            if (!coinId) {
+                throw new Error(
+                    `Unsupported or invalid cryptocurrency: ${content.coinId}`
+                );
+            }
 
-            // Format currencies for API request
-            const currencies = Array.isArray(content.currency) ? content.currency : [content.currency];
-            const vs_currencies = currencies.join(',').toLowerCase();
-
-            // Format coin IDs for API request
-            const coinIds = formatCoinIds(content.coinIds);
-
-            elizaLogger.log("Formatted request parameters:", { coinIds, vs_currencies });
+            // Normalize currency
+            const currency = (content.currency || "usd").toLowerCase();
 
             // Fetch price from CoinGecko
             const config = await validateCoingeckoConfig(runtime);
-            const { baseUrl, apiKey } = getApiConfig(config);
+            elizaLogger.log(`Fetching price for ${coinId} in ${currency}...`);
 
-            elizaLogger.log(`Fetching prices for ${coinIds} in ${vs_currencies}...`);
-            elizaLogger.log("API request URL:", `${baseUrl}/simple/price`);
-            elizaLogger.log("API request params:", {
-                ids: coinIds,
-                vs_currencies,
-                include_market_cap: content.include_market_cap,
-                include_24hr_vol: content.include_24hr_vol,
-                include_24hr_change: content.include_24hr_change,
-                include_last_updated_at: content.include_last_updated_at
-            });
-
-            const response = await axios.get<PriceResponse>(
-                `${baseUrl}/simple/price`,
+            const response = await axios.get(
+                `https://api.coingecko.com/api/v3/simple/price`,
                 {
                     params: {
-                        ids: coinIds,
-                        vs_currencies,
-                        include_market_cap: content.include_market_cap,
-                        include_24hr_vol: content.include_24hr_vol,
-                        include_24hr_change: content.include_24hr_change,
-                        include_last_updated_at: content.include_last_updated_at
+                        ids: coinId,
+                        vs_currencies: currency,
+                        x_cg_demo_api_key: config.COINGECKO_API_KEY,
                     },
-                    headers: {
-                        'accept': 'application/json',
-                        'x-cg-pro-api-key': apiKey
-                    }
                 }
             );
 
-            if (Object.keys(response.data).length === 0) {
-                throw new Error("No price data available for the specified coins and currency");
+            if (!response.data[coinId]?.[currency]) {
+                throw new Error(
+                    `No price data available for ${coinId} in ${currency}`
+                );
             }
 
-            // Get coins data for formatting
-            const coins = await getCoinsData(runtime);
-
-            // Format response text for each coin
-            const formattedResponse = Object.entries(response.data).map(([coinId, data]) => {
-                const coin = coins.find(c => c.id === coinId);
-                const coinName = coin ? `${coin.name} (${coin.symbol.toUpperCase()})` : coinId;
-                const parts = [coinName + ':'];
-
-                // Add price for each requested currency
-                currencies.forEach(currency => {
-                    const upperCurrency = currency.toUpperCase();
-                    if (data[currency]) {
-                        parts.push(`  ${upperCurrency}: ${data[currency].toLocaleString(undefined, {
-                            style: 'currency',
-                            currency: currency
-                        })}`);
-                    }
-
-                    // Add market cap if requested and available
-                    if (content.include_market_cap) {
-                        const marketCap = data[`${currency}_market_cap`];
-                        if (marketCap !== undefined) {
-                            parts.push(`  Market Cap (${upperCurrency}): ${marketCap.toLocaleString(undefined, {
-                                style: 'currency',
-                                currency: currency,
-                                maximumFractionDigits: 0
-                            })}`);
-                        }
-                    }
-
-                    // Add 24h volume if requested and available
-                    if (content.include_24hr_vol) {
-                        const volume = data[`${currency}_24h_vol`];
-                        if (volume !== undefined) {
-                            parts.push(`  24h Volume (${upperCurrency}): ${volume.toLocaleString(undefined, {
-                                style: 'currency',
-                                currency: currency,
-                                maximumFractionDigits: 0
-                            })}`);
-                        }
-                    }
-
-                    // Add 24h change if requested and available
-                    if (content.include_24hr_change) {
-                        const change = data[`${currency}_24h_change`];
-                        if (change !== undefined) {
-                            const changePrefix = change >= 0 ? '+' : '';
-                            parts.push(`  24h Change (${upperCurrency}): ${changePrefix}${change.toFixed(2)}%`);
-                        }
-                    }
-                });
-
-                // Add last updated if requested
-                if (content.include_last_updated_at && data.last_updated_at) {
-                    const lastUpdated = new Date(data.last_updated_at * 1000).toLocaleString();
-                    parts.push(`  Last Updated: ${lastUpdated}`);
-                }
-
-                return parts.join('\n');
-            }).filter(Boolean);
-
-            if (formattedResponse.length === 0) {
-                throw new Error("Failed to format price data for the specified coins");
-            }
-
-            const responseText = formattedResponse.join('\n\n');
-            elizaLogger.success("Price data retrieved successfully!");
+            const price = response.data[coinId][currency];
+            elizaLogger.success(
+                `Price retrieved successfully! ${coinId}: ${price} ${currency.toUpperCase()}`
+            );
 
             if (callback) {
                 callback({
-                    text: responseText,
-                    content: {
-                        prices: Object.entries(response.data).reduce((acc, [coinId, data]) => ({
-                            ...acc,
-                            [coinId]: currencies.reduce((currencyAcc, currency) => ({
-                                ...currencyAcc,
-                                [currency]: {
-                                    price: data[currency],
-                                    marketCap: data[`${currency}_market_cap`],
-                                    volume24h: data[`${currency}_24h_vol`],
-                                    change24h: data[`${currency}_24h_change`],
-                                    lastUpdated: data.last_updated_at,
-                                }
-                            }), {})
-                        }), {}),
-                        params: {
-                            currencies: currencies.map(c => c.toUpperCase()),
-                            include_market_cap: content.include_market_cap,
-                            include_24hr_vol: content.include_24hr_vol,
-                            include_24hr_change: content.include_24hr_change,
-                            include_last_updated_at: content.include_last_updated_at
-                        }
-                    }
+                    text: `The current price of ${coinId} is ${price} ${currency.toUpperCase()}`,
+                    content: { price, currency },
                 });
             }
 
             return true;
         } catch (error) {
             elizaLogger.error("Error in GET_PRICE handler:", error);
-
-            let errorMessage;
-            if (error.response?.status === 429) {
-                errorMessage = "Rate limit exceeded. Please try again later.";
-            } else if (error.response?.status === 403) {
-                errorMessage = "This endpoint requires a CoinGecko Pro API key. Please upgrade your plan to access this data.";
-            } else if (error.response?.status === 400) {
-                errorMessage = "Invalid request parameters. Please check your input.";
-            } else {
-            }
-
             if (callback) {
                 callback({
-                    text: errorMessage,
-                    content: {
-                        error: error.message,
-                        statusCode: error.response?.status,
-                        params: error.config?.params,
-                        requiresProPlan: error.response?.status === 403
-                    },
+                    text: `Error fetching price: ${error.message}`,
+                    content: { error: error.message },
                 });
             }
             return false;
@@ -299,7 +147,7 @@ export default {
             {
                 user: "{{agent}}",
                 content: {
-                    text: "The current price of Bitcoin is {{dynamic}} USD",
+                    text: "The current price of bitcoin is {{dynamic}} USD",
                 },
             },
         ],
@@ -307,20 +155,20 @@ export default {
             {
                 user: "{{user1}}",
                 content: {
-                    text: "Check ETH and BTC prices in EUR with market cap",
+                    text: "Check ETH price in EUR",
                 },
             },
             {
                 user: "{{agent}}",
                 content: {
-                    text: "I'll check the current prices with market cap data.",
+                    text: "I'll check the current Ethereum price in EUR for you.",
                     action: "GET_PRICE",
                 },
             },
             {
                 user: "{{agent}}",
                 content: {
-                    text: "Bitcoin: EUR {{dynamic}} | Market Cap: €{{dynamic}}\nEthereum: EUR {{dynamic}} | Market Cap: €{{dynamic}}",
+                    text: "The current price of ethereum is {{dynamic}} EUR",
                 },
             },
         ],

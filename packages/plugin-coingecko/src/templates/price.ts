@@ -1,65 +1,31 @@
-export const getPriceTemplate = `
-Extract the following parameters for cryptocurrency price data:
-- **coinIds** (string | string[]): The ID(s) of the cryptocurrency/cryptocurrencies to get prices for (e.g., "bitcoin" or ["bitcoin", "ethereum"])
-- **currency** (string | string[]): The currency/currencies to display prices in (e.g., "usd" or ["usd", "eur", "jpy"]) - defaults to ["usd"]
-- **include_market_cap** (boolean): Whether to include market cap data - defaults to false
-- **include_24hr_vol** (boolean): Whether to include 24h volume data - defaults to false
-- **include_24hr_change** (boolean): Whether to include 24h price change data - defaults to false
-- **include_last_updated_at** (boolean): Whether to include last update timestamp - defaults to false
+export const getPriceTemplate = `Given the message, extract information about the cryptocurrency price check request. Look for coin name/symbol and currency.
 
-Provide the values in the following JSON format:
+Common coin mappings:
+- BTC/Bitcoin -> "bitcoin"
+- ETH/Ethereum -> "ethereum"
+- USDC -> "usd-coin"
 
+Format the response as a JSON object with these fields:
+- coinId: the normalized coin ID (e.g., "bitcoin", "ethereum", "usd-coin")
+- currency: the currency for price (default to "usd" if not specified)
+
+Example responses:
+For "What's the price of Bitcoin?":
 \`\`\`json
 {
-    "coinIds": "bitcoin",
-    "currency": ["usd"],
-    "include_market_cap": false,
-    "include_24hr_vol": false,
-    "include_24hr_change": false,
-    "include_last_updated_at": false
+    "coinId": "bitcoin",
+    "currency": "usd"
 }
 \`\`\`
 
-Example request: "What's the current price of Bitcoin?"
-Example response:
+For "Check ETH price in EUR":
 \`\`\`json
 {
-    "coinIds": "bitcoin",
-    "currency": ["usd"],
-    "include_market_cap": false,
-    "include_24hr_vol": false,
-    "include_24hr_change": false,
-    "include_last_updated_at": false
+    "coinId": "ethereum",
+    "currency": "eur"
 }
 \`\`\`
 
-Example request: "Show me ETH price and market cap in EUR with last update time"
-Example response:
-\`\`\`json
-{
-    "coinIds": "ethereum",
-    "currency": ["eur"],
-    "include_market_cap": true,
-    "include_24hr_vol": false,
-    "include_24hr_change": false,
-    "include_last_updated_at": true
-}
-\`\`\`
-
-Example request: "What's the current price of Bitcoin in USD, JPY and EUR?"
-Example response:
-\`\`\`json
-{
-    "coinIds": "bitcoin",
-    "currency": ["usd", "jpy", "eur"],
-    "include_market_cap": false,
-    "include_24hr_vol": false,
-    "include_24hr_change": false,
-    "include_last_updated_at": false
-}
-\`\`\`
-
-Here are the recent user messages for context:
 {{recentMessages}}
 
-Based on the conversation above, if the request is for cryptocurrency price data, extract the appropriate parameters and respond with a JSON object. If the request is not related to price data, respond with null.`;
+Extract the cryptocurrency and currency information from the above messages and respond with the appropriate JSON.`;

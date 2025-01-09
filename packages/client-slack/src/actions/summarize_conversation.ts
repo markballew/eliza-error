@@ -6,6 +6,7 @@ import {
     parseJSONObjectFromText,
     getModelSettings,
 } from "@elizaos/core";
+import { models } from "@elizaos/core";
 import { getActorDetails } from "@elizaos/core";
 import {
     Action,

@@ -24,8 +24,7 @@ export const startAnyone: Action = {
         _callback: HandlerCallback
     ): Promise<boolean> => {
         await AnyoneClientService.initialize();
-        //lint says unused
-        //const anon = AnyoneClientService.getInstance();
+        const anon = AnyoneClientService.getInstance();
         const proxyService = AnyoneProxyService.getInstance();
         await proxyService.initialize();
 
