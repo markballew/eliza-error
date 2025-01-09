@@ -15,7 +15,6 @@ packages/plugin-buttplug/intiface-engine
 dist/
 # Allow models directory but ignore model files
 models/*.gguf
-pgLite/
 
 cookies.json
 
@@ -50,8 +49,6 @@ packages/plugin-coinbase/src/plugins/transactions.csv
 tsup.config.bundled_*.mjs
 
 .turbo
-.cursorrules
-.pnpm-store
 
 coverage
 .eslintcache
