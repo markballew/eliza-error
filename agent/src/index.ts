@@ -33,6 +33,7 @@ import {
 import { zgPlugin } from "@elizaos/plugin-0g";
 
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
+import { dominosPlugin } from "@elizaos/plugin-dominos";
 import createGoatPlugin from "@elizaos/plugin-goat";
 // import { intifacePlugin } from "@elizaos/plugin-intiface";
 import { DirectClient } from "@elizaos/client-direct";
@@ -282,11 +283,6 @@ export function getTokenForProvider(
             return (
                 character.settings?.secrets?.ETERNALAI_API_KEY ||
                 settings.ETERNALAI_API_KEY
-            );
-        case ModelProviderName.NINETEEN_AI:
-            return (
-                character.settings?.secrets?.NINETEEN_AI_API_KEY ||
-                settings.NINETEEN_AI_API_KEY
             );
         case ModelProviderName.LLAMACLOUD:
         case ModelProviderName.TOGETHER:
@@ -603,6 +599,7 @@ export async function createAgent(
         // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
+            dominosPlugin,
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
                 ? confluxPlugin
                 : null,
@@ -650,7 +647,6 @@ export async function createAgent(
             getSecret(character, "FAL_API_KEY") ||
             getSecret(character, "OPENAI_API_KEY") ||
             getSecret(character, "VENICE_API_KEY") ||
-            getSecret(character, "NINETEEN_AI_API_KEY") ||
             getSecret(character, "HEURIST_API_KEY") ||
             getSecret(character, "LIVEPEER_GATEWAY_URL")
                 ? imageGenerationPlugin
