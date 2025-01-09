@@ -558,34 +558,40 @@ export const models: Models = {
         },
     },
     [ModelProviderName.GALADRIEL]: {
-        endpoint: "https://api.galadriel.com/v1/verified",
+        endpoint: "https://api.galadriel.com/v1",
         model: {
             [ModelClass.SMALL]: {
-                name: settings.SMALL_GALADRIEL_MODEL || "gpt-4o-mini",
+                name: "llama3.1:70b",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                frequency_penalty: 0.0,
-                presence_penalty: 0.0,
-                temperature: 0.6,
+                frequency_penalty: 0.5,
+                presence_penalty: 0.5,
+                temperature: 0.8,
             },
             [ModelClass.MEDIUM]: {
-                name: settings.MEDIUM_GALADRIEL_MODEL || "gpt-4o",
+                name: "llama3.1:70b",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                frequency_penalty: 0.0,
-                presence_penalty: 0.0,
-                temperature: 0.6,
+                frequency_penalty: 0.5,
+                presence_penalty: 0.5,
+                temperature: 0.8,
             },
             [ModelClass.LARGE]: {
-                name: settings.LARGE_GALADRIEL_MODEL || "gpt-4o",
+                name: "llama3.1:405b",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                frequency_penalty: 0.0,
-                presence_penalty: 0.0,
-                temperature: 0.6,
+                frequency_penalty: 0.5,
+                presence_penalty: 0.5,
+                temperature: 0.8,
+            },
+            [ModelClass.EMBEDDING]: {
+                name: "gte-large-en-v1.5",
+            },
+            [ModelClass.IMAGE]: {
+                name: "stabilityai/stable-diffusion-xl-base-1.0",
             },
         },
     },
@@ -815,36 +821,7 @@ export const models: Models = {
             [ModelClass.IMAGE]: {
                 name: settings.IMAGE_VENICE_MODEL || "fluently-xl",
             },
-        }
-    },
-    [ModelProviderName.NINETEEN_AI]: {
-        endpoint: "https://api.nineteen.ai/v1",
-        model: {
-            [ModelClass.SMALL]: {
-                name: settings.SMALL_NINETEEN_AI_MODEL || "unsloth/Llama-3.2-3B-Instruct",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6
-            },
-            [ModelClass.MEDIUM]: {
-                name: settings.MEDIUM_NINETEEN_AI_MODEL || "unsloth/Meta-Llama-3.1-8B-Instruct",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
-            },
-            [ModelClass.LARGE]: {
-                name: settings.LARGE_NINETEEN_AI_MODEL || "hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
-            },
-            [ModelClass.IMAGE]: {
-                name: settings.IMAGE_NINETEEN_AI_MODEL || "dataautogpt3/ProteusV0.4-Lightning",
-            },
-        }
+        },
     },
     [ModelProviderName.AKASH_CHAT_API]: {
         endpoint: "https://chatapi.akash.network/api/v1",
