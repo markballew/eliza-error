@@ -1,11 +1,5 @@
-import {
-    IAgentRuntime,
-    Memory,
-    Provider,
-    State,
-    elizaLogger,
-} from "@elizaos/core";
-import { TdxQuoteResponse, TappdClient, TdxQuoteHashAlgorithms } from "@phala/dstack-sdk";
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
+import { TdxQuoteResponse, TappdClient } from "@phala/dstack-sdk";
 import { RemoteAttestationQuote, TEEMode } from "../types/tee";
 
 class RemoteAttestationProvider {
@@ -18,19 +12,19 @@ class RemoteAttestationProvider {
         switch (teeMode) {
             case TEEMode.LOCAL:
                 endpoint = "http://localhost:8090";
-                elizaLogger.log(
+                console.log(
                     "TEE: Connecting to local simulator at localhost:8090"
                 );
                 break;
             case TEEMode.DOCKER:
                 endpoint = "http://host.docker.internal:8090";
-                elizaLogger.log(
+                console.log(
                     "TEE: Connecting to simulator via Docker at host.docker.internal:8090"
                 );
                 break;
             case TEEMode.PRODUCTION:
                 endpoint = undefined;
-                elizaLogger.log(
+                console.log(
                     "TEE: Running in production mode without simulator"
                 );
                 break;
@@ -44,22 +38,21 @@ class RemoteAttestationProvider {
     }
 
     async generateAttestation(
-        reportData: string,
-        hashAlgorithm?: TdxQuoteHashAlgorithms
+        reportData: string
     ): Promise<RemoteAttestationQuote> {
         try {
-            elizaLogger.log("Generating attestation for: ", reportData);
+            console.log("Generating attestation for: ", reportData);
             const tdxQuote: TdxQuoteResponse =
-                await this.client.tdxQuote(reportData, hashAlgorithm);
+                await this.client.tdxQuote(reportData);
             const rtmrs = tdxQuote.replayRtmrs();
-            elizaLogger.log(
+            console.log(
                 `rtmr0: ${rtmrs[0]}\nrtmr1: ${rtmrs[1]}\nrtmr2: ${rtmrs[2]}\nrtmr3: ${rtmrs[3]}f`
             );
             const quote: RemoteAttestationQuote = {
                 quote: tdxQuote.quote,
                 timestamp: Date.now(),
             };
-            elizaLogger.log("Remote attestation quote: ", quote);
+            console.log("Remote attestation quote: ", quote);
             return quote;
         } catch (error) {
             console.error("Error generating remote attestation:", error);
@@ -80,8 +73,8 @@ const remoteAttestationProvider: Provider = {
         const agentId = runtime.agentId;
 
         try {
-            elizaLogger.log("Generating attestation for: ", agentId);
-            const attestation = await provider.generateAttestation(agentId, 'raw');
+            console.log("Generating attestation for: ", agentId);
+            const attestation = await provider.generateAttestation(agentId);
             return `Your Agent's remote attestation is: ${JSON.stringify(attestation)}`;
         } catch (error) {
             console.error("Error in remote attestation provider:", error);
