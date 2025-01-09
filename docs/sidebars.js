@@ -119,8 +119,8 @@ const sidebars = {
                 },
                 {
                     type: "doc",
-                    id: "advanced/sentience",
-                    label: "Sentience",
+                    id: "advanced/verified-inference",
+                    label: "Verified Inference",
                 },
             ],
         },

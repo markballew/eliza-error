@@ -210,6 +210,7 @@ export type Models = {
     [ModelProviderName.TOGETHER]: Model;
     [ModelProviderName.LLAMALOCAL]: Model;
     [ModelProviderName.GOOGLE]: Model;
+    [ModelProviderName.MISTRAL]: Model;
     [ModelProviderName.CLAUDE_VERTEX]: Model;
     [ModelProviderName.REDPILL]: Model;
     [ModelProviderName.OPENROUTER]: Model;
@@ -223,8 +224,11 @@ export type Models = {
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
     [ModelProviderName.VENICE]: Model;
+    [ModelProviderName.NINETEEN_AI]: Model;
     [ModelProviderName.AKASH_CHAT_API]: Model;
     [ModelProviderName.LIVEPEER]: Model;
+    [ModelProviderName.DEEPSEEK]: Model;
+    [ModelProviderName.INFERA]: Model;
 };
 
 /**
@@ -240,6 +244,7 @@ export enum ModelProviderName {
     TOGETHER = "together",
     LLAMALOCAL = "llama_local",
     GOOGLE = "google",
+    MISTRAL = "mistral",
     CLAUDE_VERTEX = "claude_vertex",
     REDPILL = "redpill",
     OPENROUTER = "openrouter",
@@ -253,9 +258,11 @@ export enum ModelProviderName {
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
     VENICE = "venice",
+    NINETEEN_AI = "nineteen_ai",
     AKASH_CHAT_API = "akash_chat_api",
     LIVEPEER = "livepeer",
     LETZAI = "letzai",
+    DEEPSEEK = "deepseek",
     INFERA = "infera",
 }
 
@@ -641,6 +648,8 @@ export enum Clients {
     LENS = "lens",
     AUTO = "auto",
     SLACK = "slack",
+    GITHUB = "github",
+    INSTAGRAM = "instagram",
 }
 
 export interface IAgentConfig {
@@ -724,6 +733,9 @@ export type Character = {
         twitterPostTemplate?: TemplateType;
         twitterMessageHandlerTemplate?: TemplateType;
         twitterShouldRespondTemplate?: TemplateType;
+        instagramPostTemplate?: TemplateType;
+        instagramMessageHandlerTemplate?: TemplateType;
+        instagramShouldRespondTemplate?: TemplateType;
         farcasterPostTemplate?: TemplateType;
         lensPostTemplate?: TemplateType;
         farcasterMessageHandlerTemplate?: TemplateType;
@@ -774,6 +786,7 @@ export type Character = {
             steps?: number;
             width?: number;
             height?: number;
+            cfgScale?: number;
             negativePrompt?: string;
             numIterations?: number;
             guidanceScale?: number;
@@ -783,6 +796,7 @@ export type Character = {
             count?: number;
             stylePreset?: string;
             hideWatermark?: boolean;
+            safeMode?: boolean;
         };
         voice?: {
             model?: string; // For VITS
@@ -861,10 +875,22 @@ export type Character = {
         bio: string;
         nicknames?: string[];
     };
+
+    /** Optional Instagram profile */
+    instagramProfile?: {
+        id: string;
+        username: string;
+        bio: string;
+        nicknames?: string[];
+    };
+
     /** Optional NFT prompt */
     nft?: {
         prompt: string;
     };
+
+    /**Optinal Parent characters to inherit information from */
+    extends?: string[];
 };
 
 /**
@@ -899,10 +925,13 @@ export interface IDatabaseAdapter {
 
     getMemoryById(id: UUID): Promise<Memory | null>;
 
+    getMemoriesByIds(ids: UUID[], tableName?: string): Promise<Memory[]>;
+
     getMemoriesByRoomIds(params: {
         tableName: string;
         agentId: UUID;
         roomIds: UUID[];
+        limit?: number;
     }): Promise<Memory[]>;
 
     getCachedEmbeddings(params: {
@@ -1076,7 +1105,10 @@ export interface IMemoryManager {
     ): Promise<{ embedding: number[]; levenshtein_score: number }[]>;
 
     getMemoryById(id: UUID): Promise<Memory | null>;
-    getMemoriesByRoomIds(params: { roomIds: UUID[] }): Promise<Memory[]>;
+    getMemoriesByRoomIds(params: {
+        roomIds: UUID[];
+        limit?: number;
+    }): Promise<Memory[]>;
     searchMemoriesByEmbedding(
         embedding: number[],
         opts: {
@@ -1123,6 +1155,7 @@ export interface IRAGKnowledgeManager {
         type: "pdf" | "md" | "txt";
         isShared: boolean;
     }): Promise<void>;
+    cleanupDeletedKnowledgeFiles(): Promise<void>;
 }
 
 export type CacheOptions = {
@@ -1331,27 +1364,76 @@ export interface IAwsS3Service extends Service {
     generateSignedUrl(fileName: string, expiresIn: number): Promise<string>;
 }
 
-export type SearchImage = {
-    url: string;
-    description?: string;
-};
+export interface UploadIrysResult {
+    success: boolean;
+    url?: string;
+    error?: string;
+    data?: any;
+}
 
-export type SearchResult = {
-    title: string;
-    url: string;
-    content: string;
-    rawContent?: string;
-    score: number;
-    publishedDate?: string;
-};
+export interface DataIrysFetchedFromGQL {
+    success: boolean;
+    data: any;
+    error?: string;
+}
 
-export type SearchResponse = {
-    answer?: string;
-    query: string;
-    responseTime: number;
-    images: SearchImage[];
-    results: SearchResult[];
-};
+export interface GraphQLTag {
+    name: string;
+    values: any[];
+}
+
+export const enum IrysMessageType {
+    REQUEST = "REQUEST",
+    DATA_STORAGE = "DATA_STORAGE",
+    REQUEST_RESPONSE = "REQUEST_RESPONSE",
+}
+
+export const enum IrysDataType {
+    FILE = "FILE",
+    IMAGE = "IMAGE",
+    OTHER = "OTHER",
+}
+
+export interface IrysTimestamp {
+    from: number;
+    to: number;
+}
+
+export interface IIrysService extends Service {
+    getDataFromAnAgent(
+        agentsWalletPublicKeys: string[],
+        tags: GraphQLTag[],
+        timestamp: IrysTimestamp
+    ): Promise<DataIrysFetchedFromGQL>;
+    workerUploadDataOnIrys(
+        data: any,
+        dataType: IrysDataType,
+        messageType: IrysMessageType,
+        serviceCategory: string[],
+        protocol: string[],
+        validationThreshold: number[],
+        minimumProviders: number[],
+        testProvider: boolean[],
+        reputation: number[]
+    ): Promise<UploadIrysResult>;
+    providerUploadDataOnIrys(
+        data: any,
+        dataType: IrysDataType,
+        serviceCategory: string[],
+        protocol: string[]
+    ): Promise<UploadIrysResult>;
+}
+
+export interface ITeeLogService extends Service {
+    getInstance(): ITeeLogService;
+    log(
+        agentId: string,
+        roomId: string,
+        userId: string,
+        type: string,
+        content: string
+    ): Promise<boolean>;
+}
 
 export enum ServiceType {
     IMAGE_DESCRIPTION = "image_description",
@@ -1365,7 +1447,11 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
+    VERIFIABLE_LOGGING = "verifiable_logging",
+    IRYS = "irys",
+    TEE_LOG = "tee_log",
     GOPLUS_SECURITY = "goplus_security",
+    WEB_SEARCH = "web_search",
 }
 
 export enum LoggingLevel {
@@ -1416,7 +1502,9 @@ export interface ISlackService extends Service {
  * Available verifiable inference providers
  */
 export enum VerifiableInferenceProvider {
+    RECLAIM = "reclaim",
     OPACITY = "opacity",
+    PRIMUS = "primus",
 }
 
 /**
@@ -1487,4 +1575,23 @@ export enum TranscriptionProvider {
 export enum ActionTimelineType {
     ForYou = "foryou",
     Following = "following",
+}
+
+export enum KnowledgeScope {
+    SHARED = "shared",
+    PRIVATE = "private",
+}
+
+export enum CacheKeyPrefix {
+    KNOWLEDGE = "knowledge",
+}
+
+export interface DirectoryItem {
+    directory: string;
+    shared?: boolean;
+}
+
+export interface ChunkRow {
+    id: string;
+    // Add other properties if needed
 }
