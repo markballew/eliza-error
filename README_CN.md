@@ -188,6 +188,9 @@ TWITTER_USERNAME= # Account username
 TWITTER_PASSWORD= # Account password
 TWITTER_EMAIL= # Account email
 
+XAI_API_KEY=
+XAI_MODEL=
+
 
 # For asking Claude stuff
 ANTHROPIC_API_KEY=

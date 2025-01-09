@@ -65,7 +65,7 @@ import { createNodePlugin } from "@elizaos/plugin-node";
 const nodePlugin = createNodePlugin();
 
 // Register with Eliza OS
-elizaos.registerPlugin(nodePlugin);
+elizaOS.registerPlugin(nodePlugin);
 ```
 
 ## Services
