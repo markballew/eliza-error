@@ -35,7 +35,7 @@ function isTransferContent(
     runtime: IAgentRuntime,
     content: any
 ): content is TransferContent {
-    elizaLogger.log("Content for transfer", content);
+    console.log("Content for transfer", content);
     return (
         typeof content.tokenAddress === "string" &&
         typeof content.recipient === "string" &&
@@ -74,21 +74,21 @@ export default {
         "PAY",
     ],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
-        elizaLogger.log("Validating transfer from user:", message.userId);
+        console.log("Validating transfer from user:", message.userId);
         //add custom validate logic here
         /*
             const adminIds = runtime.getSetting("ADMIN_USER_IDS")?.split(",") || [];
-            //elizaLogger.log("Admin IDs from settings:", adminIds);
+            //console.log("Admin IDs from settings:", adminIds);
 
             const isAdmin = adminIds.includes(message.userId);
 
             if (isAdmin) {
-                //elizaLogger.log(`Authorized transfer from user: ${message.userId}`);
+                //console.log(`Authorized transfer from user: ${message.userId}`);
                 return true;
             }
             else
             {
-                //elizaLogger.log(`Unauthorized transfer attempt from user: ${message.userId}`);
+                //console.log(`Unauthorized transfer attempt from user: ${message.userId}`);
                 return false;
             }
             */
@@ -126,7 +126,7 @@ export default {
 
         // Validate transfer content
         if (!isTransferContent(runtime, content)) {
-            elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
+            console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
                     text: "Unable to process transfer request. Invalid content provided.",
@@ -142,7 +142,7 @@ export default {
                 true
             );
 
-            const connection = new Connection(settings.SOLANA_RPC_URL!);
+            const connection = new Connection(settings.RPC_URL!);
 
             const mintPubkey = new PublicKey(content.tokenAddress);
             const recipientPubkey = new PublicKey(content.recipient);
@@ -156,7 +156,7 @@ export default {
             const adjustedAmount = BigInt(
                 Number(content.amount) * Math.pow(10, decimals)
             );
-            elizaLogger.log(
+            console.log(
                 `Transferring: ${content.amount} tokens (${adjustedAmount} base units)`
             );
 
@@ -210,7 +210,7 @@ export default {
             // Send transaction
             const signature = await connection.sendTransaction(transaction);
 
-            elizaLogger.log("Transfer successful:", signature);
+            console.log("Transfer successful:", signature);
 
             if (callback) {
                 callback({
@@ -226,7 +226,7 @@ export default {
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token transfer:", error);
+            console.error("Error during token transfer:", error);
             if (callback) {
                 callback({
                     text: `Error transferring tokens: ${error.message}`,
