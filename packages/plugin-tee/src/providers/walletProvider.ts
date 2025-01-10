@@ -1,11 +1,5 @@
 /* This is an example of how WalletProvider can use DeriveKeyProvider to generate a Solana Keypair */
-import {
-    IAgentRuntime,
-    Memory,
-    Provider,
-    State,
-    elizaLogger,
-} from "@elizaos/core";
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
@@ -97,7 +91,7 @@ export class WalletProvider {
                 const data = await response.json();
                 return data;
             } catch (error) {
-                elizaLogger.error(`Attempt ${i + 1} failed:`, error);
+                console.error(`Attempt ${i + 1} failed:`, error);
                 lastError = error;
                 if (i < PROVIDER_CONFIG.MAX_RETRIES - 1) {
                     const delay = PROVIDER_CONFIG.RETRY_DELAY * Math.pow(2, i);
@@ -107,7 +101,7 @@ export class WalletProvider {
             }
         }
 
-        elizaLogger.error(
+        console.error(
             "All attempts failed. Throwing the last error:",
             lastError
         );
@@ -120,10 +114,10 @@ export class WalletProvider {
             const cachedValue = this.cache.get<WalletPortfolio>(cacheKey);
 
             if (cachedValue) {
-                elizaLogger.log("Cache hit for fetchPortfolioValue");
+                console.log("Cache hit for fetchPortfolioValue");
                 return cachedValue;
             }
-            elizaLogger.log("Cache miss for fetchPortfolioValue");
+            console.log("Cache miss for fetchPortfolioValue");
 
             const walletData = await this.fetchWithRetry(
                 runtime,
@@ -131,7 +125,7 @@ export class WalletProvider {
             );
 
             if (!walletData?.success || !walletData?.data) {
-                elizaLogger.error("No portfolio data available", walletData);
+                console.error("No portfolio data available", walletData);
                 throw new Error("No portfolio data available");
             }
 
@@ -164,7 +158,7 @@ export class WalletProvider {
             this.cache.set(cacheKey, portfolio);
             return portfolio;
         } catch (error) {
-            elizaLogger.error("Error fetching portfolio:", error);
+            console.error("Error fetching portfolio:", error);
             throw error;
         }
     }
@@ -175,10 +169,10 @@ export class WalletProvider {
             const cachedValue = this.cache.get<Prices>(cacheKey);
 
             if (cachedValue) {
-                elizaLogger.log("Cache hit for fetchPrices");
+                console.log("Cache hit for fetchPrices");
                 return cachedValue;
             }
-            elizaLogger.log("Cache miss for fetchPrices");
+            console.log("Cache miss for fetchPrices");
 
             const { SOL, BTC, ETH } = PROVIDER_CONFIG.TOKEN_ADDRESSES;
             const tokens = [SOL, BTC, ETH];
@@ -209,16 +203,14 @@ export class WalletProvider {
                               : "ethereum"
                     ].usd = price;
                 } else {
-                    elizaLogger.warn(
-                        `No price data available for token: ${token}`
-                    );
+                    console.warn(`No price data available for token: ${token}`);
                 }
             }
 
             this.cache.set(cacheKey, prices);
             return prices;
         } catch (error) {
-            elizaLogger.error("Error fetching prices:", error);
+            console.error("Error fetching prices:", error);
             throw error;
         }
     }
@@ -269,7 +261,7 @@ export class WalletProvider {
 
             return this.formatPortfolio(runtime, portfolio, prices);
         } catch (error) {
-            elizaLogger.error("Error generating portfolio report:", error);
+            console.error("Error generating portfolio report:", error);
             return "Unable to fetch wallet information. Please try again later.";
         }
     }
@@ -287,7 +279,7 @@ const walletProvider: Provider = {
         try {
             // Validate wallet configuration
             if (!runtime.getSetting("WALLET_SECRET_SALT")) {
-                elizaLogger.error(
+                console.error(
                     "Wallet secret salt is not configured in settings"
                 );
                 return "";
@@ -304,9 +296,9 @@ const walletProvider: Provider = {
                     agentId
                 );
                 publicKey = derivedKeyPair.keypair.publicKey;
-                elizaLogger.log("Wallet Public Key: ", publicKey.toBase58());
+                console.log("Wallet Public Key: ", publicKey.toBase58());
             } catch (error) {
-                elizaLogger.error("Error creating PublicKey:", error);
+                console.error("Error creating PublicKey:", error);
                 return "";
             }
 
@@ -316,7 +308,7 @@ const walletProvider: Provider = {
             const porfolio = await provider.getFormattedPortfolio(runtime);
             return porfolio;
         } catch (error) {
-            elizaLogger.error("Error in wallet provider:", error.message);
+            console.error("Error in wallet provider:", error.message);
             return `Failed to fetch wallet information: ${error instanceof Error ? error.message : "Unknown error"}`;
         }
     },
