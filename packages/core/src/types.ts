@@ -1372,7 +1372,6 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
-    VERIFIABLE_LOGGING = "verifiable_logging",
     TEE_LOG = "tee_log",
     GOPLUS_SECURITY = "goplus_security",
 }
