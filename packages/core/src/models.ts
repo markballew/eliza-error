@@ -1,11 +1,11 @@
 import settings from "./settings.ts";
 import {
-    EmbeddingModelSettings,
-    ImageModelSettings,
-    ModelClass,
-    ModelProviderName,
     Models,
+    ModelProviderName,
+    ModelClass,
     ModelSettings,
+    ImageModelSettings,
+    EmbeddingModelSettings,
 } from "./types.ts";
 
 export const models: Models = {
@@ -332,7 +332,6 @@ export const models: Models = {
         },
     },
     [ModelProviderName.GOOGLE]: {
-        endpoint: "https://generativelanguage.googleapis.com",
         model: {
             [ModelClass.SMALL]: {
                 name:
@@ -545,7 +544,7 @@ export const models: Models = {
             [ModelClass.LARGE]: {
                 name:
                     settings.LARGE_HEURIST_MODEL ||
-                    "meta-llama/llama-3.3-70b-instruct",
+                    "meta-llama/llama-3.1-405b-instruct",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
@@ -553,12 +552,8 @@ export const models: Models = {
                 temperature: 0.7,
             },
             [ModelClass.IMAGE]: {
-                name: settings.HEURIST_IMAGE_MODEL || "FLUX.1-dev",
+                name: settings.HEURIST_IMAGE_MODEL || "PepeXL",
                 steps: 20,
-            },
-            [ModelClass.EMBEDDING]: {
-                name: "BAAI/bge-large-en-v1.5",
-                dimensions: 1024,
             },
         },
     },
@@ -822,43 +817,6 @@ export const models: Models = {
             },
         },
     },
-    [ModelProviderName.NINETEEN_AI]: {
-        endpoint: "https://api.nineteen.ai/v1",
-        model: {
-            [ModelClass.SMALL]: {
-                name:
-                    settings.SMALL_NINETEEN_AI_MODEL ||
-                    "unsloth/Llama-3.2-3B-Instruct",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
-            },
-            [ModelClass.MEDIUM]: {
-                name:
-                    settings.MEDIUM_NINETEEN_AI_MODEL ||
-                    "unsloth/Meta-Llama-3.1-8B-Instruct",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
-            },
-            [ModelClass.LARGE]: {
-                name:
-                    settings.LARGE_NINETEEN_AI_MODEL ||
-                    "hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
-            },
-            [ModelClass.IMAGE]: {
-                name:
-                    settings.IMAGE_NINETEEN_AI_MODEL ||
-                    "dataautogpt3/ProteusV0.4-Lightning",
-            },
-        },
-    },
     [ModelProviderName.AKASH_CHAT_API]: {
         endpoint: "https://chatapi.akash.network/api/v1",
         model: {
@@ -897,32 +855,6 @@ export const models: Models = {
             [ModelClass.IMAGE]: {
                 name:
                     settings.LIVEPEER_IMAGE_MODEL || "ByteDance/SDXL-Lightning",
-            },
-        },
-    },
-    [ModelProviderName.INFERA]: {
-        endpoint: "https://api.infera.org",
-        model: {
-            [ModelClass.SMALL]: {
-                name: settings.SMALL_INFERA_MODEL || "llama3.2:3b",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
-            },
-            [ModelClass.MEDIUM]: {
-                name: settings.MEDIUM_INFERA_MODEL || "mistral-nemo:latest",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
-            },
-            [ModelClass.LARGE]: {
-                name: settings.LARGE_INFERA_MODEL || "mistral-small:latest",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.6,
             },
         },
     },

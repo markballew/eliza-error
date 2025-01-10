@@ -1,161 +1,267 @@
-# Eliza 🤖
+# Eliza
 
-<div align="center">
-  <img src="./docs/static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
-</div>
+<img src="./docs/static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
 
-<div align="center">
+## 功能
 
-📖 [文档](https://elizaos.github.io/eliza/) | 🎯 [示例](https://github.com/thejoven/awesome-eliza)
-
-</div>
-
-## 🌍 README 翻译
-
-[日本語の説明](./README_JA.md) | [한국어 설명](./README_KOR.md) | [English](./README.md) | [Français](./README_FR.md) | [Português](./README_PTBR.md) | [Türkçe](./README_TR.md) | [Русский](./README_RU.md) | [Español](./README_ES.md) | [Italiano](./README_IT.md) | [ไทย](./README_TH.md) | [Deutsch](./README_DE.md) | [Tiếng Việt](./README_VI.md) | [עִברִית](https://github.com/elizaos/Elisa/blob/main/README_HE.md) | [Tagalog](./README_TG.md) | [Polski](./README_PL.md) | [Arabic](./README_AR.md) | [Hungarian](./README_HU.md) | [Srpski](./README_RS.md)
-
-## 🚩 概述
-
-<div align="center">
-  <img src="./docs/static/img/eliza_diagram.jpg" alt="Eliza Diagram" width="100%" />
-</div>
-
-## ✨ 功能
-
-- 🛠️ 功能齐全的 Discord、Twitter 和 Telegram 连接器
-- 🔗 支持所有模型（Llama、Grok、OpenAI、Anthropic 等）
-- 👥 多代理和房间支持
-- 📚 轻松导入并与文档交互
+- 🛠 支持discord/推特/telegram连接
+- 👥 支持多模态agent
+- 📚 简单的导入文档并与文档交互
 - 💾 可检索的内存和文档存储
-- 🚀 高度可扩展 - 创建您自己的操作和客户端
-- ☁️ 支持多种模型（本地 Llama、OpenAI、Anthropic、Groq 等）
-- 📦 开箱即用！
+- 🚀 高可拓展性，你可以自定义客户端和行为来进行功能拓展
+- ☁️ 多模型支持，包括Llama、OpenAI、Grok、Anthropic等
+- 📦 简单好用
 
-## 视频教程
-
-[AI Agent 开发学校](https://www.youtube.com/watch?v=ArptLpQiKfI&list=PLx5pnFXdPTRzWla0RaOxALTSTnVq53fKL)
-
-## 🎯 使用案例
+你可以用Eliza做什么？
 
 - 🤖 聊天机器人
-- 🕵️ 自主代理
+- 🕵️ 自主Agents
 - 📈 业务流程自动化处理
-- 🎮 游戏 NPC
-- 🧠 交易
+- 🎮 游戏NPC
 
-## 💰 如果您计划发行代币
+# 开始使用
 
-Eliza 是 GitHub 上排名第一的开源项目，我们正在推动下一代人机交互的发展，但我们仍然需要您的帮助，以确保代码质量最高，并快速响应影响我们整个构建者社区的关键问题.
-
-为了确保可持续发展和持续创新，我们要求成功启动的项目贡献初始代币分配的 5-10%.
-
-所有贡献都在链上公开跟踪，并专门用于生态系统开发.
-
-### ⚠️ 别忘了给大佬打赏 10%：⚠️
-[AM84n1iLdxgVTAyENBcLdjXoyvjentTbu5Q6EpKV1PeG](https://solscan.io/account/AM84n1iLdxgVTAyENBcLdjXoyvjentTbu5Q6EpKV1PeG)
-
-## 🚀 开始使用
-
-### 前置要求(必须):
+**前置要求(必须):**
 
 - [Python 2.7+](https://www.python.org/downloads/)
 - [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - [pnpm](https://pnpm.io/installation)
 
+以下是两种基础的Eliza下载方案, 请根据情况自行选择。
 
-> **Windows 用户注意：** 需要安装 [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install-manual).
+## (A) 使用启动器(Starter): 推荐
 
-## 使用启动器（推荐）
-
-```bash
+```
 git clone https://github.com/elizaos/eliza-starter.git
 cd eliza-starter
 cp .env.example .env
-pnpm i && pnpm build && pnpm start
 ```
 
-当代理运行时，您应该会在最后看到运行 pnpm start:client 的消息.
-打开另一个终端并移动到同一目录，然后运行以下命令并按照 URL 与您的代理聊天.
+## (B) 手动启动Eliza: 仅在您知道自己在做什么时才推荐
 
-```bash
-pnpm start:client
 ```
-然后阅读 [文档](https://elizaos.github.io/eliza/) 以了解如何自定义您的 Eliza
-
-## 手动启动 Eliza（仅推荐给知道自己在做什么的用户）
-
-```bash
-# 克隆仓库
 git clone https://github.com/elizaos/eliza.git
-
-# 切换最新发布的版本
-# Eliza 的迭代速度非常快，因此我们建议经常切换到最新的发布版本以避免出现问题.
+cd eliza
+# 切换最新发布的版本(Checkout the latest release)
+# Eliza的迭代速度非常快, 所以我们建议经常性的切换到最新的发布版本以免出现问题(This project iterates fast, so we recommend checking out the latest release)
 git checkout $(git describe --tags --abbrev=0)
 ```
 
-### 使用 Gitpod 启动 Eliza
+在将代码下载到本地后, 我们要做两件事:
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/elizaos/eliza/tree/main)
+### 1. 编辑.env文件(环境变量)
 
-### 编辑 .env 文件
+- 将 `.env.example` 复制为 `.env` 并在其中填写适当的值
+- 编辑推特环境并输入你的推特账号和密码
 
-将 .env.example 复制为 .env 并填写适当的值.
+**最简化配置方案**:
 
 ```
-cp .env.example .env
+OPENAI_API_KEY=sk-xxx # 配置OpenAI 的API, sk-开头, 注意, 目前不支持AzureOpenAI!
+
+## 如配置Twitter/X, 则需配置
+# Twitter/X Configuration
+TWITTER_DRY_RUN=false
+TWITTER_USERNAME=abc         # Your Twitter/X account username
+TWITTER_PASSWORD=abc         # Your Twitter/X account password
+TWITTER_EMAIL= xxx@gmail.com # Your Twitter/X account email
+TWITTER_COOKIES= ''          # Your Twitter/X cookies, copy from broswer
+TWITTER_2FA_SECRET=          # Two-factor authentication
 ```
 
-注意：.env 是可选的.如果您计划运行多个独立的代理，可以通过角色 JSON 传递密钥.
+### 2. 编辑角色文件
 
-### 自动启动 Eliza
+- 标准的角色个性定义在文件 `characters/*.character.json`中, 您可以修改它或者直接使用它。
+- 您也可以使用 `node --loader ts-node/esm src/index.ts --characters="path/to/your/character.json"` 加载角色并同时运行多个机器人。
+- 需要说明的是, 在`characters/*.character.json`中, `clients字段对应**服务**, 默认可选`"twitter", "discord", "telegram"`等, 如果在`clients`中填入了如"twitter"等内容, 则需要在
+上面的`env`配置对应的环境变量。对`discord`和`telegram`同理。
 
-这将运行所有设置并使用默认角色启动机器人.
+```
+{
+    "name": "trump",
+    "clients": ["twitter"],
+    "modelProvider": "openai",
+```
 
-```bash
+在完成环境变量和角色文件的配置后，输入以下命令行启动你的bot：
+
+```
+(A) 使用启动器(Starter)
 sh scripts/start.sh
-```
 
-### 编辑角色文件
 
-1. 打开 `packages/core/src/defaultCharacter.ts` 修改默认角色.取消注释并编辑.
-
-2. 加载自定义角色：
-    - 使用 `pnpm start --characters="path/to/your/character.json"`
-    - 可以同时加载多个角色文件
-3. 连接 X (Twitter)
-    - 在角色文件中将 `"clients": []` 更改为 `"clients": ["twitter"]` 以连接 X
-
-### 手动启动 Eliza
-
-```bash
+(B) 手动启动Eliza
 pnpm i
 pnpm build
 pnpm start
-
-# 该项目迭代速度很快，有时如果您回到项目，需要清理项目
-pnpm clean
 ```
 
-#### 其他要求
+# 自定义Eliza
 
-您可能需要安装 Sharp.如果在启动时看到错误，请尝试使用以下命令安装:
+### 添加常规行为
+
+为避免在核心目录中的 Git 冲突，我们建议将自定义操作添加到 custom_actions 目录中，并在 elizaConfig.yaml 文件中配置这些操作。可以参考 elizaConfig.example.yaml 文件中的示例。
+
+## 配置不同的大模型
+
+您可以使用不同的大模型来驱动您的AI Agent，切换不同大模型需要两步：
+
+1. 确认您在`.env`文件内配置了对应的大模型API Key或对应的访问配置，例如如果您想使用OpenAI，则需要找到`OPENAI_API_KEY`参数，并填入您的OpenAI API Key，并以此类推。
+2. 在您的*Character*文件里找到`modelProvider`，并更改这里的内容，例如如果想要切换到Claude，则需要填入`anthropic`,以此来表明您将使用anthropic大模型作为您的对应Agent的Provider.
+
+在`.env`文件内您可以找到不同大模型的详细配置，包括设定具体想要使用对应提供商的哪个模型，下方我们给出了两个实例：
+
+### 配置OpenAI
+
+首先您需要在Character文件内指定model provider
+
+```json
+    "name": "C-3PO",
+    "clients": [],
+    "modelProvider": "openai"
+    ...
+```
+
+其次请在`env`文件内配置相关参数
+
+```
+# AI Model API Keys
+OPENAI_API_KEY=                 # OpenAI API key, starting with sk-
+SMALL_OPENAI_MODEL=             # Default: gpt-4o-mini
+MEDIUM_OPENAI_MODEL=            # Default: gpt-4o
+LARGE_OPENAI_MODEL=             # Default: gpt-4o
+EMBEDDING_OPENAI_MODEL=         # Default: text-embedding-3-small
+IMAGE_OPENAI_MODEL=             # Default: dall-e-3
+
+```
+
+### 配置Anthorpic
+
+```json
+    "name": "C-3PO",
+    "clients": [],
+    "modelProvider": "anthropic"
+    ...
+```
+
+其次请在`env`文件内配置相关参数
+
+```
+# Anthropic Configuration
+ANTHROPIC_API_KEY=              # For Claude
+SMALL_ANTHROPIC_MODEL=          # Default: claude-3-haiku-20240307
+MEDIUM_ANTHROPIC_MODEL=         # Default: claude-3-5-sonnet-20241022
+LARGE_ANTHROPIC_MODEL=          # Default: claude-3-5-sonnet-20241022
+```
+
+## 其他要求
+
+您可能需要安装 Sharp。如果在启动时看到错误，请尝试使用以下命令安装：
 
 ```
 pnpm install --include=optional sharp
 ```
 
-### 社区与联系
+# 环境设置
 
-- [GitHub Issues](https://github.com/elizaos/eliza/issues). 最适合：使用 Eliza 时遇到的错误和功能建议.
-- [Discord](https://discord.gg/ai16z). 最适合：分享您的应用程序并与社区互动.
-- [Developer Discord](https://discord.gg/3f67SH4rXT). 最适合：获取帮助和插件开发.
+您需要在 .env 文件中添加环境变量以连接到各种平台：
 
-## 贡献者
+```
+# Required environment variables
+DISCORD_APPLICATION_ID=
+DISCORD_API_TOKEN= # Bot token
+OPENAI_API_KEY=sk-* # OpenAI API key, starting with sk-
+ELEVENLABS_XI_API_KEY= # API key from elevenlabs
 
-<a href="https://github.com/elizaos/eliza/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=elizaos/eliza" />
-</a>
+# ELEVENLABS SETTINGS
+ELEVENLABS_MODEL_ID=eleven_multilingual_v2
+ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
+ELEVENLABS_VOICE_STABILITY=0.5
+ELEVENLABS_VOICE_SIMILARITY_BOOST=0.9
+ELEVENLABS_VOICE_STYLE=0.66
+ELEVENLABS_VOICE_USE_SPEAKER_BOOST=false
+ELEVENLABS_OPTIMIZE_STREAMING_LATENCY=4
+ELEVENLABS_OUTPUT_FORMAT=pcm_16000
 
-## 项目 Star 历史
+TWITTER_DRY_RUN=false
+TWITTER_USERNAME= # Account username
+TWITTER_PASSWORD= # Account password
+TWITTER_EMAIL= # Account email
 
-[![Star History Chart](https://api.star-history.com/svg?repos=elizaos/eliza&type=Date)](https://star-history.com/#elizaos/eliza&Date)
+
+# For asking Claude stuff
+ANTHROPIC_API_KEY=
+
+# EVM
+EVM_PRIVATE_KEY=EXAMPLE_WALLET_PRIVATE_KEY
+
+# Solana
+SOLANA_PRIVATE_KEY=EXAMPLE_WALLET_PRIVATE_KEY
+SOLANA_PUBLIC_KEY=EXAMPLE_WALLET_PUBLIC_KEY
+
+# Fallback Wallet Configuration (deprecated)
+WALLET_PRIVATE_KEY=EXAMPLE_WALLET_PRIVATE_KEY
+WALLET_PUBLIC_KEY=EXAMPLE_WALLET_PUBLIC_KEY
+
+BIRDEYE_API_KEY=
+
+SOL_ADDRESS=So11111111111111111111111111111111111111112
+SLIPPAGE=1
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+HELIUS_API_KEY=
+
+
+## Telegram
+TELEGRAM_BOT_TOKEN=
+
+TOGETHER_API_KEY=
+```
+
+# 本地设置
+
+### CUDA设置
+
+如果你有高性能的英伟达显卡，你可以以下命令行通过CUDA来做本地加速
+
+```
+pnpm install
+npx --no node-llama-cpp source download --gpu cuda
+```
+
+确保你安装了完整的CUDA工具包，包括cuDNN和cuBLAS
+
+### 本地运行
+
+添加 XAI_MODEL 并将其设置为上述 [使用 Llama 运行](#run-with-llama) 中的选项之一
+您可以将 XAI_API_KEY 留空，它会从 huggingface 下载模型并在本地查询
+
+# 客户端
+
+关于怎么设置discord bot，可以查看discord的官方文档
+
+# 开发
+
+## 测试
+
+几种测试方法的命令行：
+
+```bash
+pnpm test           # Run tests once
+pnpm test:watch    # Run tests in watch mode
+```
+
+对于数据库特定的测试：
+
+```bash
+pnpm test:sqlite   # Run tests with SQLite
+pnpm test:sqljs    # Run tests with SQL.js
+```
+
+测试使用 Jest 编写，位于 src/\*_/_.test.ts 文件中。测试环境配置如下：
+
+- 从 .env.test 加载环境变量
+- 使用 2 分钟的超时时间来运行长时间运行的测试
+- 支持 ESM 模块
+- 按顺序运行测试 (--runInBand)
+
+要创建新测试，请在要测试的代码旁边添加一个 .test.ts 文件。

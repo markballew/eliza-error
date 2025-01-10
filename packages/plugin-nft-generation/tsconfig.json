@@ -5,8 +5,5 @@
         "rootDir": "src",
         "types": ["node"]
     },
-    "include": [
-        "src/**/*.ts",
-        "src/solModule.d.ts"
-    ]
+    "include": ["src/**/*.ts"]
 }
