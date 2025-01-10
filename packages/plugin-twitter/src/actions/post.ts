@@ -6,6 +6,7 @@ import {
     composeContext,
     elizaLogger,
     ModelClass,
+    formatMessages,
     generateObject,
 } from "@elizaos/core";
 import { Scraper } from "agent-twitter-client";
