@@ -29,7 +29,7 @@ export class AttachTermsAction {
     }> {
         const storyClient = this.walletProvider.getStoryClient();
 
-        elizaLogger.log("params", params);
+        console.log("params", params);
 
         const licenseTerms: LicenseTerms = {
             transferable: true,

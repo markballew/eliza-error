@@ -5,7 +5,6 @@ A plugin for managing trust scores and performance metrics in a secure database,
 ## Overview
 
 This plugin provides functionality to:
-
 - Track and manage recommender trust scores
 - Monitor token performance metrics
 - Record and analyze trading performance
@@ -44,7 +43,7 @@ const trustDB = new TrustScoreDatabase(db);
 const recommender = {
     id: "uuid",
     address: "wallet-address",
-    telegramId: "telegram-id",
+    telegramId: "telegram-id"
 };
 trustDB.addRecommender(recommender);
 
@@ -68,7 +67,7 @@ The main database manager providing comprehensive tracking and analysis:
 // Get or create a recommender
 const recommender = await trustDB.getOrCreateRecommender({
     address: "wallet-address",
-    telegramId: "user-id",
+    telegramId: "user-id"
 });
 
 // Update recommender metrics
@@ -84,15 +83,12 @@ trustDB.updateRecommenderMetrics({
 
 ```typescript
 // Add trade performance
-trustDB.addTradePerformance(
-    {
-        token_address: "address",
-        recommender_id: "uuid",
-        buy_price: 1.0,
-        // ... other trade details
-    },
-    false
-);
+trustDB.addTradePerformance({
+    token_address: "address",
+    recommender_id: "uuid",
+    buy_price: 1.0,
+    // ... other trade details
+}, false);
 
 // Get token performance
 const tokenMetrics = trustDB.getTokenPerformance("token-address");
@@ -175,12 +171,10 @@ interface TokenPerformance {
 ## Common Issues/Troubleshooting
 
 ### Issue: Database Connection Errors
-
 - **Cause**: Incorrect database path or permissions
 - **Solution**: Verify database path and file permissions
 
 ### Issue: Data Consistency
-
 - **Cause**: Concurrent database access
 - **Solution**: Use proper transaction handling
 
@@ -205,14 +199,12 @@ This plugin integrates with and builds upon several key technologies:
 - [DOMPurify](https://github.com/cure53/DOMPurify): HTML sanitization library
 
 Special thanks to:
-
 - The better-sqlite3 team for their excellent database driver
 - The UUID.js maintainers for reliable identifier generation
 - The DOMPurify team for security-focused sanitization tools
 - The Eliza community for their contributions and feedback
 
 For more information about database management and security:
-
 - [SQLite Documentation](https://www.sqlite.org/docs.html)
 - [Database Security Best Practices](https://www.sqlite.org/security.html)
 - [Data Sanitization Guide](https://github.com/cure53/DOMPurify/wiki/Security-Goals-&-Threat-Model)

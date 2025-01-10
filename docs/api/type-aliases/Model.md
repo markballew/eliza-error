@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.7](../index.md) / Model
+[@elizaos/core v0.1.7-alpha.1](../index.md) / Model
 
 # Type Alias: Model
 
@@ -32,21 +32,21 @@ Maximum input tokens
 
 Maximum output tokens
 
-### settings.frequency_penalty?
+### settings.frequency\_penalty?
 
-> `optional` **frequency_penalty**: `number`
+> `optional` **frequency\_penalty**: `number`
 
 Optional frequency penalty
 
-### settings.presence_penalty?
+### settings.presence\_penalty?
 
-> `optional` **presence_penalty**: `number`
+> `optional` **presence\_penalty**: `number`
 
 Optional presence penalty
 
-### settings.repetition_penalty?
+### settings.repetition\_penalty?
 
-> `optional` **repetition_penalty**: `number`
+> `optional` **repetition\_penalty**: `number`
 
 Optional repetition penalty
 
@@ -61,12 +61,6 @@ Stop sequences
 > **temperature**: `number`
 
 Temperature setting
-
-### settings.experimental_telemetry?
-
-> `optional` **experimental_telemetry**: [`TelemetrySettings`](TelemetrySettings.md)
-
-Optional telemetry configuration (experimental)
 
 ### imageSettings?
 

@@ -1,11 +1,11 @@
 import { Plugin } from "@elizaos/core";
 
-import { TransferAction } from "./actions";
+import transfer from "./actions/transfer";
 
 export const cronosZkEVMPlugin: Plugin = {
     name: "cronoszkevm",
     description: "Cronos zkEVM plugin for Eliza",
-    actions: [TransferAction],
+    actions: [transfer],
     evaluators: [],
     providers: [],
 };

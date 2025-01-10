@@ -1,11 +1,11 @@
 import { Plugin } from "@elizaos/core";
 
-import { TransferAction } from "./actions/";
+import transfer from "./actions/transfer";
 
 export const zksyncEraPlugin: Plugin = {
     name: "zksync-era",
     description: "ZKsync Era Plugin for Eliza",
-    actions: [TransferAction],
+    actions: [transfer],
     evaluators: [],
     providers: [],
 };

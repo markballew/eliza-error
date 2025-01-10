@@ -3,7 +3,6 @@ import {
     IAgentRuntime,
     Memory,
     type Action,
-    elizaLogger,
 } from "@elizaos/core";
 import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import { getQuote } from "./swapUtils.ts";
@@ -54,7 +53,7 @@ export const executeSwapForDAO: Action = {
     name: "EXECUTE_SWAP_DAO",
     similes: ["SWAP_TOKENS_DAO", "TOKEN_SWAP_DAO"],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
-        elizaLogger.log("Message:", message);
+        console.log("Message:", message);
         return true;
     },
     description: "Perform a DAO token swap using execute_invoke.",
@@ -66,7 +65,7 @@ export const executeSwapForDAO: Action = {
 
         try {
             const connection = new Connection(
-                runtime.getSetting("SOLANA_RPC_URL") as string
+                runtime.getSetting("RPC_URL") as string
             );
 
             const { keypair: authority } = await getWalletKey(runtime, true);
@@ -89,11 +88,11 @@ export const executeSwapForDAO: Action = {
                 outputToken as string,
                 amount as number
             );
-            elizaLogger.log("Swap Quote:", quoteData);
+            console.log("Swap Quote:", quoteData);
 
             const confirmSwap = await promptConfirmation();
             if (!confirmSwap) {
-                elizaLogger.log("Swap canceled by user");
+                console.log("Swap canceled by user");
                 return false;
             }
 
@@ -114,12 +113,12 @@ export const executeSwapForDAO: Action = {
                 instructionData
             );
 
-            elizaLogger.log("DAO Swap completed successfully!");
-            elizaLogger.log(`Transaction ID: ${txid}`);
+            console.log("DAO Swap completed successfully!");
+            console.log(`Transaction ID: ${txid}`);
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during DAO token swap:", error);
+            console.error("Error during DAO token swap:", error);
             return false;
         }
     },

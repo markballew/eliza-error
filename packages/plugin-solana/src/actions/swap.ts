@@ -9,7 +9,6 @@ import {
     settings,
     State,
     type Action,
-    elizaLogger,
 } from "@elizaos/core";
 import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
@@ -33,7 +32,7 @@ async function swapToken(
                       await getTokenDecimals(connection, inputTokenCA)
                   );
 
-        elizaLogger.log("Decimals:", decimals.toString());
+        console.log("Decimals:", decimals.toString());
 
         // Use BigNumber for adjustedAmount: amount * (10 ** decimals)
         const amountBN = new BigNumber(amount);
@@ -41,38 +40,35 @@ async function swapToken(
             new BigNumber(10).pow(decimals)
         );
 
-        elizaLogger.log("Fetching quote with params:", {
+        console.log("Fetching quote with params:", {
             inputMint: inputTokenCA,
             outputMint: outputTokenCA,
             amount: adjustedAmount,
         });
 
         const quoteResponse = await fetch(
-            `https://quote-api.jup.ag/v6/quote?inputMint=${inputTokenCA}&outputMint=${outputTokenCA}&amount=${adjustedAmount}&dynamicSlippage=true&maxAccounts=64`
+            `https://quote-api.jup.ag/v6/quote?inputMint=${inputTokenCA}&outputMint=${outputTokenCA}&amount=${adjustedAmount}&slippageBps=50`
         );
         const quoteData = await quoteResponse.json();
 
         if (!quoteData || quoteData.error) {
-            elizaLogger.error("Quote error:", quoteData);
+            console.error("Quote error:", quoteData);
             throw new Error(
                 `Failed to get quote: ${quoteData?.error || "Unknown error"}`
             );
         }
 
-        elizaLogger.log("Quote received:", quoteData);
+        console.log("Quote received:", quoteData);
 
         const swapRequestBody = {
             quoteResponse: quoteData,
-            userPublicKey: walletPublicKey.toBase58(),
+            userPublicKey: walletPublicKey.toString(),
+            wrapAndUnwrapSol: true,
+            computeUnitPriceMicroLamports: 2000000,
             dynamicComputeUnitLimit: true,
-            dynamicSlippage: true,
-            priorityLevelWithMaxLamports: {
-                maxLamports: 4000000,
-                priorityLevel: "veryHigh",
-            },
         };
 
-        elizaLogger.log("Requesting swap with body:", swapRequestBody);
+        console.log("Requesting swap with body:", swapRequestBody);
 
         const swapResponse = await fetch("https://quote-api.jup.ag/v6/swap", {
             method: "POST",
@@ -85,16 +81,16 @@ async function swapToken(
         const swapData = await swapResponse.json();
 
         if (!swapData || !swapData.swapTransaction) {
-            elizaLogger.error("Swap error:", swapData);
+            console.error("Swap error:", swapData);
             throw new Error(
                 `Failed to get swap transaction: ${swapData?.error || "No swap transaction returned"}`
             );
         }
 
-        elizaLogger.log("Swap transaction received");
+        console.log("Swap transaction received");
         return swapData;
     } catch (error) {
-        elizaLogger.error("Error in swapToken:", error);
+        console.error("Error in swapToken:", error);
         throw error;
     }
 }
@@ -163,7 +159,7 @@ async function getTokenFromWallet(runtime: IAgentRuntime, tokenSymbol: string) {
             return null;
         }
     } catch (error) {
-        elizaLogger.error("Error checking token in wallet:", error);
+        console.error("Error checking token in wallet:", error);
         return null;
     }
 }
@@ -175,7 +171,7 @@ export const executeSwap: Action = {
     similes: ["SWAP_TOKENS", "TOKEN_SWAP", "TRADE_TOKENS", "EXCHANGE_TOKENS"],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         // Check if the necessary parameters are provided in the message
-        elizaLogger.log("Message:", message);
+        console.log("Message:", message);
         return true;
     },
     description: "Perform a token swap.",
@@ -208,7 +204,7 @@ export const executeSwap: Action = {
             modelClass: ModelClass.LARGE,
         });
 
-        elizaLogger.log("Response:", response);
+        console.log("Response:", response);
         // const type = response.inputTokenSymbol?.toUpperCase() === "SOL" ? "buy" : "sell";
 
         // Add SOL handling logic
@@ -222,7 +218,7 @@ export const executeSwap: Action = {
         // if both contract addresses are set, lets execute the swap
         // TODO: try to resolve CA from symbol based on existing symbol in wallet
         if (!response.inputTokenCA && response.inputTokenSymbol) {
-            elizaLogger.log(
+            console.log(
                 `Attempting to resolve CA for input token symbol: ${response.inputTokenSymbol}`
             );
             response.inputTokenCA = await getTokenFromWallet(
@@ -230,13 +226,9 @@ export const executeSwap: Action = {
                 response.inputTokenSymbol
             );
             if (response.inputTokenCA) {
-                elizaLogger.log(
-                    `Resolved inputTokenCA: ${response.inputTokenCA}`
-                );
+                console.log(`Resolved inputTokenCA: ${response.inputTokenCA}`);
             } else {
-                elizaLogger.log(
-                    "No contract addresses provided, skipping swap"
-                );
+                console.log("No contract addresses provided, skipping swap");
                 const responseMsg = {
                     text: "I need the contract addresses to perform the swap",
                 };
@@ -246,7 +238,7 @@ export const executeSwap: Action = {
         }
 
         if (!response.outputTokenCA && response.outputTokenSymbol) {
-            elizaLogger.log(
+            console.log(
                 `Attempting to resolve CA for output token symbol: ${response.outputTokenSymbol}`
             );
             response.outputTokenCA = await getTokenFromWallet(
@@ -254,13 +246,11 @@ export const executeSwap: Action = {
                 response.outputTokenSymbol
             );
             if (response.outputTokenCA) {
-                elizaLogger.log(
+                console.log(
                     `Resolved outputTokenCA: ${response.outputTokenCA}`
                 );
             } else {
-                elizaLogger.log(
-                    "No contract addresses provided, skipping swap"
-                );
+                console.log("No contract addresses provided, skipping swap");
                 const responseMsg = {
                     text: "I need the contract addresses to perform the swap",
                 };
@@ -270,7 +260,7 @@ export const executeSwap: Action = {
         }
 
         if (!response.amount) {
-            elizaLogger.log("No amount provided, skipping swap");
+            console.log("No amount provided, skipping swap");
             const responseMsg = {
                 text: "I need the amount to perform the swap",
             };
@@ -280,7 +270,7 @@ export const executeSwap: Action = {
 
         // TODO: if response amount is half, all, etc, semantically retrieve amount and return as number
         if (!response.amount) {
-            elizaLogger.log("Amount is not a number, skipping swap");
+            console.log("Amount is not a number, skipping swap");
             const responseMsg = {
                 text: "The amount must be a number",
             };
@@ -298,10 +288,10 @@ export const executeSwap: Action = {
 
             // const provider = new WalletProvider(connection, walletPublicKey);
 
-            elizaLogger.log("Wallet Public Key:", walletPublicKey);
-            elizaLogger.log("inputTokenSymbol:", response.inputTokenCA);
-            elizaLogger.log("outputTokenSymbol:", response.outputTokenCA);
-            elizaLogger.log("amount:", response.amount);
+            console.log("Wallet Public Key:", walletPublicKey);
+            console.log("inputTokenSymbol:", response.inputTokenCA);
+            console.log("outputTokenSymbol:", response.outputTokenCA);
+            console.log("amount:", response.amount);
 
             const swapResult = await swapToken(
                 connection,
@@ -311,7 +301,7 @@ export const executeSwap: Action = {
                 response.amount as number
             );
 
-            elizaLogger.log("Deserializing transaction...");
+            console.log("Deserializing transaction...");
             const transactionBuf = Buffer.from(
                 swapResult.swapTransaction,
                 "base64"
@@ -319,9 +309,9 @@ export const executeSwap: Action = {
             const transaction =
                 VersionedTransaction.deserialize(transactionBuf);
 
-            elizaLogger.log("Preparing to sign transaction...");
+            console.log("Preparing to sign transaction...");
 
-            elizaLogger.log("Creating keypair...");
+            console.log("Creating keypair...");
             const { keypair } = await getWalletKey(runtime, true);
             // Verify the public key matches what we expect
             if (keypair.publicKey.toBase58() !== walletPublicKey.toBase58()) {
@@ -330,10 +320,10 @@ export const executeSwap: Action = {
                 );
             }
 
-            elizaLogger.log("Signing transaction...");
+            console.log("Signing transaction...");
             transaction.sign([keypair]);
 
-            elizaLogger.log("Sending transaction...");
+            console.log("Sending transaction...");
 
             const latestBlockhash = await connection.getLatestBlockhash();
 
@@ -343,7 +333,7 @@ export const executeSwap: Action = {
                 preflightCommitment: "confirmed",
             });
 
-            elizaLogger.log("Transaction sent:", txid);
+            console.log("Transaction sent:", txid);
 
             // Confirm transaction using the blockhash
             const confirmation = await connection.confirmTransaction(
@@ -367,8 +357,8 @@ export const executeSwap: Action = {
                 );
             }
 
-            elizaLogger.log("Swap completed successfully!");
-            elizaLogger.log(`Transaction ID: ${txid}`);
+            console.log("Swap completed successfully!");
+            console.log(`Transaction ID: ${txid}`);
 
             const responseMsg = {
                 text: `Swap completed successfully! Transaction ID: ${txid}`,
@@ -378,7 +368,7 @@ export const executeSwap: Action = {
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token swap:", error);
+            console.error("Error during token swap:", error);
             return false;
         }
     },

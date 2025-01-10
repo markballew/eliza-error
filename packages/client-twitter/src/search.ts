@@ -1,5 +1,5 @@
 import { SearchMode } from "agent-twitter-client";
-import { composeContext, elizaLogger } from "@elizaos/core";
+import {composeContext, elizaLogger} from "@elizaos/core";
 import { generateMessageResponse, generateText } from "@elizaos/core";
 import { messageCompletionFooter } from "@elizaos/core";
 import {
@@ -60,10 +60,8 @@ export class TwitterSearchClient {
 
     private engageWithSearchTermsLoop() {
         this.engageWithSearchTerms().then();
-        const randomMinutes = Math.floor(Math.random() * (120 - 60 + 1)) + 60;
-        elizaLogger.log(
-            `Next twitter search scheduled in ${randomMinutes} minutes`
-        );
+        const randomMinutes = (Math.floor(Math.random() * (120 - 60 + 1)) + 60);
+        elizaLogger.log(`Next twitter search scheduled in ${randomMinutes} minutes`);
         setTimeout(
             () => this.engageWithSearchTermsLoop(),
             randomMinutes * 60 * 1000
@@ -71,13 +69,13 @@ export class TwitterSearchClient {
     }
 
     private async engageWithSearchTerms() {
-        elizaLogger.log("Engaging with search terms");
+        console.log("Engaging with search terms");
         try {
             const searchTerm = [...this.runtime.character.topics][
                 Math.floor(Math.random() * this.runtime.character.topics.length)
             ];
 
-            elizaLogger.log("Fetching search tweets");
+            console.log("Fetching search tweets");
             // TODO: we wait 5 seconds here to avoid getting rate limited on startup, but we should queue
             await new Promise((resolve) => setTimeout(resolve, 5000));
             const recentTweets = await this.client.fetchSearchTweets(
@@ -85,7 +83,7 @@ export class TwitterSearchClient {
                 20,
                 SearchMode.Top
             );
-            elizaLogger.log("Search tweets fetched");
+            console.log("Search tweets fetched");
 
             const homeTimeline = await this.client.fetchHomeTimeline(50);
 
@@ -105,7 +103,7 @@ export class TwitterSearchClient {
                 .slice(0, 20);
 
             if (slicedTweets.length === 0) {
-                elizaLogger.log(
+                console.log(
                     "No valid tweets found for the search term",
                     searchTerm
                 );
@@ -155,15 +153,14 @@ export class TwitterSearchClient {
             );
 
             if (!selectedTweet) {
-                elizaLogger.warn("No matching tweet found for the selected ID");
-                elizaLogger.log("Selected tweet ID:", tweetId);
-                return;
+                console.log("No matching tweet found for the selected ID");
+                return console.log("Selected tweet ID:", tweetId);
             }
 
-            elizaLogger.log("Selected tweet to reply to:", selectedTweet?.text);
+            console.log("Selected tweet to reply to:", selectedTweet?.text);
 
             if (selectedTweet.username === this.twitterUsername) {
-                elizaLogger.log("Skipping tweet from bot itself");
+                console.log("Skipping tweet from bot itself");
                 return;
             }
 
@@ -206,8 +203,7 @@ export class TwitterSearchClient {
             };
 
             if (!message.content.text) {
-                elizaLogger.warn("Returning: No response text found");
-                return;
+                return { text: "", action: "IGNORE" };
             }
 
             // Fetch replies and retweets
@@ -270,11 +266,11 @@ export class TwitterSearchClient {
             const response = responseContent;
 
             if (!response.text) {
-                elizaLogger.warn("Returning: No response text found");
+                console.log("Returning: No response text found");
                 return;
             }
 
-            elizaLogger.log(
+            console.log(
                 `Bot would respond to tweet ${selectedTweet.id} with: ${response.text}`
             );
             try {
