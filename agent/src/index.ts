@@ -79,8 +79,6 @@ import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
 
-import { coingeckoPlugin } from "@elizaos/plugin-coingecko";
-import { dominosPlugin } from "@elizaos/plugin-dominos";
 import { giphyPlugin } from "@elizaos/plugin-giphy";
 import { letzAIPlugin } from "@elizaos/plugin-letzai";
 import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
@@ -96,7 +94,7 @@ import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
-
+import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
@@ -669,6 +667,9 @@ export async function createAgent(
                   ]
                 : []),
             ...(teeMode !== TEEMode.OFF && walletSecretSalt ? [teePlugin] : []),
+            (teeMode !== TEEMode.OFF && walletSecretSalt &&getSecret(character,"VLOG")
+                ? verifiableLogPlugin
+                : null),
             getSecret(character, "SGX") ? sgxPlugin : null,
             (getSecret(character, "ENABLE_TEE_LOG") &&
                 ((teeMode !== TEEMode.OFF && walletSecretSalt) ||
@@ -681,10 +682,7 @@ export async function createAgent(
                 ? webhookPlugin
                 : null,
             goatPlugin,
-            getSecret(character, "COINGECKO_API_KEY") ||
-            getSecret(character, "COINGECKO_PRO_API_KEY")
-            ? coingeckoPlugin
-            : null,
+            getSecret(character, "COINGECKO_API_KEY") ? coingeckoPlugin : null,
             getSecret(character, "EVM_PROVIDER_URL") ? goatPlugin : null,
             getSecret(character, "ABSTRACT_PRIVATE_KEY")
                 ? abstractPlugin
