@@ -7,12 +7,12 @@ import {
 } from "@elizaos/core";
 
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 
 import { MIST_PER_SUI } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
 import * as path from "path";
-import { parseAccount } from "../utils";
 
 // Provider configuration
 const PROVIDER_CONFIG = {
@@ -220,7 +220,8 @@ const walletProvider: Provider = {
         _message: Memory,
         _state?: State
     ): Promise<string | null> => {
-        const suiAccount = parseAccount(runtime);
+        const privateKey = runtime.getSetting("SUI_PRIVATE_KEY");
+        const suiAccount = Ed25519Keypair.deriveKeypair(privateKey);
 
         try {
             const suiClient = new SuiClient({

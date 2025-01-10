@@ -1,10 +1,4 @@
-import {
-    IAgentRuntime,
-    Memory,
-    Provider,
-    State,
-    elizaLogger,
-} from "@elizaos/core";
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
@@ -97,7 +91,7 @@ export class WalletProvider {
                 const data = await response.json();
                 return data;
             } catch (error) {
-                elizaLogger.error(`Attempt ${i + 1} failed:`, error);
+                console.error(`Attempt ${i + 1} failed:`, error);
                 lastError = error;
                 if (i < PROVIDER_CONFIG.MAX_RETRIES - 1) {
                     const delay = PROVIDER_CONFIG.RETRY_DELAY * Math.pow(2, i);
@@ -107,7 +101,7 @@ export class WalletProvider {
             }
         }
 
-        elizaLogger.error(
+        console.error(
             "All attempts failed. Throwing the last error:",
             lastError
         );
@@ -120,83 +114,51 @@ export class WalletProvider {
             const cachedValue = this.cache.get<WalletPortfolio>(cacheKey);
 
             if (cachedValue) {
-                elizaLogger.log("Cache hit for fetchPortfolioValue");
+                console.log("Cache hit for fetchPortfolioValue");
                 return cachedValue;
             }
-            elizaLogger.log("Cache miss for fetchPortfolioValue");
+            console.log("Cache miss for fetchPortfolioValue");
 
-            // Check if Birdeye API key is available
-            const birdeyeApiKey = runtime.getSetting("BIRDEYE_API_KEY");
-
-            if (birdeyeApiKey) {
-                // Existing Birdeye API logic
-                const walletData = await this.fetchWithRetry(
-                    runtime,
-                    `${PROVIDER_CONFIG.BIRDEYE_API}/v1/wallet/token_list?wallet=${this.walletPublicKey.toBase58()}`
-                );
-
-                if (walletData?.success && walletData?.data) {
-                    const data = walletData.data;
-                    const totalUsd = new BigNumber(data.totalUsd.toString());
-                    const prices = await this.fetchPrices(runtime);
-                    const solPriceInUSD = new BigNumber(
-                        prices.solana.usd.toString()
-                    );
-
-                    const items = data.items.map((item: any) => ({
-                        ...item,
-                        valueSol: new BigNumber(item.valueUsd || 0)
-                            .div(solPriceInUSD)
-                            .toFixed(6),
-                        name: item.name || "Unknown",
-                        symbol: item.symbol || "Unknown",
-                        priceUsd: item.priceUsd || "0",
-                        valueUsd: item.valueUsd || "0",
-                    }));
-
-                    const portfolio = {
-                        totalUsd: totalUsd.toString(),
-                        totalSol: totalUsd.div(solPriceInUSD).toFixed(6),
-                        items: items.sort((a, b) =>
-                            new BigNumber(b.valueUsd)
-                                .minus(new BigNumber(a.valueUsd))
-                                .toNumber()
-                        ),
-                    };
-
-                    this.cache.set(cacheKey, portfolio);
-                    return portfolio;
-                }
-            }
-
-            // Fallback to basic token account info if no Birdeye API key or API call fails
-            const accounts = await this.getTokenAccounts(
-                this.walletPublicKey.toBase58()
+            const walletData = await this.fetchWithRetry(
+                runtime,
+                `${PROVIDER_CONFIG.BIRDEYE_API}/v1/wallet/token_list?wallet=${this.walletPublicKey.toBase58()}`
             );
 
-            const items = accounts.map((acc) => ({
-                name: "Unknown",
-                address: acc.account.data.parsed.info.mint,
-                symbol: "Unknown",
-                decimals: acc.account.data.parsed.info.tokenAmount.decimals,
-                balance: acc.account.data.parsed.info.tokenAmount.amount,
-                uiAmount:
-                    acc.account.data.parsed.info.tokenAmount.uiAmount.toString(),
-                priceUsd: "0",
-                valueUsd: "0",
-                valueSol: "0",
+            if (!walletData?.success || !walletData?.data) {
+                console.error("No portfolio data available", walletData);
+                throw new Error("No portfolio data available");
+            }
+
+            const data = walletData.data;
+            const totalUsd = new BigNumber(data.totalUsd.toString());
+            const prices = await this.fetchPrices(runtime);
+            const solPriceInUSD = new BigNumber(prices.solana.usd.toString());
+
+            const items = data.items.map((item: any) => ({
+                ...item,
+                valueSol: new BigNumber(item.valueUsd || 0)
+                    .div(solPriceInUSD)
+                    .toFixed(6),
+                name: item.name || "Unknown",
+                symbol: item.symbol || "Unknown",
+                priceUsd: item.priceUsd || "0",
+                valueUsd: item.valueUsd || "0",
             }));
 
+            const totalSol = totalUsd.div(solPriceInUSD);
             const portfolio = {
-                totalUsd: "0",
-                totalSol: "0",
-                items,
+                totalUsd: totalUsd.toString(),
+                totalSol: totalSol.toFixed(6),
+                items: items.sort((a, b) =>
+                    new BigNumber(b.valueUsd)
+                        .minus(new BigNumber(a.valueUsd))
+                        .toNumber()
+                ),
             };
-
             this.cache.set(cacheKey, portfolio);
             return portfolio;
         } catch (error) {
-            elizaLogger.error("Error fetching portfolio:", error);
+            console.error("Error fetching portfolio:", error);
             throw error;
         }
     }
@@ -207,10 +169,10 @@ export class WalletProvider {
             const cachedValue = await this.cache.get<WalletPortfolio>(cacheKey);
 
             if (cachedValue) {
-                elizaLogger.log("Cache hit for fetchPortfolioValue");
+                console.log("Cache hit for fetchPortfolioValue");
                 return cachedValue;
             }
-            elizaLogger.log("Cache miss for fetchPortfolioValue");
+            console.log("Cache miss for fetchPortfolioValue");
 
             const query = `
               query Balances($walletId: String!, $cursor: String) {
@@ -247,7 +209,7 @@ export class WalletProvider {
             const data = response.data?.data?.balances?.items;
 
             if (!data || data.length === 0) {
-                elizaLogger.error("No portfolio data available", data);
+                console.error("No portfolio data available", data);
                 throw new Error("No portfolio data available");
             }
 
@@ -293,7 +255,7 @@ export class WalletProvider {
 
             return portfolio;
         } catch (error) {
-            elizaLogger.error("Error fetching portfolio:", error);
+            console.error("Error fetching portfolio:", error);
             throw error;
         }
     }
@@ -304,10 +266,10 @@ export class WalletProvider {
             const cachedValue = this.cache.get<Prices>(cacheKey);
 
             if (cachedValue) {
-                elizaLogger.log("Cache hit for fetchPrices");
+                console.log("Cache hit for fetchPrices");
                 return cachedValue;
             }
-            elizaLogger.log("Cache miss for fetchPrices");
+            console.log("Cache miss for fetchPrices");
 
             const { SOL, BTC, ETH } = PROVIDER_CONFIG.TOKEN_ADDRESSES;
             const tokens = [SOL, BTC, ETH];
@@ -338,16 +300,14 @@ export class WalletProvider {
                               : "ethereum"
                     ].usd = price;
                 } else {
-                    elizaLogger.warn(
-                        `No price data available for token: ${token}`
-                    );
+                    console.warn(`No price data available for token: ${token}`);
                 }
             }
 
             this.cache.set(cacheKey, prices);
             return prices;
         } catch (error) {
-            elizaLogger.error("Error fetching prices:", error);
+            console.error("Error fetching prices:", error);
             throw error;
         }
     }
@@ -398,26 +358,8 @@ export class WalletProvider {
 
             return this.formatPortfolio(runtime, portfolio, prices);
         } catch (error) {
-            elizaLogger.error("Error generating portfolio report:", error);
+            console.error("Error generating portfolio report:", error);
             return "Unable to fetch wallet information. Please try again later.";
-        }
-    }
-
-    private async getTokenAccounts(walletAddress: string) {
-        try {
-            const accounts =
-                await this.connection.getParsedTokenAccountsByOwner(
-                    new PublicKey(walletAddress),
-                    {
-                        programId: new PublicKey(
-                            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-                        ),
-                    }
-                );
-            return accounts.value;
-        } catch (error) {
-            elizaLogger.error("Error fetching token accounts:", error);
-            return [];
         }
     }
 }
@@ -432,15 +374,14 @@ const walletProvider: Provider = {
             const { publicKey } = await getWalletKey(runtime, false);
 
             const connection = new Connection(
-                runtime.getSetting("SOLANA_RPC_URL") ||
-                    PROVIDER_CONFIG.DEFAULT_RPC
+                runtime.getSetting("RPC_URL") || PROVIDER_CONFIG.DEFAULT_RPC
             );
 
             const provider = new WalletProvider(connection, publicKey);
 
             return await provider.getFormattedPortfolio(runtime);
         } catch (error) {
-            elizaLogger.error("Error in wallet provider:", error);
+            console.error("Error in wallet provider:", error);
             return null;
         }
     },
