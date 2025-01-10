@@ -14,6 +14,7 @@ To install this plugin, run the following command:
 pnpm add @elizaos/plugin-irys
 ```
 
+
 ## Features
 
 - **Decentralized Data Storage**: Store data permanently on the Irys network
@@ -65,7 +66,6 @@ To retrieve data from the Irys network, you can use the `getDataFromAnAgent` fun
 
 - For files and images: Returns the URL of the stored content
 - For other data types: Returns a JSON object with the following structure:
-
 ```typescript
 {
   data: string,    // The stored data
