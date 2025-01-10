@@ -75,7 +75,7 @@ export const EchoChamberClientInterface: Client = {
     },
 };
 
-export const echoChambersPlugin: Plugin = {
+export const echoChamberPlugin: Plugin = {
     name: "echochambers",
     description:
         "Plugin for interacting with EchoChambers API to enable multi-agent communication",
@@ -85,7 +85,7 @@ export const echoChambersPlugin: Plugin = {
     clients: [EchoChamberClientInterface],
 };
 
-export default echoChambersPlugin;
+export default echoChamberPlugin;
 
 // Export types and classes
 export * from "./types";
