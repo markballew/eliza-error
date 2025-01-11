@@ -84,7 +84,7 @@ import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import { giphyPlugin } from "@elizaos/plugin-giphy";
 import { letzAIPlugin } from "@elizaos/plugin-letzai";
 import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
-
+import { hyperliquidPlugin } from "@elizaos/plugin-hyperliquid";
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 
 import { OpacityAdapter } from "@elizaos/plugin-opacity";
@@ -397,6 +397,11 @@ export function getTokenForProvider(
             return (
                 character.settings?.secrets?.GOOGLE_GENERATIVE_AI_API_KEY ||
                 settings.GOOGLE_GENERATIVE_AI_API_KEY
+            );
+        case ModelProviderName.MISTRAL:
+            return (
+                character.settings?.secrets?.MISTRAL_API_KEY ||
+                settings.MISTRAL_API_KEY
             );
         case ModelProviderName.LETZAI:
             return (
@@ -758,6 +763,12 @@ export async function createAgent(
                 ? artheraPlugin
                 : null,
             getSecret(character, "ALLORA_API_KEY") ? alloraPlugin : null,
+            getSecret(character, "HYPERLIQUID_PRIVATE_KEY")
+                ? hyperliquidPlugin
+                : null,
+            getSecret(character, "HYPERLIQUID_TESTNET")
+                ? hyperliquidPlugin
+                : null,
             getSecret(character, "AKASH_MNEMONIC") &&
             getSecret(character, "AKASH_WALLET_ADDRESS")
                 ? akashPlugin
