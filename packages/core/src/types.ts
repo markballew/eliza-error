@@ -1476,7 +1476,9 @@ export interface ISlackService extends Service {
  * Available verifiable inference providers
  */
 export enum VerifiableInferenceProvider {
+    RECLAIM = "reclaim",
     OPACITY = "opacity",
+    PRIMUS = "primus",
 }
 
 /**
