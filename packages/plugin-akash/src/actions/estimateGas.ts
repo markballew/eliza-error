@@ -8,7 +8,6 @@ import { validateAkashConfig } from "../environment";
 import { AkashError, AkashErrorCode } from "../error/error";
 import { encodingForModel } from "js-tiktoken";
 
-/*
 interface AkashMessage {
     typeUrl: string;
     value: {
@@ -19,7 +18,6 @@ interface AkashMessage {
         [key: string]: unknown;
     };
 }
-*/
 
 interface EstimateGasContent extends Content {
     text: string;

@@ -6,7 +6,6 @@ import {
     AgentRuntime,
     elizaLogger,
     getEnvVariable,
-    UUID,
     validateCharacterConfig,
     ServiceType,
 } from "@elizaos/core";
@@ -14,38 +13,7 @@ import {
 import { TeeLogQuery, TeeLogService } from "@elizaos/plugin-tee-log";
 import { REST, Routes } from "discord.js";
 import { DirectClient } from ".";
-import { validateUuid } from "@elizaos/core";
-
-interface UUIDParams {
-    agentId: UUID;
-    roomId?: UUID;
-}
-
-function validateUUIDParams(
-    params: { agentId: string; roomId?: string },
-    res: express.Response
-): UUIDParams | null {
-    const agentId = validateUuid(params.agentId);
-    if (!agentId) {
-        res.status(400).json({
-            error: "Invalid AgentId format. Expected to be a UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-        });
-        return null;
-    }
-
-    if (params.roomId) {
-        const roomId = validateUuid(params.roomId);
-        if (!roomId) {
-            res.status(400).json({
-                error: "Invalid RoomId format. Expected to be a UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-            });
-            return null;
-        }
-        return { agentId, roomId };
-    }
-
-    return { agentId };
-}
+import { stringToUuid } from "@elizaos/core";
 
 export function createApiRouter(
     agents: Map<string, AgentRuntime>,
@@ -80,11 +48,7 @@ export function createApiRouter(
     });
 
     router.get("/agents/:agentId", (req, res) => {
-        const { agentId } = validateUUIDParams(req.params, res) ?? {
-            agentId: null,
-        };
-        if (!agentId) return;
-
+        const agentId = req.params.agentId;
         const agent = agents.get(agentId);
 
         if (!agent) {
@@ -104,11 +68,8 @@ export function createApiRouter(
     });
 
     router.post("/agents/:agentId/set", async (req, res) => {
-        const { agentId } = validateUUIDParams(req.params, res) ?? {
-            agentId: null,
-        };
-        if (!agentId) return;
-
+        const agentId = req.params.agentId;
+        console.log("agentId", agentId);
         let agent: AgentRuntime = agents.get(agentId);
 
         // update character
@@ -143,11 +104,7 @@ export function createApiRouter(
     });
 
     router.get("/agents/:agentId/channels", async (req, res) => {
-        const { agentId } = validateUUIDParams(req.params, res) ?? {
-            agentId: null,
-        };
-        if (!agentId) return;
-
+        const agentId = req.params.agentId;
         const runtime = agents.get(agentId);
 
         if (!runtime) {
@@ -173,12 +130,8 @@ export function createApiRouter(
     });
 
     router.get("/agents/:agentId/:roomId/memories", async (req, res) => {
-        const { agentId, roomId } = validateUUIDParams(req.params, res) ?? {
-            agentId: null,
-            roomId: null,
-        };
-        if (!agentId || !roomId) return;
-
+        const agentId = req.params.agentId;
+        const roomId = stringToUuid(req.params.roomId);
         let runtime = agents.get(agentId);
 
         // if runtime is null, look for runtime with the same name
