@@ -347,8 +347,7 @@ export class VideoService extends Service implements IVideoService {
             throw new Error("Transcription service not found");
         }
 
-        const uintBuffer = new Uint8Array(audioBuffer).buffer;
-        const transcript = await transcriptionService.transcribe(uintBuffer);
+        const transcript = await transcriptionService.transcribe(audioBuffer);
 
         const endTime = Date.now();
         elizaLogger.log(

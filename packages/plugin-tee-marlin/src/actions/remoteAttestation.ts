@@ -24,7 +24,7 @@ export const remoteAttestationAction = {
             return false;
         }
     },
-    validate: async (_runtime: IAgentRuntime) => {
+    validate: async (runtime: IAgentRuntime) => {
         return true;
     },
     examples: [
