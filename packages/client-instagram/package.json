@@ -1,6 +1,6 @@
 {
-    "name": "@elizaos/plugin-evm",
-    "version": "0.1.8+build.1",
+    "name": "@elizaos/client-instagram",
+    "version": "0.1.0",
     "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -20,19 +20,18 @@
     ],
     "dependencies": {
         "@elizaos/core": "workspace:*",
-        "@elizaos/plugin-tee": "workspace:*",
-        "@lifi/data-types": "5.15.5",
-        "@lifi/sdk": "3.4.1",
-        "@lifi/types": "16.3.0",
-        "tsup": "8.3.5"
+        "zod": "3.23.8",
+        "instagram-private-api": "^1.45.3",
+        "sharp": "^0.33.2",
+        "glob": "11.0.0"
+    },
+    "devDependencies": {
+        "tsup": "8.3.5",
+        "@types/sharp": "^0.32.0"
     },
     "scripts": {
         "build": "tsup --format esm --dts",
         "dev": "tsup --format esm --dts --watch",
-        "test": "vitest run",
-        "lint": "eslint --fix  --cache ."
-    },
-    "peerDependencies": {
-        "whatwg-url": "7.1.0"
+        "lint": "eslint --fix --cache ."
     }
 }
