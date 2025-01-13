@@ -11,8 +11,6 @@ import {
     GbnfJsonSchema,
     getLlama,
     Llama,
-    LlamaChatSession,
-    LlamaChatSessionRepeatPenalty,
     LlamaContext,
     LlamaContextSequence,
     LlamaContextSequenceRepeatPenalty,
@@ -551,28 +549,49 @@ export class LlamaService extends Service {
             throw new Error("Model not initialized.");
         }
 
-        const session = new LlamaChatSession({
-            contextSequence: this.sequence
-        });
+        const tokens = this.model!.tokenize(context);
 
+        // tokenize the words to punish
         const wordsToPunishTokens = wordsToPunish
             .map((word) => this.model!.tokenize(word))
             .flat();
 
-        const repeatPenalty: LlamaChatSessionRepeatPenalty = {
-            punishTokensFilter: () => wordsToPunishTokens,
+        const repeatPenalty: LlamaContextSequenceRepeatPenalty = {
+            punishTokens: () => wordsToPunishTokens,
             penalty: 1.2,
             frequencyPenalty: frequency_penalty,
             presencePenalty: presence_penalty,
         };
 
-        const response = await session.prompt(context, {
-            onTextChunk(chunk) {                // stream the response to the console as it's being generated
-                process.stdout.write(chunk);
-            },
+        const responseTokens: Token[] = [];
+
+        for await (const token of this.sequence.evaluate(tokens, {
             temperature: Number(temperature),
-            repeatPenalty: repeatPenalty
-        });
+            repeatPenalty: repeatPenalty,
+            grammarEvaluationState: useGrammar ? this.grammar : undefined,
+            yieldEogToken: false,
+        })) {
+            const current = this.model.detokenize([...responseTokens, token]);
+            if ([...stop].some((s) => current.includes(s))) {
+                elizaLogger.info("Stop sequence found");
+                break;
+            }
+
+            responseTokens.push(token);
+            process.stdout.write(this.model!.detokenize([token]));
+            if (useGrammar) {
+                if (current.replaceAll("\n", "").includes("}```")) {
+                    elizaLogger.info("JSON block found");
+                    break;
+                }
+            }
+            if (responseTokens.length > max_tokens) {
+                elizaLogger.info("Max tokens reached");
+                break;
+            }
+        }
+
+        const response = this.model!.detokenize(responseTokens);
 
         if (!response) {
             throw new Error("Response is undefined");

@@ -17,7 +17,6 @@ import {
     generateObjectDeprecated,
     composeContext,
     type Action,
-    elizaLogger,
 } from "@elizaos/core";
 
 import { walletProvider } from "../providers/wallet.ts";
@@ -36,7 +35,7 @@ export function isCreateAndBuyContent(
     runtime: IAgentRuntime,
     content: any
 ): content is CreateAndBuyContent {
-    elizaLogger.log("Content for create & buy", content);
+    console.log("Content for create & buy", content);
     return (
         typeof content.tokenMetadata === "object" &&
         content.tokenMetadata !== null &&
@@ -56,7 +55,7 @@ export const createAndBuyToken = async ({
     buyAmountSol,
     priorityFee,
     allowOffCurve,
-    commitment = "confirmed",
+    commitment = "finalized",
     sdk,
     connection,
     slippage,
@@ -90,10 +89,10 @@ export const createAndBuyToken = async ({
         commitment
     );
 
-    elizaLogger.log("Create Results: ", createResults);
+    console.log("Create Results: ", createResults);
 
     if (createResults.success) {
-        elizaLogger.log(
+        console.log(
             "Success:",
             `https://pump.fun/${mint.publicKey.toBase58()}`
         );
@@ -108,12 +107,12 @@ export const createAndBuyToken = async ({
         );
         const amount = balance.value.uiAmount;
         if (amount === null) {
-            elizaLogger.log(
+            console.log(
                 `${deployer.publicKey.toBase58()}:`,
                 "No Account Found"
             );
         } else {
-            elizaLogger.log(`${deployer.publicKey.toBase58()}:`, amount);
+            console.log(`${deployer.publicKey.toBase58()}:`, amount);
         }
 
         return {
@@ -122,7 +121,7 @@ export const createAndBuyToken = async ({
             creator: deployer.publicKey.toBase58(),
         };
     } else {
-        elizaLogger.log("Create and Buy failed");
+        console.log("Create and Buy failed");
         return {
             success: false,
             ca: mint.publicKey.toBase58(),
@@ -158,7 +157,7 @@ export const buyToken = async ({
         priorityFee
     );
     if (buyResults.success) {
-        elizaLogger.log("Success:", `https://pump.fun/${mint.toBase58()}`);
+        console.log("Success:", `https://pump.fun/${mint.toBase58()}`);
         const ata = getAssociatedTokenAddressSync(
             mint,
             buyer.publicKey,
@@ -170,15 +169,12 @@ export const buyToken = async ({
         );
         const amount = balance.value.uiAmount;
         if (amount === null) {
-            elizaLogger.log(
-                `${buyer.publicKey.toBase58()}:`,
-                "No Account Found"
-            );
+            console.log(`${buyer.publicKey.toBase58()}:`, "No Account Found");
         } else {
-            elizaLogger.log(`${buyer.publicKey.toBase58()}:`, amount);
+            console.log(`${buyer.publicKey.toBase58()}:`, amount);
         }
     } else {
-        elizaLogger.log("Buy failed");
+        console.log("Buy failed");
     }
 };
 
@@ -209,7 +205,7 @@ export const sellToken = async ({
         priorityFee
     );
     if (sellResults.success) {
-        elizaLogger.log("Success:", `https://pump.fun/${mint.toBase58()}`);
+        console.log("Success:", `https://pump.fun/${mint.toBase58()}`);
         const ata = getAssociatedTokenAddressSync(
             mint,
             seller.publicKey,
@@ -221,15 +217,12 @@ export const sellToken = async ({
         );
         const amount = balance.value.uiAmount;
         if (amount === null) {
-            elizaLogger.log(
-                `${seller.publicKey.toBase58()}:`,
-                "No Account Found"
-            );
+            console.log(`${seller.publicKey.toBase58()}:`, "No Account Found");
         } else {
-            elizaLogger.log(`${seller.publicKey.toBase58()}:`, amount);
+            console.log(`${seller.publicKey.toBase58()}:`, amount);
         }
     } else {
-        elizaLogger.log("Sell failed");
+        console.log("Sell failed");
     }
 };
 
@@ -290,7 +283,7 @@ export default {
         _options: { [key: string]: unknown },
         callback?: HandlerCallback
     ): Promise<boolean> => {
-        elizaLogger.log("Starting CREATE_AND_BUY_TOKEN handler...");
+        console.log("Starting CREATE_AND_BUY_TOKEN handler...");
 
         // Compose state if not provided
         if (!state) {
@@ -317,9 +310,7 @@ export default {
 
         // Validate the generated content
         if (!isCreateAndBuyContent(runtime, content)) {
-            elizaLogger.error(
-                "Invalid content for CREATE_AND_BUY_TOKEN action."
-            );
+            console.error("Invalid content for CREATE_AND_BUY_TOKEN action.");
             return false;
         }
 
@@ -339,11 +330,11 @@ export default {
                         // Remove the "data:image/png;base64," prefix if present
                         tokenMetadata.file = imageResult.data[0].replace(/^data:image\/[a-z]+;base64,/, '');
                     } else {
-                        elizaLogger.error("Failed to generate image:", imageResult.error);
+                        console.error("Failed to generate image:", imageResult.error);
                         return false;
                     }
                 } catch (error) {
-                    elizaLogger.error("Error generating image:", error);
+                    console.error("Error generating image:", error);
                     return false;
                 }
             } */
@@ -370,7 +361,7 @@ export default {
             `generated_image_${Date.now()}.txt`
         );
         fs.writeFileSync(outputPath, base64Data);
-        elizaLogger.log(`Base64 data saved to: ${outputPath}`);
+        console.log(`Base64 data saved to: ${outputPath}`);
 
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
@@ -403,34 +394,34 @@ export default {
 
             // Generate new mint keypair
             const mintKeypair = Keypair.generate();
-            elizaLogger.log(
+            console.log(
                 `Generated mint address: ${mintKeypair.publicKey.toBase58()}`
             );
 
             // Setup connection and SDK
-            const connection = new Connection(settings.SOLANA_RPC_URL!, {
+            const connection = new Connection(settings.RPC_URL!, {
                 commitment: "confirmed",
                 confirmTransactionInitialTimeout: 500000, // 120 seconds
-                wsEndpoint: settings.SOLANA_RPC_URL!.replace("https", "wss"),
+                wsEndpoint: settings.RPC_URL!.replace("https", "wss"),
             });
 
             const wallet = new Wallet(deployerKeypair);
             const provider = new AnchorProvider(connection, wallet, {
-                commitment: "confirmed",
+                commitment: "finalized",
             });
             const sdk = new PumpFunSDK(provider);
             // const slippage = runtime.getSetting("SLIPPAGE");
 
             const createAndBuyConfirmation = await promptConfirmation();
             if (!createAndBuyConfirmation) {
-                elizaLogger.log("Create and buy token canceled by user");
+                console.log("Create and buy token canceled by user");
                 return false;
             }
 
             // Convert SOL to lamports (1 SOL = 1_000_000_000 lamports)
             const lamports = Math.floor(Number(buyAmountSol) * 1_000_000_000);
 
-            elizaLogger.log("Executing create and buy transaction...");
+            console.log("Executing create and buy transaction...");
             const result = await createAndBuyToken({
                 deployer: deployerKeypair,
                 mint: mintKeypair,
@@ -478,7 +469,7 @@ export default {
                 */
             // Log success message with token view URL
             const successMessage = `Token created and purchased successfully! View at: https://pump.fun/${mintKeypair.publicKey.toBase58()}`;
-            elizaLogger.log(successMessage);
+            console.log(successMessage);
             return result.success;
         } catch (error) {
             if (callback) {

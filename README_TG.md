@@ -1,3 +1,4 @@
+
 # Eliza 🤖
 
 <div align="center">
@@ -86,7 +87,7 @@ sh scripts/start.sh
 
 ### Ipasadya ang Karakter File
 
-1. Buksan ang `packages/core/src/defaultCharacter.ts` para baguhin ang kusang mapagpipilian na karakter.
+1. Buksan ang `packages/core/src/defaultCharacter.ts` para baguhin ang kusang mapagpipilian na karakter. 
 2. Mag-load ng pasadya na mga karakter:
     - Gamitin ang `pnpm start --characters="landas/sa/inyong/character.json"`
     - Puwedeng mag-load ng maraming karakter file sabay-sabay.

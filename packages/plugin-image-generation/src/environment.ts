@@ -4,7 +4,6 @@ import { z } from "zod";
 export const imageGenEnvSchema = z
     .object({
         ANTHROPIC_API_KEY: z.string().optional(),
-        NINETEEN_AI_API_KEY: z.string().optional(),
         TOGETHER_API_KEY: z.string().optional(),
         HEURIST_API_KEY: z.string().optional(),
         FAL_API_KEY: z.string().optional(),
@@ -15,7 +14,6 @@ export const imageGenEnvSchema = z
         (data) => {
             return !!(
                 data.ANTHROPIC_API_KEY ||
-                data.NINETEEN_AI_API_KEY ||
                 data.TOGETHER_API_KEY ||
                 data.HEURIST_API_KEY ||
                 data.FAL_API_KEY ||
@@ -25,7 +23,7 @@ export const imageGenEnvSchema = z
         },
         {
             message:
-                "At least one of ANTHROPIC_API_KEY, NINETEEN_AI_API_KEY, TOGETHER_API_KEY, HEURIST_API_KEY, FAL_API_KEY, OPENAI_API_KEY or VENICE_API_KEY is required",
+                "At least one of ANTHROPIC_API_KEY, TOGETHER_API_KEY, HEURIST_API_KEY, FAL_API_KEY, OPENAI_API_KEY or VENICE_API_KEY is required",
         }
     );
 
@@ -39,9 +37,6 @@ export async function validateImageGenConfig(
             ANTHROPIC_API_KEY:
                 runtime.getSetting("ANTHROPIC_API_KEY") ||
                 process.env.ANTHROPIC_API_KEY,
-            NINETEEN_AI_API_KEY:
-                runtime.getSetting("NINETEEN_AI_API_KEY") ||
-                process.env.NINETEEN_AI_API_KEY,
             TOGETHER_API_KEY:
                 runtime.getSetting("TOGETHER_API_KEY") ||
                 process.env.TOGETHER_API_KEY,
@@ -49,8 +44,7 @@ export async function validateImageGenConfig(
                 runtime.getSetting("HEURIST_API_KEY") ||
                 process.env.HEURIST_API_KEY,
             FAL_API_KEY:
-                runtime.getSetting("FAL_API_KEY") ||
-                process.env.FAL_API_KEY,
+                runtime.getSetting("FAL_API_KEY") || process.env.FAL_API_KEY,
             OPENAI_API_KEY:
                 runtime.getSetting("OPENAI_API_KEY") ||
                 process.env.OPENAI_API_KEY,

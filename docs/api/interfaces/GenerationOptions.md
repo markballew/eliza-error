@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.7](../index.md) / GenerationOptions
+[@elizaos/core v0.1.7-alpha.1](../index.md) / GenerationOptions
 
 # Interface: GenerationOptions
 
@@ -12,9 +12,9 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1516](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1516)
+[packages/core/src/generation.ts:1266](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1266)
 
----
+***
 
 ### context
 
@@ -22,9 +22,9 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1517](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1517)
+[packages/core/src/generation.ts:1267](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1267)
 
----
+***
 
 ### modelClass
 
@@ -32,19 +32,19 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1518](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1518)
+[packages/core/src/generation.ts:1268](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1268)
 
----
+***
 
 ### schema?
 
-> `optional` **schema**: `ZodType`\<`any`, `ZodTypeDef`, `any`\>
+> `optional` **schema**: `ZodSchema`
 
 #### Defined in
 
-[packages/core/src/generation.ts:1519](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1519)
+[packages/core/src/generation.ts:1269](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1269)
 
----
+***
 
 ### schemaName?
 
@@ -52,9 +52,9 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1520](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1520)
+[packages/core/src/generation.ts:1270](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1270)
 
----
+***
 
 ### schemaDescription?
 
@@ -62,9 +62,9 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1521](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1521)
+[packages/core/src/generation.ts:1271](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1271)
 
----
+***
 
 ### stop?
 
@@ -72,9 +72,9 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1522](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1522)
+[packages/core/src/generation.ts:1272](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1272)
 
----
+***
 
 ### mode?
 
@@ -82,14 +82,14 @@ Configuration options for generating objects with a model.
 
 #### Defined in
 
-[packages/core/src/generation.ts:1523](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1523)
+[packages/core/src/generation.ts:1273](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1273)
 
----
+***
 
-### experimental_providerMetadata?
+### experimental\_providerMetadata?
 
-> `optional` **experimental_providerMetadata**: `Record`\<`string`, `unknown`\>
+> `optional` **experimental\_providerMetadata**: `Record`\<`string`, `unknown`\>
 
 #### Defined in
 
-[packages/core/src/generation.ts:1524](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1524)
+[packages/core/src/generation.ts:1274](https://github.com/elizaOS/eliza/blob/main/packages/core/src/generation.ts#L1274)
