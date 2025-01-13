@@ -649,6 +649,7 @@ export enum Clients {
     AUTO = "auto",
     SLACK = "slack",
     GITHUB = "github",
+    INSTAGRAM = "instagram",
 }
 
 export interface IAgentConfig {
@@ -732,6 +733,9 @@ export type Character = {
         twitterPostTemplate?: TemplateType;
         twitterMessageHandlerTemplate?: TemplateType;
         twitterShouldRespondTemplate?: TemplateType;
+        instagramPostTemplate?: TemplateType;
+        instagramMessageHandlerTemplate?: TemplateType;
+        instagramShouldRespondTemplate?: TemplateType;
         farcasterPostTemplate?: TemplateType;
         lensPostTemplate?: TemplateType;
         farcasterMessageHandlerTemplate?: TemplateType;
@@ -869,10 +873,20 @@ export type Character = {
         bio: string;
         nicknames?: string[];
     };
+
+    /** Optional Instagram profile */
+    instagramProfile?: {
+        id: string;
+        username: string;
+        bio: string;
+        nicknames?: string[];
+    };
+
     /** Optional NFT prompt */
     nft?: {
         prompt: string;
     };
+
     /**Optinal Parent characters to inherit information from */
     extends?: string[];
 };
@@ -1394,6 +1408,28 @@ export interface ITeeLogService extends Service {
     ): Promise<boolean>;
 }
 
+export type SearchImage = {
+    url: string;
+    description?: string;
+};
+
+export type SearchResult = {
+    title: string;
+    url: string;
+    content: string;
+    rawContent?: string;
+    score: number;
+    publishedDate?: string;
+};
+
+export type SearchResponse = {
+    answer?: string;
+    query: string;
+    responseTime: number;
+    images: SearchImage[];
+    results: SearchResult[];
+};
+
 export enum ServiceType {
     IMAGE_DESCRIPTION = "image_description",
     TRANSCRIPTION = "transcription",
@@ -1406,10 +1442,10 @@ export enum ServiceType {
     AWS_S3 = "aws_s3",
     BUTTPLUG = "buttplug",
     SLACK = "slack",
+    VERIFIABLE_LOGGING = "verifiable_logging",
     IRYS = "irys",
     TEE_LOG = "tee_log",
     GOPLUS_SECURITY = "goplus_security",
-    WEB_SEARCH = "web_search",
 }
 
 export enum LoggingLevel {
