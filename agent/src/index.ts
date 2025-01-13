@@ -94,6 +94,7 @@ import { OpacityAdapter } from "@elizaos/plugin-opacity";
 import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
 import { akashPlugin } from "@elizaos/plugin-akash";
+import { chainbasePlugin } from "@elizaos/plugin-chainbase";
 import { quaiPlugin } from "@elizaos/plugin-quai";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -881,6 +882,7 @@ export async function createAgent(
             getSecret(character, "AKASH_WALLET_ADDRESS")
                 ? akashPlugin
                 : null,
+            getSecret(character, "CHAINBASE_API_KEY") ? chainbasePlugin : null,
             getSecret(character, "QUAI_PRIVATE_KEY") ? quaiPlugin : null,
             getSecret(character, "RESERVOIR_API_KEY")
                 ? createNFTCollectionsPlugin()
