@@ -1218,6 +1218,9 @@ importers:
 
   packages/plugin-abstract:
     dependencies:
+      '@abstract-foundation/agw-client':
+        specifier: ^0.1.7
+        version: 0.1.8(abitype@1.0.8(typescript@5.7.3)(zod@3.24.1))(typescript@5.7.3)(viem@2.21.58(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@6.0.5)(zod@3.24.1))
       '@elizaos/core':
         specifier: workspace:*
         version: link:../core
@@ -3017,6 +3020,16 @@ packages:
 
   '@3land/listings-sdk@0.0.4':
     resolution: {integrity: sha512-Ljq8R4e7y+wl4m8BGhiInFPCHEzHZZFz1qghnbc8B3bLEKXWM9+2gZOCAa84rdUKuLfzenEdeS2LclTKhdKTFQ==}
+
+  '@abstract-foundation/agw-client@0.1.8':
+    resolution: {integrity: sha512-MEPfFRWtEVXUuWkE43Vrqxzk7s+23cRtY2ctzqiZSiqJ+Hg4uPCymowmqPATdYgGNQXPCzUYNQN4tFxFWRMaFA==}
+    peerDependencies:
+      abitype: ^1.0.0
+      typescript: '>=5.0.4'
+      viem: 2.21.58
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   '@acuminous/bitsyntax@0.1.2':
     resolution: {integrity: sha512-29lUK80d1muEQqiUsSo+3A0yP6CdspgC95EnKBMi22Xlwt79i/En4Vr67+cXhU+cZjbti3TgGGC5wy1stIywVQ==}
@@ -22635,6 +22648,13 @@ snapshots:
       - typescript
       - utf-8-validate
 
+  '@abstract-foundation/agw-client@0.1.8(abitype@1.0.8(typescript@5.7.3)(zod@3.24.1))(typescript@5.7.3)(viem@2.21.58(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@6.0.5)(zod@3.24.1))':
+    dependencies:
+      abitype: 1.0.8(typescript@5.7.3)(zod@3.24.1)
+      viem: 2.21.58(bufferutil@4.0.9)(typescript@5.7.3)(utf-8-validate@6.0.5)(zod@3.24.1)
+    optionalDependencies:
+      typescript: 5.7.3
+
   '@acuminous/bitsyntax@0.1.2':
     dependencies:
       buffer-more-ints: 1.0.0
@@ -35532,6 +35552,11 @@ snapshots:
       typescript: 5.7.3
       zod: 3.23.8
 
+  abitype@1.0.8(typescript@5.7.3)(zod@3.24.1):
+    optionalDependencies:
+      typescript: 5.7.3
+      zod: 3.24.1
+
   abort-controller@3.0.0:
     dependencies:
       event-target-shim: 5.0.1
@@ -42185,7 +42210,7 @@ snapshots:
 
   jest-diff@29.7.0:
     dependencies:
-      chalk: 4.1.0
+      chalk: 4.1.2
       diff-sequences: 29.6.3
       jest-get-type: 29.6.3
       pretty-format: 29.7.0
@@ -44293,7 +44318,7 @@ snapshots:
       array-differ: 3.0.0
       array-union: 2.1.0
       arrify: 2.0.1
-      minimatch: 3.0.5
+      minimatch: 3.1.2
 
   multistream@4.1.0:
     dependencies:
@@ -44727,7 +44752,7 @@ snapshots:
       '@yarnpkg/parsers': 3.0.0-rc.46
       '@zkochan/js-yaml': 0.0.7
       axios: 1.7.9(debug@4.4.0)
-      chalk: 4.1.0
+      chalk: 4.1.2
       cli-cursor: 3.1.0
       cli-spinners: 2.6.1
       cliui: 8.0.1
@@ -45018,7 +45043,7 @@ snapshots:
   ora@5.3.0:
     dependencies:
       bl: 4.1.0
-      chalk: 4.1.0
+      chalk: 4.1.2
       cli-cursor: 3.1.0
       cli-spinners: 2.6.1
       is-interactive: 1.0.0
