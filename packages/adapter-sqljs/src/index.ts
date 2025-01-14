@@ -81,26 +81,15 @@ export class SqlJsDatabaseAdapter
         agentId: UUID;
         roomIds: UUID[];
         tableName: string;
-        limit?: number;
     }): Promise<Memory[]> {
         const placeholders = params.roomIds.map(() => "?").join(", ");
-        let sql = `SELECT * FROM memories WHERE 'type' = ? AND agentId = ? AND roomId IN (${placeholders})`;
-
+        const sql = `SELECT * FROM memories WHERE 'type' = ? AND agentId = ? AND roomId IN (${placeholders})`;
+        const stmt = this.db.prepare(sql);
         const queryParams = [
             params.tableName,
             params.agentId,
             ...params.roomIds,
         ];
-
-        // Add ordering and limit
-        sql += ` ORDER BY createdAt DESC`;
-        if (params.limit) {
-            sql += ` LIMIT ?`;
-            queryParams.push(params.limit.toString());
-        }
-
-        const stmt = this.db.prepare(sql);
-
         elizaLogger.log({ queryParams });
         stmt.bind(queryParams);
         elizaLogger.log({ queryParams });
@@ -235,6 +224,35 @@ export class SqlJsDatabaseAdapter
         const memory = stmt.getAsObject() as unknown as Memory | undefined;
         stmt.free();
         return memory || null;
+    }
+
+    async getMemoriesByIds(
+        memoryIds: UUID[],
+        tableName?: string
+    ): Promise<Memory[]> {
+        if (memoryIds.length === 0) return [];
+        const placeholders = memoryIds.map(() => "?").join(",");
+        let sql = `SELECT * FROM memories WHERE id IN (${placeholders})`;
+        const queryParams: any[] = [...memoryIds];
+
+        if (tableName) {
+            sql += ` AND type = ?`;
+            queryParams.push(tableName);
+        }
+
+        const stmt = this.db.prepare(sql);
+        stmt.bind(queryParams);
+
+        const memories: Memory[] = [];
+        while (stmt.step()) {
+            const memory = stmt.getAsObject() as unknown as Memory;
+            memories.push({
+                ...memory,
+                content: JSON.parse(memory.content as unknown as string),
+            });
+        }
+        stmt.free();
+        return memories;
     }
 
     async createMemory(memory: Memory, tableName: string): Promise<void> {
