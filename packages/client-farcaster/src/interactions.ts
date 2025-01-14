@@ -43,9 +43,8 @@ export class FarcasterInteractionManager {
 
             this.timeout = setTimeout(
                 handleInteractionsLoop,
-                Number(
-                    this.runtime.getSetting("FARCASTER_POLL_INTERVAL") || 120
-                ) * 1000 // Default to 2 minutes
+                Number(this.client.farcasterConfig?.FARCASTER_POLL_INTERVAL ?? 120) *
+                1000 // Default to 2 minutes
             );
         };
 
@@ -57,7 +56,11 @@ export class FarcasterInteractionManager {
     }
 
     private async handleInteractions() {
-        const agentFid = Number(this.runtime.getSetting("FARCASTER_FID"));
+        const agentFid = this.client.farcasterConfig?.FARCASTER_FID ?? 0;
+        if (!agentFid) {
+            elizaLogger.info("No FID found, skipping interactions");
+            return;
+        }
 
         const mentions = await this.client.getMentions({
             fid: agentFid,
@@ -231,7 +234,7 @@ export class FarcasterInteractionManager {
 
         if (!responseContent.text) return;
 
-        if (this.runtime.getSetting("FARCASTER_DRY_RUN") === "true") {
+        if (this.client.farcasterConfig?.FARCASTER_DRY_RUN) {
             elizaLogger.info(
                 `Dry run: would have responded to cast ${cast.hash} with ${responseContent.text}`
             );
