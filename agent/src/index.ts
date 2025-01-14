@@ -1,18 +1,16 @@
 import { PGLiteDatabaseAdapter } from "@elizaos/adapter-pglite";
 import { PostgresDatabaseAdapter } from "@elizaos/adapter-postgres";
+import { QdrantDatabaseAdapter } from "@elizaos/adapter-qdrant";
 import { RedisClient } from "@elizaos/adapter-redis";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
-import { SupabaseDatabaseAdapter } from "@elizaos/adapter-supabase";
 import { AutoClientInterface } from "@elizaos/client-auto";
 import { DiscordClientInterface } from "@elizaos/client-discord";
-import { FarcasterClientInterface } from "@elizaos/client-farcaster";
+import { FarcasterAgentClient } from "@elizaos/client-farcaster";
 import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
 // import { ReclaimAdapter } from "@elizaos/plugin-reclaim";
-import { PrimusAdapter } from "@elizaos/plugin-primus";
-
 import {
     AgentRuntime,
     CacheManager,
@@ -36,6 +34,7 @@ import {
 import { zgPlugin } from "@elizaos/plugin-0g";
 
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
+import { dominosPlugin } from "@elizaos/plugin-dominos";
 import createGoatPlugin from "@elizaos/plugin-goat";
 // import { intifacePlugin } from "@elizaos/plugin-intiface";
 import { DirectClient } from "@elizaos/client-direct";
@@ -46,7 +45,6 @@ import { aptosPlugin } from "@elizaos/plugin-aptos";
 import { artheraPlugin } from "@elizaos/plugin-arthera";
 import { availPlugin } from "@elizaos/plugin-avail";
 import { avalanchePlugin } from "@elizaos/plugin-avalanche";
-import { b2Plugin } from "@elizaos/plugin-b2";
 import { binancePlugin } from "@elizaos/plugin-binance";
 import {
     advancedTradePlugin,
@@ -57,7 +55,7 @@ import {
     webhookPlugin,
 } from "@elizaos/plugin-coinbase";
 import { coinmarketcapPlugin } from "@elizaos/plugin-coinmarketcap";
-import { coingeckoPlugin } from "@elizaos/plugin-coingecko";
+import { coinPricePlugin } from "@elizaos/plugin-coinprice";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { createCosmosPlugin } from "@elizaos/plugin-cosmos";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
@@ -67,43 +65,36 @@ import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
 import { genLayerPlugin } from "@elizaos/plugin-genlayer";
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
-import { lensPlugin } from "@elizaos/plugin-lensNetwork";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
 import { createNodePlugin } from "@elizaos/plugin-node";
 import { obsidianPlugin } from "@elizaos/plugin-obsidian";
-import { sgxPlugin } from "@elizaos/plugin-sgx";
+import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
 import { solanaPlugin } from "@elizaos/plugin-solana";
 import { solanaAgentkitPlguin } from "@elizaos/plugin-solana-agentkit";
-import { autonomePlugin } from "@elizaos/plugin-autonome";
+import { stargazePlugin } from "@elizaos/plugin-stargaze";
 import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
 import { TEEMode, teePlugin } from "@elizaos/plugin-tee";
-import { teeLogPlugin } from "@elizaos/plugin-tee-log";
 import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
+import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
 
 import { giphyPlugin } from "@elizaos/plugin-giphy";
+import { echoChamberPlugin } from "@elizaos/plugin-echochambers";
 import { letzAIPlugin } from "@elizaos/plugin-letzai";
 import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
-import { hyperliquidPlugin } from "@elizaos/plugin-hyperliquid";
-import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 
-import { OpacityAdapter } from "@elizaos/plugin-opacity";
-import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
-import { stargazePlugin } from "@elizaos/plugin-stargaze";
-import { akashPlugin } from "@elizaos/plugin-akash";
-import { quaiPlugin } from "@elizaos/plugin-quai";
+import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
 import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
-import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
-import createNFTCollectionsPlugin from "@elizaos/plugin-nft-collections";
+import { OpacityAdapter } from "@elizaos/plugin-opacity";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -150,79 +141,9 @@ function tryLoadFile(filePath: string): string | null {
         return null;
     }
 }
-function mergeCharacters(base: Character, child: Character): Character {
-    const mergeObjects = (baseObj: any, childObj: any) => {
-        const result: any = {};
-        const keys = new Set([
-            ...Object.keys(baseObj || {}),
-            ...Object.keys(childObj || {}),
-        ]);
-        keys.forEach((key) => {
-            if (
-                typeof baseObj[key] === "object" &&
-                typeof childObj[key] === "object" &&
-                !Array.isArray(baseObj[key]) &&
-                !Array.isArray(childObj[key])
-            ) {
-                result[key] = mergeObjects(baseObj[key], childObj[key]);
-            } else if (
-                Array.isArray(baseObj[key]) ||
-                Array.isArray(childObj[key])
-            ) {
-                result[key] = [
-                    ...(baseObj[key] || []),
-                    ...(childObj[key] || []),
-                ];
-            } else {
-                result[key] =
-                    childObj[key] !== undefined ? childObj[key] : baseObj[key];
-            }
-        });
-        return result;
-    };
-    return mergeObjects(base, child);
-}
-async function loadCharacter(filePath: string): Promise<Character> {
-    const content = tryLoadFile(filePath);
-    if (!content) {
-        throw new Error(`Character file not found: ${filePath}`);
-    }
-    let character = JSON.parse(content);
-    validateCharacterConfig(character);
 
-    // .id isn't really valid
-    const characterId = character.id || character.name;
-    const characterPrefix = `CHARACTER.${characterId.toUpperCase().replace(/ /g, "_")}.`;
-    const characterSettings = Object.entries(process.env)
-        .filter(([key]) => key.startsWith(characterPrefix))
-        .reduce((settings, [key, value]) => {
-            const settingKey = key.slice(characterPrefix.length);
-            return { ...settings, [settingKey]: value };
-        }, {});
-    if (Object.keys(characterSettings).length > 0) {
-        character.settings = character.settings || {};
-        character.settings.secrets = {
-            ...characterSettings,
-            ...character.settings.secrets,
-        };
-    }
-    // Handle plugins
-    character.plugins = await handlePluginImporting(character.plugins);
-    if (character.extends) {
-        elizaLogger.info(
-            `Merging  ${character.name} character with parent characters`
-        );
-        for (const extendPath of character.extends) {
-            const baseCharacter = await loadCharacter(
-                path.resolve(path.dirname(filePath), extendPath)
-            );
-            character = mergeCharacters(baseCharacter, character);
-            elizaLogger.info(
-                `Merged ${character.name} with ${baseCharacter.name}`
-            );
-        }
-    }
-    return character;
+function isAllStrings(arr: unknown[]): boolean {
+    return Array.isArray(arr) && arr.every((item) => typeof item === "string");
 }
 
 export async function loadCharacters(
@@ -287,7 +208,39 @@ export async function loadCharacters(
             }
 
             try {
-                const character: Character = await loadCharacter(resolvedPath);
+                const character = JSON.parse(content);
+                validateCharacterConfig(character);
+
+                // .id isn't really valid
+                const characterId = character.id || character.name;
+                const characterPrefix = `CHARACTER.${characterId.toUpperCase().replace(/ /g, "_")}.`;
+
+                const characterSettings = Object.entries(process.env)
+                    .filter(([key]) => key.startsWith(characterPrefix))
+                    .reduce((settings, [key, value]) => {
+                        const settingKey = key.slice(characterPrefix.length);
+                        return { ...settings, [settingKey]: value };
+                    }, {});
+
+                if (Object.keys(characterSettings).length > 0) {
+                    character.settings = character.settings || {};
+                    character.settings.secrets = {
+                        ...characterSettings,
+                        ...character.settings.secrets,
+                    };
+                }
+
+                // Handle plugins
+                if (isAllStrings(character.plugins)) {
+                    elizaLogger.info("Plugins are: ", character.plugins);
+                    const importedPlugins = await Promise.all(
+                        character.plugins.map(async (plugin) => {
+                            const importedPlugin = await import(plugin);
+                            return importedPlugin.default;
+                        })
+                    );
+                    character.plugins = importedPlugins;
+                }
 
                 loadedCharacters.push(character);
                 elizaLogger.info(
@@ -308,36 +261,6 @@ export async function loadCharacters(
     }
 
     return loadedCharacters;
-}
-
-async function handlePluginImporting(plugins: string[]) {
-    if (plugins.length > 0) {
-        elizaLogger.info("Plugins are: ", plugins);
-        const importedPlugins = await Promise.all(
-            plugins.map(async (plugin) => {
-                try {
-                    const importedPlugin = await import(plugin);
-                    const functionName =
-                        plugin
-                            .replace("@elizaos/plugin-", "")
-                            .replace(/-./g, (x) => x[1].toUpperCase()) +
-                        "Plugin"; // Assumes plugin function is camelCased with Plugin suffix
-                    return (
-                        importedPlugin.default || importedPlugin[functionName]
-                    );
-                } catch (importError) {
-                    elizaLogger.error(
-                        `Failed to import plugin: ${plugin}`,
-                        importError
-                    );
-                    return []; // Return null for failed imports
-                }
-            })
-        );
-        return importedPlugins;
-    } else {
-        return [];
-    }
 }
 
 export function getTokenForProvider(
@@ -361,11 +284,6 @@ export function getTokenForProvider(
             return (
                 character.settings?.secrets?.ETERNALAI_API_KEY ||
                 settings.ETERNALAI_API_KEY
-            );
-        case ModelProviderName.NINETEEN_AI:
-            return (
-                character.settings?.secrets?.NINETEEN_AI_API_KEY ||
-                settings.NINETEEN_AI_API_KEY
             );
         case ModelProviderName.LLAMACLOUD:
         case ModelProviderName.TOGETHER:
@@ -454,11 +372,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.GOOGLE_GENERATIVE_AI_API_KEY ||
                 settings.GOOGLE_GENERATIVE_AI_API_KEY
             );
-        case ModelProviderName.MISTRAL:
-            return (
-                character.settings?.secrets?.MISTRAL_API_KEY ||
-                settings.MISTRAL_API_KEY
-            );
         case ModelProviderName.LETZAI:
             return (
                 character.settings?.secrets?.LETZAI_API_KEY ||
@@ -469,11 +382,6 @@ export function getTokenForProvider(
                 character.settings?.secrets?.INFERA_API_KEY ||
                 settings.INFERA_API_KEY
             );
-        case ModelProviderName.DEEPSEEK:
-            return (
-                character.settings?.secrets?.DEEPSEEK_API_KEY ||
-                settings.DEEPSEEK_API_KEY
-            );
         default:
             const errorMessage = `Failed to get token - unsupported model provider: ${provider}`;
             elizaLogger.error(errorMessage);
@@ -482,26 +390,7 @@ export function getTokenForProvider(
 }
 
 function initializeDatabase(dataDir: string) {
-    if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-        elizaLogger.info("Initializing Supabase connection...");
-        const db = new SupabaseDatabaseAdapter(
-            process.env.SUPABASE_URL,
-            process.env.SUPABASE_ANON_KEY
-        );
-
-        // Test the connection
-        db.init()
-            .then(() => {
-                elizaLogger.success(
-                    "Successfully connected to Supabase database"
-                );
-            })
-            .catch((error) => {
-                elizaLogger.error("Failed to connect to Supabase:", error);
-            });
-
-        return db;
-    } else if (process.env.POSTGRES_URL) {
+    if (process.env.POSTGRES_URL) {
         elizaLogger.info("Initializing PostgreSQL connection...");
         const db = new PostgresDatabaseAdapter({
             connectionString: process.env.POSTGRES_URL,
@@ -527,23 +416,15 @@ function initializeDatabase(dataDir: string) {
             dataDir: process.env.PGLITE_DATA_DIR,
         });
         return db;
-    } else {
+    } else if (process.env.QDRANT_URL) {
+        elizaLogger.info("Initializing Qdrant adapter...");
+        const db = new QdrantDatabaseAdapter();
+        return db;
+    }else {
         const filePath =
             process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
-        elizaLogger.info(`Initializing SQLite database at ${filePath}...`);
+        // ":memory:";
         const db = new SqliteDatabaseAdapter(new Database(filePath));
-
-        // Test the connection
-        db.init()
-            .then(() => {
-                elizaLogger.success(
-                    "Successfully connected to SQLite database"
-                );
-            })
-            .catch((error) => {
-                elizaLogger.error("Failed to connect to SQLite:", error);
-            });
-
         return db;
     }
 }
@@ -584,8 +465,10 @@ export async function initializeClients(
     }
 
     if (clientTypes.includes(Clients.FARCASTER)) {
-        const farcasterClient = await FarcasterClientInterface.start(runtime);
+        // why is this one different :(
+        const farcasterClient = new FarcasterAgentClient(runtime);
         if (farcasterClient) {
+            farcasterClient.start();
             clients.farcaster = farcasterClient;
         }
     }
@@ -711,20 +594,6 @@ export async function createAgent(
         elizaLogger.log("modelProvider", character.modelProvider);
         elizaLogger.log("token", token);
     }
-    if (
-        process.env.PRIMUS_APP_ID &&
-        process.env.PRIMUS_APP_SECRET &&
-        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
-    ) {
-        verifiableInferenceAdapter = new PrimusAdapter({
-            appId: process.env.PRIMUS_APP_ID,
-            appSecret: process.env.PRIMUS_APP_SECRET,
-            attMode: "proxytls",
-            modelProvider: character.modelProvider,
-            token,
-        });
-        elizaLogger.log("Verifiable inference primus adapter initialized");
-    }
 
     return new AgentRuntime({
         databaseAdapter: db,
@@ -735,10 +604,12 @@ export async function createAgent(
         // character.plugins are handled when clients are added
         plugins: [
             bootstrapPlugin,
+            dominosPlugin,
             getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
                 ? confluxPlugin
                 : null,
             nodePlugin,
+            coinPricePlugin,
             getSecret(character, "TAVILY_API_KEY") ? webSearchPlugin : null,
             getSecret(character, "SOLANA_PUBLIC_KEY") ||
             (getSecret(character, "WALLET_PUBLIC_KEY") &&
@@ -748,7 +619,6 @@ export async function createAgent(
             getSecret(character, "SOLANA_PRIVATE_KEY")
                 ? solanaAgentkitPlguin
                 : null,
-            getSecret(character, "AUTONOME_JWT_TOKEN") ? autonomePlugin : null,
             (getSecret(character, "NEAR_ADDRESS") ||
                 getSecret(character, "NEAR_WALLET_PUBLIC_KEY")) &&
             getSecret(character, "NEAR_WALLET_SECRET_KEY")
@@ -782,7 +652,6 @@ export async function createAgent(
             getSecret(character, "FAL_API_KEY") ||
             getSecret(character, "OPENAI_API_KEY") ||
             getSecret(character, "VENICE_API_KEY") ||
-            getSecret(character, "NINETEEN_AI_API_KEY") ||
             getSecret(character, "HEURIST_API_KEY") ||
             getSecret(character, "LIVEPEER_GATEWAY_URL")
                 ? imageGenerationPlugin
@@ -798,30 +667,15 @@ export async function createAgent(
                   ]
                 : []),
             ...(teeMode !== TEEMode.OFF && walletSecretSalt ? [teePlugin] : []),
-            (teeMode !== TEEMode.OFF && walletSecretSalt &&getSecret(character,"VLOG")
-                ? verifiableLogPlugin
-                : null),
-            getSecret(character, "SGX") ? sgxPlugin : null,
-            getSecret(character, "ENABLE_TEE_LOG") &&
-            ((teeMode !== TEEMode.OFF && walletSecretSalt) ||
-                getSecret(character, "SGX"))
-                ? teeLogPlugin
-                : null,
             getSecret(character, "COINBASE_API_KEY") &&
             getSecret(character, "COINBASE_PRIVATE_KEY") &&
             getSecret(character, "COINBASE_NOTIFICATION_URI")
                 ? webhookPlugin
                 : null,
             goatPlugin,
-            getSecret(character, "COINGECKO_API_KEY") ||
-            getSecret(character, "COINGECKO_PRO_API_KEY")
-                ? coingeckoPlugin
-                : null,
-            getSecret(character, "EVM_PROVIDER_URL") ? goatPlugin : null,
             getSecret(character, "ABSTRACT_PRIVATE_KEY")
                 ? abstractPlugin
                 : null,
-            getSecret(character, "B2_PRIVATE_KEY") ? b2Plugin: null,
             getSecret(character, "BINANCE_API_KEY") &&
             getSecret(character, "BINANCE_SECRET_KEY")
                 ? binancePlugin
@@ -829,10 +683,6 @@ export async function createAgent(
             getSecret(character, "FLOW_ADDRESS") &&
             getSecret(character, "FLOW_PRIVATE_KEY")
                 ? flowPlugin
-                : null,
-            getSecret(character, "LENS_ADDRESS") &&
-            getSecret(character, "LENS_PRIVATE_KEY")
-                ? lensPlugin
                 : null,
             getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
             getSecret(character, "MVX_PRIVATE_KEY") ? multiversxPlugin : null,
@@ -871,20 +721,6 @@ export async function createAgent(
                 ? artheraPlugin
                 : null,
             getSecret(character, "ALLORA_API_KEY") ? alloraPlugin : null,
-            getSecret(character, "HYPERLIQUID_PRIVATE_KEY")
-                ? hyperliquidPlugin
-                : null,
-            getSecret(character, "HYPERLIQUID_TESTNET")
-                ? hyperliquidPlugin
-                : null,
-            getSecret(character, "AKASH_MNEMONIC") &&
-            getSecret(character, "AKASH_WALLET_ADDRESS")
-                ? akashPlugin
-                : null,
-            getSecret(character, "QUAI_PRIVATE_KEY") ? quaiPlugin : null,
-            getSecret(character, "RESERVOIR_API_KEY")
-                ? createNFTCollectionsPlugin()
-                : null,
         ].filter(Boolean),
         providers: [],
         actions: [],
@@ -1074,10 +910,7 @@ const startAgents = async () => {
     }
 
     // upload some agent functionality into directClient
-    directClient.startAgent = async (character) => {
-        // Handle plugins
-        character.plugins = await handlePluginImporting(character.plugins);
-
+    directClient.startAgent = async (character: Character) => {
         // wrap it so we don't have to inject directClient later
         return startAgent(character, directClient);
     };

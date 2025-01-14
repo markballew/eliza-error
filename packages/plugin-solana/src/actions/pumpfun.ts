@@ -56,7 +56,7 @@ export const createAndBuyToken = async ({
     buyAmountSol,
     priorityFee,
     allowOffCurve,
-    commitment = "confirmed",
+    commitment = "finalized",
     sdk,
     connection,
     slippage,
@@ -416,7 +416,7 @@ export default {
 
             const wallet = new Wallet(deployerKeypair);
             const provider = new AnchorProvider(connection, wallet, {
-                commitment: "confirmed",
+                commitment: "finalized",
             });
             const sdk = new PumpFunSDK(provider);
             // const slippage = runtime.getSetting("SLIPPAGE");
