@@ -114,14 +114,20 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
         roomIds: UUID[];
         agentId?: UUID;
         tableName: string;
+        limit?: number;
     }): Promise<Memory[]> {
         let query = this.supabase
             .from(params.tableName)
             .select("*")
-            .in("roomId", params.roomIds);
+            .in("roomId", params.roomIds)
+            .order("createdAt", { ascending: false });
 
         if (params.agentId) {
             query = query.eq("agentId", params.agentId);
+        }
+
+        if (params.limit) {
+            query = query.limit(params.limit);
         }
 
         const { data, error } = await query;
@@ -362,31 +368,6 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
         }
 
         return data as Memory;
-    }
-
-    async getMemoriesByIds(
-        memoryIds: UUID[],
-        tableName?: string
-    ): Promise<Memory[]> {
-        if (memoryIds.length === 0) return [];
-
-        let query = this.supabase
-            .from("memories")
-            .select("*")
-            .in("id", memoryIds);
-
-        if (tableName) {
-            query = query.eq("type", tableName);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error("Error retrieving memories by IDs:", error);
-            return [];
-        }
-
-        return data as Memory[];
     }
 
     async createMemory(
