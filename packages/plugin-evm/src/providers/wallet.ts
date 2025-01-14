@@ -1,21 +1,11 @@
 import {
     createPublicClient,
-    createTestClient,
     createWalletClient,
     formatUnits,
     http,
-    publicActions,
-    walletActions,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import {
-    type IAgentRuntime,
-    type Provider,
-    type Memory,
-    type State,
-    type ICacheManager,
-    elizaLogger,
-} from "@elizaos/core";
+import { type IAgentRuntime, type Provider, type Memory, type State, type ICacheManager, elizaLogger } from "@elizaos/core";
 import type {
     Address,
     WalletClient,
@@ -24,7 +14,6 @@ import type {
     HttpTransport,
     Account,
     PrivateKeyAccount,
-    TestClient,
 } from "viem";
 import * as viemChains from "viem/chains";
 import { DeriveKeyProvider, TEEMode } from "@elizaos/plugin-tee";
@@ -38,7 +27,7 @@ export class WalletProvider {
     private cacheKey: string = "evm/wallet";
     private currentChain: SupportedChain = "mainnet";
     private CACHE_EXPIRY_SEC = 5;
-    chains: Record<string, Chain> = { ...viemChains };
+    chains: Record<string, Chain> = { mainnet: viemChains.mainnet };
     account: PrivateKeyAccount;
 
     constructor(
@@ -88,16 +77,6 @@ export class WalletProvider {
         return walletClient;
     }
 
-    getTestClient(): TestClient {
-        return createTestClient({
-            chain: viemChains.hardhat,
-            mode: "hardhat",
-            transport: http(),
-        })
-            .extend(publicActions)
-            .extend(walletActions);
-    }
-
     getChainConfigs(chainName: SupportedChain): Chain {
         const chain = viemChains[chainName];
 
@@ -112,10 +91,7 @@ export class WalletProvider {
         const cacheKey = "walletBalance_" + this.currentChain;
         const cachedData = await this.getCachedData<string>(cacheKey);
         if (cachedData) {
-            elizaLogger.log(
-                "Returning cached wallet balance for chain: " +
-                    this.currentChain
-            );
+            elizaLogger.log("Returning cached wallet balance for chain: " + this.currentChain);
             return cachedData;
         }
 
@@ -126,10 +102,7 @@ export class WalletProvider {
             });
             const balanceFormatted = formatUnits(balance, 18);
             this.setCachedData<string>(cacheKey, balanceFormatted);
-            elizaLogger.log(
-                "Wallet balance cached for chain: ",
-                this.currentChain
-            );
+            elizaLogger.log("Wallet balance cached for chain: ", this.currentChain);
             return balanceFormatted;
         } catch (error) {
             console.error("Error getting wallet balance:", error);
@@ -306,15 +279,11 @@ export const initWalletProvider = async (runtime: IAgentRuntime) => {
 
         const deriveKeyProvider = new DeriveKeyProvider(teeMode);
         const deriveKeyResult = await deriveKeyProvider.deriveEcdsaKeypair(
+            "/",
             walletSecretSalt,
-            "evm",
             runtime.agentId
         );
-        return new WalletProvider(
-            deriveKeyResult.keypair,
-            runtime.cacheManager,
-            chains
-        );
+        return new WalletProvider(deriveKeyResult.keypair, runtime.cacheManager, chains);
     } else {
         const privateKey = runtime.getSetting(
             "EVM_PRIVATE_KEY"

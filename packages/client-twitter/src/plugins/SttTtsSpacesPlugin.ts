@@ -1,9 +1,8 @@
 // src/plugins/SttTtsPlugin.ts
 
 import { spawn } from "child_process";
-import { ITranscriptionService, elizaLogger } from "@elizaos/core";
+import { ITranscriptionService } from "@elizaos/core";
 import { Space, JanusClient, AudioDataWithUser } from "agent-twitter-client";
-import { Plugin } from "@elizaos/core";
 
 interface PluginConfig {
     openAiApiKey?: string; // for STT & ChatGPT
@@ -28,9 +27,6 @@ interface PluginConfig {
  *   - On speaker mute -> flush STT -> GPT -> TTS -> push to Janus
  */
 export class SttTtsPlugin implements Plugin {
-    name = "SttTtsPlugin";
-    description = "Speech-to-text (OpenAI) + conversation + TTS (ElevenLabs)";
-
     private space?: Space;
     private janus?: JanusClient;
 
@@ -68,11 +64,11 @@ export class SttTtsPlugin implements Plugin {
     private isSpeaking = false;
 
     onAttach(_space: Space) {
-        elizaLogger.log("[SttTtsPlugin] onAttach => space was attached");
+        console.log("[SttTtsPlugin] onAttach => space was attached");
     }
 
     init(params: { space: Space; pluginConfig?: Record<string, any> }): void {
-        elizaLogger.log(
+        console.log(
             "[SttTtsPlugin] init => Space fully ready. Subscribing to events."
         );
 
@@ -101,22 +97,16 @@ export class SttTtsPlugin implements Plugin {
         if (config?.chatContext) {
             this.chatContext = config.chatContext;
         }
-        elizaLogger.log("[SttTtsPlugin] Plugin config =>", config);
+        console.log("[SttTtsPlugin] Plugin config =>", config);
 
         // Listen for mute events
         this.space.on(
             "muteStateChanged",
             (evt: { userId: string; muted: boolean }) => {
-                elizaLogger.log(
-                    "[SttTtsPlugin] Speaker muteStateChanged =>",
-                    evt
-                );
+                console.log("[SttTtsPlugin] Speaker muteStateChanged =>", evt);
                 if (evt.muted) {
                     this.handleMute(evt.userId).catch((err) =>
-                        elizaLogger.error(
-                            "[SttTtsPlugin] handleMute error =>",
-                            err
-                        )
+                        console.error("[SttTtsPlugin] handleMute error =>", err)
                     );
                 } else {
                     this.speakerUnmuted.set(evt.userId, true);
@@ -211,13 +201,10 @@ export class SttTtsPlugin implements Plugin {
         this.pcmBuffers.set(userId, []);
 
         if (!chunks.length) {
-            elizaLogger.warn(
-                "[SttTtsPlugin] No audio chunks for user =>",
-                userId
-            );
+            console.log("[SttTtsPlugin] No audio chunks for user =>", userId);
             return;
         }
-        elizaLogger.log(
+        console.log(
             `[SttTtsPlugin] Flushing STT buffer for user=${userId}, chunks=${chunks.length}`
         );
 
@@ -236,19 +223,17 @@ export class SttTtsPlugin implements Plugin {
         const sttText = await this.transcriptionService.transcribe(wavBuffer);
 
         if (!sttText || !sttText.trim()) {
-            elizaLogger.warn(
+            console.log(
                 "[SttTtsPlugin] No speech recognized for user =>",
                 userId
             );
             return;
         }
-        elizaLogger.log(
-            `[SttTtsPlugin] STT => user=${userId}, text="${sttText}"`
-        );
+        console.log(`[SttTtsPlugin] STT => user=${userId}, text="${sttText}"`);
 
         // GPT answer
         const replyText = await this.askChatGPT(sttText);
-        elizaLogger.log(
+        console.log(
             `[SttTtsPlugin] GPT => user=${userId}, reply="${replyText}"`
         );
 
@@ -264,10 +249,7 @@ export class SttTtsPlugin implements Plugin {
         if (!this.isSpeaking) {
             this.isSpeaking = true;
             this.processTtsQueue().catch((err) => {
-                elizaLogger.error(
-                    "[SttTtsPlugin] processTtsQueue error =>",
-                    err
-                );
+                console.error("[SttTtsPlugin] processTtsQueue error =>", err);
             });
         }
     }
@@ -285,7 +267,7 @@ export class SttTtsPlugin implements Plugin {
                 const pcm = await this.convertMp3ToPcm(ttsAudio, 48000);
                 await this.streamToJanus(pcm, 48000);
             } catch (err) {
-                elizaLogger.error("[SttTtsPlugin] TTS streaming error =>", err);
+                console.error("[SttTtsPlugin] TTS streaming error =>", err);
             }
         }
         this.isSpeaking = false;
@@ -433,7 +415,7 @@ export class SttTtsPlugin implements Plugin {
 
     public setSystemPrompt(prompt: string) {
         this.systemPrompt = prompt;
-        elizaLogger.log("[SttTtsPlugin] setSystemPrompt =>", prompt);
+        console.log("[SttTtsPlugin] setSystemPrompt =>", prompt);
     }
 
     /**
@@ -441,7 +423,7 @@ export class SttTtsPlugin implements Plugin {
      */
     public setGptModel(model: string) {
         this.gptModel = model;
-        elizaLogger.log("[SttTtsPlugin] setGptModel =>", model);
+        console.log("[SttTtsPlugin] setGptModel =>", model);
     }
 
     /**
@@ -450,7 +432,7 @@ export class SttTtsPlugin implements Plugin {
      */
     public addMessage(role: "system" | "user" | "assistant", content: string) {
         this.chatContext.push({ role, content });
-        elizaLogger.log(
+        console.log(
             `[SttTtsPlugin] addMessage => role=${role}, content=${content}`
         );
     }
@@ -460,11 +442,11 @@ export class SttTtsPlugin implements Plugin {
      */
     public clearChatContext() {
         this.chatContext = [];
-        elizaLogger.log("[SttTtsPlugin] clearChatContext => done");
+        console.log("[SttTtsPlugin] clearChatContext => done");
     }
 
     cleanup(): void {
-        elizaLogger.log("[SttTtsPlugin] cleanup => releasing resources");
+        console.log("[SttTtsPlugin] cleanup => releasing resources");
         this.pcmBuffers.clear();
         this.speakerUnmuted.clear();
         this.ttsQueue = [];

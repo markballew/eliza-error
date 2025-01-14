@@ -1,6 +1,6 @@
 {
     "name": "@elizaos/client-discord",
-    "version": "0.1.8+build.1",
+    "version": "0.1.7",
     "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -30,14 +30,12 @@
         "zod": "3.23.8"
     },
     "devDependencies": {
-        "tsup": "8.3.5",
-        "vitest": "1.2.1"
+        "tsup": "8.3.5"
     },
     "scripts": {
         "build": "tsup --format esm --dts",
         "dev": "tsup --format esm --dts --watch",
-        "lint": "eslint --fix  --cache .",
-        "test": "vitest run"
+        "lint": "eslint --fix  --cache ."
     },
     "trustedDependencies": {
         "@discordjs/opus": "github:discordjs/opus",
