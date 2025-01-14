@@ -6,7 +6,6 @@ import { SupabaseDatabaseAdapter } from "@elizaos/adapter-supabase";
 import { AutoClientInterface } from "@elizaos/client-auto";
 import { DiscordClientInterface } from "@elizaos/client-discord";
 import { FarcasterAgentClient } from "@elizaos/client-farcaster";
-import { InstagramClientInterface } from "@elizaos/client-instagram";
 import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
@@ -87,7 +86,6 @@ import { quaiPlugin } from "@elizaos/plugin-quai";
 import { sgxPlugin } from "@elizaos/plugin-sgx";
 import { solanaPlugin } from "@elizaos/plugin-solana";
 import { solanaAgentkitPlguin } from "@elizaos/plugin-solana-agentkit";
-import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
 import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
@@ -97,6 +95,7 @@ import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
 import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
 import { tonPlugin } from "@elizaos/plugin-ton";
+import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import { zksyncEraPlugin } from "@elizaos/plugin-zksync-era";
 import Database from "better-sqlite3";
@@ -581,13 +580,6 @@ export async function initializeClients(
         const twitterClient = await TwitterClientInterface.start(runtime);
         if (twitterClient) {
             clients.twitter = twitterClient;
-        }
-    }
-
-    if (clientTypes.includes(Clients.INSTAGRAM)) {
-        const instagramClient = await InstagramClientInterface.start(runtime);
-        if (instagramClient) {
-            clients.instagram = instagramClient;
         }
     }
 
