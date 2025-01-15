@@ -26,10 +26,9 @@ export const EchoChamberClientInterface: Client = {
                     runtime.getSetting("ECHOCHAMBERS_USERNAME") ||
                     `agent-${runtime.agentId}`,
                 model: runtime.modelProvider,
-                rooms: runtime
-                    .getSetting("ECHOCHAMBERS_ROOMS")
-                    ?.split(",")
-                    .map((r) => r.trim()) || ["general"],
+                defaultRoom:
+                    runtime.getSetting("ECHOCHAMBERS_DEFAULT_ROOM") ||
+                    "general",
             };
 
             elizaLogger.log("Starting EchoChambers client...");
