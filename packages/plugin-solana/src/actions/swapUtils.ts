@@ -82,7 +82,7 @@ export const executeSwap = async (
                 lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
                 blockhash: latestBlockhash.blockhash,
             },
-            "confirmed"
+            "finalized"
         );
         if (confirmation.value.err) {
             elizaLogger.log("Confirmation error", confirmation.value.err);

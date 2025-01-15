@@ -61,7 +61,7 @@ export const sentientAI: Action = {
             },
         ],
     ],
-    validate: async (_runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         // no extra validation needed
         return true;
     },

@@ -13,14 +13,17 @@ import {
 } from "@elizaos/core";
 import { WalletProvider } from "../providers/wallet";
 import { validateMultiversxConfig } from "../enviroment";
-import { transferSchema } from "../utils/schemas";
+
 export interface TransferContent extends Content {
     tokenAddress: string;
     amount: string;
     tokenIdentifier?: string;
 }
 
-function isTransferContent(_runtime: IAgentRuntime, content: TransferContent) {
+function isTransferContent(
+    _runtime: IAgentRuntime,
+    content: any
+): content is TransferContent {
     console.log("Content for transfer", content);
     return (
         typeof content.tokenAddress === "string" &&
@@ -90,13 +93,10 @@ export default {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
-            schema: transferSchema,
         });
 
-        const payload = content.object as TransferContent;
-
         // Validate transfer content
-        if (!isTransferContent(runtime, payload)) {
+        if (!isTransferContent(runtime, content)) {
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -114,20 +114,20 @@ export default {
             const walletProvider = new WalletProvider(privateKey, network);
 
             if (
-                payload.tokenIdentifier &&
-                payload.tokenIdentifier.toLowerCase() !== "egld"
+                content.tokenIdentifier &&
+                content.tokenIdentifier.toLowerCase() !== "egld"
             ) {
                 await walletProvider.sendESDT({
-                    receiverAddress: payload.tokenAddress,
-                    amount: payload.amount,
-                    identifier: payload.tokenIdentifier,
+                    receiverAddress: content.tokenAddress,
+                    amount: content.amount,
+                    identifier: content.tokenIdentifier,
                 });
                 return true;
             }
 
             await walletProvider.sendEGLD({
-                receiverAddress: payload.tokenAddress,
-                amount: payload.amount,
+                receiverAddress: content.tokenAddress,
+                amount: content.amount,
             });
             return true;
         } catch (error) {
