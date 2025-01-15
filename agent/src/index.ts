@@ -5,7 +5,7 @@ import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
 import { SupabaseDatabaseAdapter } from "@elizaos/adapter-supabase";
 import { AutoClientInterface } from "@elizaos/client-auto";
 import { DiscordClientInterface } from "@elizaos/client-discord";
-import { InstagramClientInterface } from "@elizaos/client-instagram";
+import { FarcasterClientInterface } from "@elizaos/client-farcaster";
 import { LensAgentClient } from "@elizaos/client-lens";
 import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
@@ -29,10 +29,10 @@ import {
     IDatabaseAdapter,
     IDatabaseCacheAdapter,
     ModelProviderName,
-    parseBooleanFromText,
     settings,
     stringToUuid,
     validateCharacterConfig,
+    parseBooleanFromText,
 } from "@elizaos/core";
 import { zgPlugin } from "@elizaos/plugin-0g";
 
@@ -87,7 +87,6 @@ import { quaiPlugin } from "@elizaos/plugin-quai";
 import { sgxPlugin } from "@elizaos/plugin-sgx";
 import { solanaPlugin } from "@elizaos/plugin-solana";
 import { solanaAgentkitPlguin } from "@elizaos/plugin-solana-agentkit";
-import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
 import { storyPlugin } from "@elizaos/plugin-story";
 import { suiPlugin } from "@elizaos/plugin-sui";
@@ -97,6 +96,7 @@ import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { verifiableLogPlugin } from "@elizaos/plugin-tee-verifiable-log";
 import { thirdwebPlugin } from "@elizaos/plugin-thirdweb";
 import { tonPlugin } from "@elizaos/plugin-ton";
+import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
 import { echoChambersPlugin } from "@elizaos/plugin-echochambers";
 import { dexScreenerPlugin } from "@elizaos/plugin-dexscreener";
@@ -244,12 +244,15 @@ async function loadCharacter(filePath: string): Promise<Character> {
     return jsonToCharacter(filePath, character);
 }
 
+function commaSeparatedStringToArray(commaSeparated: string): string[] {
+    return commaSeparated?.split(",").map(value => value.trim())
+}
+
+
 export async function loadCharacters(
     charactersArg: string
 ): Promise<Character[]> {
-    let characterPaths = charactersArg
-        ?.split(",")
-        .map((filePath) => filePath.trim());
+    let characterPaths = commaSeparatedStringToArray(charactersArg)
     const loadedCharacters: Character[] = [];
 
     if (characterPaths?.length > 0) {
@@ -321,17 +324,16 @@ export async function loadCharacters(
         }
     }
 
-    if (loadedCharacters.length === 0) {
-        if (
-            process.env.REMOTE_CHARACTER_URL != "" &&
-            process.env.REMOTE_CHARACTER_URL.startsWith("http")
-        ) {
-            const character = await loadCharacterFromUrl(
-                process.env.REMOTE_CHARACTER_URL
-            );
+    if (hasValidRemoteUrls()) {
+        elizaLogger.info("Loading characters from remote URLs");
+        let characterUrls = commaSeparatedStringToArray(process.env.REMOTE_CHARACTER_URLS)
+        for (const characterUrl of characterUrls) {
+            const character = await loadCharacterFromUrl(characterUrl);
             loadedCharacters.push(character);
         }
+    }
 
+    if (loadedCharacters.length === 0) {
         elizaLogger.info("No characters found, using default character");
         loadedCharacters.push(defaultCharacter);
     }
@@ -609,13 +611,6 @@ export async function initializeClients(
         const twitterClient = await TwitterClientInterface.start(runtime);
         if (twitterClient) {
             clients.twitter = twitterClient;
-        }
-    }
-
-    if (clientTypes.includes(Clients.INSTAGRAM)) {
-        const instagramClient = await InstagramClientInterface.start(runtime);
-        if (instagramClient) {
-            clients.instagram = instagramClient;
         }
     }
 
@@ -1098,6 +1093,10 @@ const checkPortAvailable = (port: number): Promise<boolean> => {
     });
 };
 
+const hasValidRemoteUrls = () =>
+    process.env.REMOTE_CHARACTER_URLS != "" &&
+    process.env.REMOTE_CHARACTER_URLS.startsWith("http")
+
 const startAgents = async () => {
     const directClient = new DirectClient();
     let serverPort = parseInt(settings.SERVER_PORT || "3000");
@@ -1105,7 +1104,9 @@ const startAgents = async () => {
     let charactersArg = args.characters || args.character;
     let characters = [defaultCharacter];
 
-    if (charactersArg) {
+    
+        
+    if (charactersArg || hasValidRemoteUrls()) {
         characters = await loadCharacters(charactersArg);
     }
 
