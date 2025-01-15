@@ -1,4 +1,8 @@
-# @elizaos/core v0.1.7
+# @elizaos/core v0.1.7-alpha.1
+
+## Namespaces
+
+- [EmbeddingProvider](namespaces/EmbeddingProvider/index.md)
 
 ## Enumerations
 
@@ -9,8 +13,6 @@
 - [CacheStore](enumerations/CacheStore.md)
 - [ServiceType](enumerations/ServiceType.md)
 - [LoggingLevel](enumerations/LoggingLevel.md)
-- [TokenizerType](enumerations/TokenizerType.md)
-- [TranscriptionProvider](enumerations/TranscriptionProvider.md)
 
 ## Classes
 
@@ -45,7 +47,6 @@
 - [Participant](interfaces/Participant.md)
 - [Room](interfaces/Room.md)
 - [IAgentConfig](interfaces/IAgentConfig.md)
-- [ModelConfiguration](interfaces/ModelConfiguration.md)
 - [IDatabaseAdapter](interfaces/IDatabaseAdapter.md)
 - [IDatabaseCacheAdapter](interfaces/IDatabaseCacheAdapter.md)
 - [IMemoryManager](interfaces/IMemoryManager.md)
@@ -64,7 +65,7 @@
 
 ## Type Aliases
 
-- [EmbeddingProviderType](type-aliases/EmbeddingProviderType.md)
+- [EmbeddingProvider](type-aliases/EmbeddingProvider.md)
 - [EmbeddingConfig](type-aliases/EmbeddingConfig.md)
 - [EnvConfig](type-aliases/EnvConfig.md)
 - [CharacterConfig](type-aliases/CharacterConfig.md)
@@ -77,10 +78,8 @@
 - [Media](type-aliases/Media.md)
 - [Client](type-aliases/Client.md)
 - [Plugin](type-aliases/Plugin.md)
-- [TelemetrySettings](type-aliases/TelemetrySettings.md)
 - [Character](type-aliases/Character.md)
 - [CacheOptions](type-aliases/CacheOptions.md)
-- [SearchImage](type-aliases/SearchImage.md)
 - [SearchResult](type-aliases/SearchResult.md)
 - [SearchResponse](type-aliases/SearchResponse.md)
 - [KnowledgeItem](type-aliases/KnowledgeItem.md)
@@ -120,8 +119,8 @@
 - [formatEvaluators](functions/formatEvaluators.md)
 - [formatEvaluatorExamples](functions/formatEvaluatorExamples.md)
 - [formatEvaluatorExampleDescriptions](functions/formatEvaluatorExampleDescriptions.md)
-- [trimTokens](functions/trimTokens.md)
 - [generateText](functions/generateText.md)
+- [trimTokens](functions/trimTokens.md)
 - [generateShouldRespond](functions/generateShouldRespond.md)
 - [splitChunks](functions/splitChunks.md)
 - [generateTrueOrFalse](functions/generateTrueOrFalse.md)

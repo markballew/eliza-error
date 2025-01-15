@@ -18,12 +18,7 @@ import { AutoTokenizer } from "@huggingface/transformers";
 import Together from "together-ai";
 import { ZodSchema } from "zod";
 import { elizaLogger } from "./index.ts";
-import {
-    models,
-    getModelSettings,
-    getImageModelSettings,
-    getEndpoint,
-} from "./models.ts";
+import { getModel, models } from "./models.ts";
 import {
     parseBooleanFromText,
     parseJsonArrayFromText,
@@ -42,15 +37,12 @@ import {
     ServiceType,
     SearchResponse,
     ActionResponse,
-    IVerifiableInferenceAdapter,
-    VerifiableInferenceOptions,
-    VerifiableInferenceResult,
-    VerifiableInferenceProvider,
     TelemetrySettings,
     TokenizerType,
 } from "./types.ts";
 import { fal } from "@fal-ai/client";
 import { tavily } from "@tavily/core";
+import { AtomaSDK } from "atoma-sdk";
 
 type Tool = CoreTool<any, any>;
 type StepResult = AIStepResult<any>;
@@ -185,20 +177,15 @@ export async function generateText({
     maxSteps = 1,
     stop,
     customSystemPrompt,
-    verifiableInference = process.env.VERIFIABLE_INFERENCE_ENABLED === "true",
-    verifiableInferenceOptions,
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
     tools?: Record<string, Tool>;
     onStepFinish?: (event: StepResult) => Promise<void> | void;
     maxSteps?: number;
     stop?: string[];
     customSystemPrompt?: string;
-    verifiableInference?: boolean;
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
-    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }): Promise<string> {
     if (!context) {
         console.error("generateText context is empty");
@@ -210,39 +197,12 @@ export async function generateText({
     elizaLogger.info("Generating text with options:", {
         modelProvider: runtime.modelProvider,
         model: modelClass,
-        verifiableInference,
     });
-    elizaLogger.log("Using provider:", runtime.modelProvider);
-    // If verifiable inference is requested and adapter is provided, use it
-    if (verifiableInference && runtime.verifiableInferenceAdapter) {
-        elizaLogger.log("Using verifiable inference adapter:", runtime.verifiableInferenceAdapter);
-        try {
-            const result: VerifiableInferenceResult =
-                await runtime.verifiableInferenceAdapter.generateText(
-                    context,
-                    modelClass,
-                    verifiableInferenceOptions
-                );
-            elizaLogger.log("Verifiable inference result:", result);
-            // Verify the proof
-            const isValid =
-                await runtime.verifiableInferenceAdapter.verifyProof(result);
-            if (!isValid) {
-                throw new Error("Failed to verify inference proof");
-            }
-
-            return result.text;
-        } catch (error) {
-            elizaLogger.error("Error in verifiable inference:", error);
-            throw error;
-        }
-    }
 
     const provider = runtime.modelProvider;
     const endpoint =
-        runtime.character.modelEndpointOverride || getEndpoint(provider);
-    const modelSettings = getModelSettings(runtime.modelProvider, modelClass);
-    let model = modelSettings.name;
+        runtime.character.modelEndpointOverride || models[provider].endpoint;
+    let model = models[provider].model[modelClass];
 
     // allow character.json settings => secrets to override models
     // FIXME: add MODEL_MEDIUM support
@@ -314,20 +274,23 @@ export async function generateText({
 
     const modelConfiguration = runtime.character?.settings?.modelConfig;
     const temperature =
-        modelConfiguration?.temperature || modelSettings.temperature;
+        modelConfiguration?.temperature ||
+        models[provider].settings.temperature;
     const frequency_penalty =
         modelConfiguration?.frequency_penalty ||
-        modelSettings.frequency_penalty;
+        models[provider].settings.frequency_penalty;
     const presence_penalty =
-        modelConfiguration?.presence_penalty || modelSettings.presence_penalty;
+        modelConfiguration?.presence_penalty ||
+        models[provider].settings.presence_penalty;
     const max_context_length =
-        modelConfiguration?.maxInputTokens || modelSettings.maxInputTokens;
+        modelConfiguration?.maxInputTokens ||
+        models[provider].settings.maxInputTokens;
     const max_response_length =
         modelConfiguration?.max_response_length ||
-        modelSettings.maxOutputTokens;
+        models[provider].settings.maxOutputTokens;
     const experimental_telemetry =
         modelConfiguration?.experimental_telemetry ||
-        modelSettings.experimental_telemetry;
+        models[provider].settings.experimental_telemetry;
 
     const apiKey = runtime.token;
 
@@ -340,7 +303,7 @@ export async function generateText({
 
         let response: string;
 
-        const _stop = stop || modelSettings.stop;
+        const _stop = stop || models[provider].settings.stop;
         elizaLogger.debug(
             `Using provider: ${provider}, model: ${model}, temperature: ${temperature}, max response length: ${max_response_length}`
         );
@@ -380,7 +343,7 @@ export async function generateText({
                 });
 
                 response = openaiResponse;
-                console.log("Received response from OpenAI model.");
+                elizaLogger.debug("Received response from OpenAI model.");
                 break;
             }
 
@@ -390,16 +353,10 @@ export async function generateText({
                     apiKey,
                     baseURL: endpoint,
                     fetch: async (url: string, options: any) => {
-                        const chain_id = runtime.getSetting("ETERNALAI_CHAIN_ID") || "45762"
-                        if (options?.body) {
-                            const body = JSON.parse(options.body);
-                            body.chain_id = chain_id;
-                            options.body = JSON.stringify(body);
-                        }
                         const fetching = await runtime.fetch(url, options);
                         if (
                             parseBooleanFromText(
-                                runtime.getSetting("ETERNALAI_LOG")
+                                runtime.getSetting("ETERNAL_AI_LOG_REQUEST")
                             )
                         ) {
                             elizaLogger.info(
@@ -407,16 +364,12 @@ export async function generateText({
                                 JSON.stringify(options, null, 2)
                             );
                             const clonedResponse = fetching.clone();
-                            try {
-                                clonedResponse.json().then((data) => {
-                                    elizaLogger.info(
-                                        "Response data: ",
-                                        JSON.stringify(data, null, 2)
-                                    );
-                                });
-                            } catch (e) {
-                                elizaLogger.debug(e);
-                            }
+                            clonedResponse.json().then((data) => {
+                                elizaLogger.info(
+                                    "Response data: ",
+                                    JSON.stringify(data, null, 2)
+                                );
+                            });
                         }
                         return fetching;
                     },
@@ -613,7 +566,7 @@ export async function generateText({
 
             case ModelProviderName.REDPILL: {
                 elizaLogger.debug("Initializing RedPill model.");
-                const serverUrl = getEndpoint(provider);
+                const serverUrl = models[provider].endpoint;
                 const openai = createOpenAI({
                     apiKey,
                     baseURL: serverUrl,
@@ -644,7 +597,7 @@ export async function generateText({
 
             case ModelProviderName.OPENROUTER: {
                 elizaLogger.debug("Initializing OpenRouter model.");
-                const serverUrl = getEndpoint(provider);
+                const serverUrl = models[provider].endpoint;
                 const openrouter = createOpenAI({
                     apiKey,
                     baseURL: serverUrl,
@@ -678,7 +631,7 @@ export async function generateText({
                     elizaLogger.debug("Initializing Ollama model.");
 
                     const ollamaProvider = createOllama({
-                        baseURL: getEndpoint(provider) + "/api",
+                        baseURL: models[provider].endpoint + "/api",
                         fetch: runtime.fetch,
                     });
                     const ollama = ollamaProvider(model);
@@ -736,7 +689,7 @@ export async function generateText({
             case ModelProviderName.GAIANET: {
                 elizaLogger.debug("Initializing GAIANET model.");
 
-                var baseURL = getEndpoint(provider);
+                var baseURL = models[provider].endpoint;
                 if (!baseURL) {
                     switch (modelClass) {
                         case ModelClass.SMALL:
@@ -789,13 +742,7 @@ export async function generateText({
 
             case ModelProviderName.GALADRIEL: {
                 elizaLogger.debug("Initializing Galadriel model.");
-                const headers = {}
-                const fineTuneApiKey = runtime.getSetting("GALADRIEL_FINE_TUNE_API_KEY")
-                if (fineTuneApiKey) {
-                    headers["Fine-Tune-Authentication"] = fineTuneApiKey
-                }
                 const galadriel = createOpenAI({
-                    headers,
                     apiKey: apiKey,
                     baseURL: endpoint,
                     fetch: runtime.fetch,
@@ -884,7 +831,7 @@ export async function generateShouldRespond({
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
 }): Promise<"RESPOND" | "IGNORE" | "STOP" | null> {
     let retryDelay = 1000;
     while (true) {
@@ -967,12 +914,15 @@ export async function generateTrueOrFalse({
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
 }): Promise<boolean> {
     let retryDelay = 1000;
-    const modelSettings = getModelSettings(runtime.modelProvider, modelClass);
+
     const stop = Array.from(
-        new Set([...(modelSettings.stop || []), ["\n"]])
+        new Set([
+            ...(models[runtime.modelProvider].settings.stop || []),
+            ["\n"],
+        ])
     ) as string[];
 
     while (true) {
@@ -1019,7 +969,7 @@ export async function generateTextArray({
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
 }): Promise<string[]> {
     if (!context) {
         elizaLogger.error("generateTextArray context is empty");
@@ -1055,7 +1005,7 @@ export async function generateObjectDeprecated({
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
 }): Promise<any> {
     if (!context) {
         elizaLogger.error("generateObjectDeprecated context is empty");
@@ -1091,7 +1041,7 @@ export async function generateObjectArray({
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
 }): Promise<any[]> {
     if (!context) {
         elizaLogger.error("generateObjectArray context is empty");
@@ -1139,13 +1089,12 @@ export async function generateMessageResponse({
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
 }): Promise<Content> {
-    const modelSettings = getModelSettings(runtime.modelProvider, modelClass);
-    const max_context_length = modelSettings.maxInputTokens;
+    const provider = runtime.modelProvider;
+    const max_context_length = models[provider].settings.maxInputTokens;
 
     context = await trimTokens(context, max_context_length, runtime);
-    elizaLogger.debug("Context:", context);
     let retryLength = 1000; // exponential backoff
     while (true) {
         try {
@@ -1196,8 +1145,9 @@ export const generateImage = async (
     data?: string[];
     error?: any;
 }> => {
-    const modelSettings = getImageModelSettings(runtime.imageModelProvider);
-    const model = modelSettings.name;
+    const model = getModel(runtime.imageModelProvider, ModelClass.IMAGE);
+    const modelSettings = models[runtime.imageModelProvider].imageSettings;
+
     elizaLogger.info("Generating image with options:", {
         imageModelProvider: model,
     });
@@ -1255,7 +1205,7 @@ export const generateImage = async (
                                 seed: data.seed || -1,
                             },
                         },
-                        model_id: model,
+                        model_id: data.modelId || "FLUX.1-dev",
                         deadline: 60,
                         priority: 1,
                     }),
@@ -1277,7 +1227,7 @@ export const generateImage = async (
         ) {
             const together = new Together({ apiKey: apiKey as string });
             const response = await together.images.create({
-                model: model,
+                model: "black-forest-labs/FLUX.1-schnell",
                 prompt: data.prompt,
                 width: data.width,
                 height: data.height,
@@ -1392,7 +1342,7 @@ export const generateImage = async (
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        model: model,
+                        model: data.modelId || "fluently-xl",
                         prompt: data.prompt,
                         negative_prompt: data.negativePrompt,
                         width: data.width,
@@ -1438,7 +1388,8 @@ export const generateImage = async (
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
-                            model_id: model,
+                            model_id:
+                                data.modelId || "ByteDance/SDXL-Lightning",
                             prompt: data.prompt,
                             width: data.width || 1024,
                             height: data.height || 1024,
@@ -1572,9 +1523,6 @@ export interface GenerationOptions {
     stop?: string[];
     mode?: "auto" | "json" | "tool";
     experimental_providerMetadata?: Record<string, unknown>;
-    verifiableInference?: boolean;
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
-    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }
 
 /**
@@ -1606,9 +1554,6 @@ export const generateObject = async ({
     schemaDescription,
     stop,
     mode = "json",
-    verifiableInference = false,
-    verifiableInferenceAdapter,
-    verifiableInferenceOptions,
 }: GenerationOptions): Promise<GenerateObjectResult<unknown>> => {
     if (!context) {
         const errorMessage = "generateObject context is empty";
@@ -1617,14 +1562,14 @@ export const generateObject = async ({
     }
 
     const provider = runtime.modelProvider;
-    const modelSettings = getModelSettings(runtime.modelProvider, modelClass);
-    const model = modelSettings.name;
-    const temperature = modelSettings.temperature;
-    const frequency_penalty = modelSettings.frequency_penalty;
-    const presence_penalty = modelSettings.presence_penalty;
-    const max_context_length = modelSettings.maxInputTokens;
-    const max_response_length = modelSettings.maxOutputTokens;
-    const experimental_telemetry = modelSettings.experimental_telemetry;
+    const model = models[provider].model[modelClass];
+    const temperature = models[provider].settings.temperature;
+    const frequency_penalty = models[provider].settings.frequency_penalty;
+    const presence_penalty = models[provider].settings.presence_penalty;
+    const max_context_length = models[provider].settings.maxInputTokens;
+    const max_response_length = models[provider].settings.maxOutputTokens;
+    const experimental_telemetry =
+        models[provider].settings.experimental_telemetry;
     const apiKey = runtime.token;
 
     try {
@@ -1636,7 +1581,7 @@ export const generateObject = async ({
             maxTokens: max_response_length,
             frequencyPenalty: frequency_penalty,
             presencePenalty: presence_penalty,
-            stop: stop || modelSettings.stop,
+            stop: stop || models[provider].settings.stop,
             experimental_telemetry: experimental_telemetry,
         };
 
@@ -1652,9 +1597,6 @@ export const generateObject = async ({
             runtime,
             context,
             modelClass,
-            verifiableInference,
-            verifiableInferenceAdapter,
-            verifiableInferenceOptions,
         });
 
         return response;
@@ -1678,11 +1620,8 @@ interface ProviderOptions {
     mode?: "auto" | "json" | "tool";
     experimental_providerMetadata?: Record<string, unknown>;
     modelOptions: ModelSettings;
-    modelClass: ModelClass;
+    modelClass: string;
     context: string;
-    verifiableInference?: boolean;
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
-    verifiableInferenceOptions?: VerifiableInferenceOptions;
 }
 
 /**
@@ -1694,53 +1633,32 @@ interface ProviderOptions {
 export async function handleProvider(
     options: ProviderOptions
 ): Promise<GenerateObjectResult<unknown>> {
-    const {
-        provider,
-        runtime,
-        context,
-        modelClass,
-        verifiableInference,
-        verifiableInferenceAdapter,
-        verifiableInferenceOptions,
-    } = options;
+    const { provider, runtime, context, modelClass } = options;
+
     switch (provider) {
         case ModelProviderName.OPENAI:
-        case ModelProviderName.ETERNALAI:
-        case ModelProviderName.ALI_BAILIAN:
-        case ModelProviderName.VOLENGINE:
-        case ModelProviderName.LLAMACLOUD:
-        case ModelProviderName.TOGETHER:
-        case ModelProviderName.NANOGPT:
-        case ModelProviderName.AKASH_CHAT_API:
-            return await handleOpenAI(options);
+            return handleOpenAI(options);
         case ModelProviderName.ANTHROPIC:
-        case ModelProviderName.CLAUDE_VERTEX:
-            return await handleAnthropic(options);
+            return handleAnthropic(options);
         case ModelProviderName.GROK:
-            return await handleGrok(options);
+            return handleGrok(options);
         case ModelProviderName.GROQ:
-            return await handleGroq(options);
-        case ModelProviderName.LLAMALOCAL:
-            return await generateObjectDeprecated({
-                runtime,
-                context,
-                modelClass,
-            });
+            return handleGroq(options);
         case ModelProviderName.GOOGLE:
-            return await handleGoogle(options);
+            return handleGoogle(options);
         case ModelProviderName.REDPILL:
-            return await handleRedPill(options);
+            return handleRedPill(options);
         case ModelProviderName.OPENROUTER:
-            return await handleOpenRouter(options);
+            return handleOpenRouter(options);
         case ModelProviderName.OLLAMA:
-            return await handleOllama(options);
-        default: {
-            const errorMessage = `Unsupported provider: ${provider}`;
-            elizaLogger.error(errorMessage);
-            throw new Error(errorMessage);
-        }
+            return handleOllama(options);
+        case ModelProviderName.ATOMA:
+            return handleAtoma(options);
+        default:
+            throw new Error(`Unsupported provider: ${provider}`);
     }
 }
+
 /**
  * Handles object generation for OpenAI.
  *
@@ -1753,7 +1671,7 @@ async function handleOpenAI({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const baseURL = models.openai.endpoint || undefined;
@@ -1780,7 +1698,7 @@ async function handleAnthropic({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const anthropic = createAnthropic({ apiKey });
@@ -1806,7 +1724,7 @@ async function handleGrok({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const grok = createOpenAI({ apiKey, baseURL: models.grok.endpoint });
@@ -1832,7 +1750,7 @@ async function handleGroq({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const groq = createGroq({ apiKey });
@@ -1858,7 +1776,7 @@ async function handleGoogle({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const google = createGoogleGenerativeAI();
@@ -1884,7 +1802,7 @@ async function handleRedPill({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const redPill = createOpenAI({ apiKey, baseURL: models.redpill.endpoint });
@@ -1910,7 +1828,7 @@ async function handleOpenRouter({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const openRouter = createOpenAI({
@@ -1938,12 +1856,12 @@ async function handleOllama({
     schema,
     schemaName,
     schemaDescription,
-    mode = "json",
+    mode,
     modelOptions,
     provider,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const ollamaProvider = createOllama({
-        baseURL: getEndpoint(provider) + "/api",
+        baseURL: models[provider].endpoint + "/api",
     });
     const ollama = ollamaProvider(model);
     return await aiGenerateObject({
@@ -1954,6 +1872,130 @@ async function handleOllama({
         mode,
         ...modelOptions,
     });
+}
+
+/**
+ * Handles object generation for Atoma models.
+ *
+ * @param {ProviderOptions} options - Options specific to Atoma.
+ * @returns {Promise<GenerateObjectResult<unknown>>} - A promise that resolves to generated objects.
+ */
+async function handleAtoma({
+    model,
+    apiKey,
+    schema,
+    schemaName: _schemaName,
+    schemaDescription: _schemaDescription,
+    mode: _mode,
+    modelOptions: _modelOptions,
+    context,
+    runtime: _runtime,
+    provider: _provider,
+    modelClass: _modelClass,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    const atomaSDK = new AtomaSDK({
+        bearerAuth: apiKey,
+    });
+
+    try {
+        const result = await atomaSDK.chat.create({
+            messages: [
+                {
+                    content: context,
+                    role: "user",
+                },
+            ],
+            model: model,
+        });
+
+        const completion = result.choices[0].message.content;
+
+        if (schema) {
+            // For schema-based generation, we'll parse the completion as JSON
+            // and validate it against the schema
+            const parsedCompletion = JSON.parse(completion);
+            const validatedObject = schema.parse(parsedCompletion);
+
+            return {
+                object: validatedObject,
+                finishReason: (result.choices[0].finishReason ?? "stop") as
+                    | "stop"
+                    | "length"
+                    | "error"
+                    | "tool-calls",
+                usage: {
+                    promptTokens: result.usage?.promptTokens ?? 0,
+                    completionTokens: result.usage?.completionTokens ?? 0,
+                    totalTokens: result.usage?.totalTokens ?? 0,
+                },
+                warnings: undefined,
+                request: {},
+                response: {
+                    id: result.id,
+                    timestamp: new Date(result.created * 1000), // Convert Unix timestamp to Date
+                    modelId: result.model,
+                },
+                logprobs: undefined,
+                experimental_providerMetadata: result.systemFingerprint
+                    ? {
+                          metadata: {
+                              systemFingerprint: result.systemFingerprint,
+                          },
+                      }
+                    : undefined,
+                toJsonResponse(init?: ResponseInit) {
+                    return new Response(
+                        JSON.stringify({ object: validatedObject }),
+                        {
+                            ...init,
+                            headers: {
+                                ...init?.headers,
+                                "content-type":
+                                    "application/json; charset=utf-8",
+                            },
+                        }
+                    );
+                },
+            };
+        }
+
+        return {
+            object: completion,
+            finishReason: (result.choices[0].finishReason ?? "stop") as
+                | "stop"
+                | "length"
+                | "error"
+                | "tool-calls",
+            usage: {
+                promptTokens: result.usage?.promptTokens ?? 0,
+                completionTokens: result.usage?.completionTokens ?? 0,
+                totalTokens: result.usage?.totalTokens ?? 0,
+            },
+            warnings: undefined,
+            request: {},
+            response: {
+                id: result.id,
+                timestamp: new Date(result.created * 1000), // Convert Unix timestamp to Date
+                modelId: result.model,
+            },
+            logprobs: undefined,
+            experimental_providerMetadata: result.systemFingerprint
+                ? { metadata: { systemFingerprint: result.systemFingerprint } }
+                : undefined,
+            toJsonResponse(init?: ResponseInit) {
+                return new Response(JSON.stringify({ object: completion }), {
+                    ...init,
+                    headers: {
+                        ...init?.headers,
+                        "content-type": "application/json; charset=utf-8",
+                    },
+                });
+            },
+        };
+    } catch (error) {
+        console.error("Error in Atoma handler:", error);
+        throw error;
+    }
 }
 
 // Add type definition for Together AI response
@@ -1972,7 +2014,7 @@ export async function generateTweetActions({
 }: {
     runtime: IAgentRuntime;
     context: string;
-    modelClass: ModelClass;
+    modelClass: string;
 }): Promise<ActionResponse | null> {
     let retryDelay = 1000;
     while (true) {
