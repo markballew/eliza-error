@@ -1,15 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { initWalletProvider, WalletProvider } from "../providers";
-import { generatePrivateKey } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { Memory, State } from "@elizaos/core";
 
 describe("B2 Network Wallet Provider", () => {
-    //let walletProvider: WalletProvider;
+    let walletProvider: WalletProvider;
     let mockRuntime;
 
     beforeEach(() => {
         vi.clearAllMocks();
         const pk = generatePrivateKey();
-        //walletProvider = new WalletProvider(pk);
+        walletProvider = new WalletProvider(pk);
         mockRuntime = {
             getSetting: vi.fn(),
         };

@@ -6,6 +6,7 @@ import {
     HandlerCallback,
     State,
     getEmbeddingZeroVector,
+    Content,
     composeContext,
     generateMessageResponse,
     ModelClass,
