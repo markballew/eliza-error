@@ -1,24 +1,10 @@
 {
-    "name": "@elizaos/client-slack",
-    "version": "0.1.9-alpha.1",
+    "name": "@ai16z/client-slack",
+    "version": "0.1.0",
     "description": "Slack client plugin for Eliza framework",
-    "type": "module",
     "main": "dist/index.js",
-    "module": "dist/index.js",
+    "type": "module",
     "types": "dist/index.d.ts",
-    "exports": {
-        "./package.json": "./package.json",
-        ".": {
-            "import": {
-                "@elizaos/source": "./src/index.ts",
-                "types": "./dist/index.d.ts",
-                "default": "./dist/index.js"
-            }
-        }
-    },
-    "files": [
-        "dist"
-    ],
     "scripts": {
         "build": "tsup src/index.ts --format esm --dts",
         "test": "jest",
@@ -31,7 +17,7 @@
         "example:transcribe": "ts-node src/examples/standalone-transcribe.ts"
     },
     "dependencies": {
-        "@elizaos/core": "workspace:*",
+        "@ai16z/eliza": "workspace:*",
         "@ffmpeg-installer/ffmpeg": "^1.1.0",
         "@slack/events-api": "^3.0.1",
         "@slack/web-api": "^6.8.1",
