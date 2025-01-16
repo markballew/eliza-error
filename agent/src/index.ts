@@ -87,7 +87,7 @@ import { openWeatherPlugin } from "@elizaos/plugin-open-weather";
 import { quaiPlugin } from "@elizaos/plugin-quai";
 import { sgxPlugin } from "@elizaos/plugin-sgx";
 import { solanaPlugin } from "@elizaos/plugin-solana";
-import { solanaAgentkitPlguin } from "@elizaos/plugin-solana-agentkit";
+import { solanaAgentkitPlugin } from "@elizaos/plugin-solana-agentkit";
 import { squidRouterPlugin } from "@elizaos/plugin-squid-router";
 import { stargazePlugin } from "@elizaos/plugin-stargaze";
 import { storyPlugin } from "@elizaos/plugin-story";
@@ -245,12 +245,15 @@ async function loadCharacter(filePath: string): Promise<Character> {
     return jsonToCharacter(filePath, character);
 }
 
+function commaSeparatedStringToArray(commaSeparated: string): string[] {
+    return commaSeparated?.split(",").map(value => value.trim())
+}
+
+
 export async function loadCharacters(
     charactersArg: string
 ): Promise<Character[]> {
-    let characterPaths = charactersArg
-        ?.split(",")
-        .map((filePath) => filePath.trim());
+    let characterPaths = commaSeparatedStringToArray(charactersArg)
     const loadedCharacters: Character[] = [];
 
     if (characterPaths?.length > 0) {
@@ -322,17 +325,16 @@ export async function loadCharacters(
         }
     }
 
-    if (loadedCharacters.length === 0) {
-        if (
-            process.env.REMOTE_CHARACTER_URL != "" &&
-            process.env.REMOTE_CHARACTER_URL.startsWith("http")
-        ) {
-            const character = await loadCharacterFromUrl(
-                process.env.REMOTE_CHARACTER_URL
-            );
+    if (hasValidRemoteUrls()) {
+        elizaLogger.info("Loading characters from remote URLs");
+        let characterUrls = commaSeparatedStringToArray(process.env.REMOTE_CHARACTER_URLS)
+        for (const characterUrl of characterUrls) {
+            const character = await loadCharacterFromUrl(characterUrl);
             loadedCharacters.push(character);
         }
+    }
 
+    if (loadedCharacters.length === 0) {
         elizaLogger.info("No characters found, using default character");
         loadedCharacters.push(defaultCharacter);
     }
@@ -786,7 +788,7 @@ export async function createAgent(
                 ? solanaPlugin
                 : null,
             getSecret(character, "SOLANA_PRIVATE_KEY")
-                ? solanaAgentkitPlguin
+                ? solanaAgentkitPlugin
                 : null,
             getSecret(character, "AUTONOME_JWT_TOKEN") ? autonomePlugin : null,
             (getSecret(character, "NEAR_ADDRESS") ||
@@ -1099,6 +1101,10 @@ const checkPortAvailable = (port: number): Promise<boolean> => {
     });
 };
 
+const hasValidRemoteUrls = () =>
+    process.env.REMOTE_CHARACTER_URLS != "" &&
+    process.env.REMOTE_CHARACTER_URLS.startsWith("http")
+
 const startAgents = async () => {
     const directClient = new DirectClient();
     let serverPort = parseInt(settings.SERVER_PORT || "3000");
@@ -1106,7 +1112,7 @@ const startAgents = async () => {
     let charactersArg = args.characters || args.character;
     let characters = [defaultCharacter];
 
-    if (charactersArg) {
+    if (charactersArg || hasValidRemoteUrls()) {
         characters = await loadCharacters(charactersArg);
     }
 
