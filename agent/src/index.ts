@@ -1,6 +1,5 @@
 import { PGLiteDatabaseAdapter } from "@elizaos/adapter-pglite";
 import { PostgresDatabaseAdapter } from "@elizaos/adapter-postgres";
-import { QdrantDatabaseAdapter } from "@elizaos/adapter-qdrant";
 import { RedisClient } from "@elizaos/adapter-redis";
 import { SqliteDatabaseAdapter } from "@elizaos/adapter-sqlite";
 import { SupabaseDatabaseAdapter } from "@elizaos/adapter-supabase";
@@ -513,6 +512,11 @@ export function getTokenForProvider(
                 character.settings?.secrets?.DEEPSEEK_API_KEY ||
                 settings.DEEPSEEK_API_KEY
             );
+        case ModelProviderName.LIVEPEER:
+            return (
+                character.settings?.secrets?.LIVEPEER_GATEWAY_URL ||
+                settings.LIVEPEER_GATEWAY_URL
+            );
         default:
             const errorMessage = `Failed to get token - unsupported model provider: ${provider}`;
             elizaLogger.error(errorMessage);
@@ -566,20 +570,7 @@ function initializeDatabase(dataDir: string) {
             dataDir: process.env.PGLITE_DATA_DIR,
         });
         return db;
-    } else if (process.env.QDRANT_URL
-        && process.env.QDRANT_KEY
-        && process.env.QDRANT_PORT
-        && process.env.QDRANT_VECTOR_SIZE
-    ) {
-        elizaLogger.info("Initializing Qdrant adapter...");
-        const db = new QdrantDatabaseAdapter(
-            process.env.QDRANT_URL,
-            process.env.QDRANT_KEY,
-            Number(process.env.QDRANT_PORT),
-            Number(process.env.QDRANT_VECTOR_SIZE)
-        );
-        return db;
-    }else {
+    } else {
         const filePath =
             process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
         elizaLogger.info(`Initializing SQLite database at ${filePath}...`);
