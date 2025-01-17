@@ -932,38 +932,11 @@ export const models: Models = {
         },
     },
     [ModelProviderName.LIVEPEER]: {
-        endpoint: settings.LIVEPEER_GATEWAY_URL,
+        // livepeer endpoint is handled from the sdk
         model: {
-            [ModelClass.SMALL]: {
-                name:
-                    settings.SMALL_LIVEPEER_MODEL ||
-                    "meta-llama/Meta-Llama-3.1-8B-Instruct",
-                stop: [],
-                maxInputTokens: 8000,
-                maxOutputTokens: 8192,
-                temperature: 0,
-            },
-            [ModelClass.MEDIUM]: {
-                name:
-                    settings.MEDIUM_LIVEPEER_MODEL ||
-                    "meta-llama/Meta-Llama-3.1-8B-Instruct",
-                stop: [],
-                maxInputTokens: 8000,
-                maxOutputTokens: 8192,
-                temperature: 0,
-            },
-            [ModelClass.LARGE]: {
-                name:
-                    settings.LARGE_LIVEPEER_MODEL ||
-                    "meta-llama/Meta-Llama-3.1-8B-Instruct",
-                stop: [],
-                maxInputTokens: 8000,
-                maxOutputTokens: 8192,
-                temperature: 0,
-            },
             [ModelClass.IMAGE]: {
                 name:
-                    settings.IMAGE_LIVEPEER_MODEL || "ByteDance/SDXL-Lightning",
+                    settings.LIVEPEER_IMAGE_MODEL || "ByteDance/SDXL-Lightning",
             },
         },
     },
@@ -975,21 +948,21 @@ export const models: Models = {
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                temperature: 0,
+                temperature: 0.6,
             },
             [ModelClass.MEDIUM]: {
                 name: settings.MEDIUM_INFERA_MODEL || "mistral-nemo:latest",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                temperature: 0,
+                temperature: 0.6,
             },
             [ModelClass.LARGE]: {
                 name: settings.LARGE_INFERA_MODEL || "mistral-small:latest",
                 stop: [],
                 maxInputTokens: 128000,
                 maxOutputTokens: 8192,
-                temperature: 0,
+                temperature: 0.6,
             },
         },
     },
@@ -1021,38 +994,6 @@ export const models: Models = {
                 maxOutputTokens: 8192,
                 frequency_penalty: 0.0,
                 presence_penalty: 0.0,
-                temperature: 0.7,
-            },
-        },
-    },
-    [ModelProviderName.ATOMA]: {
-        endpoint: settings.ATOMA_API_URL || "https://api.atoma.network/v1",
-        model: {
-            [ModelClass.SMALL]: {
-                name:
-                    settings.SMALL_ATOMA_MODEL ||
-                    "meta-llama/Llama-3.3-70B-Instruct",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.7,
-            },
-            [ModelClass.MEDIUM]: {
-                name:
-                    settings.MEDIUM_ATOMA_MODEL ||
-                    "meta-llama/Llama-3.3-70B-Instruct",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
-                temperature: 0.7,
-            },
-            [ModelClass.LARGE]: {
-                name:
-                    settings.LARGE_ATOMA_MODEL ||
-                    "meta-llama/Llama-3.3-70B-Instruct",
-                stop: [],
-                maxInputTokens: 128000,
-                maxOutputTokens: 8192,
                 temperature: 0.7,
             },
         },
