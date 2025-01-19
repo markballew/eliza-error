@@ -8,7 +8,6 @@ import type {
     ICosmosWalletChainsData,
 } from "../interfaces";
 import { getAvailableChains } from "../helpers/cosmos-chains";
-import { SkipClient } from "@skip-go/client";
 
 export class CosmosWalletChains implements ICosmosWalletChains {
     public walletChainsData: ICosmosWalletChainsData = {};
@@ -50,14 +49,9 @@ export class CosmosWalletChains implements ICosmosWalletChains {
                     wallet.directSecp256k1HdWallet
                 );
 
-            const skipClient = new SkipClient({
-                getCosmosSigner: async () => wallet.directSecp256k1HdWallet,
-            });
-
             walletChainsData[chainName] = {
                 wallet,
                 signingCosmWasmClient,
-                skipClient,
             };
         }
 
@@ -65,25 +59,10 @@ export class CosmosWalletChains implements ICosmosWalletChains {
     }
 
     public async getWalletAddress(chainName: string) {
-        const chainWalletsForGivenChain = this.walletChainsData[chainName];
-        if (!chainWalletsForGivenChain) {
-            throw new Error("Invalid chain name");
-        }
-
-        return await chainWalletsForGivenChain.wallet.getWalletAddress();
+        return await this.walletChainsData[chainName].wallet.getWalletAddress();
     }
 
     public getSigningCosmWasmClient(chainName: string) {
         return this.walletChainsData[chainName].signingCosmWasmClient;
-    }
-
-    public getSkipClient(chainName: string): SkipClient {
-        const chainWalletsForGivenChain = this.walletChainsData[chainName];
-
-        if (!chainWalletsForGivenChain) {
-            throw new Error("Invalid chain name");
-        }
-
-        return chainWalletsForGivenChain.skipClient;
     }
 }

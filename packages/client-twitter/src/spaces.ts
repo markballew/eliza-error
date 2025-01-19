@@ -1,20 +1,20 @@
 import {
     elizaLogger,
-    type IAgentRuntime,
+    IAgentRuntime,
     composeContext,
     generateText,
     ModelClass,
     ServiceType,
-    type ITranscriptionService,
+    ITranscriptionService,
 } from "@elizaos/core";
-import type { ClientBase } from "./base";
+import { ClientBase } from "./base";
 import {
-    type Scraper,
+    Scraper,
     Space,
-    type SpaceConfig,
+    SpaceConfig,
     RecordToDiskPlugin,
     IdleMonitorPlugin,
-    type SpeakerRequest,
+    SpeakerRequest,
 } from "agent-twitter-client";
 import { SttTtsPlugin } from "./plugins/SttTtsSpacesPlugin.ts";
 
