@@ -507,7 +507,7 @@ export class MessageManager {
             "text" in message
                 ? message.text
                 : "caption" in message
-                ? (message as any).caption
+                ? message.caption
                 : "";
 
         if (!messageText) return false;
@@ -570,7 +570,7 @@ export class MessageManager {
             "text" in message
                 ? message.text
                 : "caption" in message
-                ? (message as any).caption
+                ? message.caption
                 : "";
         if (!messageText) return false;
 
@@ -718,7 +718,7 @@ export class MessageManager {
             "text" in message
                 ? message.text
                 : "caption" in message
-                ? (message as any).caption
+                ? message.caption
                 : "";
 
         // Check if team member has direct interest first
@@ -985,11 +985,16 @@ export class MessageManager {
                 }
 
                 const fileStream = fs.createReadStream(mediaPath);
-                await sendFunction(
-                    ctx.chat.id,
-                    { source: fileStream },
-                    { caption }
-                );
+
+                try {
+                    await sendFunction(
+                        ctx.chat.id,
+                        { source: fileStream },
+                        { caption }
+                    );
+                } finally {
+                    fileStream.destroy();
+                }
             }
 
             elizaLogger.info(
@@ -1094,7 +1099,7 @@ export class MessageManager {
             "text" in message
                 ? message.text
                 : "caption" in message
-                ? (message as any).caption
+                ? message.caption
                 : "";
 
         // Add team handling at the start
