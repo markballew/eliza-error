@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@elizaos/core";
 import { ReservoirService } from "../services/reservoir";
 import { MarketIntelligenceService } from "../services/market-intelligence";
 import { SocialAnalyticsService } from "../services/social-analytics";

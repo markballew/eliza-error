@@ -7,10 +7,10 @@ import {
     ErrorType,
     ErrorCode,
 } from "../utils/error-handler";
-import type { MemoryCacheManager } from "./cache-manager";
-import type { RateLimiter } from "./rate-limiter";
-import type { MarketStats, NFTCollection } from "../types";
-import type { IAgentRuntime } from "@elizaos/core";
+import { MemoryCacheManager } from "./cache-manager";
+import { RateLimiter } from "./rate-limiter";
+import { MarketStats, NFTCollection } from "../types";
+import { IAgentRuntime } from "@elizaos/core";
 
 interface ReservoirServiceConfig {
     cacheManager?: MemoryCacheManager;
@@ -43,7 +43,7 @@ export class ReservoirService {
     async makeRequest<T>(
         endpoint: string,
         params: Record<string, any> = {},
-        priority = 0,
+        priority: number = 0,
         runtime: IAgentRuntime
     ): Promise<T> {
         const endOperation = this.performanceMonitor.startOperation(
@@ -138,7 +138,7 @@ export class ReservoirService {
 
     async getTopCollections(
         runtime: IAgentRuntime,
-        limit = 10
+        limit: number = 10
     ): Promise<NFTCollection[]> {
         const endOperation = this.performanceMonitor.startOperation(
             "getTopCollections",

@@ -1,29 +1,29 @@
 import { v4 } from "uuid";
 
 import {
-    type Account,
-    type Actor,
-    type GoalStatus,
+    Account,
+    Actor,
+    GoalStatus,
     type Goal,
     type Memory,
     type Relationship,
     type UUID,
     type IDatabaseCacheAdapter,
-    type Participant,
+    Participant,
     elizaLogger,
     getEmbeddingConfig,
     DatabaseAdapter,
     EmbeddingProvider,
-    type RAGKnowledgeItem,
+    RAGKnowledgeItem,
 } from "@elizaos/core";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 import {
     PGlite,
-    type PGliteOptions,
-    type Results,
-    type Transaction,
+    PGliteOptions,
+    Results,
+    Transaction,
 } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite/vector";
 import { fuzzystrmatch } from "@electric-sql/pglite/contrib/fuzzystrmatch";

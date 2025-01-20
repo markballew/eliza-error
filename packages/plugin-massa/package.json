@@ -10,7 +10,8 @@
         "tsup": "8.3.5"
     },
     "scripts": {
-        "build": "tsup --format esm --dts"
+        "build": "tsup --format esm --dts",
+        "lint": "eslint . --fix"
     },
     "peerDependencies": {
         "whatwg-url": "7.1.0"

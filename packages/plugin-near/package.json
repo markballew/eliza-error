@@ -29,7 +29,8 @@
     "scripts": {
         "build": "tsup --format esm,cjs --dts",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "lint": "eslint . --fix"
     },
     "peerDependencies": {
         "whatwg-url": "7.1.0",

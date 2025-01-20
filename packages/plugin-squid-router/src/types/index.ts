@@ -1,4 +1,4 @@
-import type {Content} from "@elizaos/core";
+import {Content} from "@elizaos/core";
 
 export const nativeTokenConstant = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 

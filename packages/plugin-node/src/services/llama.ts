@@ -1,6 +1,6 @@
 import {
     elizaLogger,
-    type IAgentRuntime,
+    IAgentRuntime,
     ServiceType,
     ModelProviderName,
 } from "@elizaos/core";
@@ -8,17 +8,17 @@ import { Service } from "@elizaos/core";
 import fs from "fs";
 import https from "https";
 import {
-    type GbnfJsonSchema,
+    GbnfJsonSchema,
     getLlama,
-    type Llama,
+    Llama,
     LlamaChatSession,
-    type LlamaChatSessionRepeatPenalty,
-    type LlamaContext,
-    type LlamaContextSequence,
-    type LlamaContextSequenceRepeatPenalty,
+    LlamaChatSessionRepeatPenalty,
+    LlamaContext,
+    LlamaContextSequence,
+    LlamaContextSequenceRepeatPenalty,
     LlamaJsonSchemaGrammar,
-    type LlamaModel,
-    type Token,
+    LlamaModel,
+    Token,
 } from "node-llama-cpp";
 import path from "path";
 import si from "systeminformation";
@@ -174,8 +174,8 @@ export class LlamaService extends Service {
     private ollamaModel: string | undefined;
 
     private messageQueue: QueuedMessage[] = [];
-    private isProcessing = false;
-    private modelInitialized = false;
+    private isProcessing: boolean = false;
+    private modelInitialized: boolean = false;
     private runtime: IAgentRuntime | undefined;
 
     static serviceType: ServiceType = ServiceType.TEXT_GENERATION;
@@ -309,7 +309,7 @@ export class LlamaService extends Service {
                                 return;
                             }
 
-                            totalSize = Number.parseInt(
+                            totalSize = parseInt(
                                 response.headers["content-length"] || "0",
                                 10
                             );
@@ -556,7 +556,8 @@ export class LlamaService extends Service {
         });
 
         const wordsToPunishTokens = wordsToPunish
-            .flatMap((word) => this.model!.tokenize(word));
+            .map((word) => this.model!.tokenize(word))
+            .flat();
 
         const repeatPenalty: LlamaChatSessionRepeatPenalty = {
             punishTokensFilter: () => wordsToPunishTokens,
@@ -737,7 +738,8 @@ export class LlamaService extends Service {
 
         // tokenize the words to punish
         const wordsToPunishTokens = wordsToPunish
-            .flatMap((word) => this.model!.tokenize(word));
+            .map((word) => this.model!.tokenize(word))
+            .flat();
 
         const repeatPenalty: LlamaContextSequenceRepeatPenalty = {
             punishTokens: () => wordsToPunishTokens,

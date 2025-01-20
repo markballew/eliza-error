@@ -1,11 +1,11 @@
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
     elizaLogger,
     composeContext,
@@ -17,8 +17,8 @@ import {
     initialize,
     getKeyringFromSeed,
 } from "avail-js-sdk";
-import type { ISubmittableResult } from "@polkadot/types/types/extrinsic";
-import type { H256 } from "@polkadot/types/interfaces/runtime";
+import { ISubmittableResult } from "@polkadot/types/types/extrinsic";
+import { H256 } from "@polkadot/types/interfaces/runtime";
 
 export interface DataContent extends Content {
     data: string;

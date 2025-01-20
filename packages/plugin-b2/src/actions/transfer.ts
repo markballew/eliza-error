@@ -1,21 +1,21 @@
 import {
-    type Action,
-    type ActionExample,
-    type IAgentRuntime,
+    Action,
+    ActionExample,
+    IAgentRuntime,
     generateObjectDeprecated,
-    type Memory,
-    type State,
-    type HandlerCallback,
+    Memory,
+    State,
+    HandlerCallback,
     elizaLogger,
     composeContext,
     ModelClass,
 } from "@elizaos/core";
 import { getTxReceipt, sendNativeAsset, sendToken } from "../utils";
-import type { Address, Hash } from "viem";
+import { Address, Hash } from "viem";
 import { validateB2NetworkConfig } from "../environment";
 import { transferTemplate } from "../templates";
-import type { WalletProvider } from "../providers";
-import type { Transaction, TransferParams } from "../types";
+import { WalletProvider } from "../providers";
+import { Transaction, TransferParams } from "../types";
 import { initWalletProvider } from "../providers";
 import { TOKEN_ADDRESSES } from "../utils/constants"
 // Exported for tests

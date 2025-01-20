@@ -1,5 +1,5 @@
 import { elizaLogger } from "@elizaos/core";
-import type {
+import {
     IVerifiableLogProvider,
     VerifiableAgent,
     VerifiableDAO,
@@ -8,12 +8,12 @@ import type {
 import {
     DeriveKeyProvider,
     RemoteAttestationProvider,
-    type RemoteAttestationQuote,
+    RemoteAttestationQuote,
 } from "@elizaos/plugin-tee";
 
 export class VerifiableLogProvider implements IVerifiableLogProvider {
     private dao: VerifiableDAO;
-    private keyPath = "/keys/verifiable_key";
+    private keyPath: string = "/keys/verifiable_key";
     private remoteAttestationProvider: RemoteAttestationProvider;
     private provider: DeriveKeyProvider;
 
@@ -33,7 +33,7 @@ export class VerifiableLogProvider implements IVerifiableLogProvider {
         },
         subject: string
     ): Promise<boolean> {
-        let singed = "";
+        let singed: string = "";
 
         try {
             const evmKeypair = await this.provider.deriveEcdsaKeypair(

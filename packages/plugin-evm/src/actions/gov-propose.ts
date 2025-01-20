@@ -4,8 +4,8 @@ import { proposeTemplate } from "../templates";
 import type { ProposeProposalParams, Transaction } from "../types";
 import governorArtifacts from "../contracts/artifacts/OZGovernor.json";
 import {
-    type ByteArray,
-    type Hex,
+    ByteArray,
+    Hex,
     encodeFunctionData,
 } from "viem";
 
@@ -47,13 +47,13 @@ export class ProposeAction {
                 data: txData as Hex,
                 chain: chainConfig,
                 kzg: {
-                    blobToKzgCommitment: (_blob: ByteArray): ByteArray => {
+                    blobToKzgCommitment: function (_blob: ByteArray): ByteArray {
                         throw new Error("Function not implemented.");
                     },
-                    computeBlobKzgProof: (
+                    computeBlobKzgProof: function (
                         _blob: ByteArray,
                         _commitment: ByteArray
-                    ): ByteArray => {
+                    ): ByteArray {
                         throw new Error("Function not implemented.");
                     },
                 },

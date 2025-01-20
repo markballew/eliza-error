@@ -1,9 +1,9 @@
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type State,
-    type HandlerCallback,
+    Action,
+    IAgentRuntime,
+    Memory,
+    State,
+    HandlerCallback,
     elizaLogger,
     getEmbeddingZeroVector,
 } from "@elizaos/core";

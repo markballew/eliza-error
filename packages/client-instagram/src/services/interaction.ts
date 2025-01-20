@@ -3,14 +3,14 @@ import {
     elizaLogger,
     generateText,
     getEmbeddingZeroVector,
-    type IAgentRuntime,
+    IAgentRuntime,
     ModelClass,
     stringToUuid,
-    type UUID
+    UUID
 } from "@elizaos/core";
 import { fetchComments, likeMedia, postComment } from "../lib/actions";
 import { getIgClient } from "../lib/state";
-import type { InstagramState } from "../types";
+import { InstagramState } from "../types";
 
   // Templates
   const instagramCommentTemplate = `
@@ -61,8 +61,8 @@ import type { InstagramState } from "../types";
   export class InstagramInteractionService {
     private runtime: IAgentRuntime;
     private state: InstagramState;
-    private isProcessing = false;
-    private stopProcessing = false;
+    private isProcessing: boolean = false;
+    private stopProcessing: boolean = false;
 
     constructor(runtime: IAgentRuntime, state: InstagramState) {
       this.runtime = runtime;
@@ -75,7 +75,7 @@ import type { InstagramState } from "../types";
         if (!this.stopProcessing) {
           setTimeout(
             handleInteractionsLoop,
-            Number.parseInt(this.runtime.getSetting('ACTION_INTERVAL') || '300', 10) * 1000
+            parseInt(this.runtime.getSetting('ACTION_INTERVAL') || '300', 10) * 1000
           );
         }
       };

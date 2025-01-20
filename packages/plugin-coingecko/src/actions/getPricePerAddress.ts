@@ -1,14 +1,14 @@
 import {
-    type ActionExample,
+    ActionExample,
     composeContext,
-    type Content,
+    Content,
     elizaLogger,
     generateObject,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
 } from "@elizaos/core";
 import axios from "axios";
@@ -98,7 +98,7 @@ export default {
 
             // Get API configuration
             const config = await validateCoingeckoConfig(runtime);
-            const { baseUrl, apiKey, headerKey } = getApiConfig(config);
+            const { baseUrl, apiKey } = getApiConfig(config);
 
             // Fetch token data
             elizaLogger.log("Fetching token data...");
@@ -107,7 +107,7 @@ export default {
                 {
                     headers: {
                         accept: "application/json",
-                        [headerKey]: apiKey,
+                        "x-cg-pro-api-key": apiKey,
                     },
                 }
             );

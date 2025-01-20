@@ -1,4 +1,4 @@
-import type { TimeInterval, TokenTradeData } from "./common";
+import { TimeInterval, TokenTradeData } from "./common";
 
 // Token Trades Types
 export interface TokenTradesParams {

@@ -1,4 +1,4 @@
-import type { NFTCollection, MarketIntelligence, MarketStats } from "../types";
+import { NFTCollection, MarketIntelligence, MarketStats } from "../types";
 
 export const marketStatsTemplates = {
     collectionOverview: ({
