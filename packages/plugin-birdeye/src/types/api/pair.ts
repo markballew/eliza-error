@@ -1,4 +1,4 @@
-import type { TimeInterval } from "./common";
+import { TimeInterval } from "./common";
 
 // Pair Trades Types
 export interface PairTradesParams {

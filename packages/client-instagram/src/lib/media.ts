@@ -1,12 +1,12 @@
-import { elizaLogger, type IAgentRuntime } from "@elizaos/core";
-import type { InstagramConfig } from "../environment";
-import type { MediaItem } from "../types";
+import { elizaLogger, IAgentRuntime } from "@elizaos/core";
+import { InstagramConfig } from "../environment";
+import { MediaItem } from "../types";
 import { getIgClient } from "./state";
 
 export async function fetchRecentMedia(
     runtime: IAgentRuntime,
     config: InstagramConfig,
-    count = 10
+    count: number = 10
   ): Promise<MediaItem[]> {
     const ig = getIgClient();
 

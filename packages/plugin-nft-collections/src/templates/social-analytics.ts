@@ -1,4 +1,4 @@
-import type { NFTCollection, SocialMetrics, CommunityMetrics } from "../types";
+import { NFTCollection, SocialMetrics, CommunityMetrics } from "../types";
 
 export const socialAnalyticsTemplates = {
     socialOverview: ({

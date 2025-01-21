@@ -1,14 +1,14 @@
 /* eslint-disable no-dupe-class-members */
 import { DatabaseAdapter } from "../src/database.ts";
 import {
-    type Memory,
-    type Actor,
-    type Account,
-    type Goal,
+    Memory,
+    Actor,
+    Account,
+    Goal,
     GoalStatus,
-    type Participant,
-    type Relationship,
-    type UUID,
+    Participant,
+    Relationship,
+    UUID,
 } from "../src/types.ts";
 
 class MockDatabaseAdapter extends DatabaseAdapter {

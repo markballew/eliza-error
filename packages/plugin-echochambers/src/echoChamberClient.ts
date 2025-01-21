@@ -1,5 +1,5 @@
-import { elizaLogger, type IAgentRuntime } from "@elizaos/core";
-import type {
+import { elizaLogger, IAgentRuntime } from "@elizaos/core";
+import {
     ChatMessage,
     ChatRoom,
     EchoChamberConfig,

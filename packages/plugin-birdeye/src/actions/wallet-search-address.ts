@@ -1,14 +1,14 @@
 import {
-    type Action,
-    type ActionExample,
+    Action,
+    ActionExample,
     elizaLogger,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    IAgentRuntime,
+    Memory,
+    State,
 } from "@elizaos/core";
 import { BirdeyeProvider } from "../birdeye";
-import type { WalletPortfolioResponse } from "../types/api/wallet";
-import type { BaseAddress } from "../types/shared";
+import { WalletPortfolioResponse } from "../types/api/wallet";
+import { BaseAddress } from "../types/shared";
 import { extractAddresses } from "../utils";
 
 export const walletSearchAddressAction = {

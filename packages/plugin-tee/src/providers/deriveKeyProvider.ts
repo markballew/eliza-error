@@ -1,17 +1,17 @@
 import {
-    type IAgentRuntime,
-    type Memory,
-    type Provider,
-    type State,
+    IAgentRuntime,
+    Memory,
+    Provider,
+    State,
     elizaLogger,
 } from "@elizaos/core";
 import { Keypair } from "@solana/web3.js";
 import crypto from "crypto";
-import { type DeriveKeyResponse, TappdClient } from "@phala/dstack-sdk";
+import { DeriveKeyResponse, TappdClient } from "@phala/dstack-sdk";
 import { privateKeyToAccount } from "viem/accounts";
-import { type PrivateKeyAccount, keccak256 } from "viem";
+import { PrivateKeyAccount, keccak256 } from "viem";
 import { RemoteAttestationProvider } from "./remoteAttestationProvider";
-import { TEEMode, type RemoteAttestationQuote, type DeriveKeyAttestationData } from "../types/tee";
+import { TEEMode, RemoteAttestationQuote, DeriveKeyAttestationData } from "../types/tee";
 
 class DeriveKeyProvider {
     private client: TappdClient;

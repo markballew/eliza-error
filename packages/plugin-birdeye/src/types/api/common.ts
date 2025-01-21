@@ -1,4 +1,4 @@
-import type {
+import {
     BaseQuoteParams,
     DefiHistoryPriceParams,
     DefiMultiPriceParams,
@@ -8,14 +8,14 @@ import type {
     OHLCVParams,
     PriceVolumeParams,
 } from "./defi";
-import type {
+import {
     OHLCVPairParams,
     PairOverviewMultiParams,
     PairOverviewSingleParams,
     PairTradesParams,
 } from "./pair";
-import type { TokenMarketSearchParams } from "./search";
-import type {
+import { TokenMarketSearchParams } from "./search";
+import {
     AllMarketsParams,
     MintBurnParams,
     NewListingParams,
@@ -32,8 +32,8 @@ import type {
     TokenTradesParams,
     TopTradersParams,
 } from "./token";
-import type { GainersLosersParams, TraderTransactionsSeekParams } from "./trader";
-import type {
+import { GainersLosersParams, TraderTransactionsSeekParams } from "./trader";
+import {
     WalletPortfolioMultichainParams,
     WalletPortfolioParams,
     WalletSimulationParams,

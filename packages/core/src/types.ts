@@ -1,4 +1,4 @@
-import type { Readable } from "stream";
+import { Readable } from "stream";
 
 /**
  * Represents a UUID string in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
@@ -224,13 +224,11 @@ export type Models = {
     [ModelProviderName.NANOGPT]: Model;
     [ModelProviderName.HYPERBOLIC]: Model;
     [ModelProviderName.VENICE]: Model;
-    [ModelProviderName.NVIDIA]: Model;
     [ModelProviderName.NINETEEN_AI]: Model;
     [ModelProviderName.AKASH_CHAT_API]: Model;
     [ModelProviderName.LIVEPEER]: Model;
     [ModelProviderName.DEEPSEEK]: Model;
     [ModelProviderName.INFERA]: Model;
-    [ModelProviderName.ATOMA]: Model;
 };
 
 /**
@@ -260,14 +258,12 @@ export enum ModelProviderName {
     NANOGPT = "nanogpt",
     HYPERBOLIC = "hyperbolic",
     VENICE = "venice",
-    NVIDIA = "nvidia",
     NINETEEN_AI = "nineteen_ai",
     AKASH_CHAT_API = "akash_chat_api",
     LIVEPEER = "livepeer",
     LETZAI = "letzai",
     DEEPSEEK = "deepseek",
     INFERA = "infera",
-    ATOMA = "atoma",
 }
 
 /**
@@ -709,9 +705,6 @@ export type Character = {
     /** Optional username */
     username?: string;
 
-    /** Optional email */
-    email?: string;
-
     /** Optional system prompt */
     system?: string;
 
@@ -740,7 +733,6 @@ export type Character = {
         twitterPostTemplate?: TemplateType;
         twitterMessageHandlerTemplate?: TemplateType;
         twitterShouldRespondTemplate?: TemplateType;
-        twitterVoiceHandlerTemplate?: TemplateType;
         instagramPostTemplate?: TemplateType;
         instagramMessageHandlerTemplate?: TemplateType;
         instagramShouldRespondTemplate?: TemplateType;
@@ -752,10 +744,6 @@ export type Character = {
         lensShouldRespondTemplate?: TemplateType;
         telegramMessageHandlerTemplate?: TemplateType;
         telegramShouldRespondTemplate?: TemplateType;
-        telegramAutoPostTemplate?: string;
-        telegramPinnedMessageTemplate?: string;
-        discordAutoPostTemplate?: string;
-        discordAnnouncementHypeTemplate?: string;
         discordVoiceHandlerTemplate?: TemplateType;
         discordShouldRespondTemplate?: TemplateType;
         discordMessageHandlerTemplate?: TemplateType;
@@ -846,14 +834,6 @@ export type Character = {
             teamAgentIds?: string[];
             teamLeaderId?: string;
             teamMemberInterestKeywords?: string[];
-            autoPost?: {
-                enabled?: boolean;
-                monitorTime?: number;
-                inactivityThreshold?: number;
-                mainChannelId?: string;
-                announcementChannelIds?: string[];
-                minTimeBetweenPosts?: number;
-            };
         };
         telegram?: {
             shouldIgnoreBotMessages?: boolean;
@@ -866,14 +846,6 @@ export type Character = {
             teamAgentIds?: string[];
             teamLeaderId?: string;
             teamMemberInterestKeywords?: string[];
-            autoPost?: {
-                enabled?: boolean;
-                monitorTime?: number;
-                inactivityThreshold?: number;
-                mainChannelId?: string;
-                pinnedMessagesGroups?: string[];
-                minTimeBetweenPosts?: number;
-            };
         };
         slack?: {
             shouldIgnoreBotMessages?: boolean;
@@ -919,25 +891,7 @@ export type Character = {
 
     /**Optinal Parent characters to inherit information from */
     extends?: string[];
-
-    twitterSpaces?: TwitterSpaceDecisionOptions;
 };
-
-export interface TwitterSpaceDecisionOptions {
-    maxSpeakers?: number;
-    topics?: string[];
-    typicalDurationMinutes?: number;
-    idleKickTimeoutMs?: number;
-    minIntervalBetweenSpacesMinutes?: number;
-    businessHoursOnly?: boolean;
-    randomChance?: number;
-    enableIdleMonitor?: boolean;
-    enableSttTts?: boolean;
-    enableRecording?: boolean;
-    voiceId?: string;
-    sttLanguage?: string;
-    speakerMaxDurationMs?: number;
-}
 
 /**
  * Interface for database operations
@@ -1428,13 +1382,13 @@ export interface GraphQLTag {
     values: any[];
 }
 
-export enum IrysMessageType {
+export const enum IrysMessageType {
     REQUEST = "REQUEST",
     DATA_STORAGE = "DATA_STORAGE",
     REQUEST_RESPONSE = "REQUEST_RESPONSE",
 }
 
-export enum IrysDataType {
+export const enum IrysDataType {
     FILE = "FILE",
     IMAGE = "IMAGE",
     OTHER = "OTHER",

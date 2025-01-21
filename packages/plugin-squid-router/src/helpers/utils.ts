@@ -1,7 +1,7 @@
-import type { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@elizaos/core";
 import { z } from 'zod';
 import { ethers } from 'ethers';
-import type {SquidToken, XChainSwapContent} from "../types";
+import {SquidToken, XChainSwapContent} from "../types";
 
 export function convertToWei(amount: string | number, token: SquidToken): string {
     if (typeof token.decimals !== 'number' || token.decimals < 0 || token.decimals > 255) {

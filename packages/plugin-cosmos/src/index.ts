@@ -1,8 +1,7 @@
 import type { Plugin } from "@elizaos/core";
 import { createTransferAction } from "./actions/transfer";
 import { createCosmosWalletProvider } from "./providers/wallet";
-import type { ICosmosPluginOptions } from "./shared/interfaces";
-import { createIBCTransferAction } from "./actions/ibc-transfer";
+import { ICosmosPluginOptions } from "./shared/interfaces";
 
 export const createCosmosPlugin = (
     pluginOptions?: ICosmosPluginOptions
@@ -12,10 +11,7 @@ export const createCosmosPlugin = (
     providers: [createCosmosWalletProvider(pluginOptions)],
     evaluators: [],
     services: [],
-    actions: [
-        createTransferAction(pluginOptions),
-        createIBCTransferAction(pluginOptions),
-    ],
+    actions: [createTransferAction(pluginOptions)],
 });
 
 export default createCosmosPlugin;

@@ -1,4 +1,4 @@
-import type { Plugin } from "@elizaos/core";
+import { Plugin } from "@elizaos/core";
 import { createNftCollectionProvider } from "./providers/nft-collections";
 import { getCollectionsAction } from "./actions/get-collections";
 import { listNFTAction } from "./actions/list-nft";

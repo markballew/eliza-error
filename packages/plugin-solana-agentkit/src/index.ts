@@ -1,4 +1,4 @@
-import type { Plugin } from "@elizaos/core";
+import { Plugin } from "@elizaos/core";
 import createToken from "./actions/createToken.ts";
 
 export const solanaAgentkitPlugin: Plugin = {

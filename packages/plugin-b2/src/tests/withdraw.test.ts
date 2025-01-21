@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { generatePrivateKey } from "viem/accounts";
 import { WithdrawAction } from "../actions/withdraw";
 import { WalletProvider } from "../providers";
-import type { WithdrawParams } from "../types";
+import { WithdrawParams } from "../types";
 
 describe("Withdraw Action", () => {
     let wp: WalletProvider;

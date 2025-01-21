@@ -1,4 +1,4 @@
-import type { Service } from "@elizaos/core";
+import { Service } from "@elizaos/core";
 
 declare module "@elizaos/core" {
     interface ServiceTypeMap {

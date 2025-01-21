@@ -35,7 +35,7 @@ import type { SupportedChain } from "../types";
 
 export class WalletProvider {
     private cache: NodeCache;
-    private cacheKey = "evm/wallet";
+    private cacheKey: string = "evm/wallet";
     private currentChain: SupportedChain = "mainnet";
     private CACHE_EXPIRY_SEC = 5;
     chains: Record<string, Chain> = { ...viemChains };

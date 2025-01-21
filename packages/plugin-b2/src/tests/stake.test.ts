@@ -3,7 +3,7 @@ import { generatePrivateKey } from "viem/accounts";
 
 import { StakeAction } from "../actions/stake";
 import { WalletProvider } from "../providers";
-import type { StakeParams } from "../types";
+import { StakeParams } from "../types";
 
 describe("Stake Action", () => {
     let wp: WalletProvider;

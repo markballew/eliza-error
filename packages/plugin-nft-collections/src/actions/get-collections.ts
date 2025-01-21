@@ -1,6 +1,6 @@
-import type { State } from "@elizaos/core";
-import type { HandlerCallback } from "@elizaos/core";
-import type { Action, IAgentRuntime, Memory, Provider } from "@elizaos/core";
+import { State } from "@elizaos/core";
+import { HandlerCallback } from "@elizaos/core";
+import { Action, IAgentRuntime, Memory, Provider } from "@elizaos/core";
 
 export const getCollectionsAction = (
     nftCollectionProvider: Provider

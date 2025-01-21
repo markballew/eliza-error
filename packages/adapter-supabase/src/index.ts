@@ -3,13 +3,13 @@ import {
     type Memory,
     type Goal,
     type Relationship,
-    type Actor,
-    type GoalStatus,
-    type Account,
+    Actor,
+    GoalStatus,
+    Account,
     type UUID,
-    type Participant,
-    type Room,
-    type RAGKnowledgeItem,
+    Participant,
+    Room,
+    RAGKnowledgeItem,
     elizaLogger,
 } from "@elizaos/core";
 import { DatabaseAdapter } from "@elizaos/core";
@@ -187,7 +187,7 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
             const { data } = response;
 
             return data
-                .flatMap((room) =>
+                .map((room) =>
                     room.participants.map((participant) => {
                         const user = participant.account as unknown as Actor;
                         return {
@@ -197,7 +197,8 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
                             username: user?.username,
                         };
                     })
-                );
+                )
+                .flat();
         } catch (error) {
             elizaLogger.error("error", error);
             throw error;

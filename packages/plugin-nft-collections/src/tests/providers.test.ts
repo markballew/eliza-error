@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { nftCollectionProvider } from "../providers/nft-collections";
-import type { IAgentRuntime, Memory } from "@elizaos/core";
-import type { NFTService } from "../types";
+import { IAgentRuntime, Memory } from "@elizaos/core";
+import { NFTService } from "../types";
 
 describe("NFT Collections Provider", () => {
     const mockRuntime = {

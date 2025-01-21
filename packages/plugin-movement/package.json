@@ -20,6 +20,7 @@
     "scripts": {
         "build": "tsup",
         "dev": "tsup --watch",
+        "lint": "eslint --fix --cache .",
         "test": "vitest run"
     },
     "peerDependencies": {

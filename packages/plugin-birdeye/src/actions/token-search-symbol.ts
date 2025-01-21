@@ -1,13 +1,13 @@
 import {
-    type Action,
-    type ActionExample,
+    Action,
+    ActionExample,
     elizaLogger,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    IAgentRuntime,
+    Memory,
+    State,
 } from "@elizaos/core";
 import { BirdeyeProvider } from "../birdeye";
-import type { TokenResult } from "../types/api/search";
+import { TokenResult } from "../types/api/search";
 import {
     extractSymbols,
     formatPercentChange,
@@ -90,7 +90,7 @@ export const tokenSearchSymbolAction = {
                 )
             );
 
-            // get filter the results to only include the token results and then filter the results to only include the ones that match the symbol
+            // get filter the resuls to only include the token results and then filter the results to only include the ones that match the symbol
             const validResults = results.map((r, i) =>
                 r.data.items
                     .filter((item) => item.type === "token" && item.result)

@@ -4,21 +4,21 @@ export * from "./sqlite_vec.ts";
 import {
     DatabaseAdapter,
     elizaLogger,
-    type IDatabaseCacheAdapter,
+    IDatabaseCacheAdapter,
 } from "@elizaos/core";
-import type {
+import {
     Account,
     Actor,
     GoalStatus,
     Participant,
-    Goal,
-    Memory,
-    Relationship,
-    UUID,
+    type Goal,
+    type Memory,
+    type Relationship,
+    type UUID,
     RAGKnowledgeItem,
-    ChunkRow,
+    type ChunkRow,
 } from "@elizaos/core";
-import type { Database } from "better-sqlite3";
+import { Database } from "better-sqlite3";
 import { v4 } from "uuid";
 import { load } from "./sqlite_vec.ts";
 import { sqliteTables } from "./sqliteTables.ts";

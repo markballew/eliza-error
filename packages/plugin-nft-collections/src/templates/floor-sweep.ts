@@ -1,4 +1,4 @@
-import type { NFTCollection } from "../types";
+import { NFTCollection } from "../types";
 
 export const floorSweepTemplates = {
     successfulSweep: ({

@@ -6,7 +6,8 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "build": "tsup --format esm --dts",
-        "test": "jest"
+        "test": "jest",
+        "lint": "eslint --fix --cache ."
     },
     "dependencies": {
         "@elizaos/core": "workspace:*",

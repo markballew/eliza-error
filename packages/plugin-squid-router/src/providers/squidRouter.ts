@@ -1,10 +1,10 @@
-import type {IAgentRuntime, Memory, Provider, State} from "@elizaos/core";
+import {IAgentRuntime, Memory, Provider, State} from "@elizaos/core";
 import {Squid} from "@0xsquid/sdk";
 import {ethers} from "ethers";
-import {type ChainData, ChainType, type RouteRequest, type RouteResponse, type Token} from "@0xsquid/squid-types";
+import {ChainData, ChainType, RouteRequest, RouteResponse, Token} from "@0xsquid/squid-types";
 import {validateSquidRouterConfig} from "../helpers/utils.ts";
-import type {ExecuteRoute, TransactionResponses} from "@0xsquid/sdk/dist/types";
-import {nativeTokenConstant, type SquidToken} from "../types";
+import {ExecuteRoute, TransactionResponses} from "@0xsquid/sdk/dist/types";
+import {nativeTokenConstant, SquidToken} from "../types";
 
 const getSDK = (baseUrl: string, integratorId: string): Squid => {
     const squid = new Squid({
