@@ -1,4 +1,4 @@
-import type { Plugin } from "@elizaos/core";
+import { Plugin } from "@ai16z/eliza";
 import transfer from "./actions/transfer";
 import createToken from "./actions/createToken";
 

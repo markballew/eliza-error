@@ -24,6 +24,5 @@ export default defineConfig({
         "@solana/buffer-layout",
         "stream",
         "buffer",
-        "undici",
     ],
 });

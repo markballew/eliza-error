@@ -4,22 +4,22 @@ import {
     splitChunks,
     trimTokens,
     parseJSONObjectFromText,
-    getModelSettings,
-} from "@elizaos/core";
-import { getActorDetails } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { models } from "@ai16z/eliza";
+import { getActorDetails } from "@ai16z/eliza";
 import {
-    type Action,
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Media,
-    type Memory,
+    Action,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Media,
+    Memory,
     ModelClass,
-    type State,
+    State,
     elizaLogger,
-} from "@elizaos/core";
-import { type ISlackService, SLACK_SERVICE_TYPE } from "../types/slack-types";
+} from "@ai16z/eliza";
+import { ISlackService, SLACK_SERVICE_TYPE } from "../types/slack-types";
 
 export const summarizationTemplate = `# Summarized so far (we are adding to this)
 {{currentSummary}}
@@ -95,7 +95,7 @@ const getDateRange = async (
                 if (!match) return null;
 
                 const [_, amount, unit] = match;
-                const value = Number.parseInt(amount);
+                const value = parseInt(amount);
 
                 if (isNaN(value)) return null;
 
@@ -265,11 +265,8 @@ const summarizeAction: Action = {
 
         let currentSummary = "";
 
-        const modelSettings = getModelSettings(
-            runtime.character.modelProvider,
-            ModelClass.SMALL
-        );
-        const chunkSize = modelSettings.maxOutputTokens;
+        const model = models[runtime.character.modelProvider];
+        const chunkSize = model.settings.maxOutputTokens;
 
         const chunks = await splitChunks(formattedMemories, chunkSize, 0);
 
@@ -282,15 +279,13 @@ const summarizeAction: Action = {
             currentState.currentSummary = currentSummary;
             currentState.currentChunk = chunk;
 
-            const template = await trimTokens(
-                summarizationTemplate,
-                chunkSize + 500,
-                runtime
-            );
-
             const context = composeContext({
                 state: currentState,
-                template,
+                template: trimTokens(
+                    summarizationTemplate,
+                    chunkSize + 500,
+                    "gpt-4o-mini"
+                ),
             });
 
             const summary = await generateText({

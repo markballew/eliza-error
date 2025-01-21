@@ -1,16 +1,16 @@
 # Eliza - Multi-agent simulation framework
 
-# https://github.com/elizaOS/eliza
+# https://github.com/ai16z/eliza
 
 # Visit https://eliza.builders for support
 
 ## 🌍 README Translations
 
-[中文说明](./README_CN.md) | [Deutsch](./README_DE.md) | [Français](./README_FR.md) | [ไทย](./README_TH.md) | [Español](README_ES.md)
+[中文说明](./README_CN.md) | [Français](./README_FR.md) | [ไทย](./README_TH.md)
 
 # dev branch
 
-<img src="static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
+<img src="./docs/static/img/eliza_banner.jpg" alt="Eliza Banner" width="100%" />
 
 _As seen powering [@DegenSpartanAI](https://x.com/degenspartanai) and [@MarcAIndreessen](https://x.com/pmairca)_
 
@@ -59,15 +59,15 @@ To avoid git clashes in the core directory, we recommend adding custom actions t
 
 ### Run with Llama
 
-You can run Llama 70B or 405B models by setting the environment variable for a provider that supports these models. Llama is also supported locally if no other provider is set.
+You can run Llama 70B or 405B models by setting the `XAI_MODEL` environment variable to `meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo` or `meta-llama/Meta-Llama-3.1-405B-Instruct`
 
 ### Run with Grok
 
-You can run Grok models by setting the `GROK_API_KEY` environment variable to your Grok API key and setting grok as the model provider in your character file.
+You can run Grok models by setting the `XAI_MODEL` environment variable to `grok-beta`
 
 ### Run with OpenAI
 
-You can run OpenAI models by setting the `OPENAI_API_KEY` environment variable to your OpenAI API key and setting openai as the model provider in your character file.
+You can run OpenAI models by setting the `XAI_MODEL` environment variable to `gpt-4o-mini` or `gpt-4o`
 
 ## Additional Requirements
 
@@ -102,6 +102,11 @@ TWITTER_DRY_RUN=false
 TWITTER_USERNAME= # Account username
 TWITTER_PASSWORD= # Account password
 TWITTER_EMAIL= # Account email
+TWITTER_COOKIES= # Account cookies
+
+X_SERVER_URL=
+XAI_API_KEY=
+XAI_MODEL=
 
 
 # For asking Claude stuff
@@ -114,7 +119,7 @@ BIRDEYE_API_KEY=
 
 SOL_ADDRESS=So11111111111111111111111111111111111111112
 SLIPPAGE=1
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=
 
 
@@ -139,7 +144,9 @@ Make sure that you've installed the CUDA Toolkit, including cuDNN and cuBLAS.
 
 ### Running locally
 
-By default, the bot will download and use a local model. You can change this by setting the environment variables for the model you want to use.
+Add XAI_MODEL and set it to one of the above options from [Run with
+Llama](#run-with-llama) - you can leave X_SERVER_URL and XAI_API_KEY blank, it
+downloads the model from huggingface and queries it locally
 
 # Clients
 
@@ -173,13 +180,3 @@ Tests are written using Jest and can be found in `src/**/*.test.ts` files. The t
 - Run tests in sequence (--runInBand)
 
 To create new tests, add a `.test.ts` file adjacent to the code you're testing.
-
-## Docs Updates
-
-Please make sure to verify if the documentation provided is correct. In order to do so, please run the docs service.
-
-```console
-docker compose -f docker-compose-docs.yaml up --build
-```
-
-The docusaurus server will get started and you can verify it locally at https://localhost:3000/eliza.

@@ -1,6 +1,5 @@
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
-import { type Connection, PublicKey } from "@solana/web3.js";
-import { elizaLogger } from "@elizaos/core";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 export async function getTokenPriceInSol(tokenSymbol: string): Promise<number> {
     const response = await fetch(
@@ -25,7 +24,7 @@ async function getTokenBalance(
         const tokenAmount = tokenAccount.amount as unknown as number;
         return tokenAmount;
     } catch (error) {
-        elizaLogger.error(
+        console.error(
             `Error retrieving balance for token: ${tokenMintAddress.toBase58()}`,
             error
         );

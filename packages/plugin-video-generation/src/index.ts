@@ -1,12 +1,12 @@
-import { elizaLogger } from "@elizaos/core";
-import type {
+import { elizaLogger } from "@ai16z/eliza";
+import {
     Action,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     Plugin,
     State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import fs from "fs";
 import { LUMA_CONSTANTS } from "./constants";
 

@@ -1,5 +1,4 @@
-import type React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Accordion } from "./Accordion";
 import { StatCard } from "./StatCard";
 import { THEME_COLORS } from "./Contributors";
@@ -82,7 +81,7 @@ const Contributions = ({
     const fetchCommits = async (page: number) => {
         try {
             const commitResponse = await fetch(
-                `https://api.github.com/repos/elizaos/eliza/commits?author=${contributor.login}&page=${page}`,
+                `https://api.github.com/repos/ai16z/eliza/commits?author=${contributor.login}&page=${page}`,
                 {
                     method: "GET",
                     headers: {
@@ -110,7 +109,7 @@ const Contributions = ({
     const fetchPRs = async (page: number) => {
         try {
             const prResponse = await fetch(
-                `https://api.github.com/search/issues?q=type:pr+author:${contributor.login}+repo:elizaos/eliza&page=${page}`,
+                `https://api.github.com/search/issues?q=type:pr+author:${contributor.login}+repo:ai16z/eliza&page=${page}`,
                 {
                     method: "GET",
                     headers: {
@@ -145,7 +144,7 @@ const Contributions = ({
     const fetchIssues = async (page: number) => {
         try {
             const issueResponse = await fetch(
-                `https://api.github.com/search/issues?q=type:issue+author:${contributor.login}+repo:elizaos/eliza&page=${page}`,
+                `https://api.github.com/search/issues?q=type:issue+author:${contributor.login}+repo:ai16z/eliza&page=${page}`,
                 {
                     method: "GET",
                     headers: {

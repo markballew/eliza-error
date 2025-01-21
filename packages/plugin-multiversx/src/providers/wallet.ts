@@ -1,4 +1,4 @@
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@ai16z/eliza";
 import {
     UserSigner,
     Address,
@@ -9,7 +9,7 @@ import {
     TransferTransactionsFactory,
     TransactionsFactoryConfig,
     Token,
-    type Transaction,
+    Transaction,
     TokenManagementTransactionsFactory,
 } from "@multiversx/sdk-core";
 import { denominateAmount } from "../utils/amount";

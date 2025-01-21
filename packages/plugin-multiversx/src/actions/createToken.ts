@@ -1,19 +1,19 @@
 import {
     elizaLogger,
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     generateObject,
     composeContext,
     type Action,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { WalletProvider } from "../providers/wallet";
 import { validateMultiversxConfig } from "../enviroment";
-import { createTokenSchema } from "../utils/schemas";
+
 export interface CreateTokenContent extends Content {
     tokenName: string;
     tokenTicker: string;
@@ -23,10 +23,10 @@ export interface CreateTokenContent extends Content {
 
 function isCreateTokenContent(
     runtime: IAgentRuntime,
-    content: CreateTokenContent
-) {
+    content: any
+): content is CreateTokenContent {
     console.log("Content for create token", content);
-    return content.tokenName && content.tokenName && content.tokenName;
+    return content.tokenName && content.tokenTicker && content.amount;
 }
 
 const createTokenTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
@@ -87,14 +87,11 @@ export default {
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
-            schema: createTokenSchema,
         });
 
-        const payload = content.object as CreateTokenContent;
-
         // Validate transfer content
-        if (!isCreateTokenContent(runtime, payload)) {
-            console.error("Invalid content for CREATE_TOKEN action.");
+        if (!isCreateTokenContent(runtime, content)) {
+            console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
                     text: "Unable to process transfer request. Invalid content provided.",
@@ -111,10 +108,10 @@ export default {
             const walletProvider = new WalletProvider(privateKey, network);
 
             await walletProvider.createESDT({
-                tokenName: payload.tokenName,
-                amount: payload.amount,
-                decimals: Number(payload.decimals) || 18,
-                tokenTicker: payload.tokenTicker,
+                tokenName: content.tokenName,
+                amount: content.amount,
+                decimals: Number(content.decimals) || 18,
+                tokenTicker: content.tokenTicker,
             });
             return true;
         } catch (error) {
@@ -149,7 +146,7 @@ export default {
             {
                 user: "{{user1}}",
                 content: {
-                    text: "Create a token TEST with ticker TST, 18 decimals and supply of 10000",
+                    text: "Create a token TEST with ticker TST, 18 decimals and su of 10000",
                     action: "CREATE_TOKEN",
                 },
             },

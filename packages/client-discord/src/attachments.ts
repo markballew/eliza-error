@@ -1,16 +1,16 @@
-import { generateText, trimTokens } from "@elizaos/core";
-import { parseJSONObjectFromText } from "@elizaos/core";
+import { generateText, trimTokens } from "@ai16z/eliza";
+import { parseJSONObjectFromText } from "@ai16z/eliza";
 import {
-    type IAgentRuntime,
-    type IImageDescriptionService,
-    type IPdfService,
-    type ITranscriptionService,
-    type IVideoService,
-    type Media,
+    IAgentRuntime,
+    IImageDescriptionService,
+    IPdfService,
+    ITranscriptionService,
+    IVideoService,
+    Media,
     ModelClass,
     ServiceType,
-} from "@elizaos/core";
-import { type Attachment, Collection } from "discord.js";
+} from "@ai16z/eliza";
+import { Attachment, Collection } from "discord.js";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 
@@ -19,14 +19,14 @@ async function generateSummary(
     text: string
 ): Promise<{ title: string; description: string }> {
     // make sure text is under 128k characters
-    text = await trimTokens(text, 100000, runtime);
+    text = trimTokens(text, 100000, "gpt-4o-mini"); // TODO: clean this up
 
     const prompt = `Please generate a concise summary for the following text:
-
+  
   Text: """
   ${text}
   """
-
+  
   Respond with a JSON object in the following format:
   \`\`\`json
   {

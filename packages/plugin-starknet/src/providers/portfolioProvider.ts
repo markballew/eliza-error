@@ -1,10 +1,10 @@
 import {
     elizaLogger,
-    type IAgentRuntime,
-    type Memory,
-    type Provider,
-    type State,
-} from "@elizaos/core";
+    IAgentRuntime,
+    Memory,
+    Provider,
+    State,
+} from "@ai16z/eliza";
 
 import { fetchWithRetry, getStarknetAccount } from "../utils";
 import { ERC20Token } from "../utils/ERC20Token";
@@ -119,4 +119,4 @@ const walletProvider: Provider = {
     },
 };
 
-export { walletProvider, type TokenBalances };
+export { walletProvider };

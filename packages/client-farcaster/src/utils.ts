@@ -1,6 +1,6 @@
-import { stringToUuid } from "@elizaos/core";
+import { stringToUuid } from "@ai16z/eliza";
 
-export const MAX_CAST_LENGTH = 1024; // Updated to Twitter's current character limit
+const MAX_CAST_LENGTH = 280; // Updated to Twitter's current character limit
 
 export function castId({ hash, agentId }: { hash: string; agentId: string }) {
     return `${hash}-${agentId}`;

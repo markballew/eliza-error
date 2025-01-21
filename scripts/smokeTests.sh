@@ -36,9 +36,7 @@ cd "$PROJECT_DIR"
 
 cp .env.example .env
 
-pnpm clean
-
-pnpm install -r --no-frozen-lockfile
+pnpm install -r
 
 pnpm build
 

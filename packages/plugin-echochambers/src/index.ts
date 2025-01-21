@@ -1,7 +1,7 @@
-import { elizaLogger, type Client, type IAgentRuntime, type Plugin } from "@elizaos/core";
+import { elizaLogger, Client, IAgentRuntime, Plugin } from "@ai16z/eliza";
 import { EchoChamberClient } from "./echoChamberClient";
 import { InteractionClient } from "./interactions";
-import type { EchoChamberConfig } from "./types";
+import { EchoChamberConfig } from "./types";
 import { validateEchoChamberConfig } from "./environment";
 
 export const EchoChamberClientInterface: Client = {
@@ -26,10 +26,9 @@ export const EchoChamberClientInterface: Client = {
                     runtime.getSetting("ECHOCHAMBERS_USERNAME") ||
                     `agent-${runtime.agentId}`,
                 model: runtime.modelProvider,
-                rooms: runtime
-                    .getSetting("ECHOCHAMBERS_ROOMS")
-                    ?.split(",")
-                    .map((r) => r.trim()) || ["general"],
+                defaultRoom:
+                    runtime.getSetting("ECHOCHAMBERS_DEFAULT_ROOM") ||
+                    "general",
             };
 
             elizaLogger.log("Starting EchoChambers client...");
@@ -76,7 +75,7 @@ export const EchoChamberClientInterface: Client = {
     },
 };
 
-export const echoChambersPlugin: Plugin = {
+export const echoChamberPlugin: Plugin = {
     name: "echochambers",
     description:
         "Plugin for interacting with EchoChambers API to enable multi-agent communication",
@@ -86,7 +85,7 @@ export const echoChambersPlugin: Plugin = {
     clients: [EchoChamberClientInterface],
 };
 
-export default echoChambersPlugin;
+export default echoChamberPlugin;
 
 // Export types and classes
 export * from "./types";

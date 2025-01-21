@@ -1,24 +1,23 @@
 import { Coinbase, Webhook } from "@coinbase/coinbase-sdk";
 import {
-    type Action,
-    type Plugin,
+    Action,
+    Plugin,
     elizaLogger,
-    type IAgentRuntime,
-    type Memory,
-    type HandlerCallback,
-    type State,
+    IAgentRuntime,
+    Memory,
+    HandlerCallback,
+    State,
     composeContext,
     generateObject,
     ModelClass,
-    type Provider,
-} from "@elizaos/core";
-import { WebhookSchema, isWebhookContent, type WebhookContent } from "../types";
+    Provider,
+} from "@ai16z/eliza";
+import { WebhookSchema, isWebhookContent, WebhookContent } from "../types";
 import { webhookTemplate } from "../templates";
 import { appendWebhooksToCsv } from "../utils";
 
 export const webhookProvider: Provider = {
     get: async (runtime: IAgentRuntime, _message: Memory) => {
-        elizaLogger.debug("Starting webhookProvider.get function");
         try {
             Coinbase.configure({
                 apiKeyName:
@@ -31,7 +30,7 @@ export const webhookProvider: Provider = {
 
             // List all webhooks
             const resp = await Webhook.list();
-            elizaLogger.info("Listing all webhooks:", resp.data);
+            elizaLogger.log("Listing all webhooks:", resp.data);
 
             return {
                 webhooks: resp.data.map((webhook: Webhook) => ({
@@ -54,7 +53,7 @@ export const createWebhookAction: Action = {
     name: "CREATE_WEBHOOK",
     description: "Create a new webhook using the Coinbase SDK.",
     validate: async (runtime: IAgentRuntime, _message: Memory) => {
-        elizaLogger.info("Validating runtime for CREATE_WEBHOOK...");
+        elizaLogger.log("Validating runtime for CREATE_WEBHOOK...");
         return (
             !!(
                 runtime.character.settings.secrets?.COINBASE_API_KEY ||
@@ -77,7 +76,7 @@ export const createWebhookAction: Action = {
         _options: any,
         callback: HandlerCallback
     ) => {
-        elizaLogger.debug("Starting CREATE_WEBHOOK handler...");
+        elizaLogger.log("Starting CREATE_WEBHOOK handler...");
 
         try {
             Coinbase.configure({
@@ -126,7 +125,7 @@ export const createWebhookAction: Action = {
                 );
                 return;
             }
-            elizaLogger.info("Creating webhook with details:", {
+            elizaLogger.log("Creating webhook with details:", {
                 networkId,
                 notificationUri,
                 eventType,
@@ -139,7 +138,7 @@ export const createWebhookAction: Action = {
                 eventType,
                 eventFilters,
             });
-            elizaLogger.info(
+            elizaLogger.log(
                 "Webhook created successfully:",
                 webhook.toString()
             );
@@ -150,7 +149,7 @@ export const createWebhookAction: Action = {
                 []
             );
             await appendWebhooksToCsv([webhook]);
-            elizaLogger.info("Webhook appended to CSV successfully");
+            elizaLogger.log("Webhook appended to CSV successfully");
         } catch (error) {
             elizaLogger.error("Error during webhook creation:", error);
             callback(

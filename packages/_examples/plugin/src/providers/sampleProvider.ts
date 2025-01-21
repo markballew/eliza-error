@@ -1,10 +1,10 @@
 import {
-    type Provider,
-    type IAgentRuntime,
-    type Memory,
-    type State,
-    elizaLogger,
-} from "@elizaos/core";
+    Provider,
+    IAgentRuntime,
+    Memory,
+    State,
+    elizaLogger
+} from "@ai16z/eliza";
 
 export const sampleProvider: Provider = {
     get: async (runtime: IAgentRuntime, message: Memory, state: State) => {

@@ -2,26 +2,28 @@ import {
     getAssociatedTokenAddressSync,
     createTransferInstruction,
 } from "@solana/spl-token";
-import { elizaLogger, settings } from "@elizaos/core";
+import { elizaLogger, settings } from "@ai16z/eliza";
+
 import {
     Connection,
     PublicKey,
     TransactionMessage,
     VersionedTransaction,
 } from "@solana/web3.js";
+
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
-} from "@elizaos/core";
-import { composeContext } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza";
 import { getWalletKey } from "../keypairUtils";
-import { generateObjectDeprecated } from "@elizaos/core";
+import { generateObjectDeprecated } from "@ai16z/eliza";
 
 export interface TransferContent extends Content {
     tokenAddress: string;
@@ -33,7 +35,7 @@ function isTransferContent(
     runtime: IAgentRuntime,
     content: any
 ): content is TransferContent {
-    elizaLogger.log("Content for transfer", content);
+    console.log("Content for transfer", content);
     return (
         typeof content.tokenAddress === "string" &&
         typeof content.recipient === "string" &&
@@ -55,23 +57,44 @@ Example response:
 
 {{recentMessages}}
 
-Extract the following information about the requested token transfer:
+Given the recent messages, extract the following information about the requested token transfer:
 - Token contract address
 - Recipient wallet address
 - Amount to transfer
 
-If no token address is mentioned, respond with null.
-`;
+Respond with a JSON markdown block containing only the extracted values.`;
 
 export default {
     name: "SEND_TOKEN",
-    similes: ["TRANSFER_TOKEN", "TRANSFER_TOKENS", "SEND_TOKENS", "PAY_TOKEN", "PAY_TOKENS", "PAY"],
+    similes: [
+        "TRANSFER_TOKEN",
+        "TRANSFER_TOKENS",
+        "SEND_TOKENS",
+        "SEND_SOL",
+        "PAY",
+    ],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
-        // Always return true for token transfers, letting the handler deal with specifics
-        elizaLogger.log("Validating token transfer from user:", message.userId);
-        return true;
+        console.log("Validating transfer from user:", message.userId);
+        //add custom validate logic here
+        /*
+            const adminIds = runtime.getSetting("ADMIN_USER_IDS")?.split(",") || [];
+            //console.log("Admin IDs from settings:", adminIds);
+
+            const isAdmin = adminIds.includes(message.userId);
+
+            if (isAdmin) {
+                //console.log(`Authorized transfer from user: ${message.userId}`);
+                return true;
+            }
+            else
+            {
+                //console.log(`Unauthorized transfer attempt from user: ${message.userId}`);
+                return false;
+            }
+            */
+        return false;
     },
-    description: "Transfer SPL tokens from agent's wallet to another address",
+    description: "Transfer tokens from the agent's wallet to another address",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -81,27 +104,32 @@ export default {
     ): Promise<boolean> => {
         elizaLogger.log("Starting SEND_TOKEN handler...");
 
+        // Initialize or update state
         if (!state) {
             state = (await runtime.composeState(message)) as State;
         } else {
             state = await runtime.updateRecentMessageState(state);
         }
 
+        // Compose transfer context
         const transferContext = composeContext({
             state,
             template: transferTemplate,
         });
 
+        // Generate transfer content
         const content = await generateObjectDeprecated({
             runtime,
             context: transferContext,
             modelClass: ModelClass.LARGE,
         });
 
+        // Validate transfer content
         if (!isTransferContent(runtime, content)) {
+            console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
-                    text: "Token address needed to send the token.",
+                    text: "Unable to process transfer request. Invalid content provided.",
                     content: { error: "Invalid transfer content" },
                 });
             }
@@ -109,23 +137,46 @@ export default {
         }
 
         try {
-            const { keypair: senderKeypair } = await getWalletKey(runtime, true);
-            const connection = new Connection(settings.SOLANA_RPC_URL!);
+            const { keypair: senderKeypair } = await getWalletKey(
+                runtime,
+                true
+            );
+
+            const connection = new Connection(settings.RPC_URL!);
+
             const mintPubkey = new PublicKey(content.tokenAddress);
             const recipientPubkey = new PublicKey(content.recipient);
 
+            // Get decimals (simplest way)
             const mintInfo = await connection.getParsedAccountInfo(mintPubkey);
-            const decimals = (mintInfo.value?.data as any)?.parsed?.info?.decimals ?? 9;
-            const adjustedAmount = BigInt(Number(content.amount) * Math.pow(10, decimals));
+            const decimals =
+                (mintInfo.value?.data as any)?.parsed?.info?.decimals ?? 9;
 
-            const senderATA = getAssociatedTokenAddressSync(mintPubkey, senderKeypair.publicKey);
-            const recipientATA = getAssociatedTokenAddressSync(mintPubkey, recipientPubkey);
+            // Adjust amount with decimals
+            const adjustedAmount = BigInt(
+                Number(content.amount) * Math.pow(10, decimals)
+            );
+            console.log(
+                `Transferring: ${content.amount} tokens (${adjustedAmount} base units)`
+            );
+
+            // Rest of the existing working code...
+            const senderATA = getAssociatedTokenAddressSync(
+                mintPubkey,
+                senderKeypair.publicKey
+            );
+            const recipientATA = getAssociatedTokenAddressSync(
+                mintPubkey,
+                recipientPubkey
+            );
 
             const instructions = [];
 
-            const recipientATAInfo = await connection.getAccountInfo(recipientATA);
+            const recipientATAInfo =
+                await connection.getAccountInfo(recipientATA);
             if (!recipientATAInfo) {
-                const { createAssociatedTokenAccountInstruction } = await import("@solana/spl-token");
+                const { createAssociatedTokenAccountInstruction } =
+                    await import("@solana/spl-token");
                 instructions.push(
                     createAssociatedTokenAccountInstruction(
                         senderKeypair.publicKey,
@@ -145,20 +196,25 @@ export default {
                 )
             );
 
+            // Create and sign versioned transaction
             const messageV0 = new TransactionMessage({
                 payerKey: senderKeypair.publicKey,
-                recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+                recentBlockhash: (await connection.getLatestBlockhash())
+                    .blockhash,
                 instructions,
             }).compileToV0Message();
 
             const transaction = new VersionedTransaction(messageV0);
             transaction.sign([senderKeypair]);
 
+            // Send transaction
             const signature = await connection.sendTransaction(transaction);
+
+            console.log("Transfer successful:", signature);
 
             if (callback) {
                 callback({
-                    text: `Sent ${content.amount} tokens to ${content.recipient}\nTransaction hash: ${signature}`,
+                    text: `Successfully transferred ${content.amount} tokens to ${content.recipient}\nTransaction: ${signature}`,
                     content: {
                         success: true,
                         signature,
@@ -170,10 +226,10 @@ export default {
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token transfer:", error);
+            console.error("Error during token transfer:", error);
             if (callback) {
                 callback({
-                    text: `Issue with the transfer: ${error.message}`,
+                    text: `Error transferring tokens: ${error.message}`,
                     content: { error: error.message },
                 });
             }
@@ -192,8 +248,14 @@ export default {
             {
                 user: "{{user2}}",
                 content: {
-                    text: "Sending the tokens now...",
+                    text: "I'll send 69 EZSIS tokens now...",
                     action: "SEND_TOKEN",
+                },
+            },
+            {
+                user: "{{user2}}",
+                content: {
+                    text: "Successfully sent 69 EZSIS tokens to 9jW8FPr6BSSsemWPV22UUCzSqkVdTp6HTyPqeqyuBbCa\nTransaction: 5KtPn3DXXzHkb7VAVHZGwXJQqww39ASnrf7YkyJoF2qAGEpBEEGvRHLnnTG8ZVwKqNHMqSckWVGnsQAgfH5pbxEb",
                 },
             },
         ],

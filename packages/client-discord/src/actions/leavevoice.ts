@@ -1,18 +1,18 @@
 // src/actions/leaveVoice
 import { getVoiceConnection } from "@discordjs/voice";
 import {
-    type Channel,
+    Channel,
     ChannelType,
-    type Client,
-    type Message as DiscordMessage,
+    Client,
+    Message as DiscordMessage,
 } from "discord.js";
-import type {
+import {
     Action,
     ActionExample,
     IAgentRuntime,
     Memory,
     State,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 
 export default {
     name: "LEAVE_VOICE",

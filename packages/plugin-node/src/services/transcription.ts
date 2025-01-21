@@ -1,11 +1,10 @@
 import {
     elizaLogger,
-    type IAgentRuntime,
-    type ITranscriptionService,
+    IAgentRuntime,
+    ITranscriptionService,
     settings,
-    TranscriptionProvider,
-} from "@elizaos/core";
-import { Service, ServiceType } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { Service, ServiceType } from "@ai16z/eliza";
 import { exec } from "child_process";
 import { File } from "formdata-node";
 import fs from "fs";
@@ -15,7 +14,7 @@ import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 import { promisify } from "util";
-import { createClient, type DeepgramClient } from "@deepgram/sdk";
+import { createClient, DeepgramClient } from "@deepgram/sdk";
 
 // const __dirname = path.dirname(new URL(import.meta.url).pathname); #compatibility issues with windows
 const __filename = fileURLToPath(import.meta.url);
@@ -32,107 +31,17 @@ export class TranscriptionService
     private CONTENT_CACHE_DIR: string;
     private DEBUG_AUDIO_DIR: string;
     private TARGET_SAMPLE_RATE = 16000; // Common sample rate for speech recognition
-    private isCudaAvailable = false;
-
-    /**
-     * CHANGED: We now use TranscriptionProvider instead of separate flags/strings.
-     * This allows us to handle character settings, env variables, and fallback logic.
-     */
-    private transcriptionProvider: TranscriptionProvider | null = null;
-
-    private deepgram: DeepgramClient | null = null;
+    private isCudaAvailable: boolean = false;
     private openai: OpenAI | null = null;
+    private deepgram?: DeepgramClient;
 
-    /**
-     * We keep the queue and processing logic as is.
-     */
     private queue: { audioBuffer: ArrayBuffer; resolve: Function }[] = [];
-    private processing = false;
+    private processing: boolean = false;
 
-    /**
-     * CHANGED: initialize() now checks:
-     * 1) character.settings.transcription (if available and keys exist),
-     * 2) then the .env TRANSCRIPTION_PROVIDER,
-     * 3) then old fallback logic (Deepgram -> OpenAI -> local).
-     */
     async initialize(_runtime: IAgentRuntime): Promise<void> {
         this.runtime = _runtime;
-
-        // 1) Check character settings
-        let chosenProvider: TranscriptionProvider | null = null;
-        const charSetting = this.runtime.character?.settings?.transcription;
-
-        if (charSetting === TranscriptionProvider.Deepgram) {
-            const deepgramKey = this.runtime.getSetting("DEEPGRAM_API_KEY");
-            if (deepgramKey) {
-                this.deepgram = createClient(deepgramKey);
-                chosenProvider = TranscriptionProvider.Deepgram;
-            }
-        } else if (charSetting === TranscriptionProvider.OpenAI) {
-            const openaiKey = this.runtime.getSetting("OPENAI_API_KEY");
-            if (openaiKey) {
-                this.openai = new OpenAI({ apiKey: openaiKey });
-                chosenProvider = TranscriptionProvider.OpenAI;
-            }
-        } else if (charSetting === TranscriptionProvider.Local) {
-            chosenProvider = TranscriptionProvider.Local;
-        }
-
-        // 2) If not chosen from character, check .env
-        if (!chosenProvider) {
-            const envProvider = this.runtime.getSetting(
-                "TRANSCRIPTION_PROVIDER"
-            );
-            if (envProvider) {
-                switch (envProvider.toLowerCase()) {
-                    case "deepgram":
-                        {
-                            const dgKey =
-                                this.runtime.getSetting("DEEPGRAM_API_KEY");
-                            if (dgKey) {
-                                this.deepgram = createClient(dgKey);
-                                chosenProvider = TranscriptionProvider.Deepgram;
-                            }
-                        }
-                        break;
-                    case "openai":
-                        {
-                            const openaiKey =
-                                this.runtime.getSetting("OPENAI_API_KEY");
-                            if (openaiKey) {
-                                this.openai = new OpenAI({ apiKey: openaiKey });
-                                chosenProvider = TranscriptionProvider.OpenAI;
-                            }
-                        }
-                        break;
-                    case "local":
-                        chosenProvider = TranscriptionProvider.Local;
-                        break;
-                }
-            }
-        }
-
-        // 3) If still none, fallback to old logic: Deepgram -> OpenAI -> local
-        if (!chosenProvider) {
-            const deepgramKey = this.runtime.getSetting("DEEPGRAM_API_KEY");
-            if (deepgramKey) {
-                this.deepgram = createClient(deepgramKey);
-                chosenProvider = TranscriptionProvider.Deepgram;
-            } else {
-                const openaiKey = this.runtime.getSetting("OPENAI_API_KEY");
-                if (openaiKey) {
-                    this.openai = new OpenAI({ apiKey: openaiKey });
-                    chosenProvider = TranscriptionProvider.OpenAI;
-                } else {
-                    chosenProvider = TranscriptionProvider.Local;
-                }
-            }
-        }
-
-        this.transcriptionProvider = chosenProvider;
-
-        // Leave detectCuda as is.
-        this.detectCuda();
+        const deepgramKey = this.runtime.getSetting("DEEPGRAM_API_KEY");
+        this.deepgram = deepgramKey ? createClient(deepgramKey) : null;
     }
 
     constructor() {
@@ -171,12 +80,12 @@ export class TranscriptionService
             try {
                 fs.accessSync("/usr/local/cuda/bin/nvcc", fs.constants.X_OK);
                 this.isCudaAvailable = true;
-                elizaLogger.log(
+                console.log(
                     "CUDA detected. Transcription will use CUDA acceleration."
                 );
                 // eslint-disable-next-line
             } catch (_error) {
-                elizaLogger.log(
+                console.log(
                     "CUDA not detected. Transcription will run on CPU."
                 );
             }
@@ -189,16 +98,16 @@ export class TranscriptionService
             );
             if (fs.existsSync(cudaPath)) {
                 this.isCudaAvailable = true;
-                elizaLogger.log(
+                console.log(
                     "CUDA detected. Transcription will use CUDA acceleration."
                 );
             } else {
-                elizaLogger.log(
+                console.log(
                     "CUDA not detected. Transcription will run on CPU."
                 );
             }
         } else {
-            elizaLogger.log(
+            console.log(
                 "CUDA not supported on this platform. Transcription will run on CPU."
             );
         }
@@ -263,9 +172,6 @@ export class TranscriptionService
         return await this.transcribe(audioBuffer);
     }
 
-    /**
-     * If the audio buffer is too short, return null. Otherwise push to queue.
-     */
     public async transcribe(audioBuffer: ArrayBuffer): Promise<string | null> {
         // if the audio buffer is less than .2 seconds, just return null
         if (audioBuffer.byteLength < 0.2 * 16000) {
@@ -285,49 +191,28 @@ export class TranscriptionService
         return this.transcribeLocally(audioBuffer);
     }
 
-    /**
-     * CHANGED: processQueue() uses the final transcriptionProvider enum set in initialize().
-     */
     private async processQueue(): Promise<void> {
-        // Exit if already processing or if the queue is empty
-        if (this.processing || this.queue.length === 0) return;
+        if (this.processing || this.queue.length === 0) {
+            return;
+        }
+
         this.processing = true;
 
         while (this.queue.length > 0) {
             const { audioBuffer, resolve } = this.queue.shift()!;
             let result: string | null = null;
-
-            switch (this.transcriptionProvider) {
-                case TranscriptionProvider.Deepgram:
-                    result = await this.transcribeWithDeepgram(audioBuffer);
-                    break;
-                case TranscriptionProvider.OpenAI:
-                    result = await this.transcribeWithOpenAI(audioBuffer);
-                    break;
-                default:
-                    result = await this.transcribeLocally(audioBuffer);
+            if (this.deepgram) {
+                result = await this.transcribeWithDeepgram(audioBuffer);
+            } else if (this.openai) {
+                result = await this.transcribeWithOpenAI(audioBuffer);
+            } else {
+                result = await this.transcribeLocally(audioBuffer);
             }
 
             resolve(result);
         }
 
         this.processing = false;
-    }
-
-    /**
-     * Original logic from main is now handled by the final fallback in initialize().
-     * We'll keep transcribeUsingDefaultLogic() if needed by other code references,
-     * but it’s no longer invoked in the new flow.
-     */
-    private async transcribeUsingDefaultLogic(
-        audioBuffer: ArrayBuffer
-    ): Promise<string | null> {
-        if (this.deepgram) {
-            return await this.transcribeWithDeepgram(audioBuffer);
-        } else if (this.openai) {
-            return await this.transcribeWithOpenAI(audioBuffer);
-        }
-        return await this.transcribeLocally(audioBuffer);
     }
 
     private async transcribeWithDeepgram(
@@ -355,8 +240,7 @@ export class TranscriptionService
         try {
             await this.saveDebugAudio(audioBuffer, "openai_input_original");
 
-            const arrayBuffer = new Uint8Array(audioBuffer).buffer;
-            const convertedBuffer = Buffer.from(await this.convertAudio(arrayBuffer)).buffer;
+            const convertedBuffer = await this.convertAudio(audioBuffer);
 
             await this.saveDebugAudio(
                 convertedBuffer,
@@ -396,10 +280,6 @@ export class TranscriptionService
         }
     }
 
-    /**
-     * Local transcription with nodejs-whisper. We keep it as it was,
-     * just making sure to handle CUDA if available.
-     */
     public async transcribeLocally(
         audioBuffer: ArrayBuffer
     ): Promise<string | null> {
@@ -408,8 +288,7 @@ export class TranscriptionService
 
             await this.saveDebugAudio(audioBuffer, "local_input_original");
 
-            const arrayBuffer = new Uint8Array(audioBuffer).buffer;
-            const convertedBuffer = Buffer.from(await this.convertAudio(arrayBuffer)).buffer;
+            const convertedBuffer = await this.convertAudio(audioBuffer);
 
             await this.saveDebugAudio(convertedBuffer, "local_input_converted");
 
@@ -417,10 +296,7 @@ export class TranscriptionService
                 this.CONTENT_CACHE_DIR,
                 `temp_${Date.now()}.wav`
             );
-
-            // Convert the ArrayBuffer to a Uint8Array which fs.writeFileSync can handle
-            const uint8Array = new Uint8Array(convertedBuffer);
-            fs.writeFileSync(tempWavFile, uint8Array);
+            fs.writeFileSync(tempWavFile, convertedBuffer);
 
             elizaLogger.debug(`Temporary WAV file created: ${tempWavFile}`);
 

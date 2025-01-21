@@ -1,13 +1,13 @@
-import { composeContext } from "@elizaos/core";
-import { generateObjectArray } from "@elizaos/core";
-import { MemoryManager } from "@elizaos/core";
+import { composeContext } from "@ai16z/eliza";
+import { generateObjectArray } from "@ai16z/eliza";
+import { MemoryManager } from "@ai16z/eliza";
 import {
-    type ActionExample,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type Evaluator,
-} from "@elizaos/core";
+    Evaluator,
+} from "@ai16z/eliza";
 
 export const formatFacts = (facts: Memory[]) => {
     const messageStrings = facts
@@ -162,7 +162,7 @@ None`,
                     },
                 },
             ] as ActionExample[],
-            outcome: `{ "claim": "{{user2}} is from Oakland", "type": "fact", "in_bio": false, "already_known": false },`,
+            outcome: `{ "claim": "{{user1}} is from Oakland", "type": "fact", "in_bio": false, "already_known": false },`,
         },
         {
             context: `Actors in the scene:

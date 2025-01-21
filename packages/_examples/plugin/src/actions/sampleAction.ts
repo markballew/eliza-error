@@ -1,14 +1,14 @@
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type HandlerCallback,
-    type State,
+    Action,
+    IAgentRuntime,
+    Memory,
+    HandlerCallback,
+    State,
     composeContext,
     generateObject,
     ModelClass,
     elizaLogger,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 
 import { CreateResourceSchema, isCreateResourceContent } from "../types";
 

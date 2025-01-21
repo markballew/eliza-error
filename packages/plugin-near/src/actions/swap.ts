@@ -1,15 +1,14 @@
 import {
-    type ActionExample,
-    type HandlerCallback,
-    elizaLogger,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
     composeContext,
     generateObject,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { connect, keyStores, utils } from "near-api-js";
 import {
     init_env,
@@ -21,7 +20,7 @@ import {
     ONE_YOCTO_NEAR,
 } from "@ref-finance/ref-sdk";
 import { walletProvider } from "../providers/wallet";
-import type { KeyPairString } from "near-api-js/lib/utils";
+import { KeyPairString } from "near-api-js/lib/utils";
 
 async function checkStorageBalance(
     account: any,
@@ -35,7 +34,7 @@ async function checkStorageBalance(
         });
         return balance !== null && balance.total !== "0";
     } catch (error) {
-        elizaLogger.log(`Error checking storage balance: ${error}`);
+        console.log(`Error checking storage balance: ${error}`);
         return false;
     }
 }
@@ -55,7 +54,7 @@ async function swapToken(
         const tokenOut = await ftGetTokenMetadata(outputTokenId);
         const networkId = runtime.getSetting("NEAR_NETWORK") || "testnet";
         const nodeUrl =
-            runtime.getSetting("NEAR_RPC_URL") || "https://rpc.testnet.near.org";
+            runtime.getSetting("RPC_URL") || "https://rpc.testnet.near.org";
 
         // Get all pools for estimation
         // ratedPools, unRatedPools,
@@ -143,7 +142,7 @@ async function swapToken(
 
         return transactions;
     } catch (error) {
-        elizaLogger.error("Error in swapToken:", error);
+        console.error("Error in swapToken:", error);
         throw error;
     }
 }
@@ -187,8 +186,8 @@ export const executeSwap: Action = {
         "TRADE_TOKENS_NEAR",
         "EXCHANGE_TOKENS_NEAR",
     ],
-    validate: async (_runtime: IAgentRuntime, message: Memory) => {
-        elizaLogger.log("Message:", message);
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
+        console.log("Message:", message);
         return true;
     },
     description: "Perform a token swap using Ref Finance.",
@@ -222,14 +221,14 @@ export const executeSwap: Action = {
             modelClass: ModelClass.LARGE,
         });
 
-        elizaLogger.log("Response:", response);
+        console.log("Response:", response);
 
         if (
             !response.inputTokenId ||
             !response.outputTokenId ||
             !response.amount
         ) {
-            elizaLogger.log("Missing required parameters, skipping swap");
+            console.log("Missing required parameters, skipping swap");
             const responseMsg = {
                 text: "I need the input token ID, output token ID, and amount to perform the swap",
             };
@@ -257,7 +256,7 @@ export const executeSwap: Action = {
                 networkId: runtime.getSetting("NEAR_NETWORK") || "testnet",
                 keyStore,
                 nodeUrl:
-                    runtime.getSetting("NEAR_RPC_URL") ||
+                    runtime.getSetting("RPC_URL") ||
                     "https://rpc.testnet.near.org",
             });
 
@@ -291,7 +290,7 @@ export const executeSwap: Action = {
                 }
             }
 
-            elizaLogger.log("Swap completed successfully!");
+            console.log("Swap completed successfully!");
             const txHashes = results.map((r) => r.transaction.hash).join(", ");
 
             const responseMsg = {
@@ -301,7 +300,7 @@ export const executeSwap: Action = {
             callback?.(responseMsg);
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token swap:", error);
+            console.error("Error during token swap:", error);
             const responseMsg = {
                 text: `Error during swap: ${error instanceof Error ? error.message : String(error)}`,
             };

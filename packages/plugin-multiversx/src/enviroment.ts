@@ -1,4 +1,4 @@
-import type { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@ai16z/eliza";
 import { z } from "zod";
 
 export const multiversxEnvSchema = z.object({

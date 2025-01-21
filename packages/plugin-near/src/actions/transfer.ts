@@ -1,18 +1,17 @@
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
-    elizaLogger,
+    State,
     type Action,
     composeContext,
     generateObject,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { connect, keyStores, utils } from "near-api-js";
-import type { KeyPairString } from "near-api-js/lib/utils";
+import { KeyPairString } from "near-api-js/lib/utils";
 import { utils as nearUtils } from "near-api-js";
 // import BigNumber from "bignumber.js";
 
@@ -64,7 +63,7 @@ async function transferNEAR(
 ): Promise<string> {
     const networkId = runtime.getSetting("NEAR_NETWORK") || "testnet";
     const nodeUrl =
-        runtime.getSetting("NEAR_RPC_URL") || "https://rpc.testnet.near.org";
+        runtime.getSetting("RPC_URL") || "https://rpc.testnet.near.org";
     const accountId = runtime.getSetting("NEAR_ADDRESS");
     const secretKey = runtime.getSetting("NEAR_WALLET_SECRET_KEY");
 
@@ -133,7 +132,7 @@ export const executeTransfer: Action = {
 
         // Validate transfer content
         if (!isTransferContent(runtime, content)) {
-            elizaLogger.error("Invalid content for TRANSFER_NEAR action.");
+            console.error("Invalid content for TRANSFER_NEAR action.");
             if (callback) {
                 callback({
                     text: "Unable to process transfer request. Invalid content provided.",
@@ -164,7 +163,7 @@ export const executeTransfer: Action = {
 
             return true;
         } catch (error) {
-            elizaLogger.error("Error during NEAR transfer:", error);
+            console.error("Error during NEAR transfer:", error);
             if (callback) {
                 callback({
                     text: `Error transferring NEAR: ${error}`,

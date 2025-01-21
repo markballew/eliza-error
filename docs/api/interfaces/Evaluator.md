@@ -1,4 +1,4 @@
-[@elizaos/core v0.1.7](../index.md) / Evaluator
+[@ai16z/eliza v0.1.5-alpha.5](../index.md) / Evaluator
 
 # Interface: Evaluator
 
@@ -14,9 +14,9 @@ Whether to always run
 
 #### Defined in
 
-[packages/core/src/types.ts:449](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L449)
+[packages/core/src/types.ts:439](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L439)
 
----
+***
 
 ### description
 
@@ -26,9 +26,9 @@ Detailed description
 
 #### Defined in
 
-[packages/core/src/types.ts:452](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L452)
+[packages/core/src/types.ts:442](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L442)
 
----
+***
 
 ### similes
 
@@ -38,9 +38,9 @@ Similar evaluator descriptions
 
 #### Defined in
 
-[packages/core/src/types.ts:455](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L455)
+[packages/core/src/types.ts:445](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L445)
 
----
+***
 
 ### examples
 
@@ -50,9 +50,9 @@ Example evaluations
 
 #### Defined in
 
-[packages/core/src/types.ts:458](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L458)
+[packages/core/src/types.ts:448](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L448)
 
----
+***
 
 ### handler
 
@@ -62,9 +62,9 @@ Handler function
 
 #### Defined in
 
-[packages/core/src/types.ts:461](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L461)
+[packages/core/src/types.ts:451](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L451)
 
----
+***
 
 ### name
 
@@ -74,9 +74,9 @@ Evaluator name
 
 #### Defined in
 
-[packages/core/src/types.ts:464](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L464)
+[packages/core/src/types.ts:454](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L454)
 
----
+***
 
 ### validate
 
@@ -86,4 +86,4 @@ Validation function
 
 #### Defined in
 
-[packages/core/src/types.ts:467](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L467)
+[packages/core/src/types.ts:457](https://github.com/ai16z/eliza/blob/main/packages/core/src/types.ts#L457)

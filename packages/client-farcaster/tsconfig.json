@@ -7,7 +7,6 @@
         "strict": true
     },
     "include": [
-        "src",
-        "__tests__/test-utils.ts"
+        "src"
     ]
 }

@@ -1,12 +1,12 @@
 import {
     elizaLogger,
-    type IAgentRuntime,
-    type Memory,
-    type Provider,
-    type State,
-} from "@elizaos/core";
+    IAgentRuntime,
+    Memory,
+    Provider,
+    State,
+} from "@ai16z/eliza";
 
-import FlowConnector, { type NetworkType } from "./utils/flow.connector";
+import FlowConnector, { NetworkType } from "./utils/flow.connector";
 
 // Here is the configuration file for fixes.
 import flowJSON from "../../flow.json" assert { type: "json" };

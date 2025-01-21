@@ -17,7 +17,5 @@ export default defineConfig({
         "agentkeepalive",
         "viem",
         "@lifi/sdk",
-        "events",
-        "node-cache",
     ],
 });

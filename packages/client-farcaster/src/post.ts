@@ -1,104 +1,43 @@
 import {
     composeContext,
     generateText,
-    type IAgentRuntime,
+    IAgentRuntime,
     ModelClass,
     stringToUuid,
-    elizaLogger,
-} from "@elizaos/core";
-import type { FarcasterClient } from "./client";
+    elizaLogger
+} from "@ai16z/eliza";
+import { FarcasterClient } from "./client";
 import { formatTimeline, postTemplate } from "./prompts";
-import { castUuid, MAX_CAST_LENGTH } from "./utils";
+import { castUuid } from "./utils";
 import { createCastMemory } from "./memory";
 import { sendCast } from "./actions";
 
 export class FarcasterPostManager {
-    client: FarcasterClient;
-    runtime: IAgentRuntime;
-    fid: number;
-    isDryRun: boolean;
     private timeout: NodeJS.Timeout | undefined;
 
     constructor(
-        client: FarcasterClient,
-        runtime: IAgentRuntime,
+        public client: FarcasterClient,
+        public runtime: IAgentRuntime,
         private signerUuid: string,
         public cache: Map<string, any>
-    ) {
-        this.client = client;
-        this.runtime = runtime;
-
-        this.fid = this.client.farcasterConfig?.FARCASTER_FID ?? 0;
-        this.isDryRun = this.client.farcasterConfig?.FARCASTER_DRY_RUN ?? false;
-
-        // Log configuration on initialization
-        elizaLogger.log("Farcaster Client Configuration:");
-        elizaLogger.log(`- FID: ${this.fid}`);
-        elizaLogger.log(
-            `- Dry Run Mode: ${this.isDryRun ? "enabled" : "disabled"}`
-        );
-        elizaLogger.log(
-            `- Enable Post: ${this.client.farcasterConfig.ENABLE_POST ? "enabled" : "disabled"}`
-        );
-        if (this.client.farcasterConfig.ENABLE_POST) {
-            elizaLogger.log(
-                `- Post Interval: ${this.client.farcasterConfig.POST_INTERVAL_MIN}-${this.client.farcasterConfig.POST_INTERVAL_MAX} minutes`
-            );
-            elizaLogger.log(
-                `- Post Immediately: ${this.client.farcasterConfig.POST_IMMEDIATELY ? "enabled" : "disabled"}`
-            );
-        }
-        elizaLogger.log(
-            `- Action Processing: ${this.client.farcasterConfig.ENABLE_ACTION_PROCESSING ? "enabled" : "disabled"}`
-        );
-        elizaLogger.log(
-            `- Action Interval: ${this.client.farcasterConfig.ACTION_INTERVAL} minutes`
-        );
-
-        if (this.isDryRun) {
-            elizaLogger.log(
-                "Farcaster client initialized in dry run mode - no actual casts should be posted"
-            );
-        }
-    }
+    ) {}
 
     public async start() {
         const generateNewCastLoop = async () => {
-
-            const lastPost = await this.runtime.cacheManager.get<{
-                timestamp: number;
-            }>("farcaster/" + this.fid + "/lastPost");
-
-            const lastPostTimestamp = lastPost?.timestamp ?? 0;
-            const minMinutes = this.client.farcasterConfig.POST_INTERVAL_MIN;
-            const maxMinutes = this.client.farcasterConfig.POST_INTERVAL_MAX;
-            const randomMinutes =
-                Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) +
-                minMinutes;
-            const delay = randomMinutes * 60 * 1000;
-
-            if (Date.now() > lastPostTimestamp + delay) {
-                try {
-                    await this.generateNewCast();
-                } catch (error) {
-                    elizaLogger.error(error);
-                    return;
-                }
+            try {
+                await this.generateNewCast();
+            } catch (error) {
+                elizaLogger.error(error)
+                return;
             }
 
-            this.timeout = setTimeout(() => {
-                generateNewCastLoop(); // Set up next iteration
-            }, delay);
-
-            elizaLogger.log(`Next cast scheduled in ${randomMinutes} minutes`);
+            this.timeout = setTimeout(
+                generateNewCastLoop,
+                (Math.floor(Math.random() * (4 - 1 + 1)) + 1) * 60 * 60 * 1000
+            ); // Random interval between 1 and 4 hours
         };
 
-        if (this.client.farcasterConfig.ENABLE_POST) {
-            if (this.client.farcasterConfig.POST_IMMEDIATELY) {
-                await this.generateNewCast();
-            }
-            generateNewCastLoop();
-        }
+        generateNewCastLoop();
     }
 
     public async stop() {
@@ -108,7 +47,9 @@ export class FarcasterPostManager {
     private async generateNewCast() {
         elizaLogger.info("Generating new cast");
         try {
-            const profile = await this.client.getProfile(this.fid);
+            const fid = Number(this.runtime.getSetting("FARCASTER_FID")!);
+
+            const profile = await this.client.getProfile(fid);
             await this.runtime.ensureUserExists(
                 this.runtime.agentId,
                 profile.username,
@@ -117,7 +58,7 @@ export class FarcasterPostManager {
             );
 
             const { timeline } = await this.client.getTimeline({
-                fid: this.fid,
+                fid,
                 pageSize: 10,
             });
 
@@ -159,25 +100,30 @@ export class FarcasterPostManager {
 
             const slice = newContent.replaceAll(/\\n/g, "\n").trim();
 
-            let content = slice.slice(0, MAX_CAST_LENGTH);
+            const contentLength = 240;
 
-            // if it's bigger than the max limit, delete the last line
-            if (content.length > MAX_CAST_LENGTH) {
+            let content = slice.slice(0, contentLength);
+
+            // if its bigger than 280, delete the last line
+            if (content.length > 280) {
                 content = content.slice(0, content.lastIndexOf("\n"));
             }
 
-            if (content.length > MAX_CAST_LENGTH) {
+            if (content.length > contentLength) {
                 // slice at the last period
                 content = content.slice(0, content.lastIndexOf("."));
             }
 
             // if it's still too long, get the period before the last period
-            if (content.length > MAX_CAST_LENGTH) {
+            if (content.length > contentLength) {
                 content = content.slice(0, content.lastIndexOf("."));
             }
 
+
             if (this.runtime.getSetting("FARCASTER_DRY_RUN") === "true") {
-                elizaLogger.info(`Dry run: would have cast: ${content}`);
+                elizaLogger.info(
+                    `Dry run: would have cast: ${content}`
+                );
                 return;
             }
 
@@ -191,14 +137,6 @@ export class FarcasterPostManager {
                     profile,
                 });
 
-                await this.runtime.cacheManager.set(
-                    `farcaster/${this.fid}/lastCast`,
-                    {
-                        hash: cast.hash,
-                        timestamp: Date.now(),
-                    }
-                );
-
                 const roomId = castUuid({
                     agentId: this.runtime.agentId,
                     hash: cast.hash,
@@ -211,23 +149,20 @@ export class FarcasterPostManager {
                     roomId
                 );
 
-                elizaLogger.info(
-                    `[Farcaster Neynar Client] Published cast ${cast.hash}`
-                );
+                elizaLogger.info(`[Farcaster Neynar Client] Published cast ${cast.hash}`);
 
                 await this.runtime.messageManager.createMemory(
                     createCastMemory({
                         roomId,
-                        senderId: this.runtime.agentId,
                         runtime: this.runtime,
                         cast,
                     })
                 );
             } catch (error) {
-                elizaLogger.error("Error sending cast:", error);
+                elizaLogger.error("Error sending cast:", error)
             }
         } catch (error) {
-            elizaLogger.error("Error generating new cast:", error);
+            elizaLogger.error("Error generating new cast:", error)
         }
     }
 }

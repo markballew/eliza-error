@@ -1,6 +1,6 @@
 import * as sqliteVec from "sqlite-vec";
-import type { Database } from "better-sqlite3";
-import { elizaLogger } from "@elizaos/core";
+import { Database } from "better-sqlite3";
+import { elizaLogger } from "@ai16z/eliza";
 
 // Loads the sqlite-vec extensions into the provided SQLite database
 export function loadVecExtensions(db: Database): void {

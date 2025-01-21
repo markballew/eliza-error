@@ -1,13 +1,5 @@
 import { sha1 } from "js-sha1";
-import type { UUID } from "./types.ts";
-import { z } from "zod";
-
-export const uuidSchema = z.string().uuid() as z.ZodType<UUID>;
-
-export function validateUuid(value: unknown): UUID | null {
-    const result = uuidSchema.safeParse(value);
-    return result.success ? result.data : null;
-}
+import { UUID } from "./types.ts";
 
 export function stringToUuid(target: string | number): UUID {
     if (typeof target === "number") {
@@ -42,7 +34,7 @@ export function stringToUuid(target: string | number): UUID {
     const hash = sha1(buffer);
     const hashBuffer = new Uint8Array(hash.length / 2);
     for (let i = 0; i < hash.length; i += 2) {
-        hashBuffer[i / 2] = Number.parseInt(hash.slice(i, i + 2), 16);
+        hashBuffer[i / 2] = parseInt(hash.slice(i, i + 2), 16);
     }
 
     return (_uint8ArrayToHex(hashBuffer.slice(0, 4)) +

@@ -1,14 +1,14 @@
 import {
-    type IPLicenseTerms,
-    type PILTerms,
+    IPLicenseTerms,
+    PILTerms,
     QUERY_ORDER_BY,
     QUERY_ORDER_DIRECTION,
-    type QueryOptions,
+    QueryOptions,
     RESOURCE_TYPE,
-    type ResourceType,
-    type Trait,
+    ResourceType,
+    Trait,
 } from "../types/api";
-import { elizaLogger } from "@elizaos/core";
+import { elizaLogger } from "@ai16z/eliza";
 
 import { camelize } from "./utils";
 const API_BASE_URL = process.env.STORY_API_BASE_URL;

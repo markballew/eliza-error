@@ -1,4 +1,4 @@
-import type { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@ai16z/eliza";
 import { z } from "zod";
 
 export const envSchema = z.object({
@@ -17,7 +17,8 @@ export async function validateEnvConfig(
                 runtime.getSetting("TON_PRIVATE_KEY") ||
                 process.env.TON_PRIVATE_KEY,
             TON_RPC_URL:
-                runtime.getSetting("TON_RPC_URL") || process.env.TON_RPC_URL,
+                runtime.getSetting("TON_RPC_URL") ||
+                process.env.TON_RPC_URL,
         };
 
         return envSchema.parse(config);

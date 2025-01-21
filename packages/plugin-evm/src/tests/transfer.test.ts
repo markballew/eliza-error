@@ -1,37 +1,23 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import type { Account, Chain } from "viem";
+import { Account, Chain } from "viem";
 
 import { TransferAction } from "../actions/transfer";
 import { WalletProvider } from "../providers/wallet";
-
-// Mock the ICacheManager
-const mockCacheManager = {
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn(),
-};
 
 describe("Transfer Action", () => {
     let wp: WalletProvider;
 
     beforeEach(async () => {
-        vi.clearAllMocks();
-        mockCacheManager.get.mockResolvedValue(null);
-
         const pk = generatePrivateKey();
         const customChains = prepareChains();
-        wp = new WalletProvider(pk, mockCacheManager as any, customChains);
+        wp = new WalletProvider(pk, customChains);
     });
-
-    afterEach(() => {
-        vi.clearAllTimers();
-    });
-
     describe("Constructor", () => {
         it("should initialize with wallet provider", () => {
             const ta = new TransferAction(wp);
 
-            expect(ta).toBeDefined();
+            expect(ta).to.toBeDefined();
         });
     });
     describe("Transfer", () => {
@@ -58,7 +44,7 @@ describe("Transfer Action", () => {
 });
 
 const prepareChains = () => {
-    const customChains: Record<string, Chain> = {};
+    let customChains: Record<string, Chain> = {};
     const chainNames = ["iotexTestnet"];
     chainNames.forEach(
         (chain) =>

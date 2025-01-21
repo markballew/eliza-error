@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { WalletProvider } from "../providers/wallet.ts";
-import { defaultCharacter } from "@elizaos/core";
+import { defaultCharacter } from "@ai16z/eliza";
 
 // Mock NodeCache
 vi.mock("node-cache", () => {

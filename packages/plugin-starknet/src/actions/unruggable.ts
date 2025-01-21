@@ -1,38 +1,30 @@
 import {
     type Action,
-    type ActionExample,
+    ActionExample,
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
-} from "@elizaos/core";
+    State,
+} from "@ai16z/eliza";
 import { Percent } from "@uniswap/sdk-core";
-import { createMemecoin, launchOnEkubo } from "unruggable-sdk";
-
-import { getStarknetAccount, getStarknetProvider } from "../utils/index.ts";
-// import { DeployData, Factory } from "@unruggable_starknet/core";
-// import { AMM, QUOTE_TOKEN_SYMBOL } from "@unruggable_starknet/core/constants";
+import {
+    getStarknetAccount,
+    getStarknetProvider,
+    parseFormatedAmount,
+    parseFormatedPercentage,
+} from "../utils/index.ts";
+import { DeployData, Factory } from "@unruggable_starknet/core";
+import { AMM, QUOTE_TOKEN_SYMBOL } from "@unruggable_starknet/core/constants";
 import { ACCOUNTS, TOKENS } from "../utils/constants.ts";
 import { validateStarknetConfig } from "../environment.ts";
 
-// interface SwapContent {
-//     sellTokenAddress: string;
-//     buyTokenAddress: string;
-//     sellAmount: string;
-// }
-
-interface DeployTokenContent {
-    name: string;
-    symbol: string;
-    owner: string;
-    initialSupply: string;
-}
-
-export function isDeployTokenContent(content: DeployTokenContent) {
+export function isDeployTokenContent(
+    content: DeployData
+): content is DeployData {
     // Validate types
     const validTypes =
         typeof content.name === "string" &&
@@ -47,7 +39,7 @@ export function isDeployTokenContent(content: DeployTokenContent) {
     const validAddresses =
         content.name.length > 2 &&
         content.symbol.length > 2 &&
-        Number.parseInt(content.initialSupply) > 0 &&
+        parseInt(content.initialSupply) > 0 &&
         content.owner.startsWith("0x") &&
         content.owner.length === 66;
 
@@ -130,62 +122,77 @@ export const deployToken: Action = {
             const provider = getStarknetProvider(runtime);
             const account = getStarknetAccount(runtime);
 
-            const chainId = await provider.getChainId();
-            const config = {
-                starknetChainId: chainId,
-                starknetProvider: provider,
-            };
+            const factory = new Factory({
+                provider,
+                chainId: await provider.getChainId(),
+            });
 
-            const { tokenAddress, transactionHash } = await createMemecoin(
-                config,
-                {
+            const { tokenAddress, calls: deployCalls } =
+                factory.getDeployCalldata({
                     name: response.name,
                     symbol: response.symbol,
                     owner: response.owner,
                     initialSupply: response.initialSupply,
-                    starknetAccount: account,
+                });
+
+            const data = await factory.getMemecoinLaunchData(tokenAddress);
+
+            const { calls: launchCalls } = await factory.getEkuboLaunchCalldata(
+                {
+                    address: tokenAddress,
+                    name: response.name,
+                    symbol: response.symbol,
+                    owner: response.owner,
+                    totalSupply: response.initialSupply,
+                    decimals: 18,
+                    ...data,
+                },
+                {
+                    fees: parseFormatedPercentage("3"),
+                    amm: AMM.EKUBO,
+                    teamAllocations: [
+                        {
+                            address: ACCOUNTS.ELIZA,
+                            amount: new Percent(
+                                2.5,
+                                response.initialSupply
+                            ).toFixed(0),
+                        },
+                        {
+                            address: ACCOUNTS.BLOBERT,
+                            amount: new Percent(
+                                2.5,
+                                response.initialSupply
+                            ).toFixed(0),
+                        },
+                    ],
+                    holdLimit: parseFormatedPercentage("2"),
+                    antiBotPeriod: 3600,
+                    quoteToken: {
+                        address: TOKENS.LORDS,
+                        symbol: "LORDS" as QUOTE_TOKEN_SYMBOL,
+                        name: "Lords",
+                        decimals: 18,
+                        camelCased: false,
+                    },
+                    startingMarketCap: parseFormatedAmount("5000"),
                 }
             );
 
             elizaLogger.log(
-                "Token deployment initiated for: " +
+                "Deployment has been initiated for coin: " +
                     response.name +
                     " at address: " +
                     tokenAddress
             );
-
-            await launchOnEkubo(config, {
-                antiBotPeriodInSecs: 3600,
-                currencyAddress: TOKENS.LORDS,
-                fees: "3",
-                holdLimit: "2",
-                memecoinAddress: tokenAddress,
-                starknetAccount: account,
-                startingMarketCap: "5000",
-                teamAllocations: [
-                    {
-                        address: ACCOUNTS.ELIZA,
-                        amount: new Percent(
-                            2.5,
-                            response.initialSupply
-                        ).toFixed(0),
-                    },
-                    {
-                        address: ACCOUNTS.BLOBERT,
-                        amount: new Percent(
-                            2.5,
-                            response.initialSupply
-                        ).toFixed(0),
-                    },
-                ],
-            });
+            const tx = await account.execute([...deployCalls, ...launchCalls]);
 
             callback?.({
                 text:
                     "Token Deployment completed successfully!" +
                     response.symbol +
                     " deployed in tx: " +
-                    transactionHash,
+                    tx.transaction_hash,
             });
 
             return true;

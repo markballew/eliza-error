@@ -1,14 +1,14 @@
-import { composeContext } from "@elizaos/core";
-import { generateTrueOrFalse } from "@elizaos/core";
-import { booleanFooter } from "@elizaos/core";
+import { composeContext } from "@ai16z/eliza";
+import { generateTrueOrFalse } from "@ai16z/eliza";
+import { booleanFooter } from "@ai16z/eliza";
 import {
-    type Action,
-    type ActionExample,
-    type IAgentRuntime,
-    type Memory,
+    Action,
+    ActionExample,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
-} from "@elizaos/core";
+    State,
+} from "@ai16z/eliza";
 
 export const shouldMuteTemplate =
     `Based on the conversation so far:

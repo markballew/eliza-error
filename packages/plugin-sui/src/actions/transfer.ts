@@ -1,24 +1,24 @@
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     composeContext,
     elizaLogger,
     generateObject,
     type Action,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
 import { z } from "zod";
 
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 
 import { walletProvider } from "../providers/wallet";
-import { parseAccount } from "../utils";
 
 type SuiNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
 
@@ -139,7 +139,8 @@ export default {
         }
 
         try {
-            const suiAccount = parseAccount(runtime);
+            const privateKey = runtime.getSetting("SUI_PRIVATE_KEY");
+            const suiAccount = Ed25519Keypair.deriveKeypair(privateKey);
             const network = runtime.getSetting("SUI_NETWORK");
             const suiClient = new SuiClient({
                 url: getFullnodeUrl(network as SuiNetwork),

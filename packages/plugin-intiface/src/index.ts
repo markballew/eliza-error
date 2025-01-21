@@ -7,8 +7,8 @@ import type {
     Memory,
     Plugin,
     State,
-} from "@elizaos/core";
-import { Service, ServiceType } from "@elizaos/core";
+} from "@ai16z/eliza";
+import { Service, ServiceType } from "@ai16z/eliza";
 import {
     isPortAvailable,
     startIntifaceEngine,

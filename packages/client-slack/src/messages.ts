@@ -5,18 +5,18 @@ import {
     generateMessageResponse,
     generateShouldRespond,
     ModelClass,
-    type Memory,
-    type Content,
-    type State,
+    Memory,
+    Content,
+    State,
     elizaLogger,
-    type HandlerCallback,
-} from "@elizaos/core";
+    HandlerCallback,
+} from "@ai16z/eliza";
 import {
     slackMessageHandlerTemplate,
     slackShouldRespondTemplate,
 } from "./templates";
-import type { WebClient } from "@slack/web-api";
-import type { IAgentRuntime } from "@elizaos/core";
+import { WebClient } from "@slack/web-api";
+import { IAgentRuntime } from "@ai16z/eliza";
 
 export class MessageManager {
     private client: WebClient;
@@ -255,19 +255,6 @@ export class MessageManager {
                               `${event.thread_ts}-${this.runtime.agentId}`
                           )
                         : undefined,
-                    attachments: event.text
-                        ? [
-                              {
-                                  id: stringToUuid(`${event.ts}-attachment`),
-                                  url: "", // Since this is text content, no URL is needed
-                                  title: "Text Attachment",
-                                  source: "slack",
-                                  description:
-                                      "Text content from Slack message",
-                                  text: cleanedText,
-                              },
-                          ]
-                        : undefined,
                 };
 
                 const memory: Memory = {
@@ -276,7 +263,7 @@ export class MessageManager {
                     agentId: this.runtime.agentId,
                     roomId,
                     content,
-                    createdAt: new Date(Number.parseFloat(event.ts) * 1000).getTime(),
+                    createdAt: new Date(parseFloat(event.ts) * 1000).getTime(),
                     embedding: getEmbeddingZeroVector(),
                 };
 

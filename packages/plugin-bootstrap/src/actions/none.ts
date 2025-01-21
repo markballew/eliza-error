@@ -1,9 +1,9 @@
-import type {
+import {
     ActionExample,
     IAgentRuntime,
     Memory,
-    Action,
-} from "@elizaos/core";
+    type Action,
+} from "@ai16z/eliza";
 
 export const noneAction: Action = {
     name: "NONE",

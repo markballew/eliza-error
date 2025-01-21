@@ -3,7 +3,7 @@ import {
     getFlowConnectorInstance,
     FlowConnectorProvider,
 } from "../providers/connector.provider";
-import { defaultCharacter } from "@elizaos/core";
+import { defaultCharacter } from "@ai16z/eliza";
 
 describe("ConnectorProvider", () => {
     let connectorProvider: FlowConnectorProvider;

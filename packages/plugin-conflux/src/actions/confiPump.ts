@@ -1,23 +1,22 @@
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type State,
-    type HandlerCallback,
-    elizaLogger,
-} from "@elizaos/core";
-import { generateObject, composeContext, ModelClass } from "@elizaos/core";
+    Action,
+    IAgentRuntime,
+    Memory,
+    State,
+    HandlerCallback,
+} from "@ai16z/eliza";
+import { generateObject, composeContext, ModelClass } from "@ai16z/eliza";
 import {
     createPublicClient,
     createWalletClient,
     http,
     parseEther,
     encodeFunctionData,
-    type WalletClient,
-    type Account,
+    WalletClient,
+    Account,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { confluxESpaceTestnet } from "viem/chains";
+import { confluxESpaceTestnet, confluxESpace } from "viem/chains";
 import { parseUnits, getAddress } from "viem/utils";
 import { confluxTransferTemplate } from "../templates/transfer";
 import {
@@ -39,7 +38,7 @@ async function ensureAllowance(
     memeAddress: `0x${string}`,
     amount: bigint
 ) {
-    elizaLogger.log(
+    console.log(
         `Checking allowance: token: ${tokenAddress} meme: ${memeAddress} amount: ${amount}`
     );
 
@@ -55,10 +54,10 @@ async function ensureAllowance(
         args: [account.address, memeAddress],
     });
 
-    elizaLogger.log("allowance:", allowance);
+    console.log("allowance:", allowance);
 
     if (allowance < amount) {
-        elizaLogger.log(
+        console.log(
             `allowance(${allowance}) is less than amount(${amount}), approving...`
         );
 
@@ -74,11 +73,11 @@ async function ensureAllowance(
             kzg: null,
         });
 
-        elizaLogger.log(`Approving hash: ${hash}`);
+        console.log(`Approving hash: ${hash}`);
         await publicClient.waitForTransactionReceipt({ hash });
-        elizaLogger.log(`Approving success: ${hash}`);
+        console.log(`Approving success: ${hash}`);
     } else {
-        elizaLogger.log(`No need to approve`);
+        console.log(`No need to approve`);
     }
 }
 
@@ -214,13 +213,9 @@ export const confiPump: Action = {
             switch (contentObject.action) {
                 case "CREATE_TOKEN":
                     if (!isPumpCreateContent(contentObject)) {
-                        elizaLogger.error(
-                            "Invalid PumpCreateContent: ",
-                            contentObject
-                        );
-                        throw new Error("Invalid PumpCreateContent");
+                        throw new Error("Invalid content");
                     }
-                    elizaLogger.log(
+                    console.log(
                         "creating: ",
                         contentObject.params.name,
                         contentObject.params.symbol,
@@ -240,17 +235,13 @@ export const confiPump: Action = {
 
                 case "BUY_TOKEN":
                     if (!isPumpBuyContent(contentObject)) {
-                        elizaLogger.error(
-                            "Invalid PumpBuyContent: ",
-                            contentObject
-                        );
-                        throw new Error("Invalid PumpBuyContent");
+                        throw new Error("Invalid content");
                     }
                     value = parseUnits(
                         contentObject.params.value.toString(),
                         18
                     );
-                    elizaLogger.log(
+                    console.log(
                         "buying: ",
                         contentObject.params.tokenAddress,
                         value
@@ -269,16 +260,12 @@ export const confiPump: Action = {
 
                 case "SELL_TOKEN":
                     if (!isPumpSellContent(contentObject)) {
-                        elizaLogger.error(
-                            "Invalid PumpSellContent: ",
-                            contentObject
-                        );
-                        throw new Error("Invalid PumpSellContent");
+                        throw new Error("Invalid content");
                     }
                     const tokenAddress = getAddress(
                         contentObject.params.tokenAddress as `0x${string}`
                     );
-                    elizaLogger.log(
+                    console.log(
                         "selling: ",
                         tokenAddress,
                         account.address,
@@ -325,7 +312,7 @@ export const confiPump: Action = {
                 value,
                 account,
             });
-            elizaLogger.log("simulate: ", simulate);
+            console.log("simulate: ", simulate);
 
             const hash = await walletClient.sendTransaction({
                 account,
@@ -345,7 +332,7 @@ export const confiPump: Action = {
                 });
             }
         } catch (error) {
-            elizaLogger.error(`Error performing the action: ${error}`);
+            console.error(`Error performing the action: ${error}`);
             if (callback) {
                 callback({
                     text: `Failed to perform the action: ${content.object.action}: ${error}`,

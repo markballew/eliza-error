@@ -1,4 +1,4 @@
-import type { IAgentRuntime } from "@elizaos/core";
+import { IAgentRuntime } from "@ai16z/eliza";
 import { z } from "zod";
 
 export const suiEnvSchema = z.object({
@@ -17,7 +17,8 @@ export async function validateSuiConfig(
                 runtime.getSetting("SUI_PRIVATE_KEY") ||
                 process.env.SUI_PRIVATE_KEY,
             SUI_NETWORK:
-                runtime.getSetting("SUI_NETWORK") || process.env.SUI_NETWORK,
+                runtime.getSetting("SUI_NETWORK") ||
+                process.env.SUI_NETWORK,
         };
 
         return suiEnvSchema.parse(config);

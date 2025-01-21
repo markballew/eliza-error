@@ -1,4 +1,4 @@
-import type { Plugin } from "@elizaos/core";
+import { Plugin } from "@ai16z/eliza";
 import { continueAction } from "./actions/continue.ts";
 import { followRoomAction } from "./actions/followRoom.ts";
 import { ignoreAction } from "./actions/ignore.ts";
@@ -31,4 +31,3 @@ export const bootstrapPlugin: Plugin = {
     evaluators: [factEvaluator, goalEvaluator],
     providers: [boredomProvider, timeProvider, factsProvider],
 };
-export default bootstrapPlugin;

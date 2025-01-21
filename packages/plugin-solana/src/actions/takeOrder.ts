@@ -1,12 +1,12 @@
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type Content,
+    Action,
+    IAgentRuntime,
+    Memory,
+    Content,
     ModelClass,
-    composeContext,
-    generateText,
-} from "@elizaos/core";
+} from "@ai16z/eliza";
+import { composeContext } from "@ai16z/eliza";
+import { generateText } from "@ai16z/eliza";
 
 interface Order {
     userId: string;
