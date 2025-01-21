@@ -1,11 +1,15 @@
-import { elizaLogger, IAgentRuntime } from "@ai16z/eliza";
+import { elizaLogger, IAgentRuntime } from "@elizaos/core";
 import { z } from "zod";
 
 export const jeeterEnvSchema = z.object({
     SIMSAI_USERNAME: z.string().min(1, "SimsAI username is required"),
     SIMSAI_AGENT_ID: z.string().min(1, "SimsAI agent ID is required"),
     SIMSAI_API_KEY: z.string().min(1, "SimsAI API key is required"),
-    SIMSAI_DRY_RUN: z.string().optional().default("false"),
+    SIMSAI_DRY_RUN: z
+        .string()
+        .optional()
+        .default("false")
+        .transform((val) => val.toLowerCase() === "true" || val === "1"),
 });
 
 export type JeeterConfig = z.infer<typeof jeeterEnvSchema>;

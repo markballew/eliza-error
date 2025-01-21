@@ -1,7 +1,7 @@
 import { JeeterPostClient } from "./jeeter/post.ts";
 import { JeeterSearchClient } from "./jeeter/search.ts";
 import { JeeterInteractionClient } from "./jeeter/interactions.ts";
-import { IAgentRuntime, Client, elizaLogger } from "@ai16z/eliza";
+import { IAgentRuntime, Client, elizaLogger } from "@elizaos/core";
 import { validateJeeterConfig } from "./jeeter/environment.ts";
 import { ClientBase } from "./jeeter/base.ts";
 
@@ -23,6 +23,11 @@ let activeManager: SimsAIManager | null = null;
 
 export const JeeterClientInterface: Client = {
     async start(runtime: IAgentRuntime) {
+        if (activeManager) {
+            elizaLogger.warn("SimsAI client already started");
+            return activeManager;
+        }
+
         await validateJeeterConfig(runtime);
 
         elizaLogger.log("SimsAI client started");
@@ -42,10 +47,16 @@ export const JeeterClientInterface: Client = {
     async stop(_runtime: IAgentRuntime) {
         elizaLogger.log("Stopping SimsAI client");
         if (activeManager) {
-            await activeManager.interaction.stop();
-            await activeManager.search.stop();
-            await activeManager.post.stop();
-            activeManager = null;
+            try {
+                await activeManager.interaction.stop();
+                await activeManager.search.stop();
+                await activeManager.post.stop();
+                activeManager = null;
+                elizaLogger.log("SimsAI client stopped successfully");
+            } catch (error) {
+                elizaLogger.error("Error stopping SimsAI client:", error);
+                throw error;
+            }
         }
         elizaLogger.log("SimsAI client stopped");
     },

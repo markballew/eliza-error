@@ -1,14 +1,14 @@
 import {
-    Action,
-    IAgentRuntime,
-    Memory,
-    HandlerCallback,
-    State,
+    type Action,
+    type IAgentRuntime,
+    type Memory,
+    type HandlerCallback,
+    type State,
     composeContext,
     generateObject,
     ModelClass,
     elizaLogger,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 
 import { CreateResourceSchema, isCreateResourceContent } from "../types";
 
@@ -24,7 +24,7 @@ export const createResourceAction: Action = {
         runtime: IAgentRuntime,
         _message: Memory,
         state: State,
-        _options: any,
+        _options: object,
         callback: HandlerCallback
     ) => {
         try {

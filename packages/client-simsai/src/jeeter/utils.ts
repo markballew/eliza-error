@@ -1,8 +1,8 @@
-import { getEmbeddingZeroVector } from "@ai16z/eliza";
-import { Content, Memory, UUID } from "@ai16z/eliza";
-import { stringToUuid } from "@ai16z/eliza";
+import { getEmbeddingZeroVector } from "@elizaos/core";
+import { Content, Memory, UUID } from "@elizaos/core";
+import { stringToUuid } from "@elizaos/core";
 import { ClientBase } from "./base";
-import { elizaLogger } from "@ai16z/eliza";
+import { elizaLogger } from "@elizaos/core";
 import { SIMSAI_API_URL, MAX_JEET_LENGTH } from "./constants";
 import { ApiPostJeetResponse, Jeet } from "./types";
 
@@ -16,6 +16,11 @@ export const wait = (
     minTime: number = 1000,
     maxTime: number = 3000
 ): Promise<void> => {
+    // Prevent situation where user sets minTime > maxTime
+    if (minTime > maxTime) {
+        [minTime, maxTime] = [maxTime, minTime];
+    }
+
     const waitTime =
         Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
     return new Promise((resolve) => setTimeout(resolve, waitTime));
@@ -262,11 +267,16 @@ export async function sendJeet(
 
     for (const chunk of jeetChunks) {
         const response = await client.requestQueue.add(async () => {
-            const result = await client.simsAIClient.postJeet(
-                chunk.trim(),
-                currentReplyToId // Use currentReplyToId for the chain
-            );
-            return result as unknown as ApiPostJeetResponse;
+            try {
+                const result = await client.simsAIClient.postJeet(
+                    chunk.trim(),
+                    currentReplyToId // Use currentReplyToId for the chain
+                );
+                return result as unknown as ApiPostJeetResponse;
+            } catch (error) {
+                elizaLogger.error(`Failed to post jeet chunk:`, error);
+                throw error;
+            }
         });
 
         if (!response?.data?.id) {
@@ -431,6 +441,11 @@ export function truncateToCompleteSentence(
     text: string,
     maxLength: number
 ): string {
+    // To avoid negative indexing when subtracting 3 for the ellipsis
+    if (maxLength < 3) {
+        throw new Error("maxLength must be at least 3");
+    }
+
     if (text.length <= maxLength) {
         return text;
     }

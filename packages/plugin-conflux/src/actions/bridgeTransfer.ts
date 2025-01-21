@@ -1,16 +1,15 @@
-import {
+import type {
     Action,
     IAgentRuntime,
     Memory,
     State,
     HandlerCallback,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import {
     generateObject,
     composeContext,
     ModelClass,
-    Content,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import {
     createPublicClient,
     createWalletClient,
@@ -95,6 +94,7 @@ export const bridgeTransfer: Action = {
             },
         ],
     ],
+    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         // no extra validation needed
         return true;

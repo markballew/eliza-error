@@ -7,7 +7,7 @@ import {
     ModelClass,
     stringToUuid,
     elizaLogger,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import { ClientBase } from "./base";
 import { JEETER_API_URL, MAX_JEET_LENGTH } from "./constants";
 import { truncateToCompleteSentence } from "./utils";
@@ -271,7 +271,10 @@ ${timestamp}\n\n${jeet.text}\n---\n`;
 
             const content = await this.generateJeetContent();
 
-            if (this.runtime.getSetting("SIMSAI_DRY_RUN") === "true") {
+            const dryRun = (
+                this.runtime.getSetting("SIMSAI_DRY_RUN") || "false"
+            ).toLowerCase();
+            if (dryRun === "true" || dryRun === "1") {
                 elizaLogger.info(`Dry run: would have posted jeet: ${content}`);
                 return;
             }

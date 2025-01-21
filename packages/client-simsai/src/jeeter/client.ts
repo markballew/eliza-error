@@ -1,7 +1,6 @@
 import { EventEmitter } from "events";
 import { SIMSAI_API_URL } from "./constants";
-import { elizaLogger } from "@ai16z/eliza";
-import { CookieJar } from "tough-cookie";
+import { elizaLogger } from "@elizaos/core";
 import {
     Agent,
     ApiLikeResponse,
@@ -20,7 +19,6 @@ export class SimsAIClient extends EventEmitter {
     private apiKey: string;
     private baseUrl: string;
     private agentId: string;
-    private cookieJar: CookieJar;
     profile: SimsAIProfile;
 
     constructor(apiKey: string, agentId: string, profile?: SimsAIProfile) {
@@ -28,7 +26,6 @@ export class SimsAIClient extends EventEmitter {
         this.apiKey = apiKey;
         this.agentId = agentId;
         this.baseUrl = SIMSAI_API_URL.replace(/\/$/, "");
-        this.cookieJar = new CookieJar();
         this.profile = profile;
     }
 
@@ -41,42 +38,49 @@ export class SimsAIClient extends EventEmitter {
         options: RequestInit = {}
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`;
-        try {
-            const response = await fetch(url, {
-                ...options,
-                headers: {
-                    Authorization: `Bearer ${this.apiKey}`,
-                    "Content-Type": "application/json",
-                    ...options.headers,
-                },
-                credentials: "include",
-            });
+        const maxRetries = 3;
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        Authorization: `Bearer ${this.apiKey}`,
+                        "Content-Type": "application/json",
+                        ...options.headers,
+                    },
+                    credentials: "include",
+                });
 
-            if (!response.ok) {
-                const error = new Error(
-                    `SimsAI API error: ${response.statusText} (${response.status})`
-                ) as ApiError;
-                error.statusCode = response.status;
-                error.endpoint = endpoint;
+                if (!response.ok) {
+                    const error = new Error(
+                        `SimsAI API error: ${response.statusText} (${response.status})`
+                    ) as ApiError;
+                    error.statusCode = response.status;
+                    error.endpoint = endpoint;
+                    throw error;
+                }
+
+                return (await response.json()) as T;
+            } catch (error) {
+                elizaLogger.error(`Error in makeRequest to ${endpoint}:`, {
+                    message: error.message,
+                    stack: error.stack,
+                    endpoint,
+                    options,
+                });
+
+                if (error && this.isRateLimitError(error)) {
+                    const waitTime = Math.pow(2, attempt) * 1000;
+                    elizaLogger.warn(
+                        `Rate limit hit for endpoint ${endpoint}, retrying in ${waitTime}ms`
+                    );
+                    await wait(waitTime);
+                    attempt++;
+                    continue;
+                }
                 throw error;
             }
-
-            return (await response.json()) as T;
-        } catch (error) {
-            elizaLogger.error(`Error in makeRequest to ${endpoint}:`, {
-                message: error.message,
-                stack: error.stack,
-                endpoint,
-                options,
-            });
-
-            if (error && this.isRateLimitError(error)) {
-                elizaLogger.warn(
-                    `Rate limit hit for endpoint ${endpoint}, backing off`
-                );
-                await wait(5000); // Add longer wait for rate limits
-            }
-            throw error;
         }
     }
 
@@ -272,19 +276,5 @@ export class SimsAIClient extends EventEmitter {
                 quote_jeet_id: jeetId,
             }),
         });
-    }
-
-    async setCookies(
-        cookies: Array<{
-            name: string;
-            value: string;
-            domain?: string;
-            path?: string;
-        }>
-    ) {
-        for (const cookie of cookies) {
-            const cookieString = `${cookie.name}=${cookie.value}${cookie.domain ? `; Domain=${cookie.domain}` : ""}${cookie.path ? `; Path=${cookie.path}` : ""}`;
-            await this.cookieJar.setCookie(cookieString, this.baseUrl);
-        }
     }
 }

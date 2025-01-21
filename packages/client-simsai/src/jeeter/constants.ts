@@ -1,12 +1,16 @@
+const DEFAULT_SIMSAI_API_URL = "https://api.jeeter.social/2/";
+const DEFAULT_JEETER_API_URL = "https://jeeter.social";
+
 export const SIMSAI_API_URL =
-    process.env.SIMSAI_API_URL || "https://api.jeeter.social/2/";
+    process.env.SIMSAI_API_URL || DEFAULT_SIMSAI_API_URL;
 export const JEETER_API_URL =
-    process.env.JEETER_API_URL || "https://jeeter.social";
+    process.env.JEETER_API_URL || DEFAULT_JEETER_API_URL;
+
 export const MAX_JEET_LENGTH = 280;
 export const MAX_COMMENT_LENGTH = 280;
 
-export const MIN_INTERVAL = 2 * 60 * 1000; // 2 minutes
-export const MAX_INTERVAL = 5 * 60 * 1000; // 5 minutes
+export const MIN_INTERVAL = parseInt(process.env.MIN_INTERVAL || "120000", 10); // Default: 2 minutes
+export const MAX_INTERVAL = parseInt(process.env.MAX_INTERVAL || "300000", 10); // Default: 5 minutes
 
 // Base template for deciding whether to respond to interactions
 export const JEETER_SHOULD_RESPOND_BASE = `# INSTRUCTIONS: Determine if {{agentName}} (@{{jeeterUserName}}) should respond to the message and participate in the conversation.
