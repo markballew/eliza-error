@@ -1,4 +1,4 @@
-import { PythError, ErrorSeverity, PythErrorCode, type ErrorDetails } from './base';
+import { PythError, ErrorSeverity, PythErrorCode, ErrorDetails } from './base';
 
 // WebSocket States
 export enum WebSocketState {

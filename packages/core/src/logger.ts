@@ -1,4 +1,4 @@
-import pino, { type LogFn } from "pino";
+import pino, { LogFn } from "pino";
 import pretty from "pino-pretty";
 
 const customLevels: Record<string, number> = {

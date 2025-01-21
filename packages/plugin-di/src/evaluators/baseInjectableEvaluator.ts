@@ -1,5 +1,5 @@
 import { injectable, unmanaged } from "inversify";
-import type {
+import {
     IAgentRuntime,
     EvaluationExample,
     Memory,

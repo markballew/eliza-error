@@ -1,8 +1,8 @@
-import type { Plugin } from "@elizaos/core";
-import { Container, type interfaces } from "inversify";
+import { Plugin } from "@elizaos/core";
+import { Container, interfaces } from "inversify";
 import { FACTORIES } from "./symbols";
 import { createPlugin } from "./factories";
-import type { PluginOptions } from "./types";
+import { PluginOptions } from "./types";
 
 const globalContainer = new Container();
 

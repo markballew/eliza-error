@@ -9,12 +9,12 @@ import {
     getEmbeddingZeroVector,
     generateMessageResponse,
     ModelClass,
-    type Content,
-    type IAgentRuntime,
-    type Memory,
-    type Plugin,
-    type UUID,
-    type State,
+    Content,
+    IAgentRuntime,
+    Memory,
+    Plugin,
+    UUID,
+    State,
     composeRandomUser,
     generateShouldRespond,
 } from "@elizaos/core";
@@ -23,7 +23,7 @@ import type {
     JanusClient,
     AudioDataWithUser,
 } from "agent-twitter-client";
-import type { ClientBase } from "../base";
+import { ClientBase } from "../base";
 import {
     twitterVoiceHandlerTemplate,
     twitterShouldRespondTemplate,
@@ -260,7 +260,7 @@ export class SttTtsPlugin implements Plugin {
     /**
      * On speaker silence => flush STT => GPT => TTS => push to Janus
      */
-    private async processAudio(userId: string): Promise<void> {
+    private async processAudio(userId: UUID): Promise<void> {
         if (this.isProcessingAudio) {
             return;
         }
@@ -396,32 +396,21 @@ export class SttTtsPlugin implements Plugin {
      */
     private async handleUserMessage(
         userText: string,
-        userId: string // This is the raw Twitter user ID like 'tw-1865462035586142208'
+        userId: UUID
     ): Promise<string> {
-        // Extract the numeric ID part
-        const numericId = userId.replace("tw-", "");
-        const roomId = stringToUuid(`twitter_generate_room-${this.spaceId}`);
-
-        // Create consistent UUID for the user
-        const userUuid = stringToUuid(`twitter-user-${numericId}`);
-
-        // Ensure the user exists in the accounts table
         await this.runtime.ensureUserExists(
-            userUuid,
-            userId, // Use full Twitter ID as username
-            `Twitter User ${numericId}`,
+            this.runtime.agentId,
+            this.client.profile.username,
+            this.runtime.character.name,
             "twitter"
         );
 
-        // Ensure room exists and user is in it
-        await this.runtime.ensureRoomExists(roomId);
-        await this.runtime.ensureParticipantInRoom(userUuid, roomId);
-
+        const roomId = stringToUuid("twitter_generate_room-" + this.spaceId);
         let state = await this.runtime.composeState(
             {
                 agentId: this.runtime.agentId,
                 content: { text: userText, source: "twitter" },
-                userId: userUuid,
+                userId,
                 roomId,
             },
             {
@@ -431,13 +420,13 @@ export class SttTtsPlugin implements Plugin {
         );
 
         const memory = {
-            id: stringToUuid(`${roomId}-voice-message-${Date.now()}`),
+            id: stringToUuid(roomId + "-voice-message-" + Date.now()),
             agentId: this.runtime.agentId,
             content: {
                 text: userText,
                 source: "twitter",
             },
-            userId: userUuid,
+            userId,
             roomId,
             embedding: getEmbeddingZeroVector(),
             createdAt: Date.now(),
@@ -470,7 +459,7 @@ export class SttTtsPlugin implements Plugin {
         const responseContent = await this._generateResponse(memory, context);
 
         const responseMemory: Memory = {
-            id: stringToUuid(`${memory.id}-voice-response-${Date.now()}`),
+            id: stringToUuid(memory.id + "-voice-response-" + Date.now()),
             agentId: this.runtime.agentId,
             userId: this.runtime.agentId,
             content: {
@@ -602,17 +591,17 @@ export class SttTtsPlugin implements Plugin {
 
         if (response === "RESPOND") {
             return true;
-        }
-
-        if (response === "IGNORE" || response === "STOP") {
+        } else if (response === "IGNORE") {
+            return false;
+        } else if (response === "STOP") {
+            return false;
+        } else {
+            elizaLogger.error(
+                "Invalid response from response generateText:",
+                response
+            );
             return false;
         }
-
-        elizaLogger.error(
-            "Invalid response from response generateText:",
-            response
-        );
-        return false;
     }
 
     /**

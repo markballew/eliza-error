@@ -11,7 +11,7 @@ import {
     type UUID,
     validateCharacterConfig,
     ServiceType,
-    type Character,
+    Character,
 } from "@elizaos/core";
 
 import type { TeeLogQuery, TeeLogService } from "@elizaos/plugin-tee-log";

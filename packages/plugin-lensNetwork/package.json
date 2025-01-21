@@ -28,8 +28,7 @@
         "zksync-ethers": "^6.0.0"
     },
     "scripts": {
-        "build": "tsup --format esm --dts",
-        "lint": "eslint --fix  --cache ."
+        "build": "tsup --format esm --dts"
     },
     "peerDependencies": {
         "whatwg-url": "7.1.0"
