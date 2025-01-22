@@ -9,8 +9,6 @@ concatenated-output.ts
 embedding-cache.json
 packages/plugin-buttplug/intiface-engine
 
-node-compile-cache
-
 .idea
 .DS_Store
 
@@ -65,6 +63,3 @@ agent/content
 eliza.manifest
 eliza.manifest.sgx
 eliza.sig
-packages/plugin-nvidia-nim/extra
-packages/plugin-nvidia-nim/old_code
-packages/plugin-nvidia-nim/docs

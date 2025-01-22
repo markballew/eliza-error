@@ -26,6 +26,7 @@
     },
     "scripts": {
         "build": "tsup --format esm --dts",
+        "lint": "eslint --fix  --cache .",
         "dev": "tsup --format esm --dts --watch"
     },
     "peerDependencies": {
