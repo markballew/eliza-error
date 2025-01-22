@@ -1,5 +1,6 @@
 import type { LensClient } from "./client";
 import {
+    elizaLogger,
     type Content,
     type IAgentRuntime,
     type Memory,

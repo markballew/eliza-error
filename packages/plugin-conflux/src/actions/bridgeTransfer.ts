@@ -9,6 +9,7 @@ import {
     generateObject,
     composeContext,
     ModelClass,
+    Content,
 } from "@elizaos/core";
 import {
     createPublicClient,
@@ -94,7 +95,6 @@ export const bridgeTransfer: Action = {
             },
         ],
     ],
-    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         // no extra validation needed
         return true;

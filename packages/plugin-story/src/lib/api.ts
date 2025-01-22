@@ -19,7 +19,6 @@ export const API_KEY = process.env.STORY_API_KEY || "";
 export async function getResource(
     resourceName: ResourceType,
     resourceId: string,
-    // eslint-disable-next-line
     options?: QueryOptions
 ) {
     try {
