@@ -136,10 +136,7 @@ export const gitbookProvider: Provider = {
 
             const result: GitBookResponse = await response.json();
 
-            return `## GitBook Provider
-### Query: ${message.content.text}
-### Answer:
-${result.answer?.text || ""}`;
+            return result.answer?.text || "";
         } catch (error) {
             elizaLogger.error("❌ Error in GitBook provider:", error);
             return "";
