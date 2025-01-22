@@ -19,8 +19,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { confluxESpaceTestnet } from "viem/chains";
 import { parseUnits, getAddress } from "viem/utils";
-import { confiPumpTemplate } from "../templates/confiPump";
-
+import { confluxTransferTemplate } from "../templates/transfer";
 import {
     PumpSchema,
     isPumpContent,
@@ -183,7 +182,7 @@ export const confiPump: Action = {
         // Generate content based on template
         const context = composeContext({
             state,
-            template: confiPumpTemplate,
+            template: confluxTransferTemplate,
         });
 
         const content = await generateObject({
