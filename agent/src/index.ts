@@ -12,6 +12,7 @@ import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
 import { FarcasterClientInterface } from "@elizaos/client-farcaster";
+import { OmniflixPlugin } from "@elizaos/plugin-omniflix";
 import { JeeterClientInterface } from "@elizaos/client-simsai";
 
 import { DirectClient } from "@elizaos/client-direct";
@@ -133,6 +134,7 @@ import { fileURLToPath } from "url";
 import yargs from "yargs";
 import { emailPlugin } from "@elizaos/plugin-email";
 import { sunoPlugin } from "@elizaos/plugin-suno";
+import { udioPlugin } from "@elizaos/plugin-udio";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -1032,6 +1034,10 @@ export async function createAgent(
                 getSecret(character, "SGX"))
                 ? teeLogPlugin
                 : null,
+            getSecret(character, "OMNIFLIX_API_URL") &&
+            getSecret(character, "OMNIFLIX_MNEMONIC")
+                ? OmniflixPlugin
+                : null,
             getSecret(character, "COINBASE_API_KEY") &&
             getSecret(character, "COINBASE_PRIVATE_KEY") &&
             getSecret(character, "COINBASE_NOTIFICATION_URI")
@@ -1155,7 +1161,8 @@ export async function createAgent(
             getSecret(character, "EMAIL_INCOMING_USER") && getSecret(character, "EMAIL_INCOMING_PASS") ||
             getSecret(character, "EMAIL_OUTGOING_USER") && getSecret(character, "EMAIL_OUTGOING_PASS") ?
             emailPlugin : null,
-            getSecret(character, "SUNO_API_KEY") ? sunoPlugin : null
+            getSecret(character, "SUNO_API_KEY") ? sunoPlugin : null,
+            getSecret(character, "UDIO_AUTH_TOKEN") ? udioPlugin : null
         ].filter(Boolean),
         providers: [],
         managers: [],
