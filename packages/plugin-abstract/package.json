@@ -26,10 +26,15 @@
         "tsup": "8.3.5"
     },
     "scripts": {
+        "build": "tsup --format esm --dts",
+        "lint": "eslint --fix  --cache .",
         "build": "tsup --format esm --no-dts",
         "dev": "tsup --format esm --no-dts --watch"
     },
     "peerDependencies": {
         "whatwg-url": "7.1.0"
+    },
+    "devDependencies": {
+        "typescript": "4.9"
     }
 }
