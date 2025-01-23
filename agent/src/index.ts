@@ -132,7 +132,6 @@ import yargs from "yargs";
 import { emailPlugin } from "@elizaos/plugin-email";
 import { sunoPlugin } from "@elizaos/plugin-suno";
 import { udioPlugin } from "@elizaos/plugin-udio";
-import { minaPlugin } from "@elizaos/plugin-mina";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -702,21 +701,20 @@ function initializeDatabase(dataDir: string) {
             dataDir: process.env.PGLITE_DATA_DIR,
         });
         return db;
-    } else if (
-        process.env.QDRANT_URL &&
-        process.env.QDRANT_KEY &&
-        process.env.QDRANT_PORT &&
-        process.env.QDRANT_VECTOR_SIZE
+    } else if (process.env.QDRANT_URL
+        && process.env.QDRANT_KEY
+        && process.env.QDRANT_PORT
+        && process.env.QDRANT_VECTOR_SIZE
     ) {
         elizaLogger.info("Initializing Qdrant adapter...");
         const db = new QdrantDatabaseAdapter(
             process.env.QDRANT_URL,
             process.env.QDRANT_KEY,
             Number(process.env.QDRANT_PORT),
-            Number(process.env.QDRANT_VECTOR_SIZE),
+            Number(process.env.QDRANT_VECTOR_SIZE)
         );
         return db;
-    } else {
+    }else {
         const filePath =
             process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
         elizaLogger.info(`Initializing SQLite database at ${filePath}...`);
@@ -1144,16 +1142,15 @@ export async function createAgent(
             )
                 ? openaiPlugin
                 : null,
-            getSecret(character, "DEVIN_API_TOKEN") ? devinPlugin : null,
+            getSecret(character, "DEVIN_API_TOKEN")
+                ? devinPlugin
+                : null,
             getSecret(character, "INITIA_PRIVATE_KEY") ? initiaPlugin : null,
             getSecret(character, "NVIDIA_NIM_API_KEY") ||
             getSecret(character, "NVIDIA_NGC_API_KEY")
                 ? nvidiaNimPlugin
                 : null,
-            getSecret(character, "INITIA_PRIVATE_KEY") &&
-            getSecret(character, "INITIA_NODE_URL")
-                ? initiaPlugin
-                : null,
+            getSecret(character, "INITIA_PRIVATE_KEY") && getSecret(character, "INITIA_NODE_URL") ? initiaPlugin : null,
             getSecret(character, "BNB_PRIVATE_KEY") ||
             getSecret(character, "BNB_PUBLIC_KEY")?.startsWith("0x")
                 ? bnbPlugin
@@ -1165,8 +1162,7 @@ export async function createAgent(
                 ? hyperbolicPlugin
                 : null,
             getSecret(character, "SUNO_API_KEY") ? sunoPlugin : null,
-            getSecret(character, "UDIO_AUTH_TOKEN") ? udioPlugin : null,
-            getSecret(character, "MINA_PRIVATE_KEY") ? minaPlugin : null,
+            getSecret(character, "UDIO_AUTH_TOKEN") ? udioPlugin : null
         ].filter(Boolean),
         providers: [],
         managers: [],
