@@ -9,6 +9,7 @@ import {
     generateObject,
     composeContext,
     ModelClass,
+    Content,
 } from "@elizaos/core";
 import { createPublicClient, createWalletClient, http, parseCFX } from "cive";
 import { privateKeyToAccount } from "cive/accounts";
@@ -71,7 +72,6 @@ export const transfer: Action = {
             },
         ],
     ],
-    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         // no extra validation needed
         return true;

@@ -1,14 +1,14 @@
 import {
-    type IAgentRuntime,
-    type Memory,
-    type HandlerCallback,
-    type State,
+    IAgentRuntime,
+    Memory,
+    HandlerCallback,
+    State,
     elizaLogger,
 } from "@elizaos/core";
 import { z } from "zod";
 import { inject, injectable } from "inversify";
 import { BaseInjectableAction } from "../actions";
-import type { ActionOptions } from "../types";
+import { ActionOptions } from "../types";
 import { property } from "../decorators";
 import { globalContainer } from "../di";
 import { SampleProvider } from "./sampleProvider";

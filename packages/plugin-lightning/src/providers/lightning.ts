@@ -7,17 +7,17 @@ import {
 } from "@elizaos/core";
 import {
     authenticatedLndGrpc,
-    type AuthenticatedLnd,
-    type GetIdentityResult,
-    type GetChannelsResult,
+    AuthenticatedLnd,
+    GetIdentityResult,
+    GetChannelsResult,
     getIdentity,
     getChannels,
     createInvoice,
     pay,
-    type PayResult,
-    type CreateInvoiceResult,
+    PayResult,
+    CreateInvoiceResult,
 } from "astra-lightning";
-import type { PayArgs, CreateInvoiceArgs } from "../types";
+import { PayArgs, CreateInvoiceArgs } from "../types";
 export class LightningProvider {
     private lndClient: AuthenticatedLnd;
     constructor(cert: string, macaroon: string, socket: string) {

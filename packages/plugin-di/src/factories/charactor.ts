@@ -1,6 +1,6 @@
-import { type Character, elizaLogger, type Plugin } from "@elizaos/core";
+import { Character, elizaLogger, Plugin } from "@elizaos/core";
 import { globalContainer } from "../di";
-import type { PluginFactory } from "../types";
+import { PluginFactory } from "../types";
 import { FACTORIES } from "../symbols";
 
 /**

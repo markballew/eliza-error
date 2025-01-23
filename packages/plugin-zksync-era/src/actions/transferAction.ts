@@ -25,7 +25,7 @@ import {
 import { zksync, mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
 import { z } from "zod";
-import { transferAction } from "../utils";
+import { ValidateContext } from "../utils";
 import { ETH_ADDRESS, ERC20_OVERRIDE_INFO } from "../constants";
 import { useGetAccount, useGetWalletClient } from "../hooks";
 
@@ -140,7 +140,7 @@ export const TransferAction: Action = {
         }
 
         // Validate transfer content
-        if (!transferAction(content)) {
+        if (!ValidateContext.transferAction(content)) {
             elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({

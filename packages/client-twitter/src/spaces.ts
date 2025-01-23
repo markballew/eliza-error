@@ -6,7 +6,7 @@ import {
     ModelClass,
     ServiceType,
     type ITranscriptionService,
-    type TwitterSpaceDecisionOptions,
+    TwitterSpaceDecisionOptions,
 } from "@elizaos/core";
 import type { ClientBase } from "./base";
 import {

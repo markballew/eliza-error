@@ -246,7 +246,7 @@ export class FarcasterInteractionManager {
 
         const callback: HandlerCallback = async (
             content: Content,
-            _files: any[]
+            files: any[]
         ) => {
             try {
                 if (memoryId && !content.inReplyTo) {

@@ -1,5 +1,6 @@
 import type { Plugin, IAgentRuntime, Memory, State } from "@elizaos/core";
 import { elizaLogger, settings } from "@elizaos/core";
+import { z } from "zod";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
 import {
     solanaPlugin,
@@ -9,7 +10,7 @@ import {
 } from "@elizaos/plugin-solana";
 import { TokenProvider } from "./providers/token";
 import { Connection, PublicKey } from "@solana/web3.js";
-import type { WalletClient, Signature, Balance } from "@goat-sdk/core";
+import type { Chain, WalletClient, Signature, Balance } from "@goat-sdk/core";
 import * as fs from "fs";
 import * as path from "path";
 import { TrustScoreProvider } from "./providers/trustScoreProvider";
@@ -20,6 +21,8 @@ import { TrustScoreDatabase } from "@elizaos/plugin-trustdb";
 import { v4 as uuidv4 } from "uuid";
 import { actions } from "./actions";
 import {
+    TradeAlert,
+    TradeBuyAlert,
     tweetTrade,
     TwitterConfigSchema,
     TwitterService,
@@ -137,7 +140,6 @@ const tokenCache = new NodeCache({
     checkperiod: 120, // Check for expired entries every 2 minutes
 });
 
-/*
 // Add near the top with other interfaces
 interface SkipWaitCache {
     lastTweet: number;
@@ -192,7 +194,6 @@ function canTweet(tweetType: "trade" | "market_search"): boolean {
 
     return true;
 }
-*/
 
 // Add new interfaces near the top with other interfaces
 interface TradePerformance {
@@ -485,7 +486,7 @@ async function createRabbiTraderPlugin(
         connection,
         getChain: () => ({ type: "solana" }),
         getAddress: () => keypair.publicKey.toBase58(),
-        signMessage: async (_message: string): Promise<Signature> => {
+        signMessage: async (message: string): Promise<Signature> => {
             throw new Error(
                 "Message signing not implemented for Solana wallet"
             );
@@ -522,8 +523,7 @@ async function createRabbiTraderPlugin(
                         name: "Solana",
                     };
                 }
-            } catch {
-                // do we want logging here?
+            } catch (error) {
                 return {
                     value: BigInt(0),
                     decimals: tokenAddress.startsWith("0x") ? 18 : 9,
@@ -558,12 +558,12 @@ async function createRabbiTraderPlugin(
                 return 0;
             }
         },
-        executeTrade: async (_params) => {
-            //try {
+        executeTrade: async (params) => {
+            try {
                 return { success: true };
-            //} catch (error) {
-                //throw error;
-            //}
+            } catch (error) {
+                throw error;
+            }
         },
         getFormattedPortfolio: async () => "",
     };
@@ -707,7 +707,6 @@ async function analyzeToken(
             return;
         }
 
-        /*
         const balance = await connection.getBalance(
             new PublicKey(walletPublicKey)
         );
@@ -715,7 +714,6 @@ async function analyzeToken(
         const walletSolBalance = {
             formatted: (balance / 1e9).toString(),
         };
-        */
 
         // Initialize trustScoreDb
         const trustScoreDb = new TrustScoreDatabase(runtime.databaseAdapter.db);
@@ -845,7 +843,7 @@ async function analyzeToken(
                             result
                         );
                     }
-                } catch (err) { elizaLogger.error('rabbi - trade error', err) }
+                } catch (parseError) {}
                 return [];
             }
         );
@@ -1096,7 +1094,6 @@ async function buy({
 }
 
 async function sell({
-    // eslint-disable-next-line
     state,
     runtime,
     tokenAddress,
@@ -1120,7 +1117,6 @@ async function sell({
     // Get the trade amount from the latest trade
     const tradeAmount = Number(latestTrade?.buy_amount || 0);
 
-    /*
     // Create and save trade memory object for sell
     const tradeMemory: Memory = {
         userId: state.userId,
@@ -1135,7 +1131,6 @@ async function sell({
             type: "trade",
         },
     };
-    */
 
     // Execute sell trade
     const tradeResult = await executeTrade(runtime, {

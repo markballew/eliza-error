@@ -7,13 +7,13 @@ import {
 } from "@solana/web3.js";
 
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
 } from "@elizaos/core";
 import { composeContext } from "@elizaos/core";

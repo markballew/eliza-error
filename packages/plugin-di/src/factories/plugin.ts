@@ -1,10 +1,10 @@
-import type { interfaces } from "inversify";
+import { interfaces } from "inversify";
 import {
-    type Action,
+    Action,
     elizaLogger,
-    type Evaluator,
-    type Plugin,
-    type Provider,
+    Evaluator,
+    Plugin,
+    Provider,
 } from "@elizaos/core";
 import type { PluginFactory, PluginOptions } from "../types";
 
