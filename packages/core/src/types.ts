@@ -852,7 +852,6 @@ export type Character = {
             teamAgentIds?: string[];
             teamLeaderId?: string;
             teamMemberInterestKeywords?: string[];
-            allowedChannelIds?: string[];
             autoPost?: {
                 enabled?: boolean;
                 monitorTime?: number;
