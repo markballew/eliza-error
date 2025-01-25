@@ -181,27 +181,18 @@ export function parseJSONObjectFromText(
  */
 export function extractAttributes(
     response: string,
-    attributesToExtract?: string[],
+    attributesToExtract: string[],
 ): { [key: string]: string | undefined } {
     const attributes: { [key: string]: string | undefined } = {};
 
-    if (!attributesToExtract || attributesToExtract.length === 0) {
-        // Extract all attributes if no specific attributes are provided
-        const matches = response.matchAll(/"([^"]+)"\s*:\s*"([^"]*)"/g);
-        for (const match of matches) {
-            attributes[match[1]] = match[2];
+    attributesToExtract.forEach((attribute) => {
+        const match = response.match(
+            new RegExp(`"${attribute}"\\s*:\\s*"([^"]*)"`, "i"),
+        );
+        if (match) {
+            attributes[attribute] = match[1];
         }
-    } else {
-        // Extract only specified attributes
-        attributesToExtract.forEach((attribute) => {
-            const match = response.match(
-                new RegExp(`"${attribute}"\\s*:\\s*"([^"]*)"`, "i"),
-            );
-            if (match) {
-                attributes[attribute] = match[1];
-            }
-        });
-    }
+    });
 
     return attributes;
 }
