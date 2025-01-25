@@ -1,21 +1,24 @@
 // src/actions/sendGif.ts
 
 import {
+    ActionExample,
     composeContext,
-    type Content,
+    Content,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
 } from "@elizaos/core";
 import axios from "axios";
 import { debugLog } from "../utils/debug";
 import { validateGiphyConfig } from "../environment";
-import type { GifResponse, Gif } from "../types";
+import { GifResponse, Gif } from "../types";
+import fs from "fs";
+import path from "path";
 import crypto from "crypto";
 
 const sendGifTemplate = `Given the message, determine if a gif should be sent based on the content.
@@ -48,7 +51,7 @@ export interface SendGifContent extends Content {
 export default {
     name: "SEND_GIF",
     similes: ["REPLY_WITH_GIF", "GIF_RESPONSE"],
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         elizaLogger.log("🔄 Validating Giphy configuration...");
         try {
             const config = await validateGiphyConfig(runtime);

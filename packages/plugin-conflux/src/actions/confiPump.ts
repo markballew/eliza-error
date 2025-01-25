@@ -1,9 +1,9 @@
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type State,
-    type HandlerCallback,
+    Action,
+    IAgentRuntime,
+    Memory,
+    State,
+    HandlerCallback,
     elizaLogger,
 } from "@elizaos/core";
 import { generateObject, composeContext, ModelClass } from "@elizaos/core";
@@ -13,14 +13,13 @@ import {
     http,
     parseEther,
     encodeFunctionData,
-    type WalletClient,
-    type Account,
+    WalletClient,
+    Account,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { confluxESpaceTestnet } from "viem/chains";
 import { parseUnits, getAddress } from "viem/utils";
-import { confiPumpTemplate } from "../templates/confiPump";
-
+import { confluxTransferTemplate } from "../templates/transfer";
 import {
     PumpSchema,
     isPumpContent,
@@ -159,7 +158,7 @@ export const confiPump: Action = {
             },
         ],
     ],
-    // eslint-disable-next-line
+
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         return true; // No extra validation needed
     },
@@ -183,7 +182,7 @@ export const confiPump: Action = {
         // Generate content based on template
         const context = composeContext({
             state,
-            template: confiPumpTemplate,
+            template: confluxTransferTemplate,
         });
 
         const content = await generateObject({
@@ -268,7 +267,7 @@ export const confiPump: Action = {
                     });
                     break;
 
-                case "SELL_TOKEN": {
+                case "SELL_TOKEN":
                     if (!isPumpSellContent(contentObject)) {
                         elizaLogger.error(
                             "Invalid PumpSellContent: ",
@@ -308,7 +307,6 @@ export const confiPump: Action = {
                     });
                     value = 0n;
                     break;
-                }
             }
 
             // Simulate and execute transaction

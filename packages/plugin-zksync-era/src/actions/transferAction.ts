@@ -1,12 +1,12 @@
 import type { Action } from "@elizaos/core";
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     elizaLogger,
     composeContext,
     generateObject,
@@ -14,7 +14,7 @@ import {
 import { validateZKsyncConfig } from "../enviroment";
 
 import {
-    type Address,
+    Address,
     erc20Abi,
     http,
     isAddress,
@@ -25,7 +25,7 @@ import {
 import { zksync, mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
 import { z } from "zod";
-import { transferAction } from "../utils";
+import { ValidateContext } from "../utils";
 import { ETH_ADDRESS, ERC20_OVERRIDE_INFO } from "../constants";
 import { useGetAccount, useGetWalletClient } from "../hooks";
 
@@ -140,7 +140,7 @@ export const TransferAction: Action = {
         }
 
         // Validate transfer content
-        if (!transferAction(content)) {
+        if (!ValidateContext.transferAction(content)) {
             elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({

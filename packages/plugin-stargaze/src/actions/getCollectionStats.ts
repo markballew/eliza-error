@@ -1,13 +1,14 @@
 import {
+    ActionExample,
     composeContext,
-    type Content,
+    Content,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
 } from "@elizaos/core";
 import axios from "axios";
@@ -68,7 +69,7 @@ Extract the collection address from the above messages and respond with the appr
 export default {
     name: "GET_COLLECTION_STATS",
     similes: ["CHECK_COLLECTION_STATS", "COLLECTION_INFO"],
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         elizaLogger.log("🔄 Validating Stargaze configuration...");
         try {
             const config = await validateStargazeConfig(runtime);
@@ -118,7 +119,7 @@ export default {
             debugLog.validation(content);
 
             const config = await validateStargazeConfig(runtime);
-
+            
             const requestData = {
                 query: COLLECTION_STATS_QUERY,
                 variables: {
@@ -148,13 +149,13 @@ export default {
             }
 
             // Format numerical values
-            const formatValue = (value: number) =>
-                value ? Number(value).toLocaleString(undefined, {
-                    maximumFractionDigits: 2
+            const formatValue = (value: number) => 
+                value ? Number(value).toLocaleString(undefined, { 
+                    maximumFractionDigits: 2 
                 }) : '0';
 
             // Format percentage values
-            const formatPercent = (value: number) =>
+            const formatPercent = (value: number) => 
                 value ? `${Number(value).toFixed(2)}%` : '0%';
 
             if (callback) {

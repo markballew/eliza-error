@@ -1,5 +1,6 @@
 import {
-    type Action,
+    Action,
+    composeContext,
     elizaLogger,
     generateText,
     ModelClass,

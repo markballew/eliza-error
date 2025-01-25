@@ -1,6 +1,6 @@
 import {
-    type IAgentRuntime,
-    type IAwsS3Service,
+    IAgentRuntime,
+    IAwsS3Service,
     Service,
     ServiceType,
     elizaLogger,
@@ -11,8 +11,8 @@ import {
     S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import * as fs from "node:fs";
-import * as path from "node:path";
+import * as fs from "fs";
+import * as path from "path";
 
 interface UploadResult {
     success: boolean;
@@ -28,8 +28,8 @@ export class AwsS3Service extends Service implements IAwsS3Service {
     static serviceType: ServiceType = ServiceType.AWS_S3;
 
     private s3Client: S3Client | null = null;
-    private bucket = "";
-    private fileUploadPath = "";
+    private bucket: string = "";
+    private fileUploadPath: string = "";
     private runtime: IAgentRuntime | null = null;
 
     async initialize(runtime: IAgentRuntime): Promise<void> {
@@ -44,7 +44,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
 
         const AWS_ACCESS_KEY_ID = this.runtime.getSetting("AWS_ACCESS_KEY_ID");
         const AWS_SECRET_ACCESS_KEY = this.runtime.getSetting(
-            "AWS_SECRET_ACCESS_KEY",
+            "AWS_SECRET_ACCESS_KEY"
         );
         const AWS_REGION = this.runtime.getSetting("AWS_REGION");
         const AWS_S3_BUCKET = this.runtime.getSetting("AWS_S3_BUCKET");
@@ -58,19 +58,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
             return false;
         }
 
-        // Optional fields to allow for other providers
-        const endpoint = this.runtime.getSetting("AWS_S3_ENDPOINT");
-        const sslEnabled = this.runtime.getSetting("AWS_S3_SSL_ENABLED");
-        const forcePathStyle = this.runtime.getSetting(
-            "AWS_S3_FORCE_PATH_STYLE",
-        );
-
         this.s3Client = new S3Client({
-            ...(endpoint ? { endpoint } : {}),
-            ...(sslEnabled ? { sslEnabled } : {}),
-            ...(forcePathStyle
-                ? { forcePathStyle: Boolean(forcePathStyle) }
-                : {}),
             region: AWS_REGION,
             credentials: {
                 accessKeyId: AWS_ACCESS_KEY_ID,
@@ -83,9 +71,9 @@ export class AwsS3Service extends Service implements IAwsS3Service {
 
     async uploadFile(
         filePath: string,
-        subDirectory = "",
-        useSignedUrl = false,
-        expiresIn = 900,
+        subDirectory: string = "",
+        useSignedUrl: boolean = false,
+        expiresIn: number = 900
     ): Promise<UploadResult> {
         try {
             if (!(await this.initializeS3Client())) {
@@ -109,7 +97,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
             const fileName =
                 `${this.fileUploadPath}${subDirectory}/${baseFileName}`.replaceAll(
                     "//",
-                    "/",
+                    "/"
                 );
             // Set upload parameters
             const uploadParams = {
@@ -127,15 +115,9 @@ export class AwsS3Service extends Service implements IAwsS3Service {
                 success: true,
             };
 
-            // If not using signed URL, return either custom endpoint or public access URL
+            // If not using signed URL, return public access URL
             if (!useSignedUrl) {
-                if (this.s3Client.config.endpoint) {
-                    const endpoint = await this.s3Client.config.endpoint();
-                    const port = endpoint.port ? `:${endpoint.port}` : "";
-                    result.url = `${endpoint.protocol}//${endpoint.hostname}${port}${endpoint.path}${this.bucket}/${fileName}`;
-                } else {
-                    result.url = `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-                }
+                result.url = `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
             } else {
                 const getObjectCommand = new GetObjectCommand({
                     Bucket: this.bucket,
@@ -146,7 +128,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
                     getObjectCommand,
                     {
                         expiresIn, // 15 minutes in seconds
-                    },
+                    }
                 );
             }
 
@@ -167,7 +149,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
      */
     async generateSignedUrl(
         fileName: string,
-        expiresIn = 900,
+        expiresIn: number = 900
     ): Promise<string> {
         if (!(await this.initializeS3Client())) {
             throw new Error("AWS S3 credentials not configured");
@@ -205,8 +187,8 @@ export class AwsS3Service extends Service implements IAwsS3Service {
         jsonData: any,
         fileName?: string,
         subDirectory?: string,
-        useSignedUrl = false,
-        expiresIn = 900,
+        useSignedUrl: boolean = false,
+        expiresIn: number = 900
     ): Promise<JsonUploadResult> {
         try {
             if (!(await this.initializeS3Client())) {
@@ -255,15 +237,9 @@ export class AwsS3Service extends Service implements IAwsS3Service {
                 key: key,
             };
 
-            // If not using signed URL, return either custom endpoint or public access URL
+            // Return corresponding URL based on requirements
             if (!useSignedUrl) {
-                if (this.s3Client.config.endpoint) {
-                    const endpoint = await this.s3Client.config.endpoint();
-                    const port = endpoint.port ? `:${endpoint.port}` : "";
-                    result.url = `${endpoint.protocol}//${endpoint.hostname}${port}${endpoint.path}${this.bucket}/${key}`;
-                } else {
-                    result.url = `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-                }
+                result.url = `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
             } else {
                 const getObjectCommand = new GetObjectCommand({
                     Bucket: this.bucket,
@@ -272,7 +248,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
                 result.url = await getSignedUrl(
                     this.s3Client,
                     getObjectCommand,
-                    { expiresIn },
+                    { expiresIn }
                 );
             }
 

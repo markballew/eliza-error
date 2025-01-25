@@ -1,8 +1,8 @@
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    Action,
+    IAgentRuntime,
+    Memory,
+    State,
     composeContext,
     elizaLogger,
     ModelClass,
@@ -151,9 +151,7 @@ export const postAction: Action = {
     description: "Post a tweet to Twitter",
     validate: async (
         runtime: IAgentRuntime,
-// eslint-disable-next-line
         message: Memory,
-// eslint-disable-next-line
         state?: State
     ) => {
         const username = runtime.getSetting("TWITTER_USERNAME");

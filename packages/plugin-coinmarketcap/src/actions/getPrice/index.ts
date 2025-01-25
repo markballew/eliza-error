@@ -2,18 +2,18 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
 } from "@elizaos/core";
 import { validateCoinMarketCapConfig } from "../../environment";
 import { priceExamples } from "./examples";
 import { createPriceService } from "./service";
 import { getPriceTemplate } from "./template";
-import type { GetPriceContent } from "./types";
+import { GetPriceContent } from "./types";
 import { isGetPriceContent } from "./validation";
 
 export default {
@@ -26,7 +26,6 @@ export default {
         "GET_TOKEN_PRICE",
         "CHECK_TOKEN_PRICE",
     ],
-    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoinMarketCapConfig(runtime);
         return true;

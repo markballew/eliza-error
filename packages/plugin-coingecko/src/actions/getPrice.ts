@@ -1,14 +1,14 @@
 import {
-    type ActionExample,
+    ActionExample,
     composeContext,
-    type Content,
+    Content,
     elizaLogger,
     generateObject,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
 } from "@elizaos/core";
 import axios from "axios";
@@ -66,7 +66,6 @@ export default {
         "PRICE_DETAILS",
         "COIN_PRICE_DATA"
     ],
-    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoingeckoConfig(runtime);
         return true;
@@ -121,7 +120,7 @@ export default {
 
             // Fetch price from CoinGecko
             const config = await validateCoingeckoConfig(runtime);
-            const { baseUrl, apiKey, headerKey } = getApiConfig(config);
+            const { baseUrl, apiKey } = getApiConfig(config);
 
             elizaLogger.log(`Fetching prices for ${coinIds} in ${vs_currencies}...`);
             elizaLogger.log("API request URL:", `${baseUrl}/simple/price`);
@@ -147,7 +146,7 @@ export default {
                     },
                     headers: {
                         'accept': 'application/json',
-                        [headerKey]: apiKey
+                        'x-cg-pro-api-key': apiKey
                     }
                 }
             );
@@ -264,6 +263,7 @@ export default {
                 errorMessage = "This endpoint requires a CoinGecko Pro API key. Please upgrade your plan to access this data.";
             } else if (error.response?.status === 400) {
                 errorMessage = "Invalid request parameters. Please check your input.";
+            } else {
             }
 
             if (callback) {

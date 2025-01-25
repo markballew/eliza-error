@@ -40,8 +40,8 @@ export async function sendCast({
             sent.push(cast!);
 
             parentCastId = {
-                fid: neynarCast.authorFid!,
-                hash: neynarCast.hash!,
+                fid: neynarCast?.authorFid!,
+                hash: neynarCast?.hash!,
             };
         }
     }
@@ -50,7 +50,6 @@ export async function sendCast({
         cast,
         memory: createCastMemory({
             roomId,
-            senderId: runtime.agentId,
             runtime,
             cast,
         }),

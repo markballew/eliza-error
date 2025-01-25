@@ -1,14 +1,14 @@
 import {
-    type ActionExample,
+    ActionExample,
     composeContext,
-    type Content,
+    Content,
     elizaLogger,
     generateObject,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action
 } from "@elizaos/core";
 import axios from "axios";
@@ -111,7 +111,6 @@ export default {
         "BEST_PERFORMING_COINS",
         "TOP_MARKET_CAPS"
     ],
-    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoingeckoConfig(runtime);
         return true;
@@ -135,7 +134,7 @@ export default {
 
         try {
             const config = await validateCoingeckoConfig(runtime);
-            const { baseUrl, apiKey, headerKey } = getApiConfig(config);
+            const { baseUrl, apiKey } = getApiConfig(config);
 
             // Get categories through the provider
             const categories = await getCategoriesData(runtime);
@@ -187,7 +186,7 @@ export default {
                 {
                     headers: {
                         'accept': 'application/json',
-                        [headerKey]: apiKey
+                        'x-cg-pro-api-key': apiKey
                     },
                     params: {
                         vs_currency: content.vs_currency,

@@ -1,9 +1,8 @@
-import {elizaLogger, type IAgentRuntime, type Memory, type Provider, type State} from "@elizaos/core";
+import {elizaLogger, IAgentRuntime, Memory, Provider, State} from "@elizaos/core";
 import {generateProof, verifyProof} from "../util/primusUtil.ts";
 
 const tokenPriceProvider: Provider = {
-    // eslint-disable-next-line
-    get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
+    get: async (runtime: IAgentRuntime, message: Memory, _state?: State) => {
         //get btc price
         const url = `${process.env.BINANCE_API_URL||'https://api.binance.com'}/api/v3/ticker/price?symbol=${process.env.BINANCE_SYMBOL || 'BTCUSDT'}`;
         const method = 'GET';

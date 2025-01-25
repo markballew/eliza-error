@@ -1,14 +1,14 @@
 import {
-    type ActionExample,
+    ActionExample,
     composeContext,
-    type Content,
+    Content,
     elizaLogger,
     generateObject,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action
 } from "@elizaos/core";
 import axios from "axios";
@@ -39,7 +39,7 @@ interface TopGainersLosersResponse {
 }
 
 const DurationEnum = z.enum(["1h", "24h", "7d", "14d", "30d", "60d", "1y"]);
-//type Duration = z.infer<typeof DurationEnum>;
+type Duration = z.infer<typeof DurationEnum>;
 
 export const GetTopGainersLosersSchema = z.object({
     vs_currency: z.string().default("usd"),
@@ -62,7 +62,6 @@ export default {
         "PRICE_CHANGES",
         "BEST_WORST_PERFORMERS",
     ],
-    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoingeckoConfig(runtime);
         return true;

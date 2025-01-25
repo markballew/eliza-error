@@ -1,14 +1,15 @@
 import type { LensClient } from "./client";
-import type {
-    Content,
-    IAgentRuntime,
-    Memory,
-    UUID,
+import {
+    elizaLogger,
+    type Content,
+    type IAgentRuntime,
+    type Memory,
+    type UUID,
 } from "@elizaos/core";
 import { textOnly } from "@lens-protocol/metadata";
 import { createPublicationMemory } from "./memory";
-import type { AnyPublicationFragment } from "@lens-protocol/client";
-import type StorjProvider from "./providers/StorjProvider";
+import { AnyPublicationFragment } from "@lens-protocol/client";
+import StorjProvider from "./providers/StorjProvider";
 
 export async function sendPublication({
     client,
