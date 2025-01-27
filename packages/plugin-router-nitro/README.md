@@ -9,7 +9,7 @@ The Router Nitro plugin enables seamless cross-chain token transfers and wallet 
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-router-nitro
+pnpm install @elizaos/plugin-router-nitro
 ```
 
 ## Configuration

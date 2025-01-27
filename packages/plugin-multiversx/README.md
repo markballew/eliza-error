@@ -27,7 +27,7 @@ Reuse providers and utilities from the existing actions where possible. Add more
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-multiversx
+pnpm install @elizaos/plugin-multiversx
 ```
 
 ## Configuration
@@ -146,13 +146,13 @@ const result = await eliza.execute({
 Run the test suite:
 
 ```bash
-bun test
+pnpm test
 ```
 
 Watch mode for development:
 
 ```bash
-bun test:watch
+pnpm test:watch
 ```
 
 ## Dependencies

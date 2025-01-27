@@ -9,7 +9,7 @@ The **Plugin Giphy** enhances your agent's interactions by enabling it to respon
 ## Installation
 
 ```bash
-bun add @elizaos/plugin-giphy
+pnpm add @elizaos/plugin-giphy
 ```
 
 ## Configuration

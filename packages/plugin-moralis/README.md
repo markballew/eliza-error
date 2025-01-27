@@ -9,7 +9,7 @@ The Plugin Moralis provides interfaces to fetch real-time DeFi data including tr
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-moralis
+pnpm install @elizaos/plugin-moralis
 ```
 
 ## Configuration

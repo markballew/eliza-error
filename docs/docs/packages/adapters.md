@@ -146,19 +146,19 @@ Key components:
 
 ```bash
 # PostgreSQL
-bun add @elizaos/adapter-postgres pg
+pnpm add @elizaos/adapter-postgres pg
 
 # SQLite
-bun add @elizaos/adapter-sqlite better-sqlite3
+pnpm add @elizaos/adapter-sqlite better-sqlite3
 
 # SQL.js
-bun add @elizaos/adapter-sqljs sql.js
+pnpm add @elizaos/adapter-sqljs sql.js
 
 # Supabase
-bun add @elizaos/adapter-supabase @supabase/supabase-js
+pnpm add @elizaos/adapter-supabase @supabase/supabase-js
 
 # PgLite
-bun add @elizaos/adapter-pglite @electric-sql/pglite
+pnpm add @elizaos/adapter-pglite @electric-sql/pglite
 ```
 
 ---

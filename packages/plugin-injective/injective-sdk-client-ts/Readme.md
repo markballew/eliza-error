@@ -92,13 +92,13 @@ The base class that provides fundamental gRPC functionality:
 ## Installation
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## Build and Use
 To build and use the project, run the following command
 ```bash
-bun run build
+pnpm build
 ```
 
 ## Usage

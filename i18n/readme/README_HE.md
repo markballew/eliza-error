@@ -62,7 +62,7 @@
 
 [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) -
 
-[bun](https://bun.io/installation) -
+[pnpm](https://pnpm.io/installation) -
 
 > **הערה למשתמשי Windows:** נדרש [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install-manual)
 
@@ -77,7 +77,7 @@ git clone https://github.com/elizaos/eliza-starter.git
 
 cp .env.example .env
 
-bun i && bun start
+pnpm i && pnpm start
 ```
 
 </div>
@@ -138,7 +138,7 @@ sh scripts/start.sh
 
 2. לטעינת דמויות מותאמות אישית:
 
-    - השתמש ב-`bun start --characters="path/to/your/character.json"`
+    - השתמש ב-`pnpm start --characters="path/to/your/character.json"`
     - ניתן לטעון מספר קבצי דמויות בו זמנית.
 
 3. התחבר עם X (טוויטר):
@@ -149,12 +149,12 @@ sh scripts/start.sh
 <div align="right">
 
 ```bash
-bun i
-bun run build
-bun start
+pnpm i
+pnpm build
+pnpm start
 
 # לעיתים צריך לנקות את הפרויקט אם חוזרים אליו לאחר זמן
-bun clean
+pnpm clean
 ```
 
 </div>
@@ -164,7 +164,7 @@ bun clean
 ייתכן שתצטרך להתקין את Sharp. אם אתה רואה שגיאה בעת ההפעלה, נסה להתקין עם הפקודה הבאה:
 
 ```
-bun install --include=optional sharp
+pnpm install --include=optional sharp
 ```
 
 ### קהילה ויצירת קשר

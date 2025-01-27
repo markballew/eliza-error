@@ -9,7 +9,7 @@ The Abstract plugin enables seamless token transfers on the Abstract testnet. It
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-abstract
+pnpm install @elizaos/plugin-abstract
 ```
 
 ## Configuration
@@ -87,19 +87,19 @@ Transfers tokens from the agent's wallet to another address.
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run the plugin:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 ## Future Enhancements

@@ -9,7 +9,7 @@ The Aptos plugin enables seamless token transfers and wallet management on the A
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-aptos
+pnpm install @elizaos/plugin-aptos
 ```
 
 ## Configuration
@@ -110,25 +110,25 @@ Provides wallet information and portfolio tracking.
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run tests:
 
 ```bash
-bun run test
+pnpm run test
 ```
 
 5. Development mode:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 ## Dependencies

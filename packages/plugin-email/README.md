@@ -30,7 +30,7 @@ The following settings will be declared on your environment variable or inside y
 1. Install the Plugin: First, import the plugin into your agent by running the following command:
 
 ```
-bun add @elizaos/plugin-email
+pnpm add @elizaos/plugin-email
 ```
 
 2. Send Emails: You can send emails using the following method:

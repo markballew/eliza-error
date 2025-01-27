@@ -17,7 +17,7 @@ The Plugin Image Generation offers developers tools to handle image-related oper
 To install the plugin, use the following command:
 
 ```bash
-bun install plugin-image-generation
+pnpm install plugin-image-generation
 ```
 
 ## Configuration Requirements
@@ -131,7 +131,7 @@ Include sample projects in the `examples/` directory for users to reference.
 
 ### Testing Guide
 
-- Run tests using `bun test`.
+- Run tests using `pnpm test`.
 - Ensure integration tests cover all major functionalities.
 
 ### Plugin Development Guide

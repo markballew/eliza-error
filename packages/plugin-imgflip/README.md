@@ -9,7 +9,7 @@ The Imgflip plugin provides a GENERATE_MEME action that can be used to generate 
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-imgflip
+pnpm install @elizaos/plugin-imgflip
 ```
 
 ## Features
@@ -24,13 +24,13 @@ bun install @elizaos/plugin-imgflip
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 ## Dependencies

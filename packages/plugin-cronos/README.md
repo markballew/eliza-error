@@ -19,7 +19,7 @@ Cronos plugin for Eliza, extending the EVM plugin functionality.
 ## Installation
 
 ```bash
-bun add @elizaos/plugin-cronos
+pnpm add @elizaos/plugin-cronos
 ```
 
 ## Usage

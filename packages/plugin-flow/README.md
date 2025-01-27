@@ -9,7 +9,7 @@ This plugin provides essential functionality for interacting with the Flow block
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-flow
+pnpm install @elizaos/plugin-flow
 ```
 
 ## Configuration
@@ -110,19 +110,19 @@ interface TransferContent {
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run tests:
 
 ```bash
-bun run test
+pnpm run test
 ```
 
 ## Future Enhancements

@@ -18,7 +18,7 @@ This plugin provides the following features:
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-dcap
+pnpm install @elizaos/plugin-dcap
 ```
 
 ## Configuration
@@ -61,19 +61,19 @@ The plugin provides an action `dcapOnChainVerifyAction` which will be triggered 
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run tests:
 
 ```bash
-bun test
+pnpm test
 ```
 
 We are welcom to any feedback and contributions!

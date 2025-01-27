@@ -9,7 +9,7 @@ The DKG plugin extends ElizaOS functionality by allowing agents to interact with
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-dkg
+pnpm install @elizaos/plugin-dkg
 ```
 
 ## Features
@@ -46,19 +46,19 @@ bun install @elizaos/plugin-dkg
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run linting:
 
 ```bash
-bun run lint
+pnpm run lint
 ```
 
 ## Usage
@@ -81,7 +81,7 @@ bun run lint
 - Create a character file in the `characters` folder.
 - Run the character using the following command:
     ```bash
-    bun start --characters="characters/chatdkg.character.json"
+    pnpm start --characters="characters/chatdkg.character.json"
     ```
 
 ### Notes

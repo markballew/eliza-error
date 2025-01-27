@@ -55,36 +55,39 @@ jobs:
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: "23"
+                  node-version: "20"
 
-            - name: Install bun
-              - uses: oven-sh/setup-bun@v2
+            - name: Install pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+                  run_install: false
 
             - name: Update lockfile
               working-directory: scripts/jsdoc-automation
               run: |
                   echo "Updating lockfile..."
-                  bun install
+                  pnpm install --no-frozen-lockfile
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
                   git config --global user.name "github-actions[bot]"
-                  git add bun.lockb
-                  git commit -m "chore: update bun lockfile" || echo "No changes to commit"
+                  git add pnpm-lock.yaml
+                  git commit -m "chore: update pnpm lockfile" || echo "No changes to commit"
                   git push || echo "No changes to push"
 
             - name: Install root dependencies
-              run: bun install
+              run: pnpm install --no-frozen-lockfile
 
             - name: Install package dependencies
               working-directory: scripts/jsdoc-automation
-              run: bun install
+              run: pnpm install --no-frozen-lockfile
 
             - name: Build TypeScript
               working-directory: scripts/jsdoc-automation
-              run: bun run build
+              run: pnpm build
 
             - name: Run documentation generator
               working-directory: scripts/jsdoc-automation
-              run: bun start
+              run: pnpm start
               env:
                   INPUT_ROOT_DIRECTORY: ${{ inputs.root_directory }}
                   INPUT_PULL_NUMBER: ${{ inputs.pull_number }}

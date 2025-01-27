@@ -80,9 +80,9 @@ Create or modify `characters/your-character.json`:
 npm run dev
 ```
 
-## Or using bun:
+## Or using pnpm:
 
 ```bash
-bun start --character="characters/your-character.json"
+pnpm start --character="characters/your-character.json"
 ```
 

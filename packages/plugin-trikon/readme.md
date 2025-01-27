@@ -7,7 +7,7 @@ Trikon plugin for Eliza OS that provides token transfer functionality.
 This plugin is a Proof of Concept (POC) implementation for Trikon token transfers within the Eliza ecosystem. It provides basic token transfer capabilities and wallet management.
 
 ## Installation
-bun add @elizaos/plugin-trikon
+pnpm add @elizaos/plugin-trikon
 
 ## Configuration
 

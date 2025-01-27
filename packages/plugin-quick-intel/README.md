@@ -9,7 +9,7 @@ This plugin enables comprehensive token security analysis using QuickIntel's API
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-quickintel
+pnpm install @elizaos/plugin-quickintel
 ```
 
 ## Configuration

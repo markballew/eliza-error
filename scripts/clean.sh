@@ -11,8 +11,8 @@ find . -type d -name "node_modules" -exec rm -rf {} + \
 # Remove core cache
 rm -rf ./packages/core/cache
 
-# Remove bun lockfile
-rm ./bun.lockb
+# Remove pnpm lockfile
+rm ./pnpm-lock.yaml
 
 echo "Cleanup completed."
 exit 0

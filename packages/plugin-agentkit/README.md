@@ -7,7 +7,7 @@ AgentKit plugin for Eliza that enables interaction with CDP AgentKit tools for N
 1. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 2. Configure environment variables:
@@ -80,13 +80,13 @@ What's my current balance?
 1. Build the plugin:
 
 ```bash
-bun run build
+pnpm build
 ```
 
 2. Run in development mode:
 
 ```bash
-bun dev
+pnpm dev
 ```
 
 ## Dependencies

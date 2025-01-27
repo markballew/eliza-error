@@ -11,7 +11,7 @@ The Football plugin integrates with the [Football-Data.org API](https://www.foot
 To install the plugin, use the following command:
 
 ```bash
-bun install @elizaos/plugin-football
+pnpm install @elizaos/plugin-football
 ```
 
 ## Features
@@ -131,26 +131,26 @@ console.log(result);
 
     ```bash
     cd packages/plugin-football
-    bun install
+    pnpm install
     ```
 
 3. Build the plugin:
 
     ```bash
-    bun run build
+    pnpm run build
     ```
 
 4. Run linting:
 
     ```bash
-    bun run lint
+    pnpm run lint
     ```
 
 5. Test the plugin:
 
     ```bash
-    bun vitest src/tests/match-action.test.ts
-    bun vitest src/tests/fetch-standings-action.test.ts
+    pnpm vitest src/tests/match-action.test.ts
+    pnpm vitest src/tests/fetch-standings-action.test.ts
     ```
 
 ## Dependencies

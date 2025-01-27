@@ -17,7 +17,7 @@ The plugin supports both QUADRATIC and LOGRITHMIC formulas, optimizing for diffe
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-form
+pnpm install @elizaos/plugin-form
 ```
 
 ## Configuration

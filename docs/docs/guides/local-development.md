@@ -15,7 +15,7 @@ You can develop either in a **dev container** or directly on your **host machine
 ```bash
 # Required
 Node.js (v23+; not required if using the dev container)
-bun (not required if using the dev container)
+pnpm (not required if using the dev container)
 Git
 
 VS Code (mandatory for using the dev container or coding)
@@ -56,10 +56,10 @@ cd eliza
 
 ```bash
 # Install dependencies
-bun install
+pnpm install
 
 # Install optional dependencies
-bun install --include=optional sharp
+pnpm install --include=optional sharp
 ```
 
 ### 4. Environment Configuration
@@ -95,41 +95,41 @@ npx --no node-llama-cpp source download --gpu cuda
 
 ```bash
 # Start with default character
-bun run dev
+pnpm run dev
 
 # Start with specific character
-bun run dev --characters="characters/my-character.json"
+pnpm run dev --characters="characters/my-character.json"
 
 # Start with multiple characters
-bun run dev --characters="characters/char1.json,characters/char2.json"
+pnpm run dev --characters="characters/char1.json,characters/char2.json"
 ```
 
 ### Development Commands
 
 ```bash
-bun run build          # Build the project
-bun run clean         # Clean build artifacts
-bun run dev           # Start development server
-bun run test          # Run tests
-bun run test:watch    # Run tests in watch mode
-bun run lint          # Lint code
+pnpm run build          # Build the project
+pnpm run clean         # Clean build artifacts
+pnpm run dev           # Start development server
+pnpm run test          # Run tests
+pnpm run test:watch    # Run tests in watch mode
+pnpm run lint          # Lint code
 ```
 
 ### Direct Client Chat UI
 
 ```
 # Open a terminal and Start with specific character
-bun run dev --characters="characters/my-character.json"
+pnpm run dev --characters="characters/my-character.json"
 ```
 
 ```
 # Open a 2nd terminal and start the client
-bun start:client
+pnpm start:client
 ```
 
 NOTE: If you are using devcontainer, add --host argument to client:
 ```
-bun start:client --host
+pnpm start:client --host
 ```
 
 Look for the message:
@@ -160,13 +160,13 @@ const db = new SqlJsDatabaseAdapter(new Database(":memory:"));
 
 ```bash
 # Create new migration
-bun run migration:create
+pnpm run migration:create
 
 # Run migrations
-bun run migration:up
+pnpm run migration:up
 
 # Rollback migrations
-bun run migration:down
+pnpm run migration:down
 ```
 
 ## Testing
@@ -175,17 +175,17 @@ bun run migration:down
 
 ```bash
 # Run all tests
-bun test
+pnpm test
 
 # Run specific test file
-bun test tests/specific.test.ts
+pnpm test tests/specific.test.ts
 
 # Run tests with coverage
-bun test:coverage
+pnpm test:coverage
 
 # Run database-specific tests
-bun test:sqlite
-bun test:sqljs
+pnpm test:sqlite
+pnpm test:sqljs
 ```
 
 ### Writing Tests
@@ -298,7 +298,7 @@ debug("Operation details: %O", {
 
 ```bash
 # Increase Node.js memory for development
-NODE_OPTIONS="--max-old-space-size=8192" bun run dev
+NODE_OPTIONS="--max-old-space-size=8192" pnpm run dev
 ```
 
 ## Common Development Tasks
@@ -399,7 +399,7 @@ rm -rf ./models/*
 
 ```bash
 # Test database connection
-bun run test:db-connection
+pnpm run test:db-connection
 ```
 
 3. Memory Issues
@@ -413,13 +413,13 @@ node --trace-gc index.js
 
 ```bash
 # Generate TypeScript documentation
-bun run docs:generate
+pnpm run docs:generate
 
 # Check for circular dependencies
-bun run madge
+pnpm run madge
 
 # Analyze bundle size
-bun run analyze
+pnpm run analyze
 ```
 
 ## Best Practices

@@ -16,7 +16,7 @@ A Discord client implementation for ElizaOS, enabling rich integration with Disc
 As this is a workspace package, it's installed as part of the ElizaOS monorepo:
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## Configuration

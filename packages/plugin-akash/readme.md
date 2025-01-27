@@ -11,7 +11,7 @@ A powerful plugin for interacting with the Akash Network, enabling deployment ma
 ## Installation
 
 ```bash
-bun add @elizaos/plugin-akash
+pnpm add @elizaos/plugin-akash
 ```
 
 ## Configuration
@@ -116,12 +116,12 @@ The plugin includes comprehensive error handling with specific error codes:
 
 ### Running Tests
 ```bash
-bun test
+pnpm test
 ```
 
 ### Building
 ```bash
-bun run build
+pnpm run build
 ```
 
 ## License

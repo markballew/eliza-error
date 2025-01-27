@@ -50,7 +50,7 @@ The Agent Package (`@elizaos/agent`) serves as the orchestration layer for Eliza
 ## Installation
 
 ```bash
-bun add @elizaos/agent
+pnpm add @elizaos/agent
 ```
 
 ## Quick Start

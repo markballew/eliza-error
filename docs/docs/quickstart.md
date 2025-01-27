@@ -9,7 +9,7 @@ sidebar_position: 2
 Before getting started with Eliza, ensure you have:
 
 - [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) (using [nvm](https://github.com/nvm-sh/nvm) is recommended)
-- [bun 9+](https://bun.io/installation)
+- [pnpm 9+](https://pnpm.io/installation)
 - Git for version control
 - A code editor ([VS Code](https://code.visualstudio.com/), [Cursor](https://cursor.com/) or [VSCodium](https://vscodium.com) recommended)
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) (optional, for GPU acceleration)
@@ -38,7 +38,7 @@ git checkout $(git describe --tags --abbrev=0)
 Install dependencies
 
 ```bash
-bun install
+pnpm install --no-frozen-lockfile
 ```
 
 **Note:** Please only use the `--no-frozen-lockfile` option when you're initially instantiating the repo or are bumping the version of a package or adding a new package to your package.json. This practice helps maintain consistency in your project's dependencies and prevents unintended changes to the lockfile.
@@ -46,7 +46,7 @@ bun install
 Build the local libraries
 
 ```bash
-bun run build
+pnpm build
 ```
 
 ## **Configure Environment**
@@ -120,13 +120,13 @@ cp characters/sbf.character.json characters/deep-thought.character.json
 Inform it which character you want to run:
 
 ```bash
-bun start --character="characters/deep-thought.character.json"
+pnpm start --character="characters/deep-thought.character.json"
 ```
 
 You can load multiple characters with a comma-separated list:
 
 ```bash
-bun start --characters="characters/deep-thought.character.json, characters/sbf.character.json"
+pnpm start --characters="characters/deep-thought.character.json, characters/sbf.character.json"
 ```
 
 **Interact with the Agent**
@@ -136,7 +136,7 @@ Now you're ready to start a conversation with your agent.
 Open a new terminal window and run the client's http server.
 
 ```bash
-bun start:client
+pnpm start:client
 ```
 
 Once the client is running, you'll see a message like this:
@@ -194,13 +194,13 @@ npx --no node-llama-cpp source download --gpu cuda
 
 ```bash
 # Start chat interface
-bun start
+pnpm start
 ```
 
 ### Run Multiple Agents
 
 ```bash
-bun start --characters="characters/trump.character.json,characters/tate.character.json"
+pnpm start --characters="characters/trump.character.json,characters/tate.character.json"
 ```
 
 ## Common Issues & Solutions
@@ -211,10 +211,10 @@ bun start --characters="characters/trump.character.json,characters/tate.characte
 - Use `node -v` to check version
 - Consider using [nvm](https://github.com/nvm-sh/nvm) to manage Node versions
 
-NOTE: bun may be bundled with a different node version, ignoring nvm. If this is the case, you can use
+NOTE: pnpm may be bundled with a different node version, ignoring nvm. If this is the case, you can use
 
 ```bash
-bun env use --global 23.3.0
+pnpm env use --global 23.3.0
 ```
 
 to force it to use the correct one.
@@ -223,7 +223,7 @@ to force it to use the correct one.
 If you see Sharp-related errors:
 
 ```bash
-bun install --include=optional sharp
+pnpm install --include=optional sharp
 ```
 
 3. **CUDA Setup**
@@ -247,25 +247,25 @@ You can try these steps, which aim to add `@types/node` to various parts of the 
 
 ```
 # Add dependencies to workspace root
-bun add -w -D ts-node typescript @types/node
+pnpm add -w -D ts-node typescript @types/node
 
 # Add dependencies to the agent package specifically
-bun add -D ts-node typescript @types/node --filter "@elizaos/agent"
+pnpm add -D ts-node typescript @types/node --filter "@elizaos/agent"
 
 # Also add to the core package since it's needed there too
-bun add -D ts-node typescript @types/node --filter "@elizaos/core"
+pnpm add -D ts-node typescript @types/node --filter "@elizaos/core"
 
 # First clean everything
-bun clean
+pnpm clean
 
 # Install all dependencies recursively
-bun install -r
+pnpm install -r
 
 # Build the project
-bun run build
+pnpm build
 
 # Then try to start
-bun start
+pnpm start
 ```
 
 5. **Better sqlite3 was compiled against a different Node.js version**
@@ -281,19 +281,19 @@ NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
 You can try this, which will attempt to rebuild better-sqlite3.
 
 ```bash
-bun rebuild better-sqlite3
+pnpm rebuild better-sqlite3
 ```
 
 If that doesn't work, try clearing your node_modules in the root folder
 
 ```bash
-rm -fr node_modules; bun store prune
+rm -fr node_modules; pnpm store prune
 ```
 
 Then reinstall the requirements
 
 ```bash
-bun i
+pnpm i
 ```
 
 ## Next Steps

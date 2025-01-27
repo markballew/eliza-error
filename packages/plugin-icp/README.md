@@ -13,7 +13,7 @@ Internet Computer Protocol (ICP) plugin for Eliza OS.
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-icp
+pnpm install @elizaos/plugin-icp
 ```
 
 ## Configuration
@@ -163,19 +163,19 @@ createAnonymousActor<T>(idlFactory, canisterId, host?)
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run tests:
 
 ```bash
-bun test
+pnpm test
 ```
 
 ### Testing with Local Replica

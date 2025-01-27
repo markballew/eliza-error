@@ -9,7 +9,7 @@ The 0G plugin enables seamless integration with the Zero Gravity (0G) protocol f
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-0g
+pnpm install @elizaos/plugin-0g
 ```
 
 ## Configuration
@@ -96,19 +96,19 @@ interface UploadContent {
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run the plugin:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 ## Future Enhancements

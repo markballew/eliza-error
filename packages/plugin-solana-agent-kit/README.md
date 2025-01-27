@@ -5,7 +5,7 @@ A plugin that integrates Solana Agent Kit functionality into Eliza, enabling tok
 ## Installation
 
 ```bash
-bun add @elizaos/plugin-solana-agent-kit
+pnpm add @elizaos/plugin-solana-agent-kit
 ```
 
 ## Configuration

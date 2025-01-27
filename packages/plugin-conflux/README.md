@@ -9,7 +9,7 @@ The Conflux plugin enables seamless interaction with both Conflux Core Space and
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-conflux
+pnpm install @elizaos/plugin-conflux
 ```
 
 ## Configuration
@@ -137,19 +137,19 @@ interface PumpContent {
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run the plugin:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 ## Future Enhancements

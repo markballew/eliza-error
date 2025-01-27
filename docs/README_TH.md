@@ -26,7 +26,7 @@ _ดังที่เห็นขับเคลื่อนเเละถู�
 **ข้อกำหนดเบื้องต้น (ต้องมี):**
 
 - [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- [bun](https://bun.io/installation)
+- [pnpm](https://pnpm.io/installation)
 
 ### แก้ไขไฟล์ .env
 
@@ -36,13 +36,13 @@ _ดังที่เห็นขับเคลื่อนเเละถู�
 ### แก้ไขไฟล์ตัวละคร
 
 - ลองเข้าไปตรวจสอบไฟล์ `packages/core/src/defaultCharacter.ts` - คุณสามารถแก้ไขได้
-- คุณยังสามารถโหลดตัวละครด้วย `bun start --characters="path/to/your/character.json"` และเรียกใช้บอทหลายตัวพร้อมกันได้
+- คุณยังสามารถโหลดตัวละครด้วย `pnpm start --characters="path/to/your/character.json"` และเรียกใช้บอทหลายตัวพร้อมกันได้
 
 หลังจากตั้งค่าไฟล์ .env และไฟล์ตัวละครแล้ว คุณสามารถเริ่มบอทด้วยคำสั่งต่อไปนี้:
 
 ```
-bun i
-bun start
+pnpm i
+pnpm start
 ```
 
 # การปรับแต่ง Eliza
@@ -70,7 +70,7 @@ bun start
 คุณอาจต้องติดตั้ง Sharp หากพบข้อผิดพลาดเมื่อเริ่มต้น ให้ลองติดตั้งด้วยคำสั่งต่อไปนี้:
 
 ```
-bun install --include=optional sharp
+pnpm install --include=optional sharp
 ```
 
 # การตั้งค่าสภาพแวดล้อม
@@ -131,7 +131,7 @@ TOGETHER_API_KEY=
 หากคุณมี NVIDIA GPU คุณสามารถติดตั้ง CUDA เพื่อเพิ่มความเร็วการประมวลผลในเครื่องได้อย่างมาก:
 
 ```
-bun install
+pnpm install
 npx --no node-llama-cpp source download --gpu cuda
 ```
 
@@ -156,15 +156,15 @@ Hugging Face และส่งคิวรี่ในเครื่อง
 เพื่อรันชุดทดสอบ:
 
 ```bash
-bun test           # รันการทดสอบหนึ่งครั้ง
-bun test:watch    # รันการทดสอบในโหมดติดตาม
+pnpm test           # รันการทดสอบหนึ่งครั้ง
+pnpm test:watch    # รันการทดสอบในโหมดติดตาม
 ```
 
 สำหรับการทดสอบฐานข้อมูลเฉพาะ:
 
 ```bash
-bun test:sqlite   # รันการทดสอบด้วย SQLite
-bun test:sqljs    # รันการทดสอบด้วย SQL.js
+pnpm test:sqlite   # รันการทดสอบด้วย SQLite
+pnpm test:sqljs    # รันการทดสอบด้วย SQL.js
 ```
 
 การทดสอบถูกเขียนโดยใช้ Jest และสามารถพบได้ในไฟล์ `src/**/*.test.ts` การกำหนดค่าสภาพแวดล้อมถูกตั้งค่าเพื่อ:

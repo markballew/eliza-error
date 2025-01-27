@@ -28,7 +28,7 @@ interface Plugin {
 1. Install the desired plugin package:
 
 ```bash
-bun add @elizaos/plugin-[name]
+pnpm add @elizaos/plugin-[name]
 ```
 
 2. Import and register the plugin in your character configuration:

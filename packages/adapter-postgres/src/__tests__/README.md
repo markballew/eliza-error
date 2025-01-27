@@ -5,7 +5,7 @@ This directory contains tests for the PostgreSQL adapter with vector extension s
 ## Prerequisites
 
 - Docker installed and running
-- Node.js and bun installed
+- Node.js and pnpm installed
 - Bash shell (for Unix/Mac) or Git Bash (for Windows)
 
 ## Test Environment
@@ -43,7 +43,7 @@ If you prefer to run tests manually:
 
 3. Run tests:
    ```bash
-   bun vitest vector-extension.test.ts
+   pnpm vitest vector-extension.test.ts
    ```
 
 ## Test Structure

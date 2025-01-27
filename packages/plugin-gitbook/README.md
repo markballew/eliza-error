@@ -9,7 +9,7 @@ This plugin enables seamless integration with GitBook documentation, allowing na
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-gitbook
+pnpm install @elizaos/plugin-gitbook
 ```
 
 ## Configuration
@@ -139,19 +139,19 @@ interface GitBookClientConfig {
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run tests:
 
 ```bash
-bun test
+pnpm test
 ```
 
 ## Future Enhancements

@@ -11,7 +11,7 @@ This plugin provides functionality to:
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-initia
+pnpm install @elizaos/plugin-initia
 ```
 
 ## Configuration
@@ -38,13 +38,13 @@ Assistant: "Sure! I am going to send 1 INIT to init14l3c2vxrdvu6y0sqykppey930s4k
 ### Building
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 ### Testing
 
 ```bash
-bun run test
+pnpm run test
 ```
 
 ## Dependencies

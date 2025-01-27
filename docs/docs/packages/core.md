@@ -18,7 +18,7 @@ The Core Package (`@elizaos/core`) provides the fundamental building blocks of E
 ## Installation
 
 ```bash
-bun add @elizaos/core
+pnpm add @elizaos/core
 ```
 
 ## Key Components

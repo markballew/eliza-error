@@ -87,12 +87,12 @@ Follow the general installation and build steps from the README in the root of t
 #### 5. Run the agent
 Start the the agent with the following command:
 ```sh
-bun start --characters="characters/lpmanager.character.json"
+pnpm start --characters="characters/lpmanager.character.json"
 ```
 
 Start the client (chat terminal) with:
 ```sh
-bun start:client
+pnpm start:client
 ```
 
 #### 6. Start prompting

@@ -14,7 +14,7 @@ A powerful plugin to interact with smart contracts using Gelato Relay, supportin
 
 ## Prerequisites
 
--   bun
+-   pnpm
 -   A Gelato Relay API key
 
 ---
@@ -22,7 +22,7 @@ A powerful plugin to interact with smart contracts using Gelato Relay, supportin
 ## Installation
 
 ```
-bun install elizaos/plugin-gelato
+pnpm install elizaos/plugin-gelato
 ```
 
 ---

@@ -11,7 +11,7 @@ This plugin integrates Irys functionality into ElizaOS, allowing agents to store
 To install this plugin, run the following command:
 
 ```bash
-bun add @elizaos/plugin-irys
+pnpm add @elizaos/plugin-irys
 ```
 
 ## Features
@@ -306,7 +306,7 @@ interface IIrysService extends Service {
 To run the tests, you can use the following command:
 
 ```bash
-bun test
+pnpm test
 ```
 
 ## Contributing

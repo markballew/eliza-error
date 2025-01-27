@@ -35,7 +35,7 @@
 
 - [Python 2.7+](https://www.python.org/downloads/)
 - [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- [bun](https://bun.io/installation)
+- [pnpm](https://pnpm.io/installation)
 
 > **Windows Kullanıcıları İçin Not:** [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install-manual) gereklidir
 
@@ -52,7 +52,7 @@ cp .env.example .env
 1. Varsayılan karakteri değiştirmek için `packages/core/src/defaultCharacter.ts` dosyasını açın
 
 2. Özel karakterleri yüklemek için:
-    - `bun start --characters="path/to/your/character.json"` komutunu kullanın
+    - `pnpm start --characters="path/to/your/character.json"` komutunu kullanın
     - Birden fazla karakter dosyası aynı anda yüklenebilir
 
 ### Eliza'yı Başlatın
@@ -60,12 +60,12 @@ cp .env.example .env
 .env dosyasını ve karakter dosyasını ayarladıktan sonra, botu aşağıdaki komutla başlatabilirsiniz:
 
 ```bash
-bun i
-bun run build
-bun start
+pnpm i
+pnpm build
+pnpm start
 
 # Proje hızlı gelişiyor, projeye geri döndüğünüzde bazen projeyi temizlemeniz gerekebilir
-bun clean
+pnpm clean
 ```
 
 #### Ek Gereksinimler
@@ -73,7 +73,7 @@ bun clean
 Sharp'ı yüklemeniz gerekebilir. Başlatma sırasında bir hata görürseniz, aşağıdaki komutla yüklemeyi deneyin:
 
 ```
-bun install --include=optional sharp
+pnpm install --include=optional sharp
 ```
 
 ### Topluluk ve İletişim

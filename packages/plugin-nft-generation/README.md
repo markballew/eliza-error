@@ -21,7 +21,7 @@ This plugin provides comprehensive NFT functionality, including collection creat
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-nft-generation
+pnpm install @elizaos/plugin-nft-generation
 ```
 
 ## Configuration

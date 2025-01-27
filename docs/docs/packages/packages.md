@@ -39,13 +39,13 @@ graph TD
 
 ```
 # Install core package
-bun add @elizaos/core
+pnpm add @elizaos/core
 
 # Install specific adapters
-bun add @elizaos/adapter-postgres
-bun add @elizaos/adapter-sqlite
+pnpm add @elizaos/adapter-postgres
+pnpm add @elizaos/adapter-sqlite
 
 # Install clients
-bun add @elizaos/client-discord
-bun add @elizaos/client-Telegram
+pnpm add @elizaos/client-discord
+pnpm add @elizaos/client-Telegram
 ```

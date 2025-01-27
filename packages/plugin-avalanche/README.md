@@ -9,7 +9,7 @@ The Avalanche plugin enables comprehensive DeFi operations on the Avalanche netw
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-avalanche
+pnpm install @elizaos/plugin-avalanche
 ```
 
 ## Configuration
@@ -123,19 +123,19 @@ const TOKENS = {
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run linting:
 
 ```bash
-bun run lint
+pnpm run lint
 ```
 
 ## Dependencies

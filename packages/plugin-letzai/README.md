@@ -25,7 +25,7 @@ The plugin was not tested together with other image generation functionalities.
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-letzai
+pnpm install @elizaos/plugin-letzai
 ```
 
 
@@ -47,13 +47,13 @@ Inside the plugin's index.tsx file is a "improvePrompt" variable and some code t
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 

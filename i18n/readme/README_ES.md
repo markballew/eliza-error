@@ -25,7 +25,7 @@
 
 - [Python 2.7+](https://www.python.org/downloads/)
 - [Node.js 23.3+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-- [bun](https://bun.io/installation)
+- [pnpm](https://pnpm.io/installation)
 
 ### Edite el archivo .env
 
@@ -35,13 +35,13 @@
 ### Edite el archivo de personaje
 
 - Revise el archivo `packages/core/src/defaultCharacter.ts` - puede modificarlo
-- También puede cargar personajes con el comando `bun start --characters="path/to/your/character.json"` y ejecutar múltiples bots simultáneamente.
+- También puede cargar personajes con el comando `pnpm start --characters="path/to/your/character.json"` y ejecutar múltiples bots simultáneamente.
 
 Después de configurar el archivo .env y el archivo de personaje, puede iniciar el bot con:
 
 ```
-bun i
-bun start
+pnpm i
+pnpm start
 ```
 
 # Personalizando a Eliza
@@ -69,7 +69,7 @@ Puede ejecutar modelos OpenAI configurando la variable de ambiente `OPENAI_API_K
 Puede ser necesario instalar Sharp. Si encuentra un error al iniciar, intente instalarlo con:
 
 ```
-bun install --include=optional sharp
+pnpm install --include=optional sharp
 ```
 
 # Configuración del Entorno
@@ -133,7 +133,7 @@ TOGETHER_API_KEY=
 Si tiene una GPU NVIDIA, puede instalar CUDA para acelerar significativamente la inferencia local.
 
 ```
-bun install
+pnpm install
 npx --no node-llama-cpp source download --gpu cuda
 ```
 
@@ -156,15 +156,15 @@ Para ayuda con la configuración de su Bot de Discord, consulte: https://discord
 Para ejecutar la suite de pruebas:
 
 ```bash
-bun test           # Ejecutar pruebas una vez
-bun test:watch    # Ejecutar pruebas en modo observación
+pnpm test           # Ejecutar pruebas una vez
+pnpm test:watch    # Ejecutar pruebas en modo observación
 ```
 
 Para pruebas específicas de base de datos:
 
 ```bash
-bun test:sqlite   # Ejecutar pruebas con SQLite
-bun test:sqljs    # Ejecutar pruebas con SQL.js
+pnpm test:sqlite   # Ejecutar pruebas con SQLite
+pnpm test:sqljs    # Ejecutar pruebas con SQL.js
 ```
 
 Las pruebas están escritas con Jest y se pueden encontrar en archivos `src/**/*.test.ts`. El entorno de pruebas está configurado para:

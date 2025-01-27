@@ -20,7 +20,7 @@ The FerePro plugin enables real-time communication with the FerePro API through 
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-ferepro
+pnpm install @elizaos/plugin-ferepro
 ```
 
 ## Configuration
@@ -73,19 +73,19 @@ FERE_USER_ID=your-user-id-here  # Default: 1a5b4a29-9d95-44c8-aef3-05a8e515f43e
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run in development mode:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 ## API Reference

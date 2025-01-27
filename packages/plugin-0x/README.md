@@ -27,7 +27,7 @@ ZERO_EX_API_KEY=your_0x_api_key
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-0x
+pnpm install @elizaos/plugin-0x
 ```
 
 ## Usage

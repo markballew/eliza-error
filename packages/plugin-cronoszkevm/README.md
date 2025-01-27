@@ -9,7 +9,7 @@ The Cronos zkEVM plugin enables seamless token transfers on the Cronos zkEVM net
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-cronoszkevm
+pnpm install @elizaos/plugin-cronoszkevm
 ```
 
 ## Configuration
@@ -105,19 +105,19 @@ interface TransferContent {
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run the plugin:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 ## Common Token Addresses

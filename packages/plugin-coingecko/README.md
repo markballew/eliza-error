@@ -11,7 +11,7 @@ This plugin uses the [CoinGecko Pro API](https://docs.coingecko.com/reference/in
 ## Installation
 
 ```bash
-bun add @elizaos/plugin-coingecko
+pnpm add @elizaos/plugin-coingecko
 ```
 
 ## Configuration

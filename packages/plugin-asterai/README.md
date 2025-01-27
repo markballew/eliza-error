@@ -14,7 +14,7 @@ and agents.
 ## Installation
 
 ```bash
-bun install @elizaos/plugin-asterai
+pnpm install @elizaos/plugin-asterai
 ```
 
 ## Configuration
@@ -55,19 +55,19 @@ Eliza will then query the asterai agent to fetch the information.
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Build the plugin:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 4. Run tests:
 
 ```bash
-bun run test
+pnpm run test
 ```
 
 ## Contributing
