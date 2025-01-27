@@ -20,7 +20,6 @@ export interface CreateTokenContent extends Content {
     decimals: string;
     amount: string;
 }
-import { isUserAuthorized } from "../utils/accessTokenManagement";
 
 const createTokenTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -58,25 +57,9 @@ export default {
         message: Memory,
         state: State,
         _options: { [key: string]: unknown },
-        callback?: HandlerCallback
+        callback?: HandlerCallback,
     ) => {
         elizaLogger.log("Starting CREATE_TOKEN handler...");
-
-        console.log("Handler initialized. Checking user authorization...");
-
-        if (!isUserAuthorized(message.userId, runtime)) {
-            console.error(
-                "Unauthorized user attempted to create a token:",
-                message.userId
-            );
-            if (callback) {
-                callback({
-                    text: "You do not have permission to create a token.",
-                    content: { error: "Unauthorized user" },
-                });
-            }
-            return false;
-        }
 
         // Initialize or update state
         if (!state) {
