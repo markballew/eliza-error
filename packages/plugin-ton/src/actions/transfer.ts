@@ -1,8 +1,8 @@
 import {
     elizaLogger,
     composeContext,
-    type Content,
-    type HandlerCallback,
+    Content,
+    HandlerCallback,
     ModelClass,
     generateObject,
     type IAgentRuntime,
@@ -10,10 +10,10 @@ import {
     type State,
 } from "@elizaos/core";
 import { z } from "zod";
-import { sleep, base64ToHex } from "../util.ts";
+
 import {
     initWalletProvider,
-    type WalletProvider,
+    WalletProvider,
     nativeWalletProvider,
 } from "../providers/wallet";
 import { internal } from "@ton/ton";
@@ -50,27 +50,13 @@ Given the recent messages, extract the following information about the requested
 
 Respond with a JSON markdown block containing only the extracted values.`;
 
-// Add interface for contract methods
-interface TonWalletContract {
-    getSeqno: () => Promise<number>;
-}
-
-interface ActionOptions {
-    [key: string]: unknown;
-}
-
 export class TransferAction {
-    private walletProvider: WalletProvider;
-
-    constructor(walletProvider: WalletProvider) {
-        this.walletProvider = walletProvider;
-    }
+    constructor(private walletProvider: WalletProvider) {}
 
     async transfer(params: TransferContent): Promise<string> {
         console.log(
-            `Transferring: ${params.amount} tokens to (${params.recipient})`,
+            `Transferring: ${params.amount} tokens to (${params.recipient})`
         );
-        // { recipient: 'xx', amount: '0\\.3'}
 
         const walletClient = this.walletProvider.getWalletClient();
         const contract = walletClient.open(this.walletProvider.wallet);
@@ -78,64 +64,42 @@ export class TransferAction {
         try {
             // Create a transfer
             const seqno: number = await contract.getSeqno();
-            await sleep(1500);
-            const transfer = contract.createTransfer({
+            const transfer = await contract.createTransfer({
                 seqno,
                 secretKey: this.walletProvider.keypair.secretKey,
                 messages: [
                     internal({
-                        value: params.amount.toString().replace(/\\/g, ""),
+                        value: params.amount.toString(),
                         to: params.recipient,
                         body: "eliza ton wallet plugin",
-                        bounce: false,
                     }),
                 ],
             });
-            await sleep(1500);
+
             await contract.send(transfer);
-            console.log("Transaction sent, still waiting for confirmation...");
-            await sleep(1500);
-            //this.waitForTransaction(seqno, contract);
-            const state = await walletClient.getContractState(
-                this.walletProvider.wallet.address,
-            );
-            const { lt: _, hash: lastHash } = state.lastTransaction;
-            return base64ToHex(lastHash);
+
+            // await this.waitForTransaction(seqno, contract);
+
+            return transfer.hash().toString("hex");
         } catch (error) {
             throw new Error(`Transfer failed: ${error.message}`);
         }
-    }
-
-    async waitForTransaction(seqno: number, contract: TonWalletContract) {
-        let currentSeqno = seqno;
-        const startTime = Date.now();
-        const TIMEOUT = 120000; // 2 minutes
-
-        while (currentSeqno === seqno) {
-            if (Date.now() - startTime > TIMEOUT) {
-                throw new Error("Transaction confirmation timed out after 2 minutes");
-            }
-            await sleep(2000);
-            currentSeqno = await contract.getSeqno();
-        }
-        console.log("transaction confirmed!");
     }
 }
 
 const buildTransferDetails = async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
+    state: State
 ): Promise<TransferContent> => {
     const walletInfo = await nativeWalletProvider.get(runtime, message, state);
     state.walletInfo = walletInfo;
 
     // Initialize or update state
-    let currentState = state;
-    if (!currentState) {
-        currentState = (await runtime.composeState(message)) as State;
+    if (!state) {
+        state = (await runtime.composeState(message)) as State;
     } else {
-        currentState = await runtime.updateRecentMessageState(currentState);
+        state = await runtime.updateRecentMessageState(state);
     }
 
     // Define the schema for the expected output
@@ -158,33 +122,28 @@ const buildTransferDetails = async (
         modelClass: ModelClass.SMALL,
     });
 
-    let transferContent: TransferContent = content.object as TransferContent;
-
-    if (transferContent === undefined) {
-        transferContent = content as unknown as TransferContent;
-    }
+    const transferContent = content.object as TransferContent;
 
     return transferContent;
 };
 
 export default {
-    name: "SEND_TON_TOKEN",
-    similes: ["SEND_TON", "SEND_TON_TOKENS"],
-    description:
-        "Call this action to send TON tokens to another wallet address. Supports sending any amount of TON to any valid TON wallet address. Transaction will be signed and broadcast to the TON blockchain.",
+    name: "SEND_TOKEN",
+    similes: ["SEND_TOKENS", "TOKEN_TRANSFER", "MOVE_TOKENS", "SEND_TON"],
+    description: "Transfer tokens from the agent's wallet to another",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: ActionOptions,
-        callback?: HandlerCallback,
+        options: any,
+        callback?: HandlerCallback
     ) => {
         elizaLogger.log("Starting SEND_TOKEN handler...");
 
         const transferDetails = await buildTransferDetails(
             runtime,
             message,
-            state,
+            state
         );
 
         // Validate transfer content
@@ -200,14 +159,12 @@ export default {
         }
 
         try {
-            // TODO check token balance before transfer
             const walletProvider = await initWalletProvider(runtime);
             const action = new TransferAction(walletProvider);
             const hash = await action.transfer(transferDetails);
 
             if (callback) {
                 callback({
-                    // TODO wait for transaction to complete
                     text: `Successfully transferred ${transferDetails.amount} TON to ${transferDetails.recipient}, Transaction: ${hash}`,
                     content: {
                         success: true,
@@ -231,8 +188,7 @@ export default {
         }
     },
     template: transferTemplate,
-    // eslint-disable-next-line
-    validate: async (_runtime: IAgentRuntime) => {
+    validate: async (runtime: IAgentRuntime) => {
         //console.log("Validating TON transfer from user:", message.userId);
         return true;
     },
@@ -242,64 +198,20 @@ export default {
                 user: "{{user1}}",
                 content: {
                     text: "Send 1 TON tokens to EQCGScrZe1xbyWqWDvdI6mzP-GAcAWFv6ZXuaJOuSqemxku4",
-                    action: "SEND_TON_TOKEN",
+                    action: "SEND_TOKENS",
                 },
             },
             {
                 user: "{{user2}}",
                 content: {
                     text: "I'll send 1 TON tokens now...",
-                    action: "SEND_TON_TOKEN",
+                    action: "SEND_TOKENS",
                 },
             },
             {
                 user: "{{user2}}",
                 content: {
                     text: "Successfully sent 1 TON tokens to EQCGScrZe1xbyWqWDvdI6mzP-GAcAWFv6ZXuaJOuSqemxku4, Transaction: c8ee4a2c1bd070005e6cd31b32270aa461c69b927c3f4c28b293c80786f78b43",
-                },
-            },
-        ],
-        [
-            {
-                user: "{{user1}}",
-                content: {
-                    text: "Transfer 0.5 TON to EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N",
-                    action: "SEND_TON_TOKEN",
-                },
-            },
-            {
-                user: "{{user2}}",
-                content: {
-                    text: "Processing transfer of 0.5 TON...",
-                    action: "SEND_TON_TOKEN",
-                },
-            },
-            {
-                user: "{{user2}}",
-                content: {
-                    text: "Successfully sent 0.5 TON to EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N, Transaction: c8ee4a2c1bd070005e6cd31b32270aa461c69b927c3f4c28b293c80786f78b43",
-                },
-            },
-        ],
-        [
-            {
-                user: "{{user1}}",
-                content: {
-                    text: "Please move 2.5 TON to EQByzSQE5Mf_UBf5YYVF_fRhP_oZwM_h7mGAymWBjxkY5yVm",
-                    action: "SEND_TON_TOKEN",
-                },
-            },
-            {
-                user: "{{user2}}",
-                content: {
-                    text: "Initiating transfer of 2.5 TON...",
-                    action: "SEND_TON_TOKEN",
-                },
-            },
-            {
-                user: "{{user2}}",
-                content: {
-                    text: "Successfully sent 2.5 TON to EQByzSQE5Mf_UBf5YYVF_fRhP_oZwM_h7mGAymWBjxkY5yVm, Transaction: c8ee4a2c1bd070005e6cd31b32270aa461c69b927c3f4c28b293c80786f78b43",
                 },
             },
         ],

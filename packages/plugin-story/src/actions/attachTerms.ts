@@ -2,20 +2,20 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    IAgentRuntime,
+    Memory,
+    State,
 } from "@elizaos/core";
 import { WalletProvider } from "../providers/wallet";
 import { attachTermsTemplate } from "../templates";
-import type {
+import {
     AttachLicenseTermsResponse,
     LicenseTerms,
     RegisterPILResponse,
 } from "@story-protocol/core-sdk";
-import type { AttachTermsParams } from "../types";
+import { AttachTermsParams } from "../types";
 import { zeroAddress } from "viem";
 
 export { attachTermsTemplate };
@@ -81,21 +81,20 @@ export const attachTermsAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        options: any,
         callback?: HandlerCallback
     ): Promise<boolean> => {
         elizaLogger.log("Starting ATTACH_TERMS handler...");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        // initialize or update state
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         const attachTermsContext = composeContext({
-            state: currentState,
+            state,
             template: attachTermsTemplate,
         });
 

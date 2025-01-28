@@ -1,9 +1,9 @@
 import {
     elizaLogger,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
+    State,
     type Action,
 } from "@elizaos/core";
 
@@ -82,9 +82,9 @@ export const blockchainChatAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         _state: State,
-        _options: Record<string, unknown>,  // Replaced any with Record<string, unknown>
+        _options: any,
         callback: HandlerCallback
-    ): Promise<Record<string, unknown> | ReadableStream> => { 
+    ): Promise<any> => {
         try {
             elizaLogger.log("Starting blockchain chat handler");
             const secretKey =

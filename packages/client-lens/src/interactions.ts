@@ -2,12 +2,12 @@ import {
     composeContext,
     generateMessageResponse,
     generateShouldRespond,
-    type Memory,
+    Memory,
     ModelClass,
     stringToUuid,
     elizaLogger,
-    type HandlerCallback,
-    type Content,
+    HandlerCallback,
+    Content,
     type IAgentRuntime,
 } from "@elizaos/core";
 import type { LensClient } from "./client";
@@ -21,9 +21,9 @@ import {
 } from "./prompts";
 import { publicationUuid } from "./utils";
 import { sendPublication } from "./actions";
-import type { AnyPublicationFragment } from "@lens-protocol/client";
-import type { Profile } from "./types";
-import type StorjProvider from "./providers/StorjProvider";
+import { AnyPublicationFragment } from "@lens-protocol/client";
+import { Profile } from "./types";
+import StorjProvider from "./providers/StorjProvider";
 
 export class LensInteractionManager {
     private timeout: NodeJS.Timeout | undefined;
@@ -97,29 +97,13 @@ export class LensInteractionManager {
                 publication: mention,
             });
 
-            function hasContent(metadata: any): metadata is { content: string } {
-                return metadata && typeof metadata.content === 'string';
-            }
-
-            let memory: Memory;
-            if (
-                (mention.__typename === 'Post' || mention.__typename === 'Comment' || mention.__typename === 'Quote') &&
-                hasContent(mention.metadata)
-            ) {
-                memory = {
-                    content: { text: mention.metadata.content, hash: mention.id },
-                    agentId: this.runtime.agentId,
-                    userId,
-                    roomId,
-                };
-            } else {
-                memory = {
-                    content: { text: '[No Content]', hash: mention.id },
-                    agentId: this.runtime.agentId,
-                    userId,
-                    roomId,
-                };
-            }
+            const memory: Memory = {
+                // @ts-ignore Metadata
+                content: { text: mention.metadata.content, hash: mention.id },
+                agentId: this.runtime.agentId,
+                userId,
+                roomId,
+            };
 
             await this.handlePublication({
                 agent,
@@ -162,24 +146,10 @@ export class LensInteractionManager {
             timeline
         );
 
-        function hasContent(metadata: any): metadata is { content: string } {
-            return metadata && typeof metadata.content === 'string';
-        }
-
         const formattedConversation = thread
             .map((pub) => {
-                if ('metadata' in pub && hasContent(pub.metadata)) {
-                    const content = pub.metadata.content;
-                    return `@${pub.by.handle?.localName} (${new Date(
-                        pub.createdAt
-                    ).toLocaleString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        month: "short",
-                        day: "numeric",
-                    })}):
-                    ${content}`;
-                }
+                // @ts-ignore Metadata
+                const content = pub.metadata.content;
                 return `@${pub.by.handle?.localName} (${new Date(
                     pub.createdAt
                 ).toLocaleString("en-US", {
@@ -188,7 +158,7 @@ export class LensInteractionManager {
                     month: "short",
                     day: "numeric",
                 })}):
-                [No Content Available]`;
+                ${content}`;
             })
             .join("\n\n");
 
@@ -268,7 +238,7 @@ export class LensInteractionManager {
 
         const callback: HandlerCallback = async (
             content: Content,
-            _files: any[]
+            files: any[]
         ) => {
             try {
                 if (memoryId && !content.inReplyTo) {

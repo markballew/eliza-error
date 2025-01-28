@@ -1,9 +1,8 @@
-import {elizaLogger, type IAgentRuntime, type Memory, type Provider, type State} from "@elizaos/core";
+import {elizaLogger, IAgentRuntime, Memory, Provider, State} from "@elizaos/core";
 import {TwitterScraper} from "../util/twitterScraper.ts";
 
 const tweetProvider: Provider = {
-    // eslint-disable-next-line
-    get: async (_runtime: IAgentRuntime, _message: Memory, _state?: State) => {
+    get: async (runtime: IAgentRuntime, message: Memory, _state?: State) => {
         const scraperWithPrimus = new TwitterScraper();
         try {
             elizaLogger.info("Attempting Twitter login");

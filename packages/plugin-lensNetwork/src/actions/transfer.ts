@@ -1,11 +1,11 @@
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
     elizaLogger,
     composeContext,
@@ -13,10 +13,13 @@ import {
 } from "@elizaos/core";
 import { validateLensConfig } from "../environment";
 import { getDefaultProvider, Network, Wallet } from "@lens-network/sdk/ethers";
-import { ethers } from "ethers";
+import { ethers, formatEther } from "ethers";
 
 import {
-    type Address,
+    Address,
+    createWalletClient,
+    erc20Abi,
+    http,
     parseEther,
     isAddress,
 } from "viem";
@@ -81,7 +84,7 @@ Given the recent messages, extract the following information about the requested
 
 Respond with a JSON markdown block containing only the extracted values.`;
 
-//const ETH_ADDRESS = "0x000000000000000000000000000000000000800A";
+const ETH_ADDRESS = "0x000000000000000000000000000000000000800A";
 
 export async function setupProviders() {
     // Initialize providers for both L2 (Lens) and L1 (Ethereum)
@@ -150,7 +153,6 @@ export default {
         "MOVE_TOKENS_ON_LENS",
         "MOVE_GRASS_ON_LENS",
     ],
-    // eslint-disable-next-line
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateLensConfig(runtime);
         return true;

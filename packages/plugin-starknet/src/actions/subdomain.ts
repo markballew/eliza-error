@@ -1,16 +1,16 @@
 // It should just transfer subdomain from the root domain owned by the agent's wallet to the recipient.
 
 import {
-    type ActionExample,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
     composeContext,
     generateObjectDeprecated,
-    type Content,
+    Content,
     elizaLogger,
 } from "@elizaos/core";
 import { getStarknetAccount } from "../utils";
@@ -93,17 +93,16 @@ export default {
     ): Promise<boolean> => {
         elizaLogger.log("Starting CREATE_SUBDOMAIN handler...");
 
-        // Fix: Create new variable instead of reassigning parameter
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        // Initialize or update state
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -147,11 +146,13 @@ export default {
             const tx = await account.execute(transferCall);
 
             elizaLogger.success(
-                `Transfer completed successfully! tx: ${tx.transaction_hash}`
+                "Transfer completed successfully! tx: " + tx.transaction_hash
             );
             if (callback) {
                 callback({
-                    text: `Transfer completed successfully! tx: ${tx.transaction_hash}`,
+                    text:
+                        "Transfer completed successfully! tx: " +
+                        tx.transaction_hash,
                     content: {},
                 });
             }

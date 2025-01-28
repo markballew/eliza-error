@@ -1,13 +1,14 @@
 import {
+    ActionExample,
     composeContext,
-    type Content,
+    Content,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     type Action,
 } from "@elizaos/core";
 import axios from "axios";
@@ -77,7 +78,7 @@ query MarketplaceTokens($collectionAddr: String!, $limit: Int) {
 export default {
     name: "GET_LATEST_NFT",
     similes: ["SHOW_LATEST_NFT", "FETCH_LATEST_NFT"],
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         elizaLogger.log("🔄 Validating Stargaze configuration...");
         try {
             const config = await validateStargazeConfig(runtime);

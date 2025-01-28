@@ -1,7 +1,7 @@
-import { type IAgentRuntime, elizaLogger } from "@elizaos/core";
+import { IAgentRuntime, elizaLogger } from "@elizaos/core";
 import { SpheronSDK } from "@spheron/protocol-sdk";
 import { validateSpheronConfig } from "../environment.ts";
-import type {
+import {
     BalanceInfo,
     DeploymentDetails,
     SpheronComputeConfig,
@@ -28,7 +28,7 @@ export const depositBalance = async (
     runtime: IAgentRuntime,
     token: string,
     amount: number
-): Promise<unknown> => { // Replace any with unknown
+): Promise<any> => {
     const sdk = await getSDKInstance(runtime);
     return await sdk.escrow.depositBalance({
         token,
@@ -44,7 +44,7 @@ export const withdrawBalance = async (
     runtime: IAgentRuntime,
     token: string,
     amount: number
-): Promise<unknown> => { // Replace any with unknown
+): Promise<any> => {
     const sdk = await getSDKInstance(runtime);
     return await sdk.escrow.withdrawBalance({
         token,
@@ -229,7 +229,7 @@ export const getDeployment = async (
 export const closeDeployment = async (
     runtime: IAgentRuntime,
     leaseId: string
-): Promise<unknown> => { // Replace any with unknown
+): Promise<any> => {
     const sdk = await getSDKInstance(runtime);
     return await sdk.deployment.closeDeployment(leaseId);
 };
@@ -352,7 +352,7 @@ function parseDuration(duration: string): number {
     }
 
     const [, value, unit] = match;
-    const numValue = Number.parseFloat(value);
+    const numValue = parseFloat(value);
 
     switch (unit) {
         case "min":

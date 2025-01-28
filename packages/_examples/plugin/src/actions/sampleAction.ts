@@ -1,9 +1,9 @@
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type HandlerCallback,
-    type State,
+    Action,
+    IAgentRuntime,
+    Memory,
+    HandlerCallback,
+    State,
     composeContext,
     generateObject,
     ModelClass,
@@ -24,7 +24,7 @@ export const createResourceAction: Action = {
         runtime: IAgentRuntime,
         _message: Memory,
         state: State,
-        _options: object,
+        _options: any,
         callback: HandlerCallback
     ) => {
         try {

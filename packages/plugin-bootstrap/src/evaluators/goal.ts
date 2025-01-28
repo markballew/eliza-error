@@ -3,13 +3,13 @@ import { generateText } from "@elizaos/core";
 import { getGoals } from "@elizaos/core";
 import { parseJsonArrayFromText } from "@elizaos/core";
 import {
-    type IAgentRuntime,
-    type Memory,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type Objective,
+    Objective,
     type Goal,
     type State,
-    type Evaluator,
+    Evaluator,
 } from "@elizaos/core";
 
 const goalsTemplate = `TASK: Update Goal
@@ -80,18 +80,34 @@ async function handler(
 
     // Apply the updates to the goals
     const updatedGoals = goalsData
-        .map((goal: Goal): Goal => {
+        .map((goal: Goal) => {
             const update = updates?.find((u) => u.id === goal.id);
             if (update) {
-                // Merge the update into the existing goal
+                const objectives = goal.objectives;
+
+                // for each objective in update.objectives, find the objective with the same description in 'objectives' and set the 'completed' value to the update.objectives value
+                if (update.objectives) {
+                    for (const objective of objectives) {
+                        const updatedObjective = update.objectives.find(
+                            (o: Objective) =>
+                                o.description === objective.description
+                        );
+                        if (updatedObjective) {
+                            objective.completed = updatedObjective.completed;
+                        }
+                    }
+                }
+
                 return {
                     ...goal,
                     ...update,
-                    objectives: goal.objectives.map((objective) => {
-                        const updatedObjective = update.objectives?.find(uo => uo.description === objective.description);
-                        return updatedObjective ? { ...objective, ...updatedObjective } : objective;
-                    }),
-                };
+                    objectives: [
+                        ...goal.objectives,
+                        ...(update?.objectives || []),
+                    ],
+                }; // Merging the update into the existing goal
+            } else {
+                console.warn("**** ID NOT FOUND");
             }
             return null; // No update for this goal
         })

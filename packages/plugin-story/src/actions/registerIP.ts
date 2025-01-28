@@ -2,19 +2,19 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    IAgentRuntime,
+    Memory,
+    State,
 } from "@elizaos/core";
 import pinataSDK from "@pinata/sdk";
-import type { RegisterIpResponse } from "@story-protocol/core-sdk";
-import { createHash } from "node:crypto";  // Added node: protocol
+import { RegisterIpResponse } from "@story-protocol/core-sdk";
+import { createHash } from "crypto";
 import { uploadJSONToIPFS } from "../functions/uploadJSONToIPFS";
 import { WalletProvider } from "../providers/wallet";
 import { registerIPTemplate } from "../templates";
-import type { RegisterIPParams } from "../types";
+import { RegisterIPParams } from "../types";
 
 export { registerIPTemplate };
 
@@ -79,21 +79,20 @@ export const registerIPAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        options: any,
         callback?: HandlerCallback
     ): Promise<boolean> => {
         elizaLogger.log("Starting REGISTER_IP handler...");
 
         // initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         const registerIPContext = composeContext({
-            state: currentState,
+            state,
             template: registerIPTemplate,
         });
 

@@ -1,12 +1,12 @@
 import {
     elizaLogger,
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     composeContext,
     generateObject,
     type Action,
@@ -14,16 +14,19 @@ import {
 import { WalletProvider } from "../providers/wallet";
 import { validateMultiversxConfig } from "../enviroment";
 import { transferSchema } from "../utils/schemas";
-import { GraphqlProvider } from "../providers/graphql";
-import { MVX_NETWORK_CONFIG } from "../constants";
-import { NativeAuthProvider } from "../providers/nativeAuth";
-import { getToken } from "../utils/getToken";
 export interface TransferContent extends Content {
     tokenAddress: string;
     amount: string;
     tokenIdentifier?: string;
 }
-import { isUserAuthorized } from "../utils/accessTokenManagement";
+
+function isTransferContent(_runtime: IAgentRuntime, content: TransferContent) {
+    console.log("Content for transfer", content);
+    return (
+        typeof content.tokenAddress === "string" &&
+        typeof content.amount === "string"
+    );
+}
 
 const transferTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -55,7 +58,7 @@ export default {
         "PAY",
     ],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
-        elizaLogger.log("Validating config for user:", message.userId);
+        console.log("Validating config for user:", message.userId);
         await validateMultiversxConfig(runtime);
         return true;
     },
@@ -65,25 +68,9 @@ export default {
         message: Memory,
         state: State,
         _options: { [key: string]: unknown },
-        callback?: HandlerCallback,
+        callback?: HandlerCallback
     ) => {
         elizaLogger.log("Starting SEND_TOKEN handler...");
-
-        elizaLogger.log("Handler initialized. Checking user authorization...");
-
-        if (!isUserAuthorized(message.userId, runtime)) {
-            elizaLogger.error(
-                "Unauthorized user attempted to transfer a token:",
-                message.userId
-            );
-            if (callback) {
-                callback({
-                    text: "You do not have permission to transfer a token.",
-                    content: { error: "Unauthorized user" },
-                });
-            }
-            return false;
-        }
 
         // Initialize or update state
         if (!state) {
@@ -106,14 +93,11 @@ export default {
             schema: transferSchema,
         });
 
-        const transferContent = content.object as TransferContent;
-        const isTransferContent =
-            typeof transferContent.tokenAddress === "string" &&
-            typeof transferContent.amount === "string";
+        const payload = content.object as TransferContent;
 
         // Validate transfer content
-        if (!isTransferContent) {
-            elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
+        if (!isTransferContent(runtime, payload)) {
+            console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
                     text: "Unable to process transfer request. Invalid content provided.",
@@ -126,73 +110,34 @@ export default {
         try {
             const privateKey = runtime.getSetting("MVX_PRIVATE_KEY");
             const network = runtime.getSetting("MVX_NETWORK");
-            const networkConfig = MVX_NETWORK_CONFIG[network];
 
             const walletProvider = new WalletProvider(privateKey, network);
 
             if (
-                transferContent.tokenIdentifier &&
-                transferContent.tokenIdentifier.toLowerCase() !== "egld"
+                payload.tokenIdentifier &&
+                payload.tokenIdentifier.toLowerCase() !== "egld"
             ) {
-                const [ticker, nonce] =
-                    transferContent.tokenIdentifier.split("-");
-
-                let identifier = transferContent.tokenIdentifier;
-                if (!nonce) {
-                    const nativeAuthProvider = new NativeAuthProvider({
-                        apiUrl: networkConfig.apiURL,
-                    });
-
-                    await nativeAuthProvider.initializeClient();
-
-                    const accessToken =
-                        await nativeAuthProvider.getAccessToken(walletProvider);
-
-                    const graphqlProvider = new GraphqlProvider(
-                        networkConfig.graphURL,
-                        { Authorization: `Bearer ${accessToken}` },
-                    );
-
-                    const token = await getToken({
-                        provider: graphqlProvider,
-                        ticker,
-                    });
-
-                    identifier = token.identifier;
-                }
-
-                const txHash = await walletProvider.sendESDT({
-                    receiverAddress: transferContent.tokenAddress,
-                    amount: transferContent.amount,
-                    identifier,
+                await walletProvider.sendESDT({
+                    receiverAddress: payload.tokenAddress,
+                    amount: payload.amount,
+                    identifier: payload.tokenIdentifier,
                 });
-
-                const txURL = walletProvider.getTransactionURL(txHash);
-                callback?.({
-                    text: `Transaction sent successfully! You can view it here: ${txURL}.`,
-                });
-
                 return true;
             }
 
-            const txHash = await walletProvider.sendEGLD({
-                receiverAddress: transferContent.tokenAddress,
-                amount: transferContent.amount,
+            await walletProvider.sendEGLD({
+                receiverAddress: payload.tokenAddress,
+                amount: payload.amount,
             });
-
-            const txURL = walletProvider.getTransactionURL(txHash);
-            callback?.({
-                text: `Transaction sent successfully! You can view it here: ${txURL}.`,
-            });
-
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token transfer:", error);
-            callback?.({
-                text: error.message,
-                content: { error: error.message },
-            });
-
+            console.error("Error during token transfer:", error);
+            if (callback) {
+                callback({
+                    text: `Error transferring tokens: ${error.message}`,
+                    content: { error: error.message },
+                });
+            }
             return "";
         }
     },

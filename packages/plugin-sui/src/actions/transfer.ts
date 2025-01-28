@@ -1,11 +1,11 @@
 import {
-    type ActionExample,
-    type Content,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    ActionExample,
+    Content,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
     composeContext,
     elizaLogger,
     generateObject,
@@ -63,7 +63,7 @@ export default {
         "SEND_SUI",
         "PAY",
     ],
-    validate: async (_runtime: IAgentRuntime, message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         console.log("Validating sui transfer from user:", message.userId);
         //add custom validate logic here
         /*
@@ -98,11 +98,10 @@ export default {
         state.walletInfo = walletInfo;
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Define the schema for the expected output
@@ -113,7 +112,7 @@ export default {
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -147,7 +146,7 @@ export default {
             });
 
             const adjustedAmount = BigInt(
-                Number(transferContent.amount) * (10 ** SUI_DECIMALS)
+                Number(transferContent.amount) * Math.pow(10, SUI_DECIMALS)
             );
             console.log(
                 `Transferring: ${transferContent.amount} tokens (${adjustedAmount} base units)`

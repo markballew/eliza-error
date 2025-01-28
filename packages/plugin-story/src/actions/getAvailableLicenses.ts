@@ -2,15 +2,15 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    IAgentRuntime,
+    Memory,
+    State,
 } from "@elizaos/core";
 import { getAvailableLicensesTemplate, licenseIPTemplate } from "../templates";
-import type { Address } from "viem";
-import { type IPLicenseDetails, RESOURCE_TYPE } from "../types/api";
+import { Address } from "viem";
+import { IPLicenseDetails, RESOURCE_TYPE } from "../types/api";
 import { API_KEY, API_URL } from "../lib/api";
 import { storyOdyssey } from "viem/chains";
 
@@ -89,7 +89,8 @@ const formatLicenseTerms = (license: IPLicenseDetails): string => {
   • Derivatives: ${terms.derivativesAllowed ? "Allowed" : "Not Allowed"}
   • Derivatives Attribution: ${terms.derivativesAttribution ? "Required" : "Not Required"}
   • Derivatives Approval: ${terms.derivativesApproval ? "Required" : "Not Required"}
-  • Revenue Share: ${terms.commercialRevenueShare ? `${terms.commercialRevenueShare}%` : "Not Required"}`; 
+  • Revenue Share: ${terms.commercialRevenueShare ? terms.commercialRevenueShare + "%" : "Not Required"}
+`;
 };
 
 /**
@@ -102,24 +103,21 @@ export const getAvailableLicensesAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        options: any,
         callback?: HandlerCallback
     ): Promise<boolean> => {
         elizaLogger.log("Starting GET_AVAILABLE_LICENSES handler...");
 
         // Initialize or update state
-        let currentState = state;  // Create a new variable instead of reassigning parameter
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
-        } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
-        }
+        state = !state
+            ? ((await runtime.composeState(message)) as State)
+            : await runtime.updateRecentMessageState(state);
 
         // Generate parameters from context
         const content = await generateObjectDeprecated({
             runtime,
             context: composeContext({
-                state: currentState,
+                state,
                 template: getAvailableLicensesTemplate,
             }),
             modelClass: ModelClass.SMALL,

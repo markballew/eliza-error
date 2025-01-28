@@ -1,13 +1,13 @@
 import { composeContext, elizaLogger } from "@elizaos/core";
 import { generateMessageResponse } from "@elizaos/core";
 import {
-    type Action,
-    type ActionExample,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    Action,
+    ActionExample,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
 } from "@elizaos/core";
 import { validateOpenWeatherConfig } from "../environment";
 import { getCurrentWeatherTemplate } from "../templates";
@@ -40,15 +40,14 @@ export const getCurrentWeatherAction: Action = {
         callback: HandlerCallback
     ) => {
         // Initialize/update state
-        let currentState: State = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         }
-        currentState = await runtime.updateRecentMessageState(currentState);
+        state = await runtime.updateRecentMessageState(state);
 
         // state -> context
         const weatherContext = composeContext({
-            state: currentState,
+            state,
             template: getCurrentWeatherTemplate,
         });
 

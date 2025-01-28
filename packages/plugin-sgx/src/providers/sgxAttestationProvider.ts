@@ -1,7 +1,7 @@
-import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
-import type { SgxAttestation } from "../types/attestation";
-import { promises as fs } from 'node:fs'; // Fix: Use node: protocol
-import { createHash } from 'node:crypto'; // Fix: Use node: protocol
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
+import { SgxAttestation } from "../types/attestation";
+import { promises as fs } from 'fs';
+import { createHash } from 'crypto';
 
 // Function to calculate SHA-256 and return a Buffer (32 bytes)
 function calculateSHA256(input: string): Buffer {
@@ -19,8 +19,7 @@ class SgxAttestationProvider {
     private readonly USER_REPORT_DATA_PATH: string = "/dev/attestation/user_report_data";
     private readonly QUOTE_PATH: string = "/dev/attestation/quote";
 
-    // Remove unnecessary constructor
-    // constructor() {}
+    constructor() {}
 
     async generateAttestation(
         reportData: string
@@ -77,8 +76,7 @@ class SgxAttestationProvider {
             throw new Error("quote without EOF");
         }
 
-        //return '0x' + quoteData.subarray(0, realLen + 1).toString('hex');
-        return `0x${quoteData.subarray(0, realLen + 1).toString('hex')}`; // Fix: Use template literal
+        return '0x' + quoteData.subarray(0, realLen + 1).toString('hex');
     }
 }
 

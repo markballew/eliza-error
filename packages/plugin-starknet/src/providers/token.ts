@@ -2,8 +2,8 @@
 // Look for the TODOs to see what needs to be updated
 
 import { settings } from "@elizaos/core";
-import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
-import type {
+import { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
+import {
     DexScreenerData,
     DexScreenerPair,
     HolderData,
@@ -12,16 +12,16 @@ import type {
     CalculatedBuyAmounts,
     Prices,
 } from "../types/trustDB.ts";
-import { WalletProvider, type TokenBalances } from "./portfolioProvider.ts";
+import { WalletProvider, TokenBalances } from "./portfolioProvider.ts";
 import { num } from "starknet";
 import {
     analyzeHighSupplyHolders,
     evaluateTokenTrading,
-    type TokenMetrics,
+    TokenMetrics,
 } from "./utils.ts";
 import { PROVIDER_CONFIG } from "../index.ts";
 import { Cache } from "../utils/cache.ts";
-import type { TokenInfo } from "../types/token.ts";
+import { TokenInfo } from "../types/token.ts";
 
 export const PORTFOLIO_TOKENS = {
     // Coingecko IDs src:
@@ -119,7 +119,7 @@ export class TokenProvider {
                 lastError = error as Error;
 
                 if (i < PROVIDER_CONFIG.MAX_RETRIES - 1) {
-                    const delay = PROVIDER_CONFIG.RETRY_DELAY * (2 ** i);  // Fix: Use exponentiation operator instead of Math.pow
+                    const delay = PROVIDER_CONFIG.RETRY_DELAY * Math.pow(2, i);
                     await new Promise((resolve) => setTimeout(resolve, delay));
                 }
             }
@@ -156,10 +156,10 @@ export class TokenProvider {
             // Check if the tokenAddress exists in the TokenBalances
             if (items[tokenAddress]) {
                 return tokenAddress;
+            } else {
+                console.warn(`Token with address ${tokenAddress} not found in wallet`);
+                return null;
             }
-            
-            console.warn(`Token with address ${tokenAddress} not found in wallet`);
-            return null;
         } catch (error) {
             console.error("Error checking token in wallet:", error);
             return null;
@@ -401,7 +401,7 @@ export class TokenProvider {
 
             return dexData;
         } catch (error) {
-            console.error("Error fetching DexScreener data:", error);
+            console.error(`Error fetching DexScreener data:`, error);
             return {
                 schemaVersion: "1.0.0",
                 pairs: [],
@@ -444,7 +444,7 @@ export class TokenProvider {
             // Return the pair with the highest liquidity and market cap
             return this.getHighestLiquidityPair(dexData);
         } catch (error) {
-            console.error("Error fetching DexScreener data:", error);
+            console.error(`Error fetching DexScreener data:`, error);
             return null;
         }
     }
@@ -504,11 +504,11 @@ export class TokenProvider {
 
         if (averageChange > increaseThreshold) {
             return "increasing";
-        }
-        if (averageChange < decreaseThreshold) {
+        } else if (averageChange < decreaseThreshold) {
             return "decreasing";
+        } else {
+            return "stable";
         }
-        return "stable";
     }
 
     // TODO: Update to Starknet
@@ -523,10 +523,7 @@ export class TokenProvider {
         const allHoldersMap = new Map<string, number>();
         let page = 1;
         const limit = 1000;
-        // let cursor;
-        // Fix: Add type annotation to prevent implicit any
-        let cursor: string | undefined;
-
+        let cursor;
         //HELIOUS_API_KEY needs to be added
         const url = `https://mainnet.helius-rpc.com/?api-key=${
             settings.HELIUS_API_KEY || ""
@@ -541,8 +538,7 @@ export class TokenProvider {
                     mint: this.tokenAddress,
                     cursor: cursor,
                 };
-                // Fix: Replace != with !==
-                if (cursor !== undefined) {
+                if (cursor != undefined) {
                     params.cursor = cursor;
                 }
                 console.log(`Fetching holders - Page ${page}`);
@@ -584,7 +580,7 @@ export class TokenProvider {
 
                 data.result.token_accounts.forEach((account: any) => {
                     const owner = account.owner;
-                    const balance = Number.parseFloat(account.amount);
+                    const balance = parseFloat(account.amount);
 
                     if (allHoldersMap.has(owner)) {
                         allHoldersMap.set(

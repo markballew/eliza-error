@@ -1,10 +1,10 @@
 import {
-    type Action,
-    type ActionExample,
-    type IAgentRuntime,
-    type Memory,
-    type State,
-    type HandlerCallback,
+    Action,
+    ActionExample,
+    IAgentRuntime,
+    Memory,
+    State,
+    HandlerCallback,
     elizaLogger,
     composeContext,
     ModelClass,
@@ -16,41 +16,19 @@ import {
     getUserBalance,
     withdrawBalance,
 } from "../utils/index.ts";
-import type { EscrowContent } from "../types/index.ts";
+import { EscrowContent } from "../types/index.ts";
 import { SUPPORTED_TOKENS } from "../utils/constants.ts";
 
-// function isEscrowContent(content: any): content is EscrowContent {
-//     console.log("Content for escrow operation:", content);
-//     return (
-//         typeof content.token === "string" &&
-//         (content.operation === "deposit" || content.operation === "withdraw"
-//             ? typeof content.amount === "number" && content.amount > 0
-//             : content.operation === "check") &&
-//         (content.operation === "deposit" ||
-//             content.operation === "withdraw" ||
-//             content.operation === "check")
-//     );
-// }
-
-function isEscrowContent(content: unknown): content is EscrowContent {
+function isEscrowContent(content: any): content is EscrowContent {
     console.log("Content for escrow operation:", content);
-
-    // First, check if content is an object
-    if (typeof content !== 'object' || content === null) {
-        return false;
-    }
-
-    // Type assertion to access properties safely
-    const contentObj = content as Record<string, unknown>;
-
     return (
-        typeof contentObj.token === "string" &&
-        (contentObj.operation === "deposit" || contentObj.operation === "withdraw"
-            ? typeof contentObj.amount === "number" && contentObj.amount > 0
-            : contentObj.operation === "check") &&
-        (contentObj.operation === "deposit" ||
-            contentObj.operation === "withdraw" ||
-            contentObj.operation === "check")
+        typeof content.token === "string" &&
+        (content.operation === "deposit" || content.operation === "withdraw"
+            ? typeof content.amount === "number" && content.amount > 0
+            : content.operation === "check") &&
+        (content.operation === "deposit" ||
+            content.operation === "withdraw" ||
+            content.operation === "check")
     );
 }
 
@@ -131,12 +109,11 @@ export default {
     ) => {
         elizaLogger.log("Starting ESCROW_OPERATION handler...");
 
-        // Create local variable for state manipulation
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        // Initialize or update state
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Filter only "just now" and last couple of user messages
@@ -150,7 +127,7 @@ export default {
 
         // Compose escrow context
         const escrowContext = composeContext({
-            state: currentState,
+            state,
             template: escrowTemplate,
         });
 

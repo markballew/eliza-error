@@ -2,15 +2,15 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    IAgentRuntime,
+    Memory,
+    State,
 } from "@elizaos/core";
 import { getIPDetailsTemplate } from "../templates";
-import type { Address } from "viem";
-import { type Asset, RESOURCE_TYPE } from "../types/api";
+import { Address } from "viem";
+import { Asset, RESOURCE_TYPE } from "../types/api";
 import { API_URL, getResource } from "../lib/api";
 
 export { getIPDetailsTemplate };
@@ -70,23 +70,20 @@ export const getIPDetailsAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        options: any,
         callback?: HandlerCallback
     ): Promise<boolean> => {
         elizaLogger.log("Starting GET_IP_DETAILS handler...");
 
         // Initialize or update state
-            let currentState = state;
-            if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
-        } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
-        }
+        state = !state
+            ? ((await runtime.composeState(message)) as State)
+            : await runtime.updateRecentMessageState(state);
 
         // Generate content using template
         const content = await generateObjectDeprecated({
             runtime,
-            context: composeContext({ state: currentState, template: getIPDetailsTemplate }),
+            context: composeContext({ state, template: getIPDetailsTemplate }),
             modelClass: ModelClass.SMALL,
         });
 
