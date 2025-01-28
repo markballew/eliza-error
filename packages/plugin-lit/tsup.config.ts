@@ -5,19 +5,22 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
     clean: true,
-    format: ["esm"], // Ensure you're targeting CommonJS
+    format: ["esm"],
     external: [
-        "dotenv", // Externalize dotenv to prevent bundling
-        "fs", // Externalize fs to use Node.js built-in module
-        "path", // Externalize other built-ins if necessary
-        "@reflink/reflink",
-        "@node-llama-cpp",
-        "https",
-        "http",
-        "agentkeepalive",
-        "viem",
-        "@lifi/sdk",
-        "events",
-        "node-cache",
+        "@elizaos/core",
+        "@lit-protocol/lit-node-client",
+        "@lit-protocol/contracts-sdk",
+        "@lit-protocol/lit-auth-client",
+        "@lit-protocol/pkp-ethers",
+        "zod"
     ],
+    dts: {
+        resolve: true,
+        entry: {
+            index: "src/index.ts"
+        }
+    },
+    treeshake: true,
+    splitting: false,
+    bundle: true
 });
