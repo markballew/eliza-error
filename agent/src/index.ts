@@ -14,6 +14,7 @@ import { TelegramAccountClientInterface } from "@elizaos/client-telegram-account
 import { TwitterClientInterface } from "@elizaos/client-twitter"
 import { AlexaClientInterface } from "@elizaos/client-alexa";
 import { MongoDBDatabaseAdapter } from "@elizaos/adapter-mongodb"
+import { DevaClientInterface } from "@elizaos/client-deva"
 
 import { FarcasterClientInterface } from "@elizaos/client-farcaster"
 import { OmniflixPlugin } from "@elizaos/plugin-omniflix"
@@ -150,6 +151,7 @@ import { MongoClient } from "mongodb";
 import { quickIntelPlugin } from "@elizaos/plugin-quick-intel"
 
 import { trikonPlugin } from "@elizaos/plugin-trikon"
+import arbitragePlugin from "@elizaos/plugin-arbitrage"
 const __filename = fileURLToPath(import.meta.url) // get the resolved path to the file
 const __dirname = path.dirname(__filename) // get the name of the directory
 
@@ -632,9 +634,9 @@ export async function initializeClients(character: Character, runtime: IAgentRun
 	}
 
 	if (clientTypes.includes(Clients.XMTP)) {
-        const xmtpClient = await XmtpClientInterface.start(runtime);
-        if (xmtpClient) clients.xmtp = xmtpClient;
-    }
+		const xmtpClient = await XmtpClientInterface.start(runtime);
+		if (xmtpClient) clients.xmtp = xmtpClient;
+	}
 
 	if (clientTypes.includes(Clients.DISCORD)) {
 		const discordClient = await DiscordClientInterface.start(runtime)
@@ -692,8 +694,21 @@ export async function initializeClients(character: Character, runtime: IAgentRun
 
 	elizaLogger.log("client keys", Object.keys(clients))
 
-	// TODO: Add Slack client to the list
-	// Initialize clients as an object
+    if (clientTypes.includes("deva")) {
+        if (clientTypes.includes("deva")) {
+            const devaClient = await DevaClientInterface.start(runtime);
+            if (devaClient) clients.deva = devaClient;
+        }
+    }
+
+    function determineClientType(client: Client): string {
+        // Check if client has a direct type identifier
+        if ("type" in client) {
+            return (client as any).type;
+        }
+
+		// TODO: Add Slack client to the list
+		// Initialize clients as an object
 
 	if (clientTypes.includes("slack")) {
 		const slackClient = await SlackClientInterface.start(runtime)
@@ -929,6 +944,11 @@ export async function createAgent(character: Character, db: IDatabaseAdapter, ca
 			getSecret(character, "QUICKINTEL_API_KEY") ? quickIntelPlugin : null,
 			getSecret(character, "GELATO_RELAY_API_KEY") ? gelatoPlugin : null,
 			getSecret(character, "TRIKON_WALLET_ADDRESS") ? trikonPlugin : null,
+			getSecret(character, "ARBITRAGE_EVM_PRIVATE_KEY") && 
+			(getSecret(character, "ARBITRAGE_EVM_PROVIDER_URL")
+				|| getSecret(character, "ARBITRAGE_ETHEREUM_WS_URL")) 
+				&& getSecret(character, "ARBITRAGE_FLASHBOTS_RELAY_SIGNING_KEY") 
+				&& getSecret(character, "ARBITRAGE_BUNDLE_EXECUTOR_ADDRESS") ? arbitragePlugin : null,
 		].flat().filter(Boolean),
 		providers: [],
 		managers: [],

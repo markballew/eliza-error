@@ -32,15 +32,12 @@
     "devDependencies": {
         "@types/elliptic": "6.4.18",
         "@types/uuid": "10.0.0",
-        "tsup": "8.3.5",
-        "vitest": "^1.2.1"
+        "tsup": "8.3.5"
     },
     "scripts": {
         "lines": "find . \\( -name '*.cdc' -o -name '*.ts' \\) -not -path '*/node_modules/*' -not -path '*/tests/*' -not -path '*/deps/*' -not -path '*/dist/*' -not -path '*/imports*' | xargs wc -l",
         "build": "tsup --format esm --dts",
-        "dev": "tsup --format esm --dts --watch",
-        "test": "vitest run",
-        "test:watch": "vitest"
+        "dev": "tsup --format esm --dts --watch"
     },
     "peerDependencies": {
         "whatwg-url": "7.1.0"
