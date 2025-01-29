@@ -84,7 +84,6 @@ import { coinmarketcapPlugin } from "@elizaos/plugin-coinmarketcap";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { createCosmosPlugin } from "@elizaos/plugin-cosmos";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
-import { deskExchangePlugin } from "@elizaos/plugin-desk-exchange";
 import { evmPlugin } from "@elizaos/plugin-evm";
 import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
@@ -92,11 +91,10 @@ import { genLayerPlugin } from "@elizaos/plugin-genlayer";
 import { gitcoinPassportPlugin } from "@elizaos/plugin-gitcoin-passport";
 import { initiaPlugin } from "@elizaos/plugin-initia";
 import { imageGenerationPlugin } from "@elizaos/plugin-image-generation";
-import { lensPlugin } from "@elizaos/plugin-lensNetwork";
+import { lensPlugin } from "@elizaos/plugin-lens-network";
 import { mindNetworkPlugin } from "@elizaos/plugin-mind-network";
 import { multiversxPlugin } from "@elizaos/plugin-multiversx";
 import { nearPlugin } from "@elizaos/plugin-near";
-import { newsPlugin } from "@elizaos/plugin-news";
 import createNFTCollectionsPlugin from "@elizaos/plugin-nft-collections";
 import { nftGenerationPlugin } from "@elizaos/plugin-nft-generation";
 import { createNodePlugin } from "@elizaos/plugin-node";
@@ -524,10 +522,12 @@ export function getTokenForProvider(
     character: Character
 ): string | undefined {
     switch (provider) {
-        // no key needed for llama_local or gaianet
+        // no key needed for llama_local, ollama, lmstudio, gaianet or bedrock
         case ModelProviderName.LLAMALOCAL:
             return "";
         case ModelProviderName.OLLAMA:
+            return "";
+        case ModelProviderName.LMSTUDIO:
             return "";
         case ModelProviderName.GAIANET:
             return "";
@@ -1294,12 +1294,6 @@ export async function createAgent(
             getSecret(character, "ARBITRAGE_FLASHBOTS_RELAY_SIGNING_KEY") &&
             getSecret(character, "ARBITRAGE_BUNDLE_EXECUTOR_ADDRESS")
                 ? arbitragePlugin
-                : null,
-            getSecret(character, "DESK_EXCHANGE_PRIVATE_KEY")
-                ? deskExchangePlugin
-                : null,
-            getSecret(character, "DESK_EXCHANGE_NETWORK")
-                ? deskExchangePlugin
                 : null,
         ]
             .flat()
