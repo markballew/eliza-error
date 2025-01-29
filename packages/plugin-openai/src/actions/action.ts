@@ -39,27 +39,9 @@ export function validateApiKey(): string {
  * @returns The response data.
  * @throws Will throw an error for request failures or rate limits.
  */
-
-export interface OpenAIRequestData {
-    model: string;
-    prompt: string;
-    max_tokens: number;
-    temperature: number;
-    [key: string]: unknown;
-}
-
-export interface OpenAIEditRequestData {
-    model: string;
-    input: string;
-    instruction: string;
-    max_tokens: number;
-    temperature: number;
-    [key: string]: unknown;
-}
-
 export async function callOpenAiApi<T>(
     url: string,
-    data: OpenAIRequestData | OpenAIEditRequestData,
+    data: any,
     apiKey: string,
 ): Promise<T> {
     try {
@@ -73,7 +55,7 @@ export async function callOpenAiApi<T>(
         const response = await axios.post<T>(url, data, config);
         return response.data;
     } catch (error) {
-        console.error("Error communicating with OpenAI API:", error instanceof Error ? error.message : String(error));
+        console.error("Error communicating with OpenAI API:", error.message);
         if (axios.isAxiosError(error)) {
             if (error.response?.status === 429) {
                 throw new Error("Rate limit exceeded. Please try again later.");
@@ -91,13 +73,12 @@ export async function callOpenAiApi<T>(
  * @param temperature - The sampling temperature.
  * @returns The request payload for OpenAI completions.
  */
-
 export function buildRequestData(
     prompt: string,
     model: string = DEFAULT_MODEL,
     maxTokens: number = DEFAULT_MAX_TOKENS,
     temperature: number = DEFAULT_TEMPERATURE,
-): OpenAIRequestData {
+): Record<string, any> {
     return {
         model,
         prompt,

@@ -25,7 +25,7 @@ import type {
 } from "viem";
 import * as viemChains from "viem/chains";
 import NodeCache from "node-cache";
-import * as path from "node:path";
+import * as path from "path";
 
 import type { ChainWithName } from "../types";
 
@@ -37,8 +37,7 @@ export const seiChains = {
 
 export class WalletProvider {
     private cache: NodeCache;
-    // private cacheKey: string = "evm/wallet";
-    private cacheKey = "evm/wallet"; // Remove explicit type annotation
+    private cacheKey: string = "evm/wallet";
     private currentChain: ChainWithName;
     private CACHE_EXPIRY_SEC = 5;
     account: PrivateKeyAccount;
@@ -98,11 +97,12 @@ export class WalletProvider {
     }
 
     async getWalletBalance(): Promise<string | null> {
-        const cacheKey = `seiWalletBalance_${this.currentChain.name}`; // Fix: Use template literal
+        const cacheKey = "seiWalletBalance_" + this.currentChain.name;
         const cachedData = await this.getCachedData<string>(cacheKey);
         if (cachedData) {
             elizaLogger.log(
-                `Returning cached wallet balance for sei chain: ${this.currentChain.name}` // Fix: Use template literal
+                "Returning cached wallet balance for sei chain: " +
+                    this.currentChain.name
             );
             return cachedData;
         }
@@ -129,15 +129,8 @@ export class WalletProvider {
         const cached = await this.cacheManager.get<T>(
             path.join(this.cacheKey, key)
         );
-        return cached ?? null; // Fix: Return null if cached is undefined
+        return cached;
     }
-    
-    // private async readFromCache<T>(key: string): Promise<T | null> {
-    //     const cached = await this.cacheManager.get<T>(
-    //         path.join(this.cacheKey, key)
-    //     );
-    //     return cached;
-    // }
 
     private async writeToCache<T>(key: string, data: T): Promise<void> {
         await this.cacheManager.set(path.join(this.cacheKey, key), data, {
@@ -219,49 +212,27 @@ export class WalletProvider {
         return seiChain;
     }
 }
+
 const genChainFromRuntime = (
     runtime: IAgentRuntime
 ): ChainWithName => {
     const sei_network = runtime.getSetting("SEI_NETWORK");
-    if (typeof sei_network !== "string") { // Fix: Ensure sei_network is a string
-        throw new Error("SEI_NETWORK must be a string");
-    }
-
-    const validChains = Object.keys(seiChains);
+    const validChains = Object.keys(seiChains)
     if (!validChains.includes(sei_network)) {
-        throw new Error(`Invalid SEI_NETWORK ${sei_network}. Must be one of ${validChains.join(", ")}`);
+        throw new Error("Invalid SEI_NETWORK " + sei_network + " Must be one of " + validChains.join(", "));
     }
 
-    let chain = seiChains[sei_network];
+    let chain = seiChains[sei_network]
     const rpcurl = runtime.getSetting("SEI_RPC_URL");
-    if (typeof rpcurl === "string") { // Fix: Ensure rpcurl is a string
-        chain = WalletProvider.genSeiChainFromName(sei_network, rpcurl);
+    if (rpcurl) {
+        chain = WalletProvider.genSeiChainFromName(
+            sei_network,
+            rpcurl
+        );
     }
 
-    return { name: sei_network, chain: chain }; // Fix: Ensure name is always a string
+    return {name: sei_network, chain: chain};
 };
-
-// const genChainFromRuntime = (
-//     runtime: IAgentRuntime
-// ): ChainWithName => {
-//     const sei_network = runtime.getSetting("SEI_NETWORK");
-//     const validChains = Object.keys(seiChains)
-//     if (!validChains.includes(sei_network)) {
-//         // throw new Error("Invalid SEI_NETWORK " + sei_network + " Must be one of " + validChains.join(", "));
-//         throw new Error(`Invalid SEI_NETWORK ${sei_network}. Must be one of ${validChains.join(", ")}`);
-//     }
-
-//     let chain = seiChains[sei_network]
-//     const rpcurl = runtime.getSetting("SEI_RPC_URL");
-//     if (rpcurl) {
-//         chain = WalletProvider.genSeiChainFromName(
-//             sei_network,
-//             rpcurl
-//         );
-//     }
-
-//     return {name: sei_network, chain: chain};
-// };
 
 export const initWalletProvider = async (runtime: IAgentRuntime) => {
 

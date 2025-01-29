@@ -30,15 +30,8 @@ interface sellDetails {
     sell_amount: number;
     sell_recommender_id: string | null;
 }
-// Fix: Replace explicit any with proper type
-interface Recommendation {
-    // Add actual properties based on usage
-    score: number;
-    // ... other properties
-}
-
 interface _RecommendationGroup {
-    recommendation: Recommendation;
+    recommendation: any;
     trustScore: number;
 }
 
@@ -130,13 +123,10 @@ export class TrustScoreManager {
         const inactiveDays = Math.floor(
             (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24)
         );
-        // const decayFactor = Math.pow(
-        //     this.DECAY_RATE,
-        //     Math.min(inactiveDays, this.MAX_DECAY_DAYS)
-        // );
-        // Fix: Replace Math.pow with ** operator
-        const decayFactor = this.DECAY_RATE ** Math.min(inactiveDays, this.MAX_DECAY_DAYS);
-
+        const decayFactor = Math.pow(
+            this.DECAY_RATE,
+            Math.min(inactiveDays, this.MAX_DECAY_DAYS)
+        );
         const decayedScore = recommenderMetrics.trustScore * decayFactor;
         const validationTrustScore =
             this.trustScoreDb.calculateValidationTrust(tokenAddress);
@@ -223,13 +213,10 @@ export class TrustScoreManager {
         const inactiveDays = Math.floor(
             (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24)
         );
-        // const decayFactor = Math.pow(
-        //     this.DECAY_RATE,
-        //     Math.min(inactiveDays, this.MAX_DECAY_DAYS)
-        // );
-        // Fix: Replace Math.pow with ** operator
-        const decayFactor = this.DECAY_RATE ** Math.min(inactiveDays, this.MAX_DECAY_DAYS);
-
+        const decayFactor = Math.pow(
+            this.DECAY_RATE,
+            Math.min(inactiveDays, this.MAX_DECAY_DAYS)
+        );
         const decayedScore = recommenderMetrics.trustScore * decayFactor;
 
         const newRecommenderMetrics: RecommenderMetrics = {
@@ -481,7 +468,7 @@ export class TrustScoreManager {
      */
 
     async updateSellDetails(
-        _runtime: IAgentRuntime,
+        runtime: IAgentRuntime,
         tokenAddress: string,
         recommenderId: string,
         sellTimeStamp: string,
@@ -571,71 +558,27 @@ export class TrustScoreManager {
             {} as Record<string, Array<TokenRecommendation>>
         );
 
-        // const result = Object.keys(groupedRecommendations).map(
-        //     (tokenAddress) => {
-        //         const tokenRecommendations =
-        //             groupedRecommendations[tokenAddress];
-
-        //         // Initialize variables to compute averages
-        //         let totalTrustScore = 0;
-        //         let totalRiskScore = 0;
-        //         let totalConsistencyScore = 0;
-        //         const recommenderData = [];
-
-        //         tokenRecommendations.forEach((recommendation) => {
-        //             const tokenPerformance =
-        //                 this.trustScoreDb.getTokenPerformance(
-        //                     recommendation.tokenAddress
-        //                 );
-        //             const recommenderMetrics =
-        //                 this.trustScoreDb.getRecommenderMetrics(
-        //                     recommendation.recommenderId
-        //                 );
-
-        //             const trustScore = this.calculateTrustScore(
-        //                 tokenPerformance,
-        //                 recommenderMetrics
-        //             );
-        //             const consistencyScore = this.calculateConsistencyScore(
-        //                 tokenPerformance,
-        //                 recommenderMetrics
-        //             );
-        //             const riskScore = this.calculateRiskScore(tokenPerformance);
-
-        //             // Accumulate scores for averaging
-        //             totalTrustScore += trustScore;
-        //             totalRiskScore += riskScore;
-        //             totalConsistencyScore += consistencyScore;
-
-        //             recommenderData.push({
-        //                 recommenderId: recommendation.recommenderId,
-        //                 trustScore,
-        //                 riskScore,
-        //                 consistencyScore,
-        //                 recommenderMetrics,
-        //             });
-        //         });
-
-
         const result = Object.keys(groupedRecommendations).map(
             (tokenAddress) => {
-                const tokenRecommendations = groupedRecommendations[tokenAddress];
-        
+                const tokenRecommendations =
+                    groupedRecommendations[tokenAddress];
+
                 // Initialize variables to compute averages
                 let totalTrustScore = 0;
                 let totalRiskScore = 0;
                 let totalConsistencyScore = 0;
                 const recommenderData = [];
-        
-                // Changed from forEach to for...of
-                for (const recommendation of tokenRecommendations) {
-                    const tokenPerformance = this.trustScoreDb.getTokenPerformance(
-                        recommendation.tokenAddress
-                    );
-                    const recommenderMetrics = this.trustScoreDb.getRecommenderMetrics(
-                        recommendation.recommenderId
-                    );
-        
+
+                tokenRecommendations.forEach((recommendation) => {
+                    const tokenPerformance =
+                        this.trustScoreDb.getTokenPerformance(
+                            recommendation.tokenAddress
+                        );
+                    const recommenderMetrics =
+                        this.trustScoreDb.getRecommenderMetrics(
+                            recommendation.recommenderId
+                        );
+
                     const trustScore = this.calculateTrustScore(
                         tokenPerformance,
                         recommenderMetrics
@@ -645,12 +588,12 @@ export class TrustScoreManager {
                         recommenderMetrics
                     );
                     const riskScore = this.calculateRiskScore(tokenPerformance);
-        
+
                     // Accumulate scores for averaging
                     totalTrustScore += trustScore;
                     totalRiskScore += riskScore;
                     totalConsistencyScore += consistencyScore;
-        
+
                     recommenderData.push({
                         recommenderId: recommendation.recommenderId,
                         trustScore,
@@ -658,7 +601,7 @@ export class TrustScoreManager {
                         consistencyScore,
                         recommenderMetrics,
                     });
-                }
+                });
 
                 // Calculate averages for this token
                 const averageTrustScore =

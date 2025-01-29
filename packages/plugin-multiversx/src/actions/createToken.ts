@@ -157,7 +157,7 @@ export default {
             {
                 user: "{{user2}}",
                 content: {
-                    text: "Successfully created token.",
+                    text: "Succesfully created token.",
                 },
             },
         ],
@@ -172,7 +172,7 @@ export default {
             {
                 user: "{{user2}}",
                 content: {
-                    text: "Successfully created token.",
+                    text: "Succesfully created token.",
                 },
             },
         ],

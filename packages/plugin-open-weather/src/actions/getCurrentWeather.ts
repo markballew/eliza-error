@@ -40,15 +40,14 @@ export const getCurrentWeatherAction: Action = {
         callback: HandlerCallback
     ) => {
         // Initialize/update state
-        let currentState: State = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         }
-        currentState = await runtime.updateRecentMessageState(currentState);
+        state = await runtime.updateRecentMessageState(state);
 
         // state -> context
         const weatherContext = composeContext({
-            state: currentState,
+            state,
             template: getCurrentWeatherTemplate,
         });
 

@@ -5,7 +5,6 @@ import { CrossedMarketDetails, MarketsByToken } from "../type";
 import { WebSocketProvider } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
 import { FlashbotsBundleProvider } from "@flashbots/ethers-provider-bundle";
-import { Contract } from "@ethersproject/contracts";
 
 // Declare the ARBITRAGE service type
 declare module "@elizaos/core" {
@@ -21,9 +20,9 @@ declare module "@elizaos/core" {
 export class ArbitrageService extends Service {
     private arbitrage: Arbitrage | null = null;
     private wsConnection: WebSocket | null = null;
-    private marketsByToken = {};
-    private currentBlock = 0;
-    private runtime!: IAgentRuntime;
+    private marketsByToken: MarketsByToken = {};
+    private currentBlock: number = 0;
+    private runtime!: IAgentRuntime; // Using definite assignment assertion
 
     static get serviceType(): ServiceType {
         return ServiceType.ARBITRAGE;
@@ -33,10 +32,9 @@ export class ArbitrageService extends Service {
         return ServiceType.ARBITRAGE;
     }
 
-    // Remove unnecessary constructor
-    // constructor() {
-    //     super();
-    // }
+    constructor() {
+        super();
+    }
 
     async initialize(runtime: IAgentRuntime): Promise<void> {
         this.runtime = runtime;
@@ -87,24 +85,15 @@ export class ArbitrageService extends Service {
         );
 
         // Initialize bundle executor contract
-        const bundleExecutorAddress = runtime.getSetting("BUNDLE_EXECUTOR_ADDRESS");
+        const bundleExecutorAddress = runtime.getSetting("BUNDLE_EXECUTOR_ADDRESS")
+                                    
         if (!bundleExecutorAddress) throw new Error("Missing BUNDLE_EXECUTOR_ADDRESS env");
 
-        // Create Contract instance
-        const bundleExecutorContract = new Contract(
-            bundleExecutorAddress,
-            [
-                'function execute(bytes[] calldata calls) external payable',
-                'function executeWithToken(bytes[] calldata calls, address tokenAddress, uint256 tokenAmount) external payable'
-            ],
-            wallet
-        );
-
-        // Initialize Arbitrage instance with Contract instance
+        // Initialize Arbitrage instance
         this.arbitrage = new Arbitrage(
             wallet,
             flashbotsProvider,
-            bundleExecutorContract
+            bundleExecutorAddress
         );
 
         // Setup WebSocket connection
@@ -130,7 +119,7 @@ export class ArbitrageService extends Service {
         this.wsConnection.on('message', async (data: string) => {
             const message = JSON.parse(data);
             if (message.params?.result?.number) {
-                this.currentBlock = Number.parseInt(message.params.result.number, 16);
+                this.currentBlock = parseInt(message.params.result.number, 16);
             }
         });
 

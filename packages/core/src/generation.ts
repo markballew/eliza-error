@@ -534,8 +534,7 @@ export async function generateText({
             case ModelProviderName.HYPERBOLIC:
             case ModelProviderName.TOGETHER:
             case ModelProviderName.NINETEEN_AI:
-            case ModelProviderName.AKASH_CHAT_API:
-            case ModelProviderName.LMSTUDIO: {
+            case ModelProviderName.AKASH_CHAT_API: {
                 elizaLogger.debug(
                     "Initializing OpenAI model with Cloudflare check"
                 );
@@ -2179,7 +2178,6 @@ export async function handleProvider(
         case ModelProviderName.TOGETHER:
         case ModelProviderName.NANOGPT:
         case ModelProviderName.AKASH_CHAT_API:
-        case ModelProviderName.LMSTUDIO:
             return await handleOpenAI(options);
         case ModelProviderName.ANTHROPIC:
         case ModelProviderName.CLAUDE_VERTEX:

@@ -1,6 +1,5 @@
 import { ByteArray, formatEther, parseEther, type Hex } from "viem";
 import {
-    elizaLogger,
     Action,
     composeContext,
     generateObjectDeprecated,
@@ -64,12 +63,11 @@ export class TransferAction {
 
     async transfer(params: TransferParams): Promise<Transaction> {
         const chain = this.walletProvider.getCurrentChain()
-        elizaLogger.log(
+        console.log(
             `Transferring: ${params.amount} tokens to (${params.toAddress} on ${chain.name})`
         );
-        // let recipientAddress
-        let recipientAddress: `0x${string}`; // Ensure it's a valid Ethereum address
 
+        let recipientAddress
         if (params.toAddress.startsWith("sei")) {
             const publicClient = this.walletProvider.getEvmPublicClient();
             const evmAddress = await publicClient.readContract({
@@ -77,25 +75,19 @@ export class TransferAction {
                 abi: ADDRESS_PRECOMPILE_ABI,
                 functionName: 'getEvmAddr',
                 args: [params.toAddress],
-            });
+            })
 
             if (!evmAddress || !evmAddress.startsWith("0x")) {
                 throw new Error(`ERROR: Recipient does not have valid EVM address. Got: ${evmAddress}`);
             }
 
-            elizaLogger.log(`Translated address ${params.toAddress} to EVM address ${evmAddress}`);
-            recipientAddress = evmAddress as `0x${string}`; // Ensure it's a valid Ethereum address
+            console.log(`Translated address ${params.toAddress} to EVM address ${evmAddress}`)
+            recipientAddress = evmAddress
         } else {
-            if (!params.toAddress.startsWith("0x")) {
-                throw new Error(`ERROR: Recipient address must start with '0x'. Got: ${params.toAddress}`);
-            }
-            recipientAddress = params.toAddress as `0x${string}`; // Ensure it's a valid Ethereum address
+            recipientAddress = params.toAddress
         }
 
         const walletClient = this.walletProvider.getEvmWalletClient();
-        if (!walletClient.account) {
-            throw new Error("Wallet client account is undefined");
-        }
 
         try {
             const hash = await walletClient.sendTransaction({
@@ -103,43 +95,27 @@ export class TransferAction {
                 to: recipientAddress,
                 value: parseEther(params.amount),
                 data: params.data as Hex,
-
                 kzg: {
-                    blobToKzgCommitment: (_: ByteArray): ByteArray => {
+                    blobToKzgCommitment: function (_: ByteArray): ByteArray {
                         throw new Error("Function not implemented.");
                     },
-                    computeBlobKzgProof: (
+                    computeBlobKzgProof: function (
                         _blob: ByteArray,
                         _commitment: ByteArray
-                    ): ByteArray => {
+                    ): ByteArray {
                         throw new Error("Function not implemented.");
                     },
                 },
-                maxFeePerBlobGas: BigInt(0), // Add required property
-                blobs: [], // Add required property
                 chain: undefined,
             });
-                // kzg: {
-                //     blobToKzgCommitment: function (_: ByteArray): ByteArray {
-                //         throw new Error("Function not implemented.");
-                //     },
-                //     computeBlobKzgProof: function (
-                //         _blob: ByteArray,
-                //         _commitment: ByteArray
-                //     ): ByteArray {
-                //         throw new Error("Function not implemented.");
-                //     },
-                // },
-
 
             return {
                 hash,
-                from: walletClient.account.address, // Now guaranteed to be defined
+                from: walletClient.account.address,
                 to: params.toAddress,
                 value: parseEther(params.amount),
                 data: params.data as Hex,
             };
-
         } catch (error) {
             throw new Error(`Transfer failed: ${error.message}`);
         }
@@ -149,7 +125,7 @@ export class TransferAction {
 const buildTransferDetails = async (
     state: State,
     runtime: IAgentRuntime,
-    _wp: WalletProvider
+    wp: WalletProvider
 ): Promise<TransferParams> => {
     const context = composeContext({
         state,
@@ -172,36 +148,25 @@ export const transferAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>, // Replace `any` with a safer type
+        _options: any,
         callback?: HandlerCallback
     ) => {
-        
-        // Create a new variable to avoid reassigning the parameter
-        let updatedState = state;
-        
-        if (!updatedState) {
-            updatedState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            updatedState = await runtime.updateRecentMessageState(updatedState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
-        elizaLogger.debug("Transfer action handler called");
+        console.log("Transfer action handler called");
         const walletProvider = await initWalletProvider(runtime);
         const action = new TransferAction(walletProvider);
 
         // Compose transfer context
         const paramOptions = await buildTransferDetails(
-            updatedState, // Use the new variable
+            state,
             runtime,
             walletProvider
         );
-        
-        // // Compose transfer context
-        // const paramOptions = await buildTransferDetails(
-        //     state,
-        //     runtime,
-        //     walletProvider
-        // );
 
         try {
             const transferResp = await action.transfer(paramOptions);
@@ -219,7 +184,7 @@ export const transferAction: Action = {
             }
             return true;
         } catch (error) {
-            elizaLogger.error("Error during token transfer:", error);
+            console.error("Error during token transfer:", error);
             if (callback) {
                 callback({
                     text: `Error transferring tokens: ${error.message}`,

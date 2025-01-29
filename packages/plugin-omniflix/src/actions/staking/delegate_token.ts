@@ -104,7 +104,7 @@ export class DelegateTokensAction {
                 if (typeof params.amount === "number") {
                     params.amount = params.amount * 1000000;
                 } else if (typeof params.amount === "string") {
-                    params.amount = Number.parseInt(params.amount) * 1000000;
+                    params.amount = parseInt(params.amount) * 1000000;
                 }
             }
 
@@ -128,21 +128,14 @@ const buildDelegateTokensContent = async (
     message: Memory,
     state: State
 ): Promise<DelegateTokensContent> => {
-
-    // if (!state) {
-    //     state = (await runtime.composeState(message)) as State;
-    // } else {
-    //     state = await runtime.updateRecentMessageState(state);
-    // }
-
-    let currentState: State = state;
-    if (!currentState) {
-        currentState = (await runtime.composeState(message)) as State;
+    if (!state) {
+        state = (await runtime.composeState(message)) as State;
+    } else {
+        state = await runtime.updateRecentMessageState(state);
     }
-    currentState = await runtime.updateRecentMessageState(currentState);
 
     const delegateContext = composeContext({
-        state: currentState,
+        state,
         template: delegateTokensTemplate,
     });
 

@@ -9,25 +9,24 @@ import {
 export const generateEmbeddingAction: Action = {
     name: "generateEmbedding",
     description: "Generate embeddings using OpenAI",
-    similes: [],
-    async handler(_runtime, message, _state) {
-        const input = (message.content.text as string)?.trim() || "";
+    async handler(runtime, message, state) {
+        const input = message.content.text?.trim() || "";
         validatePrompt(input);
 
         const apiKey = validateApiKey();
-        const requestData = buildRequestData(
-            "text-embedding-ada-002",
-            input
-        );
+        const requestData = {
+            model: "text-embedding-ada-002",
+            input,
+        };
 
         const response = await callOpenAiApi(
             "https://api.openai.com/v1/embeddings",
             requestData,
             apiKey,
-        ) as { data: Array<{ embedding: number[] }> };
-        return response.data.map((item: { embedding: number[] }) => item.embedding);
+        );
+        return response.data.map((item) => item.embedding);
     },
-    validate: async (runtime, _message) => {
+    validate: async (runtime, message) => {
         return !!runtime.getSetting("OPENAI_API_KEY");
     },
     examples: [],

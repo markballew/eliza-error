@@ -84,6 +84,7 @@ import { coinmarketcapPlugin } from "@elizaos/plugin-coinmarketcap";
 import { confluxPlugin } from "@elizaos/plugin-conflux";
 import { createCosmosPlugin } from "@elizaos/plugin-cosmos";
 import { cronosZkEVMPlugin } from "@elizaos/plugin-cronoszkevm";
+import { deskExchangePlugin } from "@elizaos/plugin-desk-exchange";
 import { evmPlugin } from "@elizaos/plugin-evm";
 import { flowPlugin } from "@elizaos/plugin-flow";
 import { fuelPlugin } from "@elizaos/plugin-fuel";
@@ -523,12 +524,10 @@ export function getTokenForProvider(
     character: Character
 ): string | undefined {
     switch (provider) {
-        // no key needed for llama_local, ollama, lmstudio, gaianet or bedrock
+        // no key needed for llama_local or gaianet
         case ModelProviderName.LLAMALOCAL:
             return "";
         case ModelProviderName.OLLAMA:
-            return "";
-        case ModelProviderName.LMSTUDIO:
             return "";
         case ModelProviderName.GAIANET:
             return "";
@@ -1295,6 +1294,12 @@ export async function createAgent(
             getSecret(character, "ARBITRAGE_FLASHBOTS_RELAY_SIGNING_KEY") &&
             getSecret(character, "ARBITRAGE_BUNDLE_EXECUTOR_ADDRESS")
                 ? arbitragePlugin
+                : null,
+            getSecret(character, "DESK_EXCHANGE_PRIVATE_KEY")
+                ? deskExchangePlugin
+                : null,
+            getSecret(character, "DESK_EXCHANGE_NETWORK")
+                ? deskExchangePlugin
                 : null,
         ]
             .flat()
