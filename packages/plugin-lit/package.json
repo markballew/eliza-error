@@ -20,15 +20,6 @@
     ],
     "dependencies": {
         "@elizaos/core": "workspace:*",
-        "@elizaos/plugin-tee": "workspace:*",
-        "@lifi/data-types": "5.15.5",
-        "@lifi/sdk": "3.4.1",
-        "@lifi/types": "16.3.0",
-        "tsup": "8.3.5",
-        "@lit-protocol/lit-node-client": "^7.0.4",
-        "@lit-protocol/constants": "^7.0.4",
-        "@lit-protocol/auth-helpers": "^7.0.4",
-        "@lit-protocol/aw-tool": "*"
         "@ethersproject/abstract-provider": "^5.0.0",
         "@lit-protocol/auth-helpers": "^7.0.2",
         "@lit-protocol/constants": "^7.0.2",
@@ -52,12 +43,6 @@
     "scripts": {
         "build": "tsup --format esm --dts",
         "dev": "tsup --format esm --dts --watch",
-        "test": "vitest run",
-        "start": "node dist/index.js --isRoot --character=characters/trump.character.json",
-        "lint": "eslint --fix  --cache ."
-    },
-    "peerDependencies": {
-        "whatwg-url": "7.1.0"
         "lint": "eslint . --fix",
         "clean": "rm -rf dist",
         "typecheck": "tsc --noEmit"
