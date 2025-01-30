@@ -15,10 +15,7 @@
     "scripts": {
         "clean": "rm -rf dist",
         "build": "tsup --format esm --dts",
-        "dev": "tsup --format esm --dts --watch",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage"
+        "dev": "tsup --format esm --dts --watch"
     },
     "dependencies": {
         "@elizaos/adapter-sqlite": "^0.1.8",
@@ -44,9 +41,7 @@
         "rimraf": "^5.0.5",
         "typescript": "^5.7.3",
         "@types/dotenv": "^8.2.0",
-        "tsup": "^8.0.2",
-        "vitest": "^2.1.4",
-        "@vitest/coverage-v8": "^2.1.4"
+        "tsup": "^8.0.2"
     },
     "peerDependencies": {
         "@elizaos/core": "workspace:*"
