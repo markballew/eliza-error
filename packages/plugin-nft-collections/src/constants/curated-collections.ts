@@ -1766,9 +1766,6 @@ export {
     getVerifiedAddresses,
 } from "./collections";
 
-// Define CollectionCategory as a type
-type CollectionCategory = string;
-
 // Helper functions
 export function getCollectionsByCategory(
     category: CollectionCategory

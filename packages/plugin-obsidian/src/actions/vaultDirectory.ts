@@ -38,8 +38,8 @@ export const listDirectoryAction: Action = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State,
-        _options: any,
+        state: State,
+        options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.info("Starting list directory handler");

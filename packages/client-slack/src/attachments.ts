@@ -45,7 +45,7 @@ async function generateSummary(
 
     const parsedResponse = parseJSONObjectFromText(response);
 
-    if (parsedResponse?.title && parsedResponse?.summary) {
+    if (parsedResponse) {
         return {
             title: parsedResponse.title,
             description: parsedResponse.summary,

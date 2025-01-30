@@ -46,7 +46,7 @@ export const deployContractAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        _options: any,
         callback: HandlerCallback
     ) => {
         elizaLogger.info("Starting deploy contract action");

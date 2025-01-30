@@ -12,7 +12,6 @@ import {
 import { type NoteContent, noteSchema, isValidNote } from "../types";
 import { getObsidian }  from "../helper";
 import { noteTemplate } from "../templates/note";
-import { fileTemplate } from "../templates/file";
 
 export const getNoteAction: Action = {
     name: "GET_NOTE",
@@ -46,7 +45,7 @@ export const getNoteAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: any,
+        options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.info("Starting get note handler");
@@ -55,22 +54,15 @@ export const getNoteAction: Action = {
         try {
             let path = "";
             // Initialize or update state for context generation
-            // if (!state) {
-            //     state = (await runtime.composeState(message)) as State;
-            // } else {
-            //     state = await runtime.updateRecentMessageState(state);
-            // }
-
-            let currentState: State;
             if (!state) {
-                currentState = (await runtime.composeState(message)) as State;
+                state = (await runtime.composeState(message)) as State;
             } else {
-                currentState = await runtime.updateRecentMessageState(state);
+                state = await runtime.updateRecentMessageState(state);
             }
 
             const context = composeContext({
-                state: currentState,
-                template: fileTemplate(message.content.text),
+                state,
+                template: noteTemplate(message.content.text),
             });
 
             const noteContext = await generateObject({

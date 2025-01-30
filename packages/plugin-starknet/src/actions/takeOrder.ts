@@ -9,7 +9,7 @@ import {
     ModelClass,
     settings,
 } from "@elizaos/core";
-import * as fs from "node:fs";  // Added node: protocol
+import * as fs from "fs";
 import { validateStarknetConfig } from "../environment";
 
 interface Order {
@@ -54,9 +54,7 @@ const take_order: Action = {
         const _text = (message.content as Content).text;
         const userId = message.userId;
 
-        // Fix: Declare variables separately with explicit types
-        let ticker: string | undefined;
-        let contractAddress: string | undefined;
+        let ticker, contractAddress;
 
         // TODO:
 

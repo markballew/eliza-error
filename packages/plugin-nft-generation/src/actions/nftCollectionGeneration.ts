@@ -61,8 +61,8 @@ const nftCollectionGeneration: Action = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State,
-        _options: { [key: string]: unknown },
+        state: State,
+        options: { [key: string]: unknown },
         callback: HandlerCallback
     ) => {
         try {

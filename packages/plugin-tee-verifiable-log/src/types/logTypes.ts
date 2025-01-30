@@ -1,3 +1,4 @@
+
 export interface VerifiableLog {
     id: string; // Primary Key UUID
     created_at?: Date; // Default value: CURRENT_TIMESTAMP
@@ -27,14 +28,14 @@ export interface VerifiableAgent {
     agent_keypair_vlog_pk: string; // Not null
 }
 
-export interface PageQuery<Result = unknown> {
+export interface PageQuery<Result = any> {
     page: number;
     pageSize: number;
     total?: number;
     data?: Result;
 }
 
-export abstract class VerifiableDAO<DB = unknown> {
+export abstract class VerifiableDAO<DB = any> {
     protected constructor() {}
 
     /**

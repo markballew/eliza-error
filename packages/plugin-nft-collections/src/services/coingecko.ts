@@ -15,17 +15,6 @@ interface CoinGeckoNFTData {
     number_of_unique_currencies?: number;
 }
 
-interface GlobalNFTStats {
-    data: {
-        total_market_cap_usd: number;
-        total_volume_24h_usd: number;
-        market_cap_change_24h: number;
-        volume_change_24h: number;
-        number_of_unique_currencies: number;
-        number_of_unique_addresses: number;
-    };
-}
-
 export class CoinGeckoService {
     private baseUrl = "https://api.coingecko.com/api/v3";
     private apiKey?: string;
@@ -36,18 +25,13 @@ export class CoinGeckoService {
 
     private async fetch<T>(
         endpoint: string,
-        params: Record<string, string | number | boolean> = {}
+        params: Record<string, any> = {}
     ): Promise<T> {
         if (this.apiKey) {
             params.x_cg_pro_api_key = this.apiKey;
         }
 
-        const queryString = new URLSearchParams(
-            Object.fromEntries(
-                Object.entries(params).map(([key, value]) => [key, String(value)])
-            )
-        ).toString();
-
+        const queryString = new URLSearchParams(params).toString();
         const url = `${this.baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
 
         const response = await fetch(url, {
@@ -95,12 +79,12 @@ export class CoinGeckoService {
         number_of_unique_currencies: number;
         number_of_unique_addresses: number;
     }> {
-        const data = await this.fetch<GlobalNFTStats>("/global/nft");
+        const data = await this.fetch<any>("/global/nft");
         return data.data;
     }
 
     async getTrendingCollections(): Promise<CoinGeckoNFTData[]> {
-        const data = await this.fetch<CoinGeckoNFTData[]>("/nfts/list", {
+        const data = await this.fetch<any>("/nfts/list", {
             order: "market_cap_usd_desc",
             per_page: "20",
             page: "1",

@@ -8,12 +8,11 @@ import {
 
 import {
     initLightningProvider,
-    type LightningProvider,
+    LightningProvider,
 } from "../providers/lightning";
-import type { PayResult } from "astra-lightning";
-import type { PayArgs } from "../types";
+import { PayResult } from "astra-lightning";
+import { PayArgs } from "../types";
 import { payInvoiceTemplate } from "../templates";
-import { z } from "zod";
 
 export { payInvoiceTemplate };
 
@@ -55,14 +54,6 @@ export class PayInvoiceAction {
     }
 }
 
-// Define the schema type
-const payInvoiceSchema = z.object({
-    request: z.string(),
-    outgoing_channel: z.string()
-});
-
-type PayInvoiceContent = z.infer<typeof payInvoiceSchema>;
-
 export const payInvoiceAction = {
     name: "PAY_INVOICE",
     description: "Make a payment.",
@@ -70,11 +61,8 @@ export const payInvoiceAction = {
         runtime: IAgentRuntime,
         _message: Memory,
         state: State,
-        _options: Record<string, unknown>,
-        callback?: (response: {
-            text: string;
-            content?: { success: boolean };
-        }) => void
+        _options: any,
+        callback?: any
     ) => {
         elizaLogger.log("payInvoice action handler called");
         const lightningProvider = await initLightningProvider(runtime);
@@ -88,15 +76,12 @@ export const payInvoiceAction = {
         const content = await generateObject({
             runtime,
             context: payInvoiceContext,
-            schema: payInvoiceSchema as z.ZodType,
             modelClass: ModelClass.LARGE,
         });
 
-        const payInvoiceContent = content.object as PayInvoiceContent;
-
         const payInvoiceOptions: PayArgs = {
-            request: payInvoiceContent.request,
-            outgoing_channel: payInvoiceContent.outgoing_channel,
+            request: content.request,
+            outgoing_channel: content.outgoing_channel,
         };
 
         try {
@@ -104,14 +89,15 @@ export const payInvoiceAction = {
             elizaLogger.log("🚀 ~ payInvoiceResp:", payInvoiceResp);
 
             if (callback) {
+                const text = "";
                 if (payInvoiceResp.is_confirmed) {
                     callback({
-                        text: `Successfully paid invoice ${payInvoiceContent.request} from ${payInvoiceResp.outgoing_channel};\nAmount: ${payInvoiceResp.tokens};\nFee: ${payInvoiceResp.fee};\nPayment Hash: ${payInvoiceResp.id};`,
+                        text: `Successfully paid invoice ${content.request} from ${payInvoiceResp.outgoing_channel};\nAmount: ${payInvoiceResp.tokens};\nFee: ${payInvoiceResp.fee};\nPayment Hash: ${payInvoiceResp.id};`,
                         content: { success: true },
                     });
                 } else {
                     callback({
-                        text: `Failed to payInvoice ${payInvoiceContent.request} from ${payInvoiceContent.outgoing_channel};\r\n Amount: ${payInvoiceResp.tokens};`,
+                        text: `Failed to payInvoice ${content.request} from ${content.outgoing_channel};\r\n Amount: ${payInvoiceResp.tokens};`,
                         content: {
                             success: false,
                         },

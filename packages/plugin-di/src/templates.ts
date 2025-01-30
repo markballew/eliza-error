@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ContentPropertyDescription } from "./types";
+import { ContentPropertyDescription } from "./types";
 
 /**
  * build the content output template

@@ -1,13 +1,13 @@
 import {
-    type ActionExample,
+    ActionExample,
     composeContext,
     generateObjectDeprecated,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
     settings,
-    type State,
+    State,
     type Action,
     elizaLogger,
 } from "@elizaos/core";

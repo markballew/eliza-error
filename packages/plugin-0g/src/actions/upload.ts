@@ -16,6 +16,7 @@ import { composeContext } from "@elizaos/core";
 import { promises as fs } from "fs";
 import { FileSecurityValidator } from "../utils/security";
 import { logSecurityEvent, monitorUpload, monitorFileValidation, monitorCleanup } from '../utils/monitoring';
+import path from 'path';
 import { uploadTemplate } from "../templates/upload";
 
 export interface UploadContent extends Content {
@@ -60,13 +61,13 @@ export const zgUpload: Action = {
                 hasFlowAddr: Boolean(settings.flowAddr)
             });
 
-            const hasRequiredSettings = Object.entries(settings).every(([_key, value]) => Boolean(value));
-
+            const hasRequiredSettings = Object.entries(settings).every(([key, value]) => Boolean(value));
+            
             if (!hasRequiredSettings) {
                 const missingSettings = Object.entries(settings)
                     .filter(([_, value]) => !value)
                     .map(([key]) => key);
-
+                
                 elizaLogger.error("Missing required ZeroG settings", {
                     missingSettings,
                     messageId: message.id

@@ -122,17 +122,16 @@ export default {
     ): Promise<boolean> => {
         elizaLogger.log("Starting SEND_TOKEN handler...");
 
-        // Fix: Create new variable instead of reassigning parameter
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        // Initialize or update state
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -163,7 +162,7 @@ export default {
             const decimals = await erc20Token.decimals();
             // Convert decimal amount to integer before converting to BigInt
             const amountInteger = Math.floor(
-                Number(content.amount) * (10 ** Number(decimals))  // Fix: Use exponentiation operator instead of Math.pow
+                Number(content.amount) * Math.pow(10, Number(decimals))
             );
             const amountWei = BigInt(amountInteger.toString());
             const recipient =
@@ -183,11 +182,13 @@ export default {
             const tx = await account.execute(transferCall);
 
             elizaLogger.success(
-                `Transfer completed successfully! tx: ${tx.transaction_hash}`  // Fix: Use template literal
+                "Transfer completed successfully! tx: " + tx.transaction_hash
             );
             if (callback) {
                 callback({
-                    text: `Transfer completed successfully! tx: ${tx.transaction_hash}`,  // Fix: Use template literal
+                    text:
+                        "Transfer completed successfully! tx: " +
+                        tx.transaction_hash,
                     content: {},
                 });
             }

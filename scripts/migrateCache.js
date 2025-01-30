@@ -1,5 +1,5 @@
-import fs, { glob } from "node:fs/promises";
-import path from "node:path";
+import fs, { glob } from "fs/promises";
+import path from "path";
 
 const characterName = "eliza";
 const newCacheDir = path.resolve(`./data/${characterName}/cache`);
@@ -15,7 +15,8 @@ const cachedFiles = {
     "tweetcache/latest_checked_tweet_id.txt": `twitter/${twitterUserName}/latest_checked_tweet_id`,
     "tweetcache/home_timeline.json": `twitter/${twitterUserName}/timeline`,
     "tweetcache/tweet_generation_*.txt": "twitter/",
-    "tweetcache/**/*.json": "twitter/tweets/",
+    "tweetcache/tweet_generation_*.txt": "twitter/",
+    "tweetcache/**/*.json": `twitter/tweets/`,
 
     "content_cache/summary_*.txt": "content/discord/",
     "content_cache/transcript_*.txt": "content/discord/",
@@ -37,7 +38,7 @@ async function migrate() {
 
     for (const key in cachedFiles) {
         if (!key) continue;
-        const results = await glob([`./packages/**/${key}`]);
+        const results = await glob(["./packages/**/" + key]);
 
         console.log({ searching: key });
 
@@ -55,7 +56,7 @@ async function migrate() {
                   )
                 : cacheKey;
 
-            const absolutePath = `${path.join(newCacheDir, filename)}.json`;
+            const absolutePath = path.join(newCacheDir, filename) + ".json";
 
             console.log(filePath, absolutePath);
 

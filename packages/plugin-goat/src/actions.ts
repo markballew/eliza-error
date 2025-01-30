@@ -48,7 +48,7 @@ function getActionHandler(
         runtime: IAgentRuntime,
         message: Memory,
         state: State | undefined,
-        _options?: Record<string, unknown>,
+        options?: Record<string, unknown>,
         callback?: HandlerCallback
     ): Promise<boolean> => {
         let currentState = state ?? (await runtime.composeState(message));

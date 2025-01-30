@@ -10,15 +10,15 @@ import type {
 import { fal } from "@fal-ai/client";
 import { FAL_CONSTANTS, VOICE_MAP, getRandomVoice } from "./constants";
 
-import * as fs from "node:fs";
-import { Buffer } from "node:buffer";
-import * as path from "node:path";
-import * as process from "node:process";
+import * as fs from "fs";
+import { Buffer } from "buffer";
+import * as path from "path";
+import * as process from "process";
 import { detect } from 'langdetect';
 
 const generateTTS = async (prompt: string, voice: string, runtime: IAgentRuntime) => {
-
-    process.env.FAL_KEY = FAL_CONSTANTS.API_KEY_SETTING || runtime.getSetting("FAL_API_KEY");
+    process.env["FAL_KEY"] =
+        FAL_CONSTANTS.API_KEY_SETTING || runtime.getSetting("FAL_API_KEY");
 
     try {
         elizaLogger.log("Starting TTS generation with prompt:", prompt);
@@ -74,7 +74,7 @@ const TTSGeneration: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         _state: State,
-        _options: Record<string, unknown>,
+        _options: any,
         callback: HandlerCallback
     ) => {
         elizaLogger.debug("TTS request:", message);
@@ -95,7 +95,7 @@ const TTSGeneration: Action = {
             text: `I'll generate an audio based on your prompt: "${TTSPrompt}". This might take a few seconds...`,
         });
 
-        let target_voice: string;
+        let target_voice;
         try {
             const language = detect(TTSPrompt);
             if (language && language.length > 0) {
@@ -106,10 +106,7 @@ const TTSGeneration: Action = {
             }
         } catch (error) {
             elizaLogger.error("Language detection error:", error);
-
-            // const defaultVoice = VOICE_MAP['en'];
-            const defaultVoice = VOICE_MAP.en;
-
+            const defaultVoice = VOICE_MAP['en'];
             target_voice = getRandomVoice(defaultVoice).fullName;
         }
 

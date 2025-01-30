@@ -46,16 +46,16 @@ export const xChainSwapAction = {
     ): Promise<boolean> => {
         elizaLogger.log("Starting X_CHAIN_SWAP handler...");
 
-        let currentState = state; // Create new variable
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        // Initialize or update state
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose X chain swap context
         const xChainSwapContext = composeContext({
-            state: currentState, // Use the new variable
+            state,
             template: xChainSwapTemplate,
         });
 
@@ -164,12 +164,13 @@ export const xChainSwapAction = {
             const txReceipt = await tx.wait();
 
             // Show the transaction receipt with Axelarscan link
-            const axelarScanLink = `https://axelarscan.io/gmp/${txReceipt.hash}`; // Fix: Use template literal
+            const axelarScanLink = "https://axelarscan.io/gmp/" + txReceipt.hash;
             elizaLogger.log(`Finished! Check Axelarscan for details: ${axelarScanLink}`);
 
             if (callback) {
                 callback({
-                    text: `Swap completed successfully! Check Axelarscan for details:\n${axelarScanLink}`, // Fix: Use template literal
+                    text:
+                        "Swap completed successfully! Check Axelarscan for details:\n " + axelarScanLink,
                     content: {},
                 });
             }

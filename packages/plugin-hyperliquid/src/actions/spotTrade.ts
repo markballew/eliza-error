@@ -16,7 +16,7 @@ import {
     HyperliquidError,
     PRICE_VALIDATION,
 } from "../types.js";
-import { priceCheckTemplate, spotTradeTemplate } from "../templates.js";
+import { spotTradeTemplate } from "../templates.js";
 
 export const spotTrade: Action = {
     name: "SPOT_TRADE",
@@ -29,18 +29,18 @@ export const spotTrade: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        options: Record<string, unknown>,
         callback?: HandlerCallback
     ) => {
         try {
             // Initialize or update state
-            const currentState = !state
+            state = !state
                 ? await runtime.composeState(message)
                 : await runtime.updateRecentMessageState(state);
 
             const context = composeContext({
-                state: currentState,
-                template: priceCheckTemplate,
+                state,
+                template: spotTradeTemplate,
             });
 
             const content = await generateObjectDeprecated({

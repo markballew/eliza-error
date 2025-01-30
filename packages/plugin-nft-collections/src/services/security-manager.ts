@@ -1,9 +1,8 @@
-import * as crypto from "node:crypto";
+import * as crypto from "crypto";
 
 interface SecurityConfig {
     algorithm: string;
 }
-type SensitiveData = string | number | boolean | object;
 
 export class SecurityManager {
     private config: SecurityConfig;
@@ -17,7 +16,7 @@ export class SecurityManager {
         this.iv = crypto.randomBytes(16); // 128 bits for AES
     }
 
-    encryptSensitiveData(data: SensitiveData): string {
+    encryptSensitiveData(data: any): string {
         const cipher = crypto.createCipheriv(
             this.config.algorithm,
             this.key,
@@ -28,7 +27,7 @@ export class SecurityManager {
         encrypted += cipher.final("hex");
 
         // Return IV + encrypted data
-        return `${this.iv.toString("hex")}:${encrypted}`;
+        return this.iv.toString("hex") + ":" + encrypted;
     }
 
     decryptSensitiveData<T>(encryptedData: string): T {
@@ -55,7 +54,7 @@ export class SecurityManager {
         return crypto.createHash("sha256").update(data).digest("hex");
     }
 
-    generateSignature(data: SensitiveData, timestamp: number): string {
+    generateSignature(data: any, timestamp: number): string {
         const message = JSON.stringify(data) + timestamp;
         return crypto
             .createHmac("sha256", this.key)
@@ -63,7 +62,7 @@ export class SecurityManager {
             .digest("hex");
     }
 
-    verifySignature(data: SensitiveData, timestamp: number, signature: string): boolean {
+    verifySignature(data: any, timestamp: number, signature: string): boolean {
         const expectedSignature = this.generateSignature(data, timestamp);
         const signatureBuffer = Buffer.from(signature);
         const expectedBuffer = Buffer.from(expectedSignature);

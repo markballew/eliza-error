@@ -21,8 +21,7 @@ export type TransferCall = {
 };
 
 export class ERC20Token {
-    // abi: any;
-    abi: typeof erc20Abi;  // Fix: Use the actual type of the ABI
+    abi: any;
     contract: Contract;
     calldata: CallData;
     constructor(

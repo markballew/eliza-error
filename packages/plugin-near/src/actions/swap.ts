@@ -23,40 +23,15 @@ import {
 import { walletProvider } from "../providers/wallet";
 import type { KeyPairString } from "near-api-js/lib/utils";
 
-// Add interface for swap response
-interface SwapResponse {
-    inputTokenId: string;
-    outputTokenId: string;
-    amount: string;
-}
-
-// Add type for swap result
-interface SwapTransaction {
-    receiverId: string;
-    functionCalls: Array<{
-        methodName: string;
-        args: Record<string, unknown>;
-        gas: string;
-        amount: string;
-    }>;
-}
-
 async function checkStorageBalance(
-    account: unknown,
+    account: any,
     contractId: string
 ): Promise<boolean> {
     try {
-        const balance = await (account as {
-            viewFunction: (args: {
-                contractId: string;
-                methodName: string;
-                args: { account_id: string };
-            }) => Promise<{ total: string } | null>;
-            accountId: string;
-        }).viewFunction({
+        const balance = await account.viewFunction({
             contractId,
             methodName: "storage_balance_of",
-            args: { account_id: (account as { accountId: string }).accountId },
+            args: { account_id: account.accountId },
         });
         return balance !== null && balance.total !== "0";
     } catch (error) {
@@ -73,7 +48,7 @@ async function swapToken(
     slippageTolerance: number = Number(
         runtime.getSetting("SLIPPAGE_TOLERANCE")
     ) || 0.01
-): Promise<unknown> {
+): Promise<any> {
     try {
         // Get token metadata
         const tokenIn = await ftGetTokenMetadata(inputTokenId);
@@ -227,25 +202,17 @@ export const executeSwap: Action = {
         // Initialize Ref SDK with testnet environment
         init_env(runtime.getSetting("NEAR_NETWORK") || "testnet");
         // Compose state
-
-        // if (!state) {
-        //     state = (await runtime.composeState(message)) as State;
-        // } else {
-        //     state = await runtime.updateRecentMessageState(state);
-        // }
-        let currentState: State;
-        
         if (!state) {
-            currentState = (await runtime.composeState(message)) as State;
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(state);
+            state = await runtime.updateRecentMessageState(state);
         }
 
-        const walletInfo = await walletProvider.get(runtime, message, currentState);
-        currentState.walletInfo = walletInfo;
+        const walletInfo = await walletProvider.get(runtime, message, state);
+        state.walletInfo = walletInfo;
 
         const swapContext = composeContext({
-            state: currentState,
+            state,
             template: swapTemplate,
         });
 
@@ -253,20 +220,15 @@ export const executeSwap: Action = {
             runtime,
             context: swapContext,
             modelClass: ModelClass.LARGE,
-        }) as unknown as SwapResponse;
+        });
 
-        // Type guard for response validation
-        function isSwapResponse(obj: unknown): obj is SwapResponse {
-            return (
-                typeof obj === 'object' &&
-                obj !== null &&
-                'inputTokenId' in obj &&
-                'outputTokenId' in obj &&
-                'amount' in obj
-            );
-        }
+        elizaLogger.log("Response:", response);
 
-        if (!isSwapResponse(response)) {
+        if (
+            !response.inputTokenId ||
+            !response.outputTokenId ||
+            !response.amount
+        ) {
             elizaLogger.log("Missing required parameters, skipping swap");
             const responseMsg = {
                 text: "I need the input token ID, output token ID, and amount to perform the swap",
@@ -300,13 +262,13 @@ export const executeSwap: Action = {
             });
 
             // Execute swap
-            const swapResult = (await swapToken(
+            const swapResult = await swapToken(
                 runtime,
                 response.inputTokenId,
                 response.outputTokenId,
                 response.amount,
                 Number(runtime.getSetting("SLIPPAGE_TOLERANCE")) || 0.01
-            )) as SwapTransaction[];
+            );
 
             // Sign and send transactions
             const account = await nearConnection.account(accountId);
@@ -318,7 +280,7 @@ export const executeSwap: Action = {
                         contractId: tx.receiverId,
                         methodName: functionCall.methodName,
                         args: functionCall.args,
-                        gas: BigInt(functionCall.gas),  // Convert string to BigInt
+                        gas: functionCall.gas,
                         attachedDeposit: BigInt(
                             functionCall.amount === ONE_YOCTO_NEAR
                                 ? "1"

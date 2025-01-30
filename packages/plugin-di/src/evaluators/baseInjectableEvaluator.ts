@@ -1,5 +1,5 @@
 import { injectable, unmanaged } from "inversify";
-import type {
+import {
     IAgentRuntime,
     EvaluationExample,
     Memory,
@@ -23,7 +23,7 @@ export abstract class BaseInjectableEvaluator implements InjectableEvaluator {
     /**
      * Constructor for the base injectable action
      */
-    constructor(opts: EvaluatorOptions) {
+    constructor(@unmanaged() opts: EvaluatorOptions) {
         // Set the action properties
         this.name = opts.name;
         this.similes = opts.similes;

@@ -398,10 +398,6 @@ Optional client-specific config
 
 > `optional` **teamMemberInterestKeywords**: `string`[]
 
-### clientConfig.discord.allowedChannelIds?
-
-> `optional` **allowedChannelIds**: `string`[]
-
 ### clientConfig.telegram?
 
 > `optional` **telegram**: `object`

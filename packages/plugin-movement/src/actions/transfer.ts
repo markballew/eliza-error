@@ -21,23 +21,19 @@ import {
     PrivateKeyVariants,
 } from "@aptos-labs/ts-sdk";
 import { walletProvider } from "../providers/wallet";
-import {
-    MOVEMENT_NETWORK_CONFIG,
-    MOVE_DECIMALS,
-    MOVEMENT_EXPLORER_URL,
-} from "../constants";
+import { MOVEMENT_NETWORK_CONFIG, MOVE_DECIMALS, MOVEMENT_EXPLORER_URL } from "../constants";
 
 export interface TransferContent extends Content {
     recipient: string;
     amount: string | number;
 }
 
-function isTransferContent(content: unknown): content is TransferContent {
+function isTransferContent(content: any): content is TransferContent {
     elizaLogger.debug("Validating transfer content:", content);
     return (
-        typeof (content as TransferContent).recipient === "string" &&
-        (typeof (content as TransferContent).amount === "string" ||
-            typeof (content as TransferContent).amount === "number")
+        typeof content.recipient === "string" &&
+        (typeof content.amount === "string" ||
+            typeof content.amount === "number")
     );
 }
 
@@ -84,27 +80,19 @@ export default {
         "transfer token",
         "can you send",
         "please send",
-        "send",
+        "send"
     ],
     shouldHandle: (message: Memory) => {
         const text = message.content?.text?.toLowerCase() || "";
-        return (
-            text.includes("send") &&
-            text.includes("move") &&
-            text.includes("0x")
-        );
+        return text.includes("send") && text.includes("move") && text.includes("0x");
     },
-    validate: async (_runtime: IAgentRuntime, message: Memory) => {
-        elizaLogger.debug(
-            "Starting transfer validation for user:",
-            message.userId
-        );
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
+        elizaLogger.debug("Starting transfer validation for user:", message.userId);
         elizaLogger.debug("Message text:", message.content?.text);
         return true; // Let the handler do the validation
     },
     priority: 1000, // High priority for transfer actions
-    description:
-        "Transfer Move tokens from the agent's wallet to another address",
+    description: "Transfer Move tokens from the agent's wallet to another address",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -116,22 +104,16 @@ export default {
         elizaLogger.debug("Message:", {
             text: message.content?.text,
             userId: message.userId,
-            action: message.content?.action,
+            action: message.content?.action
         });
 
         try {
             const privateKey = runtime.getSetting("MOVEMENT_PRIVATE_KEY");
-            elizaLogger.debug(
-                "Got private key:",
-                privateKey ? "Present" : "Missing"
-            );
+            elizaLogger.debug("Got private key:", privateKey ? "Present" : "Missing");
 
             const network = runtime.getSetting("MOVEMENT_NETWORK");
             elizaLogger.debug("Network config:", network);
-            elizaLogger.debug(
-                "Available networks:",
-                Object.keys(MOVEMENT_NETWORK_CONFIG)
-            );
+            elizaLogger.debug("Available networks:", Object.keys(MOVEMENT_NETWORK_CONFIG));
 
             const movementAccount = Account.fromPrivateKey({
                 privateKey: new Ed25519PrivateKey(
@@ -141,40 +123,29 @@ export default {
                     )
                 ),
             });
-            elizaLogger.debug(
-                "Created Movement account:",
-                movementAccount.accountAddress.toStringLong()
-            );
+            elizaLogger.debug("Created Movement account:", movementAccount.accountAddress.toStringLong());
 
             const aptosClient = new Aptos(
                 new AptosConfig({
                     network: Network.CUSTOM,
-                    fullnode: MOVEMENT_NETWORK_CONFIG[network].fullnode,
+                    fullnode: MOVEMENT_NETWORK_CONFIG[network].fullnode
                 })
             );
-            elizaLogger.debug(
-                "Created Aptos client with network:",
-                MOVEMENT_NETWORK_CONFIG[network].fullnode
-            );
+            elizaLogger.debug("Created Aptos client with network:", MOVEMENT_NETWORK_CONFIG[network].fullnode);
 
-            const walletInfo = await walletProvider.get(
-                runtime,
-                message,
-                state
-            );
+            const walletInfo = await walletProvider.get(runtime, message, state);
             state.walletInfo = walletInfo;
 
             // Initialize or update state
-            let currentState: State;
             if (!state) {
-                currentState = (await runtime.composeState(message)) as State;
+                state = (await runtime.composeState(message)) as State;
             } else {
-                currentState = await runtime.updateRecentMessageState(state);
+                state = await runtime.updateRecentMessageState(state);
             }
 
             // Compose transfer context
             const transferContext = composeContext({
-                state: currentState,
+                state,
                 template: transferTemplate,
             });
 
@@ -198,7 +169,7 @@ export default {
             }
 
             const adjustedAmount = BigInt(
-                Number(content.amount) * 10 ** MOVE_DECIMALS
+                Number(content.amount) * Math.pow(10, MOVE_DECIMALS)
             );
             console.log(
                 `Transferring: ${content.amount} tokens (${adjustedAmount} base units)`
@@ -226,7 +197,7 @@ export default {
                 hash: executedTransaction.hash,
                 amount: content.amount,
                 recipient: content.recipient,
-                explorerUrl,
+                explorerUrl
             });
 
             if (callback) {
@@ -237,7 +208,7 @@ export default {
                         hash: executedTransaction.hash,
                         amount: content.amount,
                         recipient: content.recipient,
-                        explorerUrl,
+                        explorerUrl
                     },
                 });
             }
@@ -285,6 +256,6 @@ export default {
                     action: "TRANSFER_MOVE",
                 },
             },
-        ],
+        ]
     ] as ActionExample[][],
 } as Action;

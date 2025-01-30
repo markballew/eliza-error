@@ -245,15 +245,6 @@ export class MessageManager {
                     `${event.ts}-${this.runtime.agentId}`
                 );
 
-                // Ensure both the sender and agent are properly set up in the room
-                await this.runtime.ensureConnection(
-                    userId,
-                    roomId,
-                    event.user,
-                    event.user,
-                    "slack"
-                );
-
                 // Create initial memory
                 console.log("💾 Step 5: Creating initial memory");
                 const content: Content = {

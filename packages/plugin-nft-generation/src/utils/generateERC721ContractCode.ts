@@ -1,7 +1,7 @@
 import solc from "solc";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Load OpenZeppelin contract source code
 export function loadOpenZeppelinFile(contractPath) {
@@ -45,9 +45,7 @@ export function compileWithImports(contractName, sourceCode) {
     );
 
     if (output.errors) {
-        for (const err of output.errors) {
-            console.error(err);
-        }
+        output.errors.forEach((err) => console.error(err));
     }
     const contractFile = output.contracts[`${contractName}.sol`][`${contractName}`];
 

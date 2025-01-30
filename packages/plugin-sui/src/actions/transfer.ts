@@ -1,12 +1,11 @@
 import {
-    ActionExample,
-    Content,
-    HandlerCallback,
-    IAgentRuntime,
-    Memory,
+    type ActionExample,
+    type Content,
+    type HandlerCallback,
+    type IAgentRuntime,
+    type Memory,
     ModelClass,
-    ServiceType,
-    State,
+    type State,
     composeContext,
     elizaLogger,
     generateObject,
@@ -19,8 +18,9 @@ import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 
 import { walletProvider } from "../providers/wallet";
-import { parseAccount, SuiNetwork } from "../utils";
-import { SuiService } from "../services/sui";
+import { parseAccount } from "../utils";
+
+type SuiNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
 
 export interface TransferContent extends Content {
     recipient: string;
@@ -163,14 +163,8 @@ export default {
             console.log("Transfer successful:", executedTransaction.digest);
 
             if (callback) {
-                const suiService = runtime.getService<SuiService>(
-                    ServiceType.TRANSCRIPTION
-                );
-                const txLink = await suiService.getTransactionLink(
-                    executedTransaction.digest
-                );
                 callback({
-                    text: `Successfully transferred ${transferContent.amount} SUI to ${transferContent.recipient}, Transaction: ${txLink}`,
+                    text: `Successfully transferred ${transferContent.amount} SUI to ${transferContent.recipient}, Transaction: ${executedTransaction.digest}`,
                     content: {
                         success: true,
                         hash: executedTransaction.digest,

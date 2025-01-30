@@ -1,11 +1,11 @@
 import {
     composeContext,
     generateObjectDeprecated,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
     ModelClass,
-    type State,
+    State,
 } from "@elizaos/core";
 import { initWalletChainsData } from "../../providers/wallet/utils";
 import {
@@ -16,7 +16,7 @@ import type {
     ICosmosPluginOptions,
     ICosmosWalletChains,
 } from "../../shared/interfaces";
-import type { IBCTransferActionParams } from "./types";
+import { IBCTransferActionParams } from "./types";
 import { IBCTransferAction } from "./services/ibc-transfer-action-service";
 import { bridgeDenomProvider } from "./services/bridge-denom-provider";
 

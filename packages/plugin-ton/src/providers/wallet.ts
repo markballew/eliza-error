@@ -6,21 +6,15 @@ import type {
     State,
 } from "@elizaos/core";
 
-import { TonClient, WalletContractV4, fromNano } from "@ton/ton";
-import {
-    type KeyPair,
-    mnemonicToPrivateKey,
-    mnemonicToWalletKey,
-} from "@ton/crypto";
+import { TonClient, WalletContractV4 } from "@ton/ton";
+import { type KeyPair, mnemonicToPrivateKey } from "@ton/crypto";
 
 import NodeCache from "node-cache";
-import * as path from "node:path";  // Changed to use node: protocol
+import * as path from "path";
 import BigNumber from "bignumber.js";
-import { CONFIG_KEYS } from "../enviroment";
 
 const PROVIDER_CONFIG = {
     MAINNET_RPC: "https://toncenter.com/api/v2/jsonRPC",
-    RPC_API_KEY: "",
     STONFI_TON_USD_POOL: "EQCGScrZe1xbyWqWDvdI6mzP-GAcAWFv6ZXuaJOuSqemxku4",
     CHAIN_NAME_IN_DEXSCREENER: "ton",
     // USD_DECIMAL=10^6
@@ -29,6 +23,8 @@ const PROVIDER_CONFIG = {
     // 10^9
     TON_DECIMAL: BigInt(1000000000),
 };
+// settings
+// TON_PRIVATE_KEY, TON_RPC_URL
 
 interface WalletPortfolio {
     totalUsd: string;
@@ -36,7 +32,7 @@ interface WalletPortfolio {
 }
 
 interface Prices {
-    nativeToken: { usd: BigNumber };
+    nativeToken: { usd: string };
 }
 
 export class WalletProvider {
@@ -44,13 +40,13 @@ export class WalletProvider {
     wallet: WalletContractV4;
     private cache: NodeCache;
     private cacheKey = "ton/wallet";
-    private rpcApiKey: string;
 
+    // reqiure hex private key
     constructor(
         // mnemonic: string,
         keypair: KeyPair,
         private endpoint: string,
-        private cacheManager: ICacheManager,
+        private cacheManager: ICacheManager
     ) {
         this.keypair = keypair;
         this.cache = new NodeCache({ stdTTL: 300 });
@@ -58,13 +54,12 @@ export class WalletProvider {
             workchain: 0,
             publicKey: keypair.publicKey,
         });
-        this.rpcApiKey = process.env.TON_RPC_API_KEY || PROVIDER_CONFIG.RPC_API_KEY;
     }
 
     // thanks to plugin-sui
     private async readFromCache<T>(key: string): Promise<T | null> {
         const cached = await this.cacheManager.get<T>(
-            path.join(this.cacheKey, key),
+            path.join(this.cacheKey, key)
         );
         return cached;
     }
@@ -107,13 +102,13 @@ export class WalletProvider {
         for (let i = 0; i < PROVIDER_CONFIG.MAX_RETRIES; i++) {
             try {
                 const response = await fetch(
-                    `https://api.dexscreener.com/latest/dex/pairs/${PROVIDER_CONFIG.CHAIN_NAME_IN_DEXSCREENER}/${PROVIDER_CONFIG.STONFI_TON_USD_POOL}`,
+                    `https://api.dexscreener.com/latest/dex/pairs/${PROVIDER_CONFIG.CHAIN_NAME_IN_DEXSCREENER}/${PROVIDER_CONFIG.STONFI_TON_USD_POOL}`
                 );
 
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(
-                        `HTTP error! status: ${response.status}, message: ${errorText}`,
+                        `HTTP error! status: ${response.status}, message: ${errorText}`
                     );
                 }
 
@@ -123,16 +118,16 @@ export class WalletProvider {
                 console.error(`Attempt ${i + 1} failed:`, error);
                 lastError = error;
                 if (i < PROVIDER_CONFIG.MAX_RETRIES - 1) {
-                    const delay = PROVIDER_CONFIG.RETRY_DELAY * (2 ** i);  // Changed Math.pow to ** operator
+                    const delay = PROVIDER_CONFIG.RETRY_DELAY * Math.pow(2, i);
                     await new Promise((resolve) => setTimeout(resolve, delay));
-                    // Removed unnecessary continue
+                    continue;
                 }
             }
         }
 
         console.error(
             "All attempts failed. Throwing the last error:",
-            lastError,
+            lastError
         );
         throw lastError;
     }
@@ -152,13 +147,13 @@ export class WalletProvider {
                 (error) => {
                     console.error(
                         `Error fetching ${PROVIDER_CONFIG.CHAIN_NAME_IN_DEXSCREENER.toUpperCase()} price:`,
-                        error,
+                        error
                     );
                     throw error;
-                },
+                }
             );
             const prices: Prices = {
-                nativeToken: { usd: new BigNumber(priceData.pair.priceUsd).dividedBy(new BigNumber(priceData.pair.priceNative)) },
+                nativeToken: { usd: priceData.pair.priceUsd },
             };
             this.setCachedData(cacheKey, prices);
             return prices;
@@ -170,14 +165,14 @@ export class WalletProvider {
 
     private formatPortfolio(
         runtime: IAgentRuntime,
-        portfolio: WalletPortfolio,
+        portfolio: WalletPortfolio
     ): string {
         let output = `${runtime.character.name}\n`;
         output += `Wallet Address: ${this.getAddress()}\n`;
 
         const totalUsdFormatted = new BigNumber(portfolio.totalUsd).toFixed(2);
         const totalNativeTokenFormatted = new BigNumber(
-            portfolio.totalNativeToken,
+            portfolio.totalNativeToken
         ).toFixed(4);
 
         output += `Total Value: $${totalUsdFormatted} (${totalNativeTokenFormatted} ${PROVIDER_CONFIG.CHAIN_NAME_IN_DEXSCREENER.toUpperCase()})\n`;
@@ -200,7 +195,7 @@ export class WalletProvider {
             const prices = await this.fetchPrices().catch((error) => {
                 console.error(
                     `Error fetching ${PROVIDER_CONFIG.CHAIN_NAME_IN_DEXSCREENER.toUpperCase()} price:`,
-                    error,
+                    error
                 );
                 throw error;
             });
@@ -208,25 +203,25 @@ export class WalletProvider {
                 (error) => {
                     console.error(
                         `Error fetching ${PROVIDER_CONFIG.CHAIN_NAME_IN_DEXSCREENER.toUpperCase()} amount:`,
-                        error,
+                        error
                     );
                     throw error;
-                },
+                }
             );
 
             const amount =
                 Number(nativeTokenBalance) /
                 Number(PROVIDER_CONFIG.TON_DECIMAL);
             const totalUsd = new BigNumber(amount.toString()).times(
-                prices.nativeToken.usd,
+                prices.nativeToken.usd
             );
 
             const portfolio = {
                 totalUsd: totalUsd.toString(),
-                totalNativeToken: amount.toFixed(4).toString(),
+                totalNativeToken: amount.toString(),
             };
-
             this.setCachedData(cacheKey, portfolio);
+            console.log("Fetched portfolio:", portfolio);
             return portfolio;
         } catch (error) {
             console.error("Error fetching portfolio:", error);
@@ -255,7 +250,6 @@ export class WalletProvider {
     getWalletClient(): TonClient {
         const client = new TonClient({
             endpoint: this.endpoint,
-            apiKey: this.rpcApiKey,
         });
         return client;
     }
@@ -263,7 +257,9 @@ export class WalletProvider {
     async getWalletBalance(): Promise<bigint | null> {
         try {
             const client = this.getWalletClient();
-            const balance = await client.getBalance(this.wallet.address);
+            const contract = client.open(this.wallet);
+            const balance = await contract.getBalance();
+
             return balance;
         } catch (error) {
             console.error("Error getting wallet balance:", error);
@@ -272,56 +268,38 @@ export class WalletProvider {
     }
 }
 
-// export const initWalletProvider = async (runtime: IAgentRuntime) => {
-//     const privateKey = runtime.getSetting(CONFIG_KEYS.TON_PRIVATE_KEY);
-//     let mnemonics: string[];
-
-//     if (!privateKey) {
-//         throw new Error(`${CONFIG_KEYS.TON_PRIVATE_KEY} is missing`);
-//     } else {
-//         mnemonics = privateKey.split(" ");
-//         if (mnemonics.length < 2) {
-//             throw new Error(`${CONFIG_KEYS.TON_PRIVATE_KEY} mnemonic seems invalid`);
-//         }
-//     }
-
 export const initWalletProvider = async (runtime: IAgentRuntime) => {
-    const privateKey = runtime.getSetting(CONFIG_KEYS.TON_PRIVATE_KEY);
-    // Removed unnecessary else clause
-    if (!privateKey) {
-        throw new Error(`${CONFIG_KEYS.TON_PRIVATE_KEY} is missing`);
-    }
-    
-    const mnemonics = privateKey.split(" ");
-    if (mnemonics.length < 2) {
-        throw new Error(`${CONFIG_KEYS.TON_PRIVATE_KEY} mnemonic seems invalid`);
-    }
+    const privateKey = runtime.getSetting("TON_PRIVATE_KEY");
+    let mnemonics: string[];
 
+    if (!privateKey) {
+        throw new Error("TON_PRIVATE_KEY is missing");
+    } else {
+        mnemonics = privateKey.split(" ");
+        if (mnemonics.length < 2) {
+            throw new Error("TON_PRIVATE_KEY mnemonic seems invalid");
+        }
+    }
     const rpcUrl =
         runtime.getSetting("TON_RPC_URL") || PROVIDER_CONFIG.MAINNET_RPC;
 
-    const keypair = await mnemonicToWalletKey(mnemonics, "");
+    const keypair = await mnemonicToPrivateKey(mnemonics, "");
     return new WalletProvider(keypair, rpcUrl, runtime.cacheManager);
 };
 
 export const nativeWalletProvider: Provider = {
     async get(
         runtime: IAgentRuntime,
-        // eslint-disable-next-line
-        _message: Memory,
-        // eslint-disable-next-line
-        _state?: State,
+        message: Memory,
+        state?: State
     ): Promise<string | null> {
         try {
             const walletProvider = await initWalletProvider(runtime);
-            const formattedPortfolio =
-                await walletProvider.getFormattedPortfolio(runtime);
-            console.log(formattedPortfolio);
-            return formattedPortfolio;
+            return await walletProvider.getFormattedPortfolio(runtime);
         } catch (error) {
             console.error(
                 `Error in ${PROVIDER_CONFIG.CHAIN_NAME_IN_DEXSCREENER.toUpperCase()} wallet provider:`,
-                error,
+                error
             );
             return null;
         }

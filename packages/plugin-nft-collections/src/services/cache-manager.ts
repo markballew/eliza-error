@@ -12,7 +12,7 @@ interface CacheEntry<T> {
 }
 
 export class MemoryCacheManager {
-    private cache: LRUCache<string, CacheEntry<unknown>>;
+    private cache: LRUCache<string, CacheEntry<any>>;
     private readonly DEFAULT_TTL = 3600000; // 1 hour
     private readonly COLLECTION_TTL = 300000; // 5 minutes
     private readonly MARKET_TTL = 60000; // 1 minute
@@ -64,7 +64,7 @@ export class MemoryCacheManager {
     }
 
     async has(key: string): Promise<boolean> {
-        const entry = this.cache.get(key) as CacheEntry<unknown>;
+        const entry = this.cache.get(key) as CacheEntry<any>;
         if (!entry) return false;
 
         if (Date.now() > entry.expiresAt) {

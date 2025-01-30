@@ -41,8 +41,8 @@ export class OpacityAdapter implements IVerifiableInferenceAdapter {
         });
 
         // Get provider-specific endpoint
-        let endpoint: string;
-        let authHeader: string;
+        let endpoint;
+        let authHeader;
 
         switch (provider) {
             case ModelProviderName.OPENAI:
@@ -54,7 +54,7 @@ export class OpacityAdapter implements IVerifiableInferenceAdapter {
         }
 
         try {
-            let body: Record<string, unknown>;
+            let body;
             // Handle different API formats
             switch (provider) {
                 case ModelProviderName.OPENAI:

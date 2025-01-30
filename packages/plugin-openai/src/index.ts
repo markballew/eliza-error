@@ -1,4 +1,4 @@
-import type { Plugin } from "@elizaos/core";
+import { Plugin } from "@elizaos/core";
 import { generateTextAction } from "./actions/generateTextAction";
 import { generateEmbeddingAction } from "./actions/generateEmbeddingAction";
 import { analyzeSentimentAction } from "./actions/analyzeSentimentAction";

@@ -14,12 +14,7 @@ export interface OpenAITextResponse {
     choices: Array<{
         text: string;
         index: number;
-        logprobs: null | {
-            tokens: string[];
-            token_logprobs: number[];
-            top_logprobs: Record<string, number>[];
-            text_offset: number[];
-        };
+        logprobs: null | any;
         finish_reason: string;
     }>;
     usage: {
@@ -64,12 +59,7 @@ export interface OpenAISentimentAnalysisResponse {
     choices: Array<{
         text: string;
         index: number;
-        logprobs: null | {
-            tokens: string[];
-            token_logprobs: number[];
-            top_logprobs: Record<string, number>[];
-            text_offset: number[];
-        };
+        logprobs: null | any;
         finish_reason: string;
     }>;
 }

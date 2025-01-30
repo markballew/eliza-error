@@ -104,12 +104,6 @@ export class MessageManager {
     }
 
     async handleMessage(message: DiscordMessage) {
-
-        if (this.runtime.character.clientConfig?.discord?.allowedChannelIds &&
-            !this.runtime.character.clientConfig.discord.allowedChannelIds.includes(message.channelId)) {
-            return;
-        }
-
         // Update last activity time for the channel
         this.lastChannelActivity[message.channelId] = Date.now();
 

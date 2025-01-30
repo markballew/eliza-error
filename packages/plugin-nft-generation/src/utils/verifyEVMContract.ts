@@ -3,12 +3,6 @@ import {
     loadOpenZeppelinFile,
 } from "./generateERC721ContractCode.ts";
 
-interface VerificationStatus {
-    result: string;
-    status?: string;
-    message?: string;
-}
-
 function getSources(metadata, sourceCode) {
     const fileName = Object.keys(metadata.settings.compilationTarget)[0]
     const obj = {
@@ -75,7 +69,7 @@ export async function verifyEVMContract({
             };
 
             // Poll for completion
-            let status: VerificationStatus;
+            let status;
             do {
                 await new Promise((resolve) => setTimeout(resolve, 3000));
                 status = await checkStatus();

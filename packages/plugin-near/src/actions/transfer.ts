@@ -23,13 +23,13 @@ export interface TransferContent extends Content {
 }
 
 function isTransferContent(
-    _runtime: IAgentRuntime,
-    content: unknown
+    runtime: IAgentRuntime,
+    content: any
 ): content is TransferContent {
     return (
-        typeof (content as TransferContent).recipient === "string" &&
-        (typeof (content as TransferContent).amount === "string" ||
-            typeof (content as TransferContent).amount === "number")
+        typeof content.recipient === "string" &&
+        (typeof content.amount === "string" ||
+            typeof content.amount === "number")
     );
 }
 
@@ -88,13 +88,11 @@ async function transferNEAR(
 
     const account = await nearConnection.account(accountId);
 
-    // Execute transfer with null check
-    const parsedAmount = utils.format.parseNearAmount(amount);
-    if (!parsedAmount) {
-        throw new Error("Failed to parse NEAR amount");
-    }
-
-    const result = await account.sendMoney(recipient, BigInt(parsedAmount));
+    // Execute transfer
+    const result = await account.sendMoney(
+        recipient,
+        BigInt(nearUtils.format.parseNearAmount(amount)!)
+    );
 
     return result.transaction.hash;
 }
@@ -114,17 +112,15 @@ export const executeTransfer: Action = {
         callback?: HandlerCallback
     ): Promise<boolean> => {
         // Initialize or update state
-        let currentState: State;
-
         if (!state) {
-            currentState = (await runtime.composeState(message)) as State;
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(state);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 

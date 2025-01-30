@@ -1,5 +1,4 @@
-import {
-    elizaLogger,
+import type {
     IAgentRuntime,
     ICacheManager,
     Memory,
@@ -13,8 +12,8 @@ import { MIST_PER_SUI } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import NodeCache from "node-cache";
 import * as path from "path";
-import { parseAccount, SuiNetwork } from "../utils";
-import axios from "axios";
+import { parseAccount } from "../utils";
+
 // Provider configuration
 const PROVIDER_CONFIG = {
     MAX_RETRIES: 3,
@@ -30,18 +29,18 @@ interface Prices {
     sui: { usd: string };
 }
 
-const cacheTimeSeconds = 30;
+type SuiNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
 
 export class WalletProvider {
     private cache: NodeCache;
-    private cacheKey: string = "sui/wallet";
+    private cacheKey = "sui/wallet";
 
     constructor(
         private suiClient: SuiClient,
         private address: string,
         private cacheManager: ICacheManager
     ) {
-        this.cache = new NodeCache({ stdTTL: cacheTimeSeconds }); // Cache TTL set to 5 minutes
+        this.cache = new NodeCache({ stdTTL: 300 }); // Cache TTL set to 5 minutes
     }
 
     private async readFromCache<T>(key: string): Promise<T | null> {
@@ -53,7 +52,7 @@ export class WalletProvider {
 
     private async writeToCache<T>(key: string, data: T): Promise<void> {
         await this.cacheManager.set(path.join(this.cacheKey, key), data, {
-            expires: Date.now() + cacheTimeSeconds * 1000,
+            expires: Date.now() + 5 * 60 * 1000,
         });
     }
 
@@ -90,10 +89,19 @@ export class WalletProvider {
             try {
                 const cetusSuiUsdcPoolAddr =
                     "0x51e883ba7c0b566a26cbc8a94cd33eb0abd418a77cc1e60ad22fd9b1f29cd2ab";
-                const url = `https://api.dexscreener.com/latest/dex/pairs/sui/${cetusSuiUsdcPoolAddr}`;
-                elizaLogger.info(`Fetching SUI price from ${url}`);
-                const response = await axios.get(url);
-                return response.data;
+                const response = await fetch(
+                    `https://api.dexscreener.com/latest/dex/pairs/sui/${cetusSuiUsdcPoolAddr}`
+                );
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(
+                        `HTTP error! status: ${response.status}, message: ${errorText}`
+                    );
+                }
+
+                const data = await response.json();
+                return data;
             } catch (error) {
                 console.error(`Attempt ${i + 1} failed:`, error);
                 lastError = error;

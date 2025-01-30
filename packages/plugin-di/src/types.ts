@@ -1,17 +1,15 @@
-import type {
+import {
     Action,
-    Client,
     Evaluator,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     Plugin,
     Provider,
-    Service,
     State,
 } from "@elizaos/core";
-import type { ContentClass } from "./decorators";
-import type { z } from "zod";
+import { ContentClass } from "./decorators";
+import { z } from "zod";
 
 // ----------- Interfaces for Injectable Providers and Actions, etc -----------
 
@@ -25,6 +23,13 @@ export interface InjectableProvider<T> extends Provider {
      */
     getInstance(runtime: IAgentRuntime): Promise<T>;
 }
+
+/**
+ * The Class of Injectable Provider
+ */
+export type InjectableProviderClass<T = any, Args extends any[] = any[]> = new (
+    ...args: Args
+) => InjectableProvider<T>;
 
 /**
  * Action options
@@ -57,6 +62,13 @@ export interface InjectableAction<T> extends Action {
 }
 
 /**
+ * The Class of Injectable Action
+ */
+export type InjectableActionClass<T = any, Args extends any[] = any[]> = new (
+    ...args: Args
+) => InjectableAction<T>;
+
+/**
  * Evaluator options
  */
 export type EvaluatorOptions = Pick<
@@ -70,36 +82,11 @@ export type EvaluatorOptions = Pick<
 export type InjectableEvaluator = Evaluator;
 
 /**
- * The Class of Injectable Object
- */
-export type InjectableObjectClass<T, Args extends any[] = any[]> = new (
-    ...args: Args
-) => T;
-
-/**
- * The Class of Injectable Provider
- */
-export type InjectableProviderClass<T = any, Args extends any[] = any[]> = InjectableObjectClass<InjectableProvider<T> | Provider, Args>
-
-/**
- * The Class of Injectable Action
- */
-export type InjectableActionClass<T = any, Args extends any[] = any[]> = InjectableObjectClass<InjectableAction<T> | Action, Args>
-
-/**
  * The Class of Injectable Evaluator
  */
-export type InjectableEvaluatorClass<Args extends any[] = any[]> = InjectableObjectClass<InjectableEvaluator | Evaluator, Args>
-
-/**
- * The Class of Injectable Service
- */
-export type InjectableServiceClass<Args extends any[] = any[]> = InjectableObjectClass<Service, Args>;
-
-/**
- * The Class of Injectable Client
- */
-export type InjectableClientClass<Args extends any[] = any[]> = InjectableObjectClass<Client, Args>;
+export type InjectableEvaluatorClass<Args extends any[] = any[]> = new (
+    ...args: Args
+) => InjectableEvaluator;
 
 // ----------- Interfaces for Plugin -----------
 
@@ -108,7 +95,7 @@ export type InjectableClientClass<Args extends any[] = any[]> = InjectableObject
  */
 export type PluginOptions = Pick<
     Plugin,
-    "name" | "description"
+    "name" | "description" | "services" | "clients"
 > & {
     /** Optional actions */
     actions?: (Action | InjectableActionClass)[];
@@ -116,10 +103,6 @@ export type PluginOptions = Pick<
     providers?: (Provider | InjectableProviderClass)[];
     /** Optional evaluators */
     evaluators?: (Evaluator | InjectableEvaluatorClass)[];
-    /** Optional services */
-    services?: (Service | InjectableServiceClass)[];
-    /** Optional clients */
-    clients?: (Client | InjectableClientClass)[];
 };
 
 /**

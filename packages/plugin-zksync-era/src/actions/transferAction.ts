@@ -25,7 +25,7 @@ import {
 import { zksync, mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
 import { z } from "zod";
-import { transferAction } from "../utils";
+import { ValidateContext } from "../utils";
 import { ETH_ADDRESS, ERC20_OVERRIDE_INFO } from "../constants";
 import { useGetAccount, useGetWalletClient } from "../hooks";
 
@@ -93,31 +93,22 @@ export const TransferAction: Action = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        initialState: State,                // added the initialState parameter to the handler
+        state: State,
         _options: { [key: string]: unknown },
         callback?: HandlerCallback
     ): Promise<boolean> => {
         elizaLogger.log("Starting ZKsync Era SEND_TOKEN handler...");
 
-
         // Initialize or update state
-        let currentState = initialState;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(initialState);
+            state = await runtime.updateRecentMessageState(state);
         }
-
-        // // Initialize or update state old implementation as reference
-        // if (!state) {
-        //     state = (await runtime.composeState(message)) as State;
-        // } else {
-        //     state = await runtime.updateRecentMessageState(state);
-        // }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -149,7 +140,7 @@ export const TransferAction: Action = {
         }
 
         // Validate transfer content
-        if (!transferAction(content)) {
+        if (!ValidateContext.transferAction(content)) {
             elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -164,8 +155,7 @@ export const TransferAction: Action = {
             const account = useGetAccount(runtime);
             const walletClient = useGetWalletClient();
 
-            // let hash;
-            let hash: `0x${string}`; // Explicitly type hash
+            let hash;
 
             // Check if the token is native
             if (
@@ -200,11 +190,13 @@ export const TransferAction: Action = {
             }
 
             elizaLogger.success(
-                `Transfer completed successfully! Transaction hash: ${hash}`
+                "Transfer completed successfully! Transaction hash: " + hash
             );
             if (callback) {
                 callback({
-                    text: `Transfer completed successfully! Transaction hash: ${hash}`,
+                    text:
+                        "Transfer completed successfully! Transaction hash: " +
+                        hash,
                     content: {},
                 });
             }

@@ -52,21 +52,20 @@ export const licenseIPAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        options: any,
         callback?: HandlerCallback
     ): Promise<boolean> => {
         elizaLogger.log("Starting LICENSE_IP handler...");
 
         // initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         const licenseIPContext = composeContext({
-            state: currentState,
+            state,
             template: licenseIPTemplate,
         });
 

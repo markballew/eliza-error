@@ -277,10 +277,7 @@ export class TwitterInteractionClient {
                     );
 
                     const message = {
-                        content: { 
-                            text: tweet.text,
-                            imageUrls: tweet.photos?.map(photo => photo.url) || []
-                        },
+                        content: { text: tweet.text },
                         agentId: this.runtime.agentId,
                         userId: userIdUUID,
                         roomId,
@@ -392,7 +389,6 @@ export class TwitterInteractionClient {
                 content: {
                     text: tweet.text,
                     url: tweet.permanentUrl,
-                    imageUrls: tweet.photos?.map(photo => photo.url) || [],
                     inReplyTo: tweet.inReplyToStatusId
                         ? stringToUuid(
                               tweet.inReplyToStatusId +
@@ -483,15 +479,14 @@ export class TwitterInteractionClient {
             } else {
                 try {
                     const callback: HandlerCallback = async (
-                        response: Content,
-                        tweetId?: string
+                        response: Content
                     ) => {
                         const memories = await sendTweet(
                             this.client,
                             response,
                             message.roomId,
                             this.client.twitterConfig.TWITTER_USERNAME,
-                            tweetId || tweet.id
+                            tweet.id
                         );
                         return memories;
                     };
@@ -515,16 +510,12 @@ export class TwitterInteractionClient {
                             responseMessage
                         );
                     }
-                    const responseTweetId =
-                    responseMessages[responseMessages.length - 1]?.content
-                        ?.tweetId;
+
                     await this.runtime.processActions(
                         message,
                         responseMessages,
                         state,
-                        (response: Content) => {
-                            return callback(response, responseTweetId);
-                        }
+                        callback
                     );
 
                     const responseInfo = `Context:\n\n${context}\n\nSelected Post: ${tweet.id} - ${tweet.username}: ${tweet.text}\nAgent's Output:\n${response.text}`;
@@ -592,7 +583,6 @@ export class TwitterInteractionClient {
                         text: currentTweet.text,
                         source: "twitter",
                         url: currentTweet.permanentUrl,
-                        imageUrls: currentTweet.photos?.map(photo => photo.url) || [],
                         inReplyTo: currentTweet.inReplyToStatusId
                             ? stringToUuid(
                                   currentTweet.inReplyToStatusId +
