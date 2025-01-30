@@ -62,6 +62,8 @@ export default function ChatTtsButton({
         if (audioBlob) {
             play();
             return;
+        } else {
+            mutation.mutate();
         }
     };
 
@@ -70,7 +72,7 @@ export default function ChatTtsButton({
     return (
         <div>
             {audioBlob ? (
-                <audio crossOrigin="anonymous" playsInline
+                <audio
                     ref={audioRef}
                     onEnded={() => {
                         setPlaying(false);
