@@ -23,15 +23,11 @@
         "@elizaos/plugin-evm": "workspace:*"
     },
     "devDependencies": {
-        "tsup": "8.3.5",
-        "@biomejs/biome": "1.9.4"
+        "tsup": "8.3.5"
     },
     "scripts": {
         "build": "tsup src/index.ts --format esm --no-dts",
-        "lint": "biome lint .",
-        "lint:fix": "biome check --apply .",
-        "format": "biome format .",
-        "format:fix": "biome format --write ."
+        "lint": "eslint --fix  --cache ."
     },
     "peerDependencies": {
         "whatwg-url": "7.1.0"

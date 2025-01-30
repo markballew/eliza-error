@@ -1,9 +1,9 @@
 import {
-    type Action,
+    Action,
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
     type IAgentRuntime,
     type Memory,
@@ -67,12 +67,10 @@ export const getCurvesBalanceAction: Action = {
         _options: { [key: string]: unknown },
         callback?: HandlerCallback
     ) => {
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         elizaLogger.debug(
@@ -94,7 +92,7 @@ export const getCurvesBalanceAction: Action = {
             const params = (await generateObjectDeprecated({
                 runtime,
                 context: composeContext({
-                    state: currentState,
+                    state,
                     template: getCurvesBalanceTemplate,
                 }),
                 modelClass: ModelClass.SMALL,

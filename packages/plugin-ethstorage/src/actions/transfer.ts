@@ -80,16 +80,15 @@ export default {
         elizaLogger.log("Starting SEND_TOKEN handler...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -116,10 +115,7 @@ export default {
         if (content.amount != null && content.recipient != null) {
             try {
                 const RPC = runtime.getSetting("ETHSTORAGE_RPC_URL");
-                const PRIVATE_KEY = runtime.getSetting("ETHSTORAGE_PRIVATE_KEY");
-                if (!PRIVATE_KEY) {
-                    throw new Error("Missing ETHSTORAGE_PRIVATE_KEY");
-                }
+                const PRIVATE_KEY = runtime.getSetting("ETHSTORAGE_PRIVATE_KEY")!;
 
                 const provider = new ethers.JsonRpcProvider(RPC);
                 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
@@ -130,7 +126,7 @@ export default {
                 await tx.wait();
 
                 elizaLogger.success(
-                    `Transfer completed successfully! Transaction hash: ${tx.hash}`
+                    "Transfer completed successfully! Transaction hash: " + tx.hash
                 );
                 if (callback) {
                     callback({

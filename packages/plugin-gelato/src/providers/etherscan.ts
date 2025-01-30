@@ -1,7 +1,7 @@
 import axios from "axios";
 import dotenv from "dotenv";
-import * as fs from "node:fs";
-import * as path from "node:path";
+import fs from "fs";
+import path from "path";
 // import logger from './logger';
 
 // Load environment variables from .env file
@@ -15,7 +15,7 @@ const ETHERSCAN_API_URL =
 async function getContractData(
     networkId: string,
     address: string,
-    useCache = true
+    useCache: boolean = true
 ) {
     try {
         // Define output directory and file paths
@@ -96,8 +96,7 @@ async function getContractData(
         };
     } catch (error) {
         // logger.error('Error fetching contract data:', error);
-        console.error('Error fetching contract data:', error);
-        throw new Error(`Failed to fetch contract data: ${error.message}`);
+        throw error;
     }
 }
 

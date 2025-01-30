@@ -39,25 +39,19 @@ export interface TransferContent extends Content {
  * Check if the content is a transfer content
  */
 function isTransferContent(
-    _runtime: IAgentRuntime,
-    content: unknown
+    runtime: IAgentRuntime,
+    content: any
 ): content is TransferContent {
     elizaLogger.log("Content for transfer", content);
     return (
-        content !== null &&
-        typeof content === "object" &&
-        ("token" in content) &&
         (!content.token ||
             (typeof content.token === "string" &&
                 (isCadenceIdentifier(content.token) ||
                     isEVMAddress(content.token)))) &&
-        "to" in content &&
         typeof content.to === "string" &&
         (isEVMAddress(content.to) || isFlowAddress(content.to)) &&
-        "amount" in content &&
         (typeof content.amount === "string" ||
             typeof content.amount === "number") &&
-        "matched" in content &&
         typeof content.matched === "boolean"
     );
 }
@@ -79,18 +73,16 @@ export class TransferAction {
         message: Memory,
         state: State
     ): Promise<TransferContent> {
-   
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -199,7 +191,7 @@ export class TransferAction {
                     (arg, t) => [
                         arg(amount.toFixed(1), t.UFix64),
                         arg(recipient, t.Address),
-                        arg(`0x${tokenAddr}`, t.Address),
+                        arg("0x" + tokenAddr, t.Address),
                         arg(tokenContractName, t.String),
                     ],
                     authz
@@ -211,7 +203,7 @@ export class TransferAction {
                     this.walletProvider,
                     content.token
                 );
-                const adjustedAmount = BigInt(amount * (10 ** decimals));
+                const adjustedAmount = BigInt(amount * Math.pow(10, decimals));
 
                 elizaLogger.log(
                     `${logPrefix} Sending ${adjustedAmount} ${content.token}(EVM) to ${recipient}...`
@@ -250,24 +242,24 @@ export class TransferAction {
                     },
                 });
             }
-        } catch (e: unknown) {
-            elizaLogger.error("Error in sending transaction:", e);
+        } catch (e: any) {
+            elizaLogger.error("Error in sending transaction:", e.message);
             if (callback) {
                 callback({
                     text: `${logPrefix} Unable to process transfer request. Error in sending transaction.`,
                     content: {
-                        error: e instanceof Error ? e.message : String(e),
+                        error: e.message,
                     },
                 });
             }
             if (e instanceof Exception) {
                 throw e;
+            } else {
+                throw new Exception(
+                    50100,
+                    "Error in sending transaction: " + e.message
+                );
             }
-            
-            throw new Exception(
-                50100,
-                `Error in sending transaction: ${e instanceof Error ? e.message : String(e)}`
-            );
         }
 
         elizaLogger.log("Completed Flow Plugin's SEND_COIN handler.");
@@ -319,7 +311,9 @@ export const transferAction = {
             elizaLogger.error("Error in processing messages:", err.message);
             if (callback) {
                 callback({
-                    text: `Unable to process transfer request. Invalid content: ${err.message}`,
+                    text:
+                        "Unable to process transfer request. Invalid content: " +
+                        err.message,
                     content: {
                         error: "Invalid content",
                     },

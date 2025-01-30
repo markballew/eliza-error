@@ -1,9 +1,9 @@
 import {
-    type Action,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    Action,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
+    State,
     elizaLogger,
 } from "@elizaos/core";
 
@@ -23,9 +23,9 @@ export const fetchMatchAction: Action = {
         runtime: IAgentRuntime,
         _message: Memory,
         _state?: State,
-        _options?: { [key: string]: unknown },
+        options?: { [key: string]: unknown },
         callback?: HandlerCallback,
-    ): Promise<boolean> => {
+    ): Promise<any> => {
         try {
             const apiKey = runtime.getSetting("FOOTBALL_API_KEY");
             const apiUrl = "https://api.football-data.org/v4/matches";
@@ -71,7 +71,7 @@ export const fetchMatchAction: Action = {
                 [],
             );
 
-            return true;
+            return;
         } catch (error) {
             elizaLogger.error("Error in fetchMatchAction:", error);
             return false;

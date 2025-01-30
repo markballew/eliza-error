@@ -1,8 +1,8 @@
 import {
-    type IAgentRuntime,
-    type Memory,
-    type Provider,
-    type State,
+    IAgentRuntime,
+    Memory,
+    Provider,
+    State,
     elizaLogger,
 } from "@elizaos/core";
 import { CURVES_ADDRESSES, CurvesType } from "../utils/addresses";
@@ -55,7 +55,7 @@ Example Mappings:
 - "broad reach" → LOGRITHMIC`;
 
 export const curvesFormulaProvider: Provider = {
-    get: async (runtime: IAgentRuntime, _message: Memory, _state?: State) => {
+    get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
         const isTestnet = runtime.getSetting("FORM_TESTNET") === "true";
         const chain = isTestnet ? formTestnet : form;
 

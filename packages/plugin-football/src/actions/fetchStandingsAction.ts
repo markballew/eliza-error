@@ -1,9 +1,9 @@
-import type { HandlerCallback } from "@elizaos/core";
+import { HandlerCallback } from "@elizaos/core";
 import {
-    type Action,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+    Action,
+    IAgentRuntime,
+    Memory,
+    State,
     elizaLogger,
 } from "@elizaos/core";
 
@@ -27,9 +27,9 @@ export const fetchStandingsAction: Action = {
         runtime: IAgentRuntime,
         _message: Memory,
         _state?: State,
-        _options?: { [key: string]: unknown },
+        options?: { [key: string]: unknown },
         callback?: HandlerCallback,
-    ): Promise<boolean> => {
+    ): Promise<any> => {
         try {
             const league = runtime.getSetting("LEAGUE_ID") || "PL";
             const apiKey = runtime.getSetting("FOOTBALL_API_KEY");

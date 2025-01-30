@@ -3,7 +3,6 @@ import {
     type HandlerCallback,
     type IAgentRuntime,
     type Memory,
-    type State,
     elizaLogger,
 } from "@elizaos/core";
 import type { TransactionHash } from "genlayer-js/types";
@@ -20,8 +19,8 @@ export const waitForTransactionReceiptAction: Action = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State,
-        _options: Record<string, unknown>,
+        _state: any,
+        _options: any,
         callback: HandlerCallback
     ) => {
         elizaLogger.info("Starting wait for transaction receipt action");

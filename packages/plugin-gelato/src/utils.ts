@@ -1,10 +1,10 @@
 import {
-    type SponsoredCallRequest,
+    SponsoredCallRequest,
     GelatoRelay,
-    type CallWithERC2771Request,
+    CallWithERC2771Request,
 } from "@gelatonetwork/relay-sdk-viem";
 import { createPublicClient, encodeFunctionData } from "viem";
-import type {
+import {
     PublicClient,
     Chain,
     Account,
