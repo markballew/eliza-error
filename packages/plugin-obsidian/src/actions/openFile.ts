@@ -40,7 +40,7 @@ export const openFileAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: any,
+        options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.info("Starting open file handler");
@@ -48,23 +48,16 @@ export const openFileAction: Action = {
 
         try {
             // Initialize or update state for context generation
-            // if (!state) {
-            //     state = (await runtime.composeState(message)) as State;
-            // } else {
-            //     state = await runtime.updateRecentMessageState(state);
-            // }
-            let currentState: State;
             if (!state) {
-                currentState = (await runtime.composeState(message)) as State;
+                state = (await runtime.composeState(message)) as State;
             } else {
-                currentState = await runtime.updateRecentMessageState(state);
+                state = await runtime.updateRecentMessageState(state);
             }
 
             const context = composeContext({
-                state: currentState,
+                state,
                 template: fileTemplate(message.content.text),
             });
-
 
             const fileContext = await generateObject({
                 runtime,

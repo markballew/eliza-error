@@ -1,22 +1,16 @@
-export * from "./actions/helloLit/helloLit";
-export * from "./actions/tools/erc20transfer/toolCall";
-export * from "./actions/tools/ecdsaSign/toolCall";
-export * from "./actions/tools/uniswapSwap/toolCall";
-
 import type { Plugin } from "@elizaos/core";
-import { HELLO_LIT_ACTION } from "./actions/helloLit/helloLit";
-import { WALLET_TRANSFER_LIT_ACTION } from "./actions/tools/erc20transfer/toolCall";
-import { ECDSA_SIGN_LIT_ACTION } from "./actions/tools/ecdsaSign/toolCall";
-import { UNISWAP_SWAP_LIT_ACTION } from "./actions/tools/uniswapSwap/toolCall";
+import { litProvider } from "./providers/litProvider";
+import { sendEth } from "./actions/sendEth";
+import { sendSol } from "./actions/sendSol";
+import { sendUSDC } from "./actions/sendUSDC";
 
 export const litPlugin: Plugin = {
-    name: "lit",
-    description: "Lit Protocol integration plugin",
-    providers: [],
-    evaluators: [],
-    services: [],
-    actions: [WALLET_TRANSFER_LIT_ACTION, HELLO_LIT_ACTION, 
-              ECDSA_SIGN_LIT_ACTION, UNISWAP_SWAP_LIT_ACTION],
+  name: "lit",
+  description:
+    "Lit Protocol integration for PKP wallet creation and transaction signing",
+  providers: [litProvider],
+  actions: [sendEth, sendSol, sendUSDC],
+  evaluators: [],
 };
 
 export default litPlugin;

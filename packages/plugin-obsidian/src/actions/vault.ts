@@ -39,9 +39,9 @@ export const listAllFilesAction: Action = {
     },
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
-        _state: State,
-        _options: any,
+        message: Memory,
+        state: State,
+        options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.info("Starting list all files handler");

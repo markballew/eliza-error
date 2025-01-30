@@ -12,15 +12,10 @@
 	"devDependencies": {
 		"@types/node": "^20.0.0",
 		"tsup": "8.3.5",
-		"@polkadot/types": "^10.11.3",
-		"vitest": "^2.1.8",
-		"@vitest/coverage-v8": "^2.1.8"
+		"@polkadot/types": "^10.11.3"
 	},
 	"scripts": {
 		"build": "tsup --format esm --dts",
-		"dev": "tsup --format esm --dts --watch",
-		"test": "vitest run",
-		"test:watch": "vitest watch",
-		"test:coverage": "vitest run --coverage"
+		"dev": "tsup --format esm --dts --watch"
 	}
 }

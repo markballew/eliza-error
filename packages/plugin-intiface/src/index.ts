@@ -15,35 +15,19 @@ import {
     shutdownIntifaceEngine,
 } from "./utils";
 
-// Define the Device interface based on Buttplug device properties
-interface Device {
-    name: string;
-    index: number;
-    vibrate?: (strength: number) => Promise<void>;
-    rotate?: (strength: number) => Promise<void>;
-    stop?: () => Promise<void>;
-    battery?: () => Promise<number>;
-    id?: number;
-}
-
-interface ActionOptions {
-    intensity?: number;
-    duration?: number;
-}
-
 export interface IIntifaceService extends Service {
     vibrate(strength: number, duration: number): Promise<void>;
     rotate?(strength: number, duration: number): Promise<void>;
     getBatteryLevel?(): Promise<number>;
     isConnected(): boolean;
-    getDevices(): Device[];
+    getDevices(): any[];
 }
 
 export class IntifaceService extends Service implements IIntifaceService {
     static serviceType: ServiceType = ServiceType.INTIFACE;
     private client: ButtplugClient;
     private connected = false;
-    private devices: Map<string, Device> = new Map();
+    private devices: Map<string, any> = new Map();
     private vibrateQueue: VibrateEvent[] = [];
     private isProcessingQueue = false;
     private config: IntifaceConfig | null = null;
@@ -148,10 +132,10 @@ export class IntifaceService extends Service implements IIntifaceService {
         console.log("Scanning for devices...");
         await new Promise((r) => setTimeout(r, 2000));
 
-        for (const device of this.client.devices) {
+        this.client.devices.forEach((device) => {
             this.devices.set(device.name, device);
             console.log(`- ${device.name} (${device.index})`);
-        }
+        });
 
         if (this.devices.size === 0) {
             console.log("No devices found");
@@ -195,12 +179,12 @@ export class IntifaceService extends Service implements IIntifaceService {
         this.devices.clear();
     }
 
-    private handleDeviceAdded(device: Device) {
+    private handleDeviceAdded(device: any) {
         this.devices.set(device.name, device);
         console.log(`Device connected: ${device.name}`);
     }
 
-    private handleDeviceRemoved(device: Device) {
+    private handleDeviceRemoved(device: any) {
         this.devices.delete(device.name);
         console.log(`Device disconnected: ${device.name}`);
     }
@@ -308,14 +292,10 @@ export class IntifaceService extends Service implements IIntifaceService {
     }
 
     private async rampedRotate(
-        device: Device,
+        device: any,
         targetStrength: number,
         duration: number
     ) {
-        if (!device.rotate || !device.stop) {
-            throw new Error("Device does not support rotation");
-        }
-
         const stepTime = (duration * 0.2) / this.rampSteps;
 
         // Ramp up
@@ -353,9 +333,9 @@ const vibrateAction: Action = {
     },
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
-        _state: State,
-        options: ActionOptions,
+        message: Memory,
+        state: State,
+        options: any,
         callback: HandlerCallback
     ) => {
         const service = runtime.getService<IIntifaceService>(
@@ -463,9 +443,9 @@ const rotateAction: Action = {
     },
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
-        _state: State,
-        options: ActionOptions,
+        message: Memory,
+        state: State,
+        options: any,
         callback: HandlerCallback
     ) => {
         const service = runtime.getService<IIntifaceService>(
@@ -521,9 +501,9 @@ const batteryAction: Action = {
     },
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
-        _state: State,
-        _options: ActionOptions,
+        message: Memory,
+        state: State,
+        options: any,
         callback: HandlerCallback
     ) => {
         const service = runtime.getService<IIntifaceService>(

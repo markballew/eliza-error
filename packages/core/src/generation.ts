@@ -2258,15 +2258,11 @@ async function handleAnthropic({
     schema,
     schemaName,
     schemaDescription,
-    mode = "auto",
+    mode = "json",
     modelOptions,
     runtime,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     elizaLogger.debug("Handling Anthropic request with Cloudflare check");
-    if (mode === "json") {
-        elizaLogger.warn("Anthropic mode is set to json, changing to auto");
-        mode = "auto";
-    }
     const baseURL = getCloudflareGatewayBaseURL(runtime, "anthropic");
     elizaLogger.debug("Anthropic handleAnthropic baseURL:", { baseURL });
 
