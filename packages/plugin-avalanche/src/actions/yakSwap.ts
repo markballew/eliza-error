@@ -23,22 +23,17 @@ export interface SwapContent extends Content {
     amount: string | number;
 }
 
-// refactoring zone
 function isSwapContent(
-    _runtime: IAgentRuntime,
-    content: unknown
+    runtime: IAgentRuntime,
+    content: any
 ): content is SwapContent {
     elizaLogger.debug("Content for swap", content);
     return (
-        typeof content === "object" &&
-        content !== null &&
-        "fromTokenAddress" in content &&
-        "toTokenAddress" in content &&
-        typeof (content as SwapContent).fromTokenAddress === "string" &&
-        typeof (content as SwapContent).toTokenAddress === "string" &&
-        (typeof (content as SwapContent).recipient === "string" || !(content as SwapContent).recipient) &&
-        (typeof (content as SwapContent).amount === "string" ||
-            typeof (content as SwapContent).amount === "number")
+        typeof content.fromTokenAddress === "string" &&
+        typeof content.toTokenAddress === "string" &&
+        (typeof content.recipient === "string" || !content.recipient) &&
+        (typeof content.amount === "string" ||
+            typeof content.amount === "number")
     );
 }
 
@@ -124,16 +119,15 @@ export default {
         elizaLogger.log("Starting SWAP_TOKEN handler...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose swap context
         const swapContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 

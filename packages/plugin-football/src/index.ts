@@ -1,4 +1,4 @@
-import type { Plugin } from "@elizaos/core";
+import { Plugin } from "@elizaos/core";
 import { fetchMatchAction } from "./actions/fetchMatchAction";
 import { fetchStandingsAction } from "./actions/fetchStandingsAction";
 

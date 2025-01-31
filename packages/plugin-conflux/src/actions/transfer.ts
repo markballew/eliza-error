@@ -72,7 +72,7 @@ export const transfer: Action = {
         ],
     ],
     // eslint-disable-next-line
-    validate: async (_runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         // no extra validation needed
         return true;
     },
@@ -80,18 +80,17 @@ export const transfer: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state?: State,
-        _options?: { [key: string]: unknown },
+        options?: { [key: string]: unknown },
         callback?: HandlerCallback
     ) => {
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         const context = composeContext({
-            state: currentState,
+            state,
             template: confluxTransferTemplate,
         });
 

@@ -59,15 +59,12 @@ export const spotTrade: Action = {
     ): Promise<boolean> => {
         let content;
         try {
-            let currentState = state;
-            if (!currentState) {
-                currentState = await runtime.composeState(message);
-            } else {
-                currentState = await runtime.updateRecentMessageState(currentState);
-            }
+            state = !state
+                ? await runtime.composeState(message)
+                : await runtime.updateRecentMessageState(state);
 
             const context = composeContext({
-                state: currentState,
+                state,
                 template: spotTradeTemplate,
             });
 
@@ -100,9 +97,7 @@ export const spotTrade: Action = {
                 const orderType =
                     content.type === "MARKET"
                         ? "market"
-                        : content.price 
-                          ? `limit at ${BinanceService.formatPrice(content.price)}`
-                          : "market";
+                        : `limit at ${BinanceService.formatPrice(content.price!)}`;
 
                 callback({
                     text: `Successfully placed a ${orderType} order to ${content.side.toLowerCase()} ${content.quantity} ${content.symbol}\nOrder ID: ${tradeResult.orderId}\nStatus: ${tradeResult.status}`,

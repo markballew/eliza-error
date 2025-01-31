@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from "fs";
+import path from "path";
 
 export interface LitConfig {
   pkp: {
@@ -46,7 +46,7 @@ export class LitConfigManager {
     }
   }
 
-  async verifyConfig(_config: LitConfig): Promise<boolean> {
+  async verifyConfig(config: LitConfig): Promise<boolean> {
     // Add verification logic here
     // For example, check if the PKP is still valid
     // Return false if verification fails

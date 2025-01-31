@@ -1,10 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 import {
-    type IAgentRuntime,
-    type Memory,
-    type Provider,
-    type State,
+    IAgentRuntime,
+    Memory,
+    Provider,
+    State,
     elizaLogger,
     ModelClass,
     generateObject,
@@ -16,7 +16,7 @@ import {
 } from "../constants.ts";
 // @ts-ignore
 import DKG from "dkg.js";
-import { DKGSelectQuerySchema, isDKGSelectQuery, type DKGQueryResultEntry } from "../types.ts";
+import { DKGSelectQuerySchema, isDKGSelectQuery } from "../types.ts";
 
 // Provider configuration
 const PROVIDER_CONFIG = {
@@ -97,7 +97,7 @@ async function constructSparqlQuery(
 }
 
 export class DKGProvider {
-    private client: typeof DKG;
+    private client: any; // TODO: add type
     constructor(config: DKGClientConfig) {
         this.validateConfig(config);
     }
@@ -145,7 +145,7 @@ export class DKGProvider {
     }
 
     async search(runtime: IAgentRuntime, message: Memory): Promise<string> {
-        elizaLogger.info("Entering graph search provider!");
+        elizaLogger.info(`Entering graph search provider!`);
 
         const userQuery = message.content.text;
 
@@ -161,7 +161,7 @@ export class DKGProvider {
 
         if (!queryOperationResult || !queryOperationResult.data?.length) {
             elizaLogger.info(
-                "LLM-generated SPARQL query failed, defaulting to basic query."
+                `LLM-generated SPARQL query failed, defaulting to basic query.`
             );
 
             queryOperationResult = await this.client.graph.query(
@@ -175,7 +175,7 @@ export class DKGProvider {
         );
 
         // TODO: take 5 results instead of all based on similarity in the future
-        const result = queryOperationResult.data.map((entry: DKGQueryResultEntry) => {
+        const result = queryOperationResult.data.map((entry: any) => {
             const formattedParts = Object.keys(entry).map(
                 (key) => `${key}: ${entry[key]}`
             );

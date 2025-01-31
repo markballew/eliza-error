@@ -2,21 +2,21 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
     type IAgentRuntime,
     type Memory,
     type State,
 } from "@elizaos/core";
-import type { Hex } from "viem";
-import WebSocket, { type ClientOptions } from "ws";
+import { type Hex } from "viem";
+import WebSocket, { ClientOptions } from "ws";
 
 import { faucetTemplate } from "../templates";
-import type { FaucetResponse, FaucetParams } from "../types";
+import { FaucetResponse, type FaucetParams } from "../types";
 import {
     bnbWalletProvider,
     initWalletProvider,
-    type WalletProvider,
+    WalletProvider,
 } from "../providers/wallet";
 
 export { faucetTemplate };
@@ -40,14 +40,9 @@ export class FaucetAction {
         await this.validateAndNormalizeParams(params);
         elizaLogger.debug("Normalized faucet params:", params);
 
-        // After validation, we know these values exist
-        if (!params.token || !params.toAddress) {
-            throw new Error("Token and address are required for faucet");
-        }
-
         const resp: FaucetResponse = {
-            token: params.token,
-            recipient: params.toAddress,
+            token: params.token!,
+            recipient: params.toAddress!,
             txHash: "0x",
         };
 
@@ -134,7 +129,7 @@ export class FaucetAction {
         if (!params.token) {
             params.token = "BNB";
         }
-        if (!this.SUPPORTED_TOKENS.includes(params.token)) {
+        if (!this.SUPPORTED_TOKENS.includes(params.token!)) {
             throw new Error("Unsupported token");
         }
     }
@@ -147,28 +142,22 @@ export const faucetAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        _options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.log("Starting faucet action...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
-
-        state.walletInfo = await bnbWalletProvider.get(
-            runtime,
-            message,
-            currentState
-        );
+        state.walletInfo = await bnbWalletProvider.get(runtime, message, state);
 
         // Compose faucet context
         const faucetContext = composeContext({
-            state: currentState,
+            state,
             template: faucetTemplate,
         });
         const content = await generateObjectDeprecated({

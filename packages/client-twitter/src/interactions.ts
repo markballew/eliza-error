@@ -483,15 +483,14 @@ export class TwitterInteractionClient {
             } else {
                 try {
                     const callback: HandlerCallback = async (
-                        response: Content,
-                        tweetId?: string
+                        response: Content
                     ) => {
                         const memories = await sendTweet(
                             this.client,
                             response,
                             message.roomId,
                             this.client.twitterConfig.TWITTER_USERNAME,
-                            tweetId || tweet.id
+                            tweet.id
                         );
                         return memories;
                     };
@@ -515,16 +514,12 @@ export class TwitterInteractionClient {
                             responseMessage
                         );
                     }
-                    const responseTweetId =
-                    responseMessages[responseMessages.length - 1]?.content
-                        ?.tweetId;
+
                     await this.runtime.processActions(
                         message,
                         responseMessages,
                         state,
-                        (response: Content) => {
-                            return callback(response, responseTweetId);
-                        }
+                        callback
                     );
 
                     const responseInfo = `Context:\n\n${context}\n\nSelected Post: ${tweet.id} - ${tweet.username}: ${tweet.text}\nAgent's Output:\n${response.text}`;

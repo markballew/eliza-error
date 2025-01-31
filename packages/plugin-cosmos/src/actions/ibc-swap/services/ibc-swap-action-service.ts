@@ -1,11 +1,11 @@
 import {assets, chains} from "chain-registry";
-import type{
+import {
     ICosmosActionService,
     ICosmosPluginCustomChainData,
     ICosmosSwap,
     ICosmosWalletChains,
 } from "../../../shared/interfaces.ts";
-import type{IBCSwapActionParams} from "../types.ts";
+import {IBCSwapActionParams} from "../types.ts";
 import {
     convertDisplayUnitToBaseUnit,
     getChainByChainName,
@@ -14,7 +14,7 @@ import {
     getExponentByDenom,
 } from "@chain-registry/utils";
 import {getAvailableAssets} from "../../../shared/helpers/cosmos-assets.ts";
-import type {HandlerCallback} from "@elizaos/core";
+import {HandlerCallback} from "@elizaos/core";
 
 export class IBCSwapAction implements ICosmosActionService {
     constructor(private cosmosWalletChains: ICosmosWalletChains) {
@@ -114,7 +114,7 @@ export class IBCSwapAction implements ICosmosActionService {
         await skipClient.executeRoute({
             route,
             userAddresses,
-            onTransactionCompleted: async (_chainID, txHash, status) => {
+            onTransactionCompleted: async (chainID, txHash, status) => {
                 console.log(
                     `Route completed with tx hash: ${txHash} & status: ${status.state}`
                 );

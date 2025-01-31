@@ -63,23 +63,21 @@ export const getPassportScoreAction: Action = {
         runtime: IAgentRuntime,
         _message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        _options: any,
         callback: HandlerCallback
     ) => {
         elizaLogger.log("Starting GET_PASSPORT_SCORE handler...");
         const apiKey = runtime.getSetting("PASSPORT_API_KEY");
         const scorerId = runtime.getSetting("PASSPORT_SCORER");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(_message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(_message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         const context = composeContext({
-            state: currentState,
+            state,
             template: `${_message.content.text}\n${addressTemplate}`,
         });
 

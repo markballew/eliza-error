@@ -79,7 +79,7 @@ async function ensureAllowance(
         await publicClient.waitForTransactionReceipt({ hash });
         elizaLogger.log(`Approving success: ${hash}`);
     } else {
-        elizaLogger.log("No need to approve");
+        elizaLogger.log(`No need to approve`);
     }
 }
 
@@ -160,7 +160,7 @@ export const confiPump: Action = {
         ],
     ],
     // eslint-disable-next-line
-    validate: async (_runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         return true; // No extra validation needed
     },
 
@@ -168,22 +168,21 @@ export const confiPump: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state?: State,
-        _options?: { [key: string]: unknown },
+        options?: { [key: string]: unknown },
         callback?: HandlerCallback
     ) => {
         let success = false;
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Generate content based on template
         const context = composeContext({
-            state: currentState,
+            state,
             template: confiPumpTemplate,
         });
 
@@ -208,7 +207,7 @@ export const confiPump: Action = {
         });
 
         const contentObject = content.object;
-        let data: `0x${string}`;
+        let data: any;
         let value: bigint;
 
         try {

@@ -27,8 +27,8 @@ export class WithdrawAction {
     async withdraw(_params: WithdrawParams): Promise<Hash> {
         try {
             const balance = await this.walletProvider.getNativeBalance(this.walletProvider.getAddress());
-            if ( balance === BigInt(0) ) {
-                throw new Error("The total cost (gas * gas fee + value) of executing this transaction exceeds the balance of the account.");
+            if ( balance == BigInt(0) ) {
+                throw new Error(`The total cost (gas * gas fee + value) of executing this transaction exceeds the balance of the account.`);
             }
             const txHash = await withdraw(
                 this.walletProvider,
@@ -45,8 +45,9 @@ export class WithdrawAction {
         const receipt = await getTxReceipt(this.walletProvider, tx);
         if (receipt.status === "success") {
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     async buildWithdrawDetails(
@@ -92,23 +93,22 @@ export const withdrawAction: Action = {
         elizaLogger.debug("Starting WITHDRAW handler...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         elizaLogger.debug("withdraw action handler called");
         const walletProvider = await initWalletProvider(runtime);
         const action = new WithdrawAction(walletProvider);
 
-        // Compose withdraw context
+        // Compose unstake context
         const paramOptions = await action.buildWithdrawDetails(
-            currentState,
+            state,
             runtime,
         );
-        elizaLogger.debug("Withdraw paramOptions:", paramOptions);
+        elizaLogger.debug("Unstake paramOptions:", paramOptions);
 
         const txHash = await action.withdraw(paramOptions);
         if (txHash) {

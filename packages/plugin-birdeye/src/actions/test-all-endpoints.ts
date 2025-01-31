@@ -2,7 +2,6 @@ import {
     type Action,
     type ActionExample,
     elizaLogger,
-    type HandlerCallback,
     type IAgentRuntime,
     type Memory,
     type State,
@@ -17,10 +16,10 @@ export const testAllEndpointsAction = {
     description: "Test all Birdeye endpoints with sample data",
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
-        _state: State,
-        _options: Record<string, unknown>,
-        callback?: HandlerCallback
+        message: Memory,
+        state: State,
+        options: any,
+        callback?: any
     ) => {
         try {
             elizaLogger.info("Testing all endpoints");

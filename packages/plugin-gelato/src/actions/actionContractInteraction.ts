@@ -10,12 +10,10 @@ import {
 import { executeSponsoredCall, executeSponsoredCallERC2771 } from "../utils";
 import { WalletProvider, initWalletProvider } from "../providers/wallet";
 import { AbiFunction, parseAbi } from "viem";
-import type { Chain } from "viem";
 import {
     ContractInteractionSchema,
     ContractInteractionInput,
 } from "../schemas";
-import { WalletClient } from "viem";
 
 // Class for managing contract interactions
 export class ContractInteractionAction {
@@ -41,16 +39,16 @@ export class ContractInteractionAction {
                 target,
                 user
             );
+        } else {
+            // Execute standard sponsored call
+            return executeSponsoredCall(
+                publicClient,
+                abi,
+                functionName,
+                args,
+                target
+            );
         }
-        
-        // Execute standard sponsored call
-        return executeSponsoredCall(
-            publicClient,
-            abi,
-            functionName,
-            args,
-            target
-        );
     }
 }
 
@@ -69,7 +67,7 @@ export const contractInteractionAction: Action = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State,
+        state: State,
         _options: unknown,
         callback?: HandlerCallback
     ) => {
@@ -115,7 +113,7 @@ export const contractInteractionAction: Action = {
 
                 const chain = chainMatch[1] as string;
 
-                if (!supportedChains.includes(chain as (typeof supportedChains)[number])) {
+                if (!supportedChains.includes(chain as any)) {
                     throw new Error(
                         `Invalid chain: ${chain}. Supported chains are ${supportedChains.join(
                             ", "
@@ -158,7 +156,7 @@ export const contractInteractionAction: Action = {
                 validatedContent.chain
             );
 
-            let walletClient: WalletClient | undefined;
+            let walletClient;
             if (parsedContent.user) {
                 walletClient = walletProvider.getWalletClient(
                     validatedContent.chain

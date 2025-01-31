@@ -5,7 +5,7 @@ import type { ContentPropertyDescription } from "../types";
 const CONTENT_METADATA_KEY = "content:properties";
 
 export type ContentClass<T> = {
-    new (...args: unknown[]): T;
+    new (...args: any[]): T;
     prototype: T;
 };
 
@@ -14,7 +14,7 @@ interface ContentPropertyConfig extends ContentPropertyDescription {
 }
 
 export function property(config: ContentPropertyConfig) {
-    return (target: object, propertyKey: string) => {
+    return (target: any, propertyKey: string) => {
         const properties =
             Reflect.getMetadata(CONTENT_METADATA_KEY, target) || {};
         properties[propertyKey] = config;
@@ -25,12 +25,12 @@ export function property(config: ContentPropertyConfig) {
 /**
  * Create a Zod schema from a class decorated with @property
  *
- * @param cls
+ * @param constructor
  * @returns
  */
-export function createZodSchema<T>(cls: ContentClass<T>): z.ZodType<T> {
+export function createZodSchema<T>(constructor: ContentClass<T>): z.ZodType<T> {
     const properties: Record<string, ContentPropertyConfig> =
-        Reflect.getMetadata(CONTENT_METADATA_KEY, cls.prototype) || {};
+        Reflect.getMetadata(CONTENT_METADATA_KEY, constructor.prototype) || {};
     const schemaProperties = Object.entries(properties).reduce(
         (acc, [key, { schema }]) => {
             acc[key] = schema;
@@ -44,14 +44,14 @@ export function createZodSchema<T>(cls: ContentClass<T>): z.ZodType<T> {
 /**
  * Load the description of each property from a class decorated with @property
  *
- * @param cls
+ * @param constructor
  * @returns
  */
 export function loadPropertyDescriptions<T>(
-    cls: ContentClass<T>
+    constructor: ContentClass<T>
 ): Record<string, ContentPropertyDescription> {
     const properties: Record<string, ContentPropertyConfig> =
-        Reflect.getMetadata(CONTENT_METADATA_KEY, cls.prototype) || {};
+        Reflect.getMetadata(CONTENT_METADATA_KEY, constructor.prototype) || {};
     return Object.entries(properties).reduce(
         (acc, [key, { description, examples }]) => {
             acc[key] = { description, examples };

@@ -49,7 +49,7 @@ export const GetTopGainersLosersSchema = z.object({
 
 export type GetTopGainersLosersContent = z.infer<typeof GetTopGainersLosersSchema> & Content;
 
-export const isGetTopGainersLosersContent = (obj: unknown): obj is GetTopGainersLosersContent => {
+export const isGetTopGainersLosersContent = (obj: any): obj is GetTopGainersLosersContent => {
     return GetTopGainersLosersSchema.safeParse(obj).success;
 };
 
@@ -63,7 +63,7 @@ export default {
         "BEST_WORST_PERFORMERS",
     ],
     // eslint-disable-next-line
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoingeckoConfig(runtime);
         return true;
     },
@@ -77,19 +77,16 @@ export default {
     ): Promise<boolean> => {
         elizaLogger.log("Starting CoinGecko GET_TOP_GAINERS_LOSERS handler...");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
-
 
         try {
             elizaLogger.log("Composing gainers/losers context...");
             const context = composeContext({
-                state: currentState,
+                state,
                 template: getTopGainersLosersTemplate,
             });
 
@@ -180,7 +177,7 @@ export default {
         } catch (error) {
             elizaLogger.error("Error in GET_TOP_GAINERS_LOSERS handler:", error);
 
-            let errorMessage: string;
+            let errorMessage;
             if (error.response?.status === 429) {
                 errorMessage = "Rate limit exceeded. Please try again later.";
             } else if (error.response?.status === 403) {

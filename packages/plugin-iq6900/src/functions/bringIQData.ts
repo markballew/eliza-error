@@ -17,12 +17,6 @@ interface TransactionData {
     before_tx: string;
 }
 
-interface TransactionDataResponse {
-    code: string;
-    method: string;
-    decode_break: number;
-}
-
 interface CodeResult {
     json_data: string;
     commit_message: string;
@@ -88,7 +82,7 @@ async function fetchDBPDA(): Promise<string | null> {
 }
 
 async function getTransactionData(transactionData: TransactionData): Promise<{
-    data: TransactionDataResponse | "fail";
+    data: any;
     before_tx: string;
 }> {
     if (!transactionData || !("code" in transactionData)) {
@@ -121,10 +115,6 @@ async function extractCommitMessage(dataTxid: string): Promise<string | null> {
     return null;
 }
 
-function isTransactionDataResponse(data: TransactionDataResponse | "fail"): data is TransactionDataResponse {
-    return data !== "fail" && typeof data === "object" && "code" in data;
-}
-
 async function bringCode(dataTxid: string): Promise<CodeResult> {
     const txInfo = await fetchTransactionInfo(dataTxid);
     if (!txInfo || !txInfo.tail_tx) return ERROR_RESULT;
@@ -152,8 +142,8 @@ async function bringCode(dataTxid: string): Promise<CodeResult> {
             const chunkData = await getTransactionData(
                 chunk as TransactionData
             );
-            if (!chunkData.data || !isTransactionDataResponse(chunkData.data)) {
-                elizaLogger.error("Chunk data undefined or invalid");
+            if (!chunkData.data || chunkData.data === null) {
+                elizaLogger.error("Chunk data undefined");
                 return ERROR_RESULT;
             }
 

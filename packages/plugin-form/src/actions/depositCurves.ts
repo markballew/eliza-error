@@ -1,9 +1,9 @@
 import {
-    type Action,
+    Action,
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
     type IAgentRuntime,
     type Memory,
@@ -76,12 +76,10 @@ export const depositCurvesTokenAction: Action = {
         _options: { [key: string]: unknown },
         callback?: HandlerCallback
     ) => {
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         elizaLogger.debug(
@@ -103,7 +101,7 @@ export const depositCurvesTokenAction: Action = {
             const depositParams = (await generateObjectDeprecated({
                 runtime,
                 context: composeContext({
-                    state: currentState,
+                    state,
                     template: depositCurvesTemplate,
                 }),
                 modelClass: ModelClass.SMALL,

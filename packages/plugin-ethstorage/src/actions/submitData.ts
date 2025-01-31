@@ -101,16 +101,15 @@ export default {
         elizaLogger.log("Starting SUBMIT_DATA handler...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const submitDataContext = composeContext({
-            state: currentState,
+            state,
             template: submitDataTemplate,
         });
 
@@ -124,10 +123,7 @@ export default {
         if (content.data != null && content.key !== "") {
             try {
                 const RPC = runtime.getSetting("ETHSTORAGE_RPC_URL");
-                const privateKey = runtime.getSetting("ETHSTORAGE_PRIVATE_KEY");
-                if (!privateKey) {
-                    throw new Error("Missing ETHSTORAGE_PRIVATE_KEY");
-                }
+                const privateKey = runtime.getSetting("ETHSTORAGE_PRIVATE_KEY")!;
                 const address = runtime.getSetting("ETHSTORAGE_ADDRESS");
 
                 elizaLogger.log(`Transaction Data is ${content.data}`);

@@ -1,8 +1,8 @@
 import {
-    type Action,
+    Action,
     composeContext,
     generateObject,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
     type IAgentRuntime,
     type Memory,
@@ -11,7 +11,7 @@ import {
 import { z } from "zod";
 import { isAddress } from "viem";
 
-import { type CronosWalletProvider, initCronosWalletProvider } from "../providers/wallet";
+import { CronosWalletProvider, initCronosWalletProvider } from "../providers/wallet";
 import type { BalanceParams } from "../types";
 import { balanceTemplate } from "../templates";
 
@@ -43,7 +43,7 @@ export class BalanceAction {
 const buildBalanceDetails = async (
     state: State,
     runtime: IAgentRuntime,
-    _wp: CronosWalletProvider
+    wp: CronosWalletProvider
 ): Promise<BalanceParams> => {
     state.supportedChains = '"cronos"|"cronosTestnet"';
 
@@ -69,22 +69,20 @@ export const balanceAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State | undefined,
-        _options: Record<string, unknown>,
+        _options: any,
         callback?: HandlerCallback
     ) => {
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         const walletProvider = await initCronosWalletProvider(runtime);
         const action = new BalanceAction(walletProvider);
 
         const paramOptions = await buildBalanceDetails(
-            currentState,
+            state,
             runtime,
             walletProvider
         );

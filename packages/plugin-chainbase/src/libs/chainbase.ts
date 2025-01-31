@@ -61,11 +61,7 @@ function getChainbaseApiKey(): string {
     return apiKey;
 }
 
-export async function executeQuery(sql: string): Promise<{
-    columns: string[];
-    data: unknown[];
-    totalRows: number;
-}> {
+export async function executeQuery(sql: string): Promise<any> {
     try {
         const apiKey = getChainbaseApiKey();
 
@@ -187,9 +183,9 @@ export async function getTokenBalances(
 export function formatTokenBalance(token: TokenWithBalance): string {
     // Handle balance in hex format
     const balanceValue = token.balance.startsWith("0x")
-        ? Number.parseInt(token.balance, 16)
-        : Number.parseFloat(token.balance);
+        ? parseInt(token.balance, 16)
+        : parseFloat(token.balance);
 
-    const balance = balanceValue / (10 ** token.decimals);
+    const balance = balanceValue / Math.pow(10, token.decimals);
     return `${balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${token.symbol} (${token.name})`;
 }

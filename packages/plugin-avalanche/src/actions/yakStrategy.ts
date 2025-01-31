@@ -22,22 +22,16 @@ export interface StrategyContent extends Content {
     amount: string | number;
 }
 
-// refactoring zone
 function isStrategyContent(
-    _runtime: IAgentRuntime,
-    content: unknown
+    runtime: IAgentRuntime,
+    content: any
 ): content is StrategyContent {
     elizaLogger.debug("Content for strategy", content);
     return (
-        typeof content === "object" &&
-        content !== null &&
-        "depositTokenAddress" in content &&
-        "strategyAddress" in content &&
-        "amount" in content &&
-        typeof (content as StrategyContent).depositTokenAddress === "string" &&
-        typeof (content as StrategyContent).strategyAddress === "string" &&
-        (typeof (content as StrategyContent).amount === "string" ||
-            typeof (content as StrategyContent).amount === "number")
+        typeof content.depositTokenAddress === "string" &&
+        typeof content.strategyAddress === "string" &&
+        (typeof content.amount === "string" ||
+            typeof content.amount === "number")
     );
 }
 
@@ -105,16 +99,15 @@ export default {
         elizaLogger.log("Starting DEPOSIT_TO_STRATEGY handler...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose context
         const strategyContext = composeContext({
-            state: currentState,
+            state,
             template: strategyTemplate,
         });
 

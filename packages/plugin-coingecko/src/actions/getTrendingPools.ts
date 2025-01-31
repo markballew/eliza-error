@@ -40,7 +40,7 @@ export type GetTrendingPoolsContent = z.infer<typeof GetTrendingPoolsSchema> &
     Content;
 
 export const isGetTrendingPoolsContent = (
-    obj: unknown,
+    obj: any,
 ): obj is GetTrendingPoolsContent => {
     return GetTrendingPoolsSchema.safeParse(obj).success;
 };
@@ -48,7 +48,7 @@ export const isGetTrendingPoolsContent = (
 export default {
     name: "GET_TRENDING_POOLS",
     similes: ["TRENDING_POOLS", "HOT_POOLS", "POPULAR_POOLS", "TOP_POOLS"],
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoingeckoConfig(runtime);
         return true;
     },
@@ -62,19 +62,16 @@ export default {
     ): Promise<boolean> => {
         elizaLogger.log("Starting CoinGecko GET_TRENDING_POOLS handler...");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
-
 
         try {
             elizaLogger.log("Composing trending pools context...");
             const trendingContext = composeContext({
-                state: currentState,
+                state,
                 template: getTrendingPoolsTemplate,
             });
 

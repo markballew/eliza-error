@@ -2,7 +2,7 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
     type IAgentRuntime,
     type Memory,
@@ -13,7 +13,7 @@ import { getToken } from "@lifi/sdk";
 import {
     bnbWalletProvider,
     initWalletProvider,
-    type WalletProvider,
+    WalletProvider,
 } from "../providers/wallet";
 import { getBalanceTemplate } from "../templates";
 import type {
@@ -21,7 +21,7 @@ import type {
     GetBalanceResponse,
     SupportedChain,
 } from "../types";
-import { type Address, erc20Abi, formatEther, formatUnits } from "viem";
+import { Address, erc20Abi, formatEther, formatUnits } from "viem";
 
 export { getBalanceTemplate };
 
@@ -33,10 +33,7 @@ export class GetBalanceAction {
         await this.validateAndNormalizeParams(params);
         elizaLogger.debug("Normalized get balance params:", params);
 
-        const { chain, address, token } = params;
-        if (!address) {
-            throw new Error("Address is required for getting balance");
-        }
+        let { chain, address, token } = params;
 
         this.walletProvider.switchChain(chain);
         const nativeSymbol =
@@ -46,16 +43,16 @@ export class GetBalanceAction {
         let queryNativeToken = false;
         if (
             !token ||
-            token === "" ||
-            token.toLowerCase() === "bnb" ||
-            token.toLowerCase() === "tbnb"
+            token == "" ||
+            token.toLowerCase() == "bnb" ||
+            token.toLowerCase() == "tbnb"
         ) {
             queryNativeToken = true;
         }
 
         const resp: GetBalanceResponse = {
             chain,
-            address,
+            address: address!,
         };
 
         // If ERC20 token is requested
@@ -64,11 +61,11 @@ export class GetBalanceAction {
             if (token.startsWith("0x")) {
                 amount = await this.getERC20TokenBalance(
                     chain,
-                    address,
+                    address!,
                     token as `0x${string}`
                 );
             } else {
-                if (chainId !== 56) {
+                if (chainId != 56) {
                     throw new Error(
                         "Only BSC mainnet is supported for querying balance by token symbol"
                     );
@@ -78,7 +75,7 @@ export class GetBalanceAction {
                 const tokenInfo = await getToken(chainId, token);
                 amount = await this.getERC20TokenBalance(
                     chain,
-                    address,
+                    address!,
                     tokenInfo.address as `0x${string}`
                 );
             }
@@ -88,7 +85,7 @@ export class GetBalanceAction {
             // If native token is requested
             const nativeBalanceWei = await this.walletProvider
                 .getPublicClient(chain)
-                .getBalance({ address });
+                .getBalance({ address: address! });
             resp.balance = {
                 token: nativeSymbol,
                 amount: formatEther(nativeBalanceWei),
@@ -139,27 +136,22 @@ export const getBalanceAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        _options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.log("Starting getBalance action...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
-        state.walletInfo = await bnbWalletProvider.get(
-            runtime,
-            message,
-            currentState
-        );
+        state.walletInfo = await bnbWalletProvider.get(runtime, message, state);
 
         // Compose swap context
         const getBalanceContext = composeContext({
-            state: currentState,
+            state,
             template: getBalanceTemplate,
         });
         const content = await generateObjectDeprecated({

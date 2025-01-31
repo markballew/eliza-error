@@ -29,7 +29,7 @@ import type {
 import * as viemChains from "viem/chains";
 import { DeriveKeyProvider, TEEMode } from "@elizaos/plugin-tee";
 import NodeCache from "node-cache";
-import * as path from "node:path";
+import * as path from "path";
 
 import type { SupportedChain } from "../types";
 
@@ -109,11 +109,12 @@ export class WalletProvider {
     }
 
     async getWalletBalance(): Promise<string | null> {
-        const cacheKey = `walletBalance_${this.currentChain}`;
+        const cacheKey = "walletBalance_" + this.currentChain;
         const cachedData = await this.getCachedData<string>(cacheKey);
         if (cachedData) {
             elizaLogger.log(
-                `Returning cached wallet balance for chain: ${this.currentChain}`
+                "Returning cached wallet balance for chain: " +
+                    this.currentChain
             );
             return cachedData;
         }
@@ -126,7 +127,8 @@ export class WalletProvider {
             const balanceFormatted = formatUnits(balance, 18);
             this.setCachedData<string>(cacheKey, balanceFormatted);
             elizaLogger.log(
-                `Wallet balance cached for chain: ${this.currentChain}`
+                "Wallet balance cached for chain: ",
+                this.currentChain
             );
             return balanceFormatted;
         } catch (error) {
@@ -218,9 +220,9 @@ export class WalletProvider {
         if (!chains) {
             return;
         }
-        for (const chain of Object.keys(chains)) {
+        Object.keys(chains).forEach((chain: string) => {
             this.chains[chain] = chains[chain];
-        }
+        });
     };
 
     private setCurrentChain = (chain: SupportedChain) => {
@@ -267,15 +269,15 @@ const genChainsFromRuntime = (
 ): Record<string, Chain> => {
     const chainNames =
         (runtime.character.settings.chains?.evm as SupportedChain[]) || [];
-    const chains: Record<string, Chain> = {};
+    const chains = {};
 
-    for (const chainName of chainNames) {
+    chainNames.forEach((chainName) => {
         const rpcUrl = runtime.getSetting(
-            `ETHEREUM_PROVIDER_${chainName.toUpperCase()}`
+            "ETHEREUM_PROVIDER_" + chainName.toUpperCase()
         );
         const chain = WalletProvider.genChainFromName(chainName, rpcUrl);
         chains[chainName] = chain;
-    }
+    });
 
     const mainnet_rpcurl = runtime.getSetting("EVM_PROVIDER_URL");
     if (mainnet_rpcurl) {
@@ -283,7 +285,7 @@ const genChainsFromRuntime = (
             "mainnet",
             mainnet_rpcurl
         );
-        chains.mainnet = chain;
+        chains["mainnet"] = chain;
     }
 
     return chains;
@@ -313,15 +315,15 @@ export const initWalletProvider = async (runtime: IAgentRuntime) => {
             runtime.cacheManager,
             chains
         );
+    } else {
+        const privateKey = runtime.getSetting(
+            "EVM_PRIVATE_KEY"
+        ) as `0x${string}`;
+        if (!privateKey) {
+            throw new Error("EVM_PRIVATE_KEY is missing");
+        }
+        return new WalletProvider(privateKey, runtime.cacheManager, chains);
     }
-
-    const privateKey = runtime.getSetting(
-        "EVM_PRIVATE_KEY"
-    ) as `0x${string}`;
-    if (!privateKey) {
-        throw new Error("EVM_PRIVATE_KEY is missing");
-    }
-    return new WalletProvider(privateKey, runtime.cacheManager, chains);
 };
 
 export const evmWalletProvider: Provider = {

@@ -204,18 +204,18 @@ export class AgentRuntime implements IAgentRuntime {
 
     async registerService(service: Service): Promise<void> {
         const serviceType = service.serviceType;
-        elizaLogger.log(`${this.character.name}(${this.agentId}) - Registering service:`, serviceType);
+        elizaLogger.log("Registering service:", serviceType);
 
         if (this.services.has(serviceType)) {
             elizaLogger.warn(
-                `${this.character.name}(${this.agentId}) - Service ${serviceType} is already registered. Skipping registration.`
+                `Service ${serviceType} is already registered. Skipping registration.`,
             );
             return;
         }
 
         // Add the service to the services map
         this.services.set(serviceType, service);
-        elizaLogger.success(`${this.character.name}(${this.agentId}) - Service ${serviceType} registered successfully`);
+        elizaLogger.success(`Service ${serviceType} registered successfully`);
     }
 
     /**
@@ -257,14 +257,7 @@ export class AgentRuntime implements IAgentRuntime {
         logging?: boolean;
         verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
     }) {
-        // use the character id if it exists, otherwise use the agentId if it is passed in, otherwise use the character name
-        this.agentId =
-            opts.character?.id ??
-            opts?.agentId ??
-            stringToUuid(opts.character?.name ?? uuidv4());
-        this.character = opts.character || defaultCharacter;
-
-        elizaLogger.info(`${this.character.name}(${this.agentId}) - Initializing AgentRuntime with options:`, {
+        elizaLogger.info("Initializing AgentRuntime with options:", {
             character: opts.character?.name,
             modelProvider: opts.modelProvider,
             characterModelProvider: opts.character?.modelProvider,
@@ -293,6 +286,12 @@ export class AgentRuntime implements IAgentRuntime {
             throw new Error("No database adapter provided");
         }
         this.databaseAdapter = opts.databaseAdapter;
+        // use the character id if it exists, otherwise use the agentId if it is passed in, otherwise use the character name
+        this.agentId =
+            opts.character?.id ??
+            opts?.agentId ??
+            stringToUuid(opts.character?.name ?? uuidv4());
+        this.character = opts.character || defaultCharacter;
 
         // By convention, we create a user and room using the agent id.
         // Memories related to it are considered global context for the agent.
@@ -353,7 +352,8 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.serverUrl = opts.serverUrl ?? this.serverUrl;
 
-        elizaLogger.info(`${this.character.name}(${this.agentId}) - Setting Model Provider:`, {
+        elizaLogger.info("Setting model provider...");
+        elizaLogger.info("Model Provider Selection:", {
             characterModelProvider: this.character.modelProvider,
             optsModelProvider: opts.modelProvider,
             currentModelProvider: this.modelProvider,
@@ -370,23 +370,18 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.imageModelProvider =
             this.character.imageModelProvider ?? this.modelProvider;
-        
+
+        elizaLogger.info(`Selected model provider: ${this.modelProvider}`);
+
+        elizaLogger.info(
+            `Selected image model provider: ${this.imageModelProvider}`,
+        );
+
         this.imageVisionModelProvider =
             this.character.imageVisionModelProvider ?? this.modelProvider;
-            
-        elizaLogger.info(
-          `${this.character.name}(${this.agentId}) - Selected model provider:`,
-          this.modelProvider
-        );
 
         elizaLogger.info(
-          `${this.character.name}(${this.agentId}) - Selected image model provider:`,
-          this.imageModelProvider
-        );
-
-        elizaLogger.info(
-            `${this.character.name}(${this.agentId}) - Selected image vision model provider:`,
-            this.imageVisionModelProvider
+            `Selected image vision model provider: ${this.imageVisionModelProvider}`,
         );
 
         // Validate model provider
@@ -449,26 +444,23 @@ export class AgentRuntime implements IAgentRuntime {
                 await service.initialize(this);
                 this.services.set(serviceType, service);
                 elizaLogger.success(
-                    `${this.character.name}(${this.agentId}) - Service ${serviceType} initialized successfully`
+                    `Service ${serviceType} initialized successfully`,
                 );
             } catch (error) {
                 elizaLogger.error(
-                    `${this.character.name}(${this.agentId}) - Failed to initialize service ${serviceType}:`,
-                    error
+                    `Failed to initialize service ${serviceType}:`,
+                    error,
                 );
                 throw error;
             }
         }
 
-        // should already be initiailized
-        /*
         for (const plugin of this.plugins) {
             if (plugin.services)
                 await Promise.all(
                     plugin.services?.map((service) => service.initialize(this)),
                 );
         }
-        */
 
         if (
             this.character &&
@@ -563,7 +555,7 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     async stop() {
-        elizaLogger.debug("runtime::stop - character", this.character.name);
+        elizaLogger.debug("runtime::stop - character", this.character);
         // stop services, they don't have a stop function
         // just initialize
 
@@ -959,7 +951,7 @@ export class AgentRuntime implements IAgentRuntime {
      * @param action The action to register.
      */
     registerAction(action: Action) {
-        elizaLogger.success(`${this.character.name}(${this.agentId}) - Registering action: ${action.name}`);
+        elizaLogger.success(`Registering action: ${action.name}`);
         this.actions.push(action);
     }
 

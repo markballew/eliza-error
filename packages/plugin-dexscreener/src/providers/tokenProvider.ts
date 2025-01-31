@@ -20,25 +20,9 @@ interface TokenPriceData {
 }
 */
 
-interface DexScreenerPair {
-    baseToken: {
-        name: string;
-        symbol: string;
-        address: string;
-        decimals: number;
-    };
-    priceUsd: string;
-    liquidity?: {
-        usd: string;
-    };
-    volume?: {
-        h24: number;
-    };
-}
-
 export class TokenPriceProvider implements Provider {
     async get(
-        _lengthruntime: IAgentRuntime,
+        runtime: IAgentRuntime,
         message: Memory,
         _state?: State
     ): Promise<string> {
@@ -109,7 +93,7 @@ export class TokenPriceProvider implements Provider {
         return null;
     }
 
-    private getBestPair(pairs: DexScreenerPair[]): DexScreenerPair {
+    private getBestPair(pairs: any[]): any {
         return pairs.reduce((best, current) => {
             const bestLiquidity = Number.parseFloat(best.liquidity?.usd || "0");
             const currentLiquidity = Number.parseFloat(current.liquidity?.usd || "0");
@@ -117,12 +101,13 @@ export class TokenPriceProvider implements Provider {
         }, pairs[0]);
     }
 
-    private formatPriceData(pair: DexScreenerPair): string {
+    private formatPriceData(pair: any): string {
         const price = Number.parseFloat(pair.priceUsd).toFixed(6);
+        //const change24h = pair.priceChange?.h24?.toFixed(2) || "0.00";
         const liquidity = Number.parseFloat(
             pair.liquidity?.usd || "0"
         ).toLocaleString();
-        const volume = (pair.volume?.h24 || 0).toLocaleString();
+        const volume = Number.parseFloat(pair.volume?.h24 || "0").toLocaleString();
 
         return `
         The price of ${pair.baseToken.symbol} is $${price} USD, with liquidity of $${liquidity} and 24h volume of $${volume}.`;

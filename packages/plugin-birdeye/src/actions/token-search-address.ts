@@ -3,7 +3,6 @@ import {
     type ActionExample,
     elizaLogger,
     formatTimestamp,
-    type HandlerCallback,
     type IAgentRuntime,
     type Memory,
     type State,
@@ -73,9 +72,9 @@ export const tokenSearchAddressAction = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State,
-        _options: Record<string, unknown>,
-        callback?: HandlerCallback
+        state: State,
+        _options: any,
+        callback?: any
     ) => {
         try {
             const provider = new BirdeyeProvider(runtime.cacheManager);
@@ -212,24 +211,24 @@ export const tokenSearchAddressAction = {
 // take all the details of the results and present to the user
 const formatTokenReport = (
     address: BaseAddress,
-    _index: number,
+    index: number,
     result: TokenAddressSearchResult
 ) => {
-    let output = "";
+    let output = ``;
 
     if (result.overview?.data) {
-        output += "\n";
-        output += "Token Overview:\n";
+        output += `\n`;
+        output += `Token Overview:\n`;
         output += `📝 Name: ${result.overview.data.name}\n`;
         output += result.overview.data.symbol
             ? `🔖 Symbol: ${result.overview.data.symbol.toUpperCase()}\n`
             : "";
         output += `🔗 Address: ${address.address}\n`;
         output += `🔢 Decimals: ${result.overview.data.decimals}\n`;
-        output += "";
+        output += ``;
         if (result.overview.data.extensions) {
             const ext = result.overview.data.extensions;
-            output += "🔗 Links & Info:\n";
+            output += `🔗 Links & Info:\n`;
             if (ext.website) output += `   • Website: ${ext.website}\n`;
             if (ext.twitter) output += `   • Twitter: ${ext.twitter}\n`;
             if (ext.telegram) output += `   • Telegram: ${ext.telegram}\n`;
@@ -249,8 +248,8 @@ const formatTokenReport = (
     }
 
     if (result.marketData?.data) {
-        output += "\n";
-        output += "Market Data:\n";
+        output += `\n`;
+        output += `Market Data:\n`;
         output += `💧 Liquidity: ${formatValue(result.marketData.data.liquidity)}\n`;
         output += `💵 Price: ${formatPrice(result.marketData.data.price)}\n`;
         output += `📦 Supply: ${formatValue(result.marketData.data.supply)}\n`;
@@ -260,8 +259,8 @@ const formatTokenReport = (
     }
 
     if (result.tradeData?.data) {
-        output += "\n";
-        output += "Trade Data:\n";
+        output += `\n`;
+        output += `Trade Data:\n`;
         output += `👥 Holders: ${result.tradeData.data.holder}\n`;
         output += `📊 Unique Wallets (24h): ${result.tradeData.data.unique_wallet_24h}\n`;
         output += `📉 Price Change (24h): ${formatPercentChange(result.tradeData.data.price_change_24h_percent)}\n`;
@@ -270,8 +269,8 @@ const formatTokenReport = (
     }
 
     if (result.security?.data) {
-        output += "\n";
-        output += "Ownership Distribution:\n";
+        output += `\n`;
+        output += `Ownership Distribution:\n`;
         output += `🏠 Owner Address: ${shortenAddress(result.security.data.ownerAddress)}\n`;
         output += `👨‍💼 Creator Address: ${shortenAddress(result.security.data.creatorAddress)}\n`;
         output += `📦 Total Supply: ${formatValue(result.security.data.totalSupply)}\n`;

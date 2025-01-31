@@ -2,18 +2,18 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
     type IAgentRuntime,
     type Memory,
     type State,
 } from "@elizaos/core";
-import { type Address, formatEther, parseEther, erc20Abi } from "viem";
+import { formatEther, parseEther, erc20Abi } from "viem";
 
 import {
     bnbWalletProvider,
     initWalletProvider,
-    type WalletProvider,
+    WalletProvider,
 } from "../providers/wallet";
 import { stakeTemplate } from "../templates";
 import { ListaDaoAbi, type StakeParams, type StakeResponse } from "../types";
@@ -37,12 +37,7 @@ export class StakeAction {
         this.walletProvider.switchChain("bsc"); // only BSC is supported
 
         const actions = {
-            deposit: async () => {
-                if (!params.amount) {
-                    throw new Error("Amount is required for deposit");
-                }
-                return await this.doDeposit(params.amount);
-            },
+            deposit: async () => await this.doDeposit(params.amount!),
             withdraw: async () => await this.doWithdraw(params.amount),
             claim: async () => await this.doClaim(),
         };
@@ -51,15 +46,15 @@ export class StakeAction {
     }
 
     validateStakeParams(params: StakeParams) {
-        if (params.chain !== "bsc") {
+        if (params.chain != "bsc") {
             throw new Error("Only BSC mainnet is supported");
         }
 
-        if (params.action === "deposit" && !params.amount) {
+        if (params.action == "deposit" && !params.amount) {
             throw new Error("Amount is required for deposit");
         }
 
-        if (params.action === "withdraw" && !params.amount) {
+        if (params.action == "withdraw" && !params.amount) {
             throw new Error("Amount is required for withdraw");
         }
     }
@@ -67,10 +62,6 @@ export class StakeAction {
     async doDeposit(amount: string): Promise<string> {
         const publicClient = this.walletProvider.getPublicClient("bsc");
         const walletClient = this.walletProvider.getWalletClient("bsc");
-        const account = walletClient.account;
-        if (!account) {
-            throw new Error("Wallet account not found");
-        }
 
         const { request } = await publicClient.simulateContract({
             account: this.walletProvider.getAccount(),
@@ -88,7 +79,7 @@ export class StakeAction {
             address: this.SLIS_BNB,
             abi: erc20Abi,
             functionName: "balanceOf",
-            args: [account.address],
+            args: [walletClient.account!.address],
         });
 
         return `Successfully do deposit. ${formatEther(slisBNBBalance)} slisBNB held. \nTransaction Hash: ${txHash}`;
@@ -97,10 +88,6 @@ export class StakeAction {
     async doWithdraw(amount?: string): Promise<string> {
         const publicClient = this.walletProvider.getPublicClient("bsc");
         const walletClient = this.walletProvider.getWalletClient("bsc");
-        const account = walletClient.account;
-        if (!account) {
-            throw new Error("Wallet account not found");
-        }
 
         // If amount is not provided, withdraw all slisBNB
         let amountToWithdraw: bigint;
@@ -109,7 +96,7 @@ export class StakeAction {
                 address: this.SLIS_BNB,
                 abi: erc20Abi,
                 functionName: "balanceOf",
-                args: [account.address],
+                args: [walletClient.account!.address],
             });
         } else {
             amountToWithdraw = parseEther(amount);
@@ -119,7 +106,7 @@ export class StakeAction {
         const allowance = await this.walletProvider.checkERC20Allowance(
             "bsc",
             this.SLIS_BNB,
-            account.address,
+            walletClient.account!.address,
             this.LISTA_DAO
         );
         if (allowance < amountToWithdraw) {
@@ -153,7 +140,7 @@ export class StakeAction {
             address: this.SLIS_BNB,
             abi: erc20Abi,
             functionName: "balanceOf",
-            args: [account.address],
+            args: [walletClient.account!.address],
         });
 
         return `Successfully do withdraw. ${formatEther(slisBNBBalance)} slisBNB left. \nTransaction Hash: ${txHash}`;
@@ -162,16 +149,13 @@ export class StakeAction {
     async doClaim(): Promise<string> {
         const publicClient = this.walletProvider.getPublicClient("bsc");
         const walletClient = this.walletProvider.getWalletClient("bsc");
-        const account = walletClient.account;
-        if (!account) {
-            throw new Error("Wallet account not found");
-        }
 
+        const address = walletClient.account!.address;
         const requests = await publicClient.readContract({
             address: this.LISTA_DAO,
             abi: ListaDaoAbi,
             functionName: "getUserWithdrawalRequests",
-            args: [account.address],
+            args: [address],
         });
 
         let totalClaimed = 0n;
@@ -180,7 +164,7 @@ export class StakeAction {
                 address: this.LISTA_DAO,
                 abi: ListaDaoAbi,
                 functionName: "getUserRequestStatus",
-                args: [account.address, BigInt(idx)],
+                args: [address, BigInt(idx)],
             });
 
             if (isClaimable) {
@@ -214,7 +198,7 @@ export const stakeAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        _options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.log("Starting stake action...");
@@ -229,21 +213,16 @@ export const stakeAction = {
         }
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
-        state.walletInfo = await bnbWalletProvider.get(
-            runtime,
-            message,
-            currentState
-        );
+        state.walletInfo = await bnbWalletProvider.get(runtime, message, state);
 
         // Compose stake context
         const stakeContext = composeContext({
-            state: currentState,
+            state,
             template: stakeTemplate,
         });
         const content = await generateObjectDeprecated({

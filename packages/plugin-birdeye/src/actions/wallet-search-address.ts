@@ -2,7 +2,6 @@ import {
     type Action,
     type ActionExample,
     elizaLogger,
-    type HandlerCallback,
     type IAgentRuntime,
     type Memory,
     type State,
@@ -54,9 +53,9 @@ export const walletSearchAddressAction = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State,
-        _options: Record<string, unknown>,
-        callback?: HandlerCallback
+        state: State,
+        _options: any,
+        callback?: any
     ) => {
         try {
             const provider = new BirdeyeProvider(runtime.cacheManager);
@@ -165,7 +164,7 @@ const formatWalletReport = (
     let header = `Wallet Result ${totalResults > 1 ? `#${index + 1}` : ""}\n`;
     header += `👛 Address ${address.address}*\n`;
     header += `💰 Total Value: $${totalValue.toLocaleString()}\n`;
-    header += "🔖 Top Holdings:";
+    header += `🔖 Top Holdings:`;
     const tokenList = tokens
         .map(
             (token) =>

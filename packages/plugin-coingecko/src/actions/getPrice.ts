@@ -45,7 +45,7 @@ export const GetPriceSchema = z.object({
 
 export type GetPriceContent = z.infer<typeof GetPriceSchema> & Content;
 
-export const isGetPriceContent = (obj: unknown): obj is GetPriceContent => {
+export const isGetPriceContent = (obj: any): obj is GetPriceContent => {
     return GetPriceSchema.safeParse(obj).success;
 };
 
@@ -67,7 +67,7 @@ export default {
         "COIN_PRICE_DATA"
     ],
     // eslint-disable-next-line
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoingeckoConfig(runtime);
         return true;
     },
@@ -81,19 +81,16 @@ export default {
     ): Promise<boolean> => {
         elizaLogger.log("Starting CoinGecko GET_PRICE handler...");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
-
 
         try {
             elizaLogger.log("Composing price context...");
             const priceContext = composeContext({
-                state: currentState,
+                state,
                 template: getPriceTemplate,
             });
 
@@ -166,10 +163,10 @@ export default {
             const formattedResponse = Object.entries(response.data).map(([coinId, data]) => {
                 const coin = coins.find(c => c.id === coinId);
                 const coinName = coin ? `${coin.name} (${coin.symbol.toUpperCase()})` : coinId;
-                const parts = [`${coinName}:`];
+                const parts = [coinName + ':'];
 
                 // Add price for each requested currency
-                for (const currency of currencies) {
+                currencies.forEach(currency => {
                     const upperCurrency = currency.toUpperCase();
                     if (data[currency]) {
                         parts.push(`  ${upperCurrency}: ${data[currency].toLocaleString(undefined, {
@@ -210,7 +207,7 @@ export default {
                             parts.push(`  24h Change (${upperCurrency}): ${changePrefix}${change.toFixed(2)}%`);
                         }
                     }
-                }
+                });
 
                 // Add last updated if requested
                 if (content.include_last_updated_at && data.last_updated_at) {
@@ -232,21 +229,19 @@ export default {
                 callback({
                     text: responseText,
                     content: {
-                        prices: Object.entries(response.data).reduce((acc, [coinId, data]) => {
-                            const coinPrices = currencies.reduce((currencyAcc, currency) => {
-                                const currencyData = {
+                        prices: Object.entries(response.data).reduce((acc, [coinId, data]) => ({
+                            ...acc,
+                            [coinId]: currencies.reduce((currencyAcc, currency) => ({
+                                ...currencyAcc,
+                                [currency]: {
                                     price: data[currency],
                                     marketCap: data[`${currency}_market_cap`],
                                     volume24h: data[`${currency}_24h_vol`],
                                     change24h: data[`${currency}_24h_change`],
                                     lastUpdated: data.last_updated_at,
-                                };
-                                Object.assign(currencyAcc, { [currency]: currencyData });
-                                return currencyAcc;
-                            }, {});
-                            Object.assign(acc, { [coinId]: coinPrices });
-                            return acc;
-                        }, {}),
+                                }
+                            }), {})
+                        }), {}),
                         params: {
                             currencies: currencies.map(c => c.toUpperCase()),
                             include_market_cap: content.include_market_cap,
@@ -262,7 +257,7 @@ export default {
         } catch (error) {
             elizaLogger.error("Error in GET_PRICE handler:", error);
 
-            let errorMessage: string;
+            let errorMessage;
             if (error.response?.status === 429) {
                 errorMessage = "Rate limit exceeded. Please try again later.";
             } else if (error.response?.status === 403) {

@@ -39,9 +39,9 @@ export const getActiveNoteAction: Action = {
     },
     handler: async (
         runtime: IAgentRuntime,
-        _message: Memory,
-        _state: State,
-        _options: any,
+        message: Memory,
+        state: State,
+        options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.info("Starting get active note handler");
@@ -134,7 +134,7 @@ export const summarizeActiveNoteAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: any,
+        options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.info("Starting summarize active note handler");
@@ -176,7 +176,7 @@ export const summarizeActiveNoteAction: Action = {
                     modelClass: ModelClass.MEDIUM,
                 });
 
-                currentSummary = `${currentSummary}\n${summary}`;
+                currentSummary = currentSummary + "\n" + summary;
             }
             if (!currentSummary) {
                 elizaLogger.error("Error: No summary found");

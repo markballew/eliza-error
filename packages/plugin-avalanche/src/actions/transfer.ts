@@ -17,28 +17,21 @@ import { validateAvalancheConfig } from "../environment";
 import { TOKEN_ADDRESSES } from "../utils/constants";
 
 export interface TransferContent extends Content {
-    tokenAddress: Address;
-    recipient: Address;
+    tokenAddress: string;
+    recipient: string;
     amount: string | number;
 }
 
 function isTransferContent(
-    _runtime: IAgentRuntime,
-    content: unknown
+    runtime: IAgentRuntime,
+    content: any
 ): content is TransferContent {
     elizaLogger.debug("Content for transfer", content);
     return (
-        typeof content === "object" &&
-        content !== null &&
-        "tokenAddress" in content &&
-        "recipient" in content &&
-        "amount" in content &&
-        typeof (content as TransferContent).tokenAddress === "string" &&
-        (content as TransferContent).tokenAddress.startsWith("0x") &&
-        typeof (content as TransferContent).recipient === "string" &&
-        (content as TransferContent).recipient.startsWith("0x") &&
-        (typeof (content as TransferContent).amount === "string" ||
-            typeof (content as TransferContent).amount === "number")
+        typeof content.tokenAddress === "string" &&
+        typeof content.recipient === "string" &&
+        (typeof content.amount === "string" ||
+            typeof content.amount === "number")
     );
 }
 
@@ -117,16 +110,15 @@ export default {
         }
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -149,21 +141,21 @@ export default {
             return false;
         }
 
-        let tx: `0x${string}` | undefined;
+        let tx;
         if (
             content.tokenAddress ===
             "0x0000000000000000000000000000000000000000"
         ) {
             tx = await sendNativeAsset(
                 runtime,
-                content.recipient,
+                content.recipient as Address,
                 content.amount as number
             );
         } else {
             tx = await sendToken(
                 runtime,
-                content.tokenAddress,
-                content.recipient,
+                content.tokenAddress as Address,
+                content.recipient as Address,
                 content.amount as number
             );
         }

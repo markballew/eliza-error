@@ -195,9 +195,11 @@ export class MessageManager {
 
             // Check if we should post
             if (
-                timeSinceLastMessage > randomThreshold &&
-                timeSinceLastAutoPost >
-                    (this.autoPostConfig.minTimeBetweenPosts || 0)
+                timeSinceLastMessage >
+                    this.autoPostConfig.inactivityThreshold ||
+                (randomThreshold &&
+                    timeSinceLastAutoPost >
+                        (this.autoPostConfig.minTimeBetweenPosts || 0))
             ) {
                 try {
                     const roomId = stringToUuid(
@@ -256,7 +258,7 @@ export class MessageManager {
                     // Create and store memories
                     const memories = messages.map((m) => ({
                         id: stringToUuid(
-                            roomId + "-" + m.message_id.toString()
+                            m.message_id.toString() + "-" + this.runtime.agentId
                         ),
                         userId: this.runtime.agentId,
                         agentId: this.runtime.agentId,
@@ -382,7 +384,9 @@ export class MessageManager {
             );
 
             const memories = messages.map((m) => ({
-                id: stringToUuid(roomId + "-" + m.message_id.toString()),
+                id: stringToUuid(
+                    m.message_id.toString() + "-" + this.runtime.agentId
+                ),
                 userId: this.runtime.agentId,
                 agentId: this.runtime.agentId,
                 content: {
@@ -1260,7 +1264,7 @@ export class MessageManager {
 
             // Get message ID
             const messageId = stringToUuid(
-                roomId + "-" + message.message_id.toString()
+                message.message_id.toString() + "-" + this.runtime.agentId
             ) as UUID;
 
             // Handle images
@@ -1335,7 +1339,9 @@ export class MessageManager {
 
                         const memory: Memory = {
                             id: stringToUuid(
-                                roomId + "-" + sentMessage.message_id.toString()
+                                sentMessage.message_id.toString() +
+                                    "-" +
+                                    this.runtime.agentId
                             ),
                             agentId,
                             userId: agentId,

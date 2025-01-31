@@ -98,16 +98,15 @@ export const TransferAction: Action = {
         elizaLogger.log("Starting Cronos zkEVM SEND_TOKEN handler...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -154,7 +153,7 @@ export const TransferAction: Action = {
             const account = useGetAccount(runtime);
             const walletClient = useGetWalletClient();
 
-            let hash: `0x${string}`;
+            let hash;
 
             // Check if the token is native
             if (
@@ -190,11 +189,13 @@ export const TransferAction: Action = {
             }
 
             elizaLogger.success(
-                `Transfer completed successfully! Transaction hash: ${hash}`
+                "Transfer completed successfully! Transaction hash: " + hash
             );
             if (callback) {
                 callback({
-                    text: `Transfer completed successfully! Transaction hash: ${hash}`,
+                    text:
+                        "Transfer completed successfully! Transaction hash: " +
+                        hash,
                     content: {},
                 });
             }

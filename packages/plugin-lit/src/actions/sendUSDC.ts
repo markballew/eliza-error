@@ -41,7 +41,7 @@ Given the recent messages, extract the following information about the USDC tran
 Respond with a JSON markdown block containing only the extracted values.`;
 
 // Define the schema type
-export const sendUsdcSchema = z.object({
+const sendUsdcSchema = z.object({
     amount: z.string().nullable(),
     to: z.string().nullable()
 });
@@ -63,7 +63,7 @@ export const sendUSDC: Action = {
   name: "SEND_USDC",
   description: "Sends USDC to an address on Sepolia using PKP wallet",
   similes: ["send usdc", "send * usdc to *", "transfer * usdc to *"],
-  validate: async (_runtime: IAgentRuntime) => true,
+  validate: async (runtime: IAgentRuntime) => true,
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
@@ -72,17 +72,16 @@ export const sendUSDC: Action = {
     callback?: HandlerCallback
   ): Promise<boolean> => {
     try {
-      // Initialize or update state
-      let currentState: State;
+      // Update state if needed
       if (!state) {
-          currentState = (await runtime.composeState(message)) as State;
+        state = await runtime.composeState(message);
       } else {
-          currentState = await runtime.updateRecentMessageState(state);
+        state = await runtime.updateRecentMessageState(state);
       }
 
       // Compose context and generate content
       const sendUsdcContext = composeContext({
-        state: currentState,
+        state,
         template: sendUsdcTemplate,
       });
 
@@ -159,13 +158,10 @@ export const sendUSDC: Action = {
           { resource: new LitActionResource("*"), ability: LIT_ABILITY.LitActionExecution },
         ],
         authNeededCallback: async ({ resourceAbilityRequests, expiration, uri }) => {
-          if (!uri || !expiration || !resourceAbilityRequests) {
-            throw new Error("Missing required parameters for auth callback");
-          }
           const toSign = await createSiweMessageWithRecaps({
-            uri,
-            expiration,
-            resources: resourceAbilityRequests,
+            uri: uri!,
+            expiration: expiration!,
+            resources: resourceAbilityRequests!,
             walletAddress: litState.evmWallet.address,
             nonce: await litState.nodeClient.getLatestBlockhash(),
             litNodeClient: litState.nodeClient,
@@ -180,7 +176,7 @@ export const sendUSDC: Action = {
         sessionSigs,
       });
 
-      const signature = { r: `0x${sig.r}`, s: `0x${sig.s}`, v: sig.recid === 0 ? 27 : 28 };
+      const signature = { r: "0x" + sig.r, s: "0x" + sig.s, v: sig.recid === 0 ? 27 : 28 };
       const signedTx = ethers.utils.serializeTransaction(unsignedTx, signature);
       const sentTx = await provider.sendTransaction(signedTx);
       await sentTx.wait();

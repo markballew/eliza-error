@@ -27,7 +27,7 @@ export default {
         "CHECK_TOKEN_PRICE",
     ],
     // eslint-disable-next-line
-    validate: async (runtime: IAgentRuntime, _message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         await validateCoinMarketCapConfig(runtime);
         return true;
     },
@@ -42,18 +42,16 @@ export default {
         elizaLogger.log("Starting CoinMarketCap GET_PRICE handler...");
 
         // Initialize or update state
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         try {
             // Compose and generate price check content
             const priceContext = composeContext({
-                state: currentState,
+                state,
                 template: getPriceTemplate,
             });
 

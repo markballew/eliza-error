@@ -17,7 +17,7 @@ interface LitState {
 
 export const pkpPermissionsProvider = {
   addPermissions: async (
-    _runtime: IAgentRuntime,
+    runtime: IAgentRuntime,
     _message: Memory,
     state: State,
     tokenId: string,

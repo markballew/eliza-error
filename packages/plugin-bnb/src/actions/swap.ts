@@ -2,7 +2,7 @@ import {
     composeContext,
     elizaLogger,
     generateObjectDeprecated,
-    type HandlerCallback,
+    HandlerCallback,
     ModelClass,
     type IAgentRuntime,
     type Memory,
@@ -14,7 +14,7 @@ import { parseEther } from "viem";
 import {
     bnbWalletProvider,
     initWalletProvider,
-    type WalletProvider,
+    WalletProvider,
 } from "../providers/wallet";
 import { swapTemplate } from "../templates";
 import type { SwapParams, SwapResponse } from "../types";
@@ -33,47 +33,50 @@ export class SwapAction {
         const chainId = this.walletProvider.getChainConfigs(params.chain).id;
 
         this.walletProvider.configureLiFiSdk(params.chain);
+        try {
+            const resp: SwapResponse = {
+                chain: params.chain,
+                txHash: "0x",
+                fromToken: params.fromToken,
+                toToken: params.toToken,
+                amount: params.amount,
+            };
 
-        const resp: SwapResponse = {
-            chain: params.chain,
-            txHash: "0x",
-            fromToken: params.fromToken,
-            toToken: params.toToken,
-            amount: params.amount,
-        };
+            const routes = await getRoutes({
+                fromChainId: chainId,
+                toChainId: chainId,
+                fromTokenAddress: params.fromToken,
+                toTokenAddress: params.toToken,
+                fromAmount: parseEther(params.amount).toString(),
+                fromAddress: fromAddress,
+                options: {
+                    slippage: params.slippage,
+                    order: "RECOMMENDED",
+                },
+            });
 
-        const routes = await getRoutes({
-            fromChainId: chainId,
-            toChainId: chainId,
-            fromTokenAddress: params.fromToken,
-            toTokenAddress: params.toToken,
-            fromAmount: parseEther(params.amount).toString(),
-            fromAddress: fromAddress,
-            options: {
-                slippage: params.slippage,
-                order: "RECOMMENDED",
-            },
-        });
+            if (!routes.routes.length) throw new Error("No routes found");
 
-        if (!routes.routes.length) throw new Error("No routes found");
+            const execution = await executeRoute(routes.routes[0]);
+            const process =
+                execution.steps[0]?.execution?.process[
+                    execution.steps[0]?.execution?.process.length - 1
+                ];
 
-        const execution = await executeRoute(routes.routes[0]);
-        const process =
-            execution.steps[0]?.execution?.process[
-                execution.steps[0]?.execution?.process.length - 1
-            ];
+            if (!process?.status || process.status === "FAILED") {
+                throw new Error("Transaction failed");
+            }
 
-        if (!process?.status || process.status === "FAILED") {
-            throw new Error("Transaction failed");
+            resp.txHash = process.txHash as `0x${string}`;
+
+            return resp;
+        } catch (error) {
+            throw error;
         }
-
-        resp.txHash = process.txHash as `0x${string}`;
-
-        return resp;
     }
 
     validateAndNormalizeParams(params: SwapParams): void {
-        if (params.chain !== "bsc") {
+        if (params.chain != "bsc") {
             throw new Error("Only BSC mainnet is supported");
         }
     }
@@ -86,28 +89,22 @@ export const swapAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: Record<string, unknown>,
+        _options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.log("Starting swap action...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
-
-        state.walletInfo = await bnbWalletProvider.get(
-            runtime,
-            message,
-            currentState
-        );
+        state.walletInfo = await bnbWalletProvider.get(runtime, message, state);
 
         // Compose swap context
         const swapContext = composeContext({
-            state: currentState,
+            state,
             template: swapTemplate,
         });
         const content = await generateObjectDeprecated({

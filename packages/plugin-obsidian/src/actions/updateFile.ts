@@ -13,14 +13,6 @@ import { fileSchema, isValidFile } from "../types";
 import { getObsidian } from "../helper";
 import { fileTemplate } from "../templates/file";
 
-
-// Add at the top with other imports
-interface UpdateFileOptions {
-    path?: string;
-    content?: string;
-    createIfNotExists?: boolean;
-}
-
 export const updateFileAction: Action = {
     name: "UPDATE_FILE",
     similes: [
@@ -49,7 +41,7 @@ export const updateFileAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: UpdateFileOptions,
+        options: any,
         callback?: HandlerCallback
     ) => {
         elizaLogger.info("Starting update file handler");
@@ -57,22 +49,14 @@ export const updateFileAction: Action = {
 
         try {
             // Initialize or update state for context generation
-            // if (!state) {
-            //     state = (await runtime.composeState(message)) as State;
-            // } else {
-            //     state = await runtime.updateRecentMessageState(state);
-            // }
-
-            // Initialize or update state for context generation
-            let currentState: State;
             if (!state) {
-                currentState = (await runtime.composeState(message)) as State;
+                state = (await runtime.composeState(message)) as State;
             } else {
-                currentState = await runtime.updateRecentMessageState(state);
+                state = await runtime.updateRecentMessageState(state);
             }
 
             const context = composeContext({
-                state: currentState,
+                state,
                 template: fileTemplate(message.content.text),
             });
 

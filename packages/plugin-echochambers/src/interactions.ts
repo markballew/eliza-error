@@ -17,7 +17,8 @@ import type { EchoChamberClient } from "./echoChamberClient";
 import type { ChatMessage, ChatRoom } from "./types";
 
 function createMessageTemplate(currentRoom: string, roomTopic: string) {
-    return `
+    return (
+        `
 # About {{agentName}}:
 {{bio}}
 {{lore}}
@@ -46,12 +47,13 @@ Remember:
 - Stay on topic for the current room
 - Don't repeat information already shared
 - Be natural and conversational
-
-${messageCompletionFooter}`;
+` + messageCompletionFooter
+    );
 }
 
 function createShouldRespondTemplate(currentRoom: string, roomTopic: string) {
-    return `
+    return (
+        `
 # About {{agentName}}:
 {{bio}}
 {{knowledge}}
@@ -93,8 +95,8 @@ Consider:
 2. Current conversation context
 3. Time since last response
 4. Value of potential contribution
-
-${shouldRespondFooter}`;
+` + shouldRespondFooter
+    );
 }
 
 function createConversationStarterTemplate(
@@ -318,12 +320,11 @@ export class InteractionClient {
 
     private async handleMessage(message: ChatMessage, roomTopic: string) {
         try {
-            const content = `${message.content?.substring(0, 50)}...`; // First 50 chars
             elizaLogger.debug("Processing message:", {
                 id: message.id,
                 room: message.roomId,
                 sender: message?.sender?.username,
-                content: `${content}`,
+                content: message.content?.substring(0, 50) + "...", // First 50 chars
             });
 
             const roomId = stringToUuid(message.roomId);
@@ -542,32 +543,24 @@ export class InteractionClient {
                             );
                         }
                     }
-                } catch (roomError: unknown) {
+                } catch (roomError: any) {
                     // Log individual room errors without stopping the loop
-                    if (roomError instanceof Error) {
-                        elizaLogger.error(`Error processing room ${roomId}:`, {
-                            error: roomError.message,
-                            stack: roomError.stack,
-                        });
-                    } else {
-                        elizaLogger.error(`Error processing room ${roomId}:`, roomError);
-                    }
+                    elizaLogger.error(`Error processing room ${roomId}:`, {
+                        error: roomError?.message || roomError,
+                        stack: roomError?.stack,
+                    });
                 }
             }
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                elizaLogger.error(
-                    "Error in checkForDeadRooms:",
-                    error.message || "Unknown error"
-                );
-                elizaLogger.debug("Full error details:", {
-                    error,
-                    stack: error.stack,
-                    type: typeof error,
-                });
-            } else {
-                elizaLogger.error("Error in checkForDeadRooms:", String(error));
-            }
+        } catch (error: any) {
+            elizaLogger.error(
+                "Error in checkForDeadRooms:",
+                error?.message || error || "Unknown error"
+            );
+            elizaLogger.debug("Full error details:", {
+                error,
+                stack: error?.stack,
+                type: typeof error,
+            });
         }
     }
 
@@ -619,21 +612,14 @@ export class InteractionClient {
                     `Started conversation in ${room.name} (Topic: ${room.topic})`
                 );
             }
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                elizaLogger.error(
-                    `Error in initiateConversation for ${room.name}:`,
-                    {
-                        error: error.message,
-                        stack: error.stack,
-                    }
-                );
-            } else {
-                elizaLogger.error(
-                    `Error in initiateConversation for ${room.name}:`,
-                    String(error)
-                );
-            }
+        } catch (error: any) {
+            elizaLogger.error(
+                `Error in initiateConversation for ${room.name}:`,
+                {
+                    error: error?.message || error,
+                    stack: error?.stack,
+                }
+            );
             throw error; // Re-throw to be caught by parent
         }
     }

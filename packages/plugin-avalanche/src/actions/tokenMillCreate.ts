@@ -20,7 +20,7 @@ export interface TokenMillCreateContent extends Content {
 }
 
 function isTokenMillCreateContent(
-    _runtime: IAgentRuntime,
+    runtime: IAgentRuntime,
     content: any
 ): content is TokenMillCreateContent {
     elizaLogger.debug("Content for create", content);
@@ -75,16 +75,15 @@ export default {
         elizaLogger.log("Starting CREATE_TOKEN handler...");
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 

@@ -1,12 +1,11 @@
 import {
-    ActionExample,
-    Content,
-    HandlerCallback,
-    IAgentRuntime,
-    Memory,
+    type ActionExample,
+    type Content,
+    type HandlerCallback,
+    type IAgentRuntime,
+    type Memory,
     ModelClass,
-    ServiceType,
-    State,
+    type State,
     composeContext,
     elizaLogger,
     generateObject,
@@ -19,8 +18,9 @@ import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 
 import { walletProvider } from "../providers/wallet";
-import { parseAccount, SuiNetwork } from "../utils";
-import { SuiService } from "../services/sui";
+import { parseAccount } from "../utils";
+
+type SuiNetwork = "mainnet" | "testnet" | "devnet" | "localnet";
 
 export interface TransferContent extends Content {
     recipient: string;
@@ -63,7 +63,7 @@ export default {
         "SEND_SUI",
         "PAY",
     ],
-    validate: async (runtime: IAgentRuntime, message: Memory) => {
+    validate: async (_runtime: IAgentRuntime, message: Memory) => {
         console.log("Validating sui transfer from user:", message.userId);
         //add custom validate logic here
         /*
@@ -98,10 +98,11 @@ export default {
         state.walletInfo = walletInfo;
 
         // Initialize or update state
-        if (!state) {
-            state = (await runtime.composeState(message)) as State;
+        let currentState = state;
+        if (!currentState) {
+            currentState = (await runtime.composeState(message)) as State;
         } else {
-            state = await runtime.updateRecentMessageState(state);
+            currentState = await runtime.updateRecentMessageState(currentState);
         }
 
         // Define the schema for the expected output
@@ -112,7 +113,7 @@ export default {
 
         // Compose transfer context
         const transferContext = composeContext({
-            state,
+            state: currentState,
             template: transferTemplate,
         });
 
@@ -146,7 +147,7 @@ export default {
             });
 
             const adjustedAmount = BigInt(
-                Number(transferContent.amount) * Math.pow(10, SUI_DECIMALS)
+                Number(transferContent.amount) * (10 ** SUI_DECIMALS)
             );
             console.log(
                 `Transferring: ${transferContent.amount} tokens (${adjustedAmount} base units)`
@@ -163,14 +164,8 @@ export default {
             console.log("Transfer successful:", executedTransaction.digest);
 
             if (callback) {
-                const suiService = runtime.getService<SuiService>(
-                    ServiceType.TRANSCRIPTION
-                );
-                const txLink = await suiService.getTransactionLink(
-                    executedTransaction.digest
-                );
                 callback({
-                    text: `Successfully transferred ${transferContent.amount} SUI to ${transferContent.recipient}, Transaction: ${txLink}`,
+                    text: `Successfully transferred ${transferContent.amount} SUI to ${transferContent.recipient}, Transaction: ${executedTransaction.digest}`,
                     content: {
                         success: true,
                         hash: executedTransaction.digest,
