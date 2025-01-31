@@ -84,7 +84,7 @@ export class EmailAutomationService extends Service {
         return {
             memory,
             state,
-            metadata: state?.metadata as Record<string, unknown>,
+            metadata: state?.metadata || {},
             timestamp: new Date(),
             conversationId: memory.id || ''
         };
