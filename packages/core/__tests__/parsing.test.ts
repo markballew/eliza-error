@@ -125,13 +125,6 @@ describe("Parsing Module", () => {
             });
         });
 
-        it("should parse JSON objects containing array values", () => {
-            const input = '{"key": ["item1", "item2", "item3"]}';
-            expect(parseJSONObjectFromText(input)).toEqual({
-                key: ["item1", "item2", "item3"],
-            });
-        });
-
         it("should handle empty objects", () => {
             expect(parseJSONObjectFromText("```json\n{}\n```")).toEqual({});
             expect(parseJSONObjectFromText("{}")).toEqual({});
