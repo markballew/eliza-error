@@ -111,9 +111,9 @@ export class WalletProvider {
         if (!chains) {
             return;
         }
-        for (const chain of Object.keys(chains)) {
+        Object.keys(chains).forEach((chain: string) => {
             this.chains[chain] = chains[chain];
-        }
+        });
     };
 
     private setCurrentChain = (chain: SupportedChain) => {
@@ -161,13 +161,13 @@ const genChainsFromRuntime = (
     const chainNames = ["arthera"];
     const chains = {};
 
-    for (const chainName of chainNames) {
+    chainNames.forEach((chainName) => {
         const rpcUrl = runtime.getSetting(
-            `ETHEREUM_PROVIDER_${chainName.toUpperCase()}`
+            "ETHEREUM_PROVIDER_" + chainName.toUpperCase()
         );
         const chain = WalletProvider.genChainFromName(chainName, rpcUrl);
         chains[chainName] = chain;
-    }
+    });
 
     return chains;
 };

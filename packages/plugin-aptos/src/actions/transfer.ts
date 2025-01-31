@@ -27,17 +27,12 @@ export interface TransferContent extends Content {
     amount: string | number;
 }
 
-function isTransferContent(content: unknown): content is TransferContent {
+function isTransferContent(content: any): content is TransferContent {
     elizaLogger.log("Content for transfer", content);
-    if (typeof content !== "object" || content === null) {
-        return false;
-    }
-    
-    const c = content as Record<string, unknown>;
     return (
-        typeof c.recipient === "string" &&
-        (typeof c.amount === "string" ||
-            typeof c.amount === "number")
+        typeof content.recipient === "string" &&
+        (typeof content.amount === "string" ||
+            typeof content.amount === "number")
     );
 }
 
@@ -68,7 +63,7 @@ export default {
         "SEND_APT",
         "PAY",
     ],
-    validate: async (_runtime: IAgentRuntime, message: Memory) => {
+    validate: async (runtime: IAgentRuntime, message: Memory) => {
         elizaLogger.log("Validating apt transfer from user:", message.userId);
         //add custom validate logic here
         /*
@@ -103,16 +98,15 @@ export default {
         state.walletInfo = walletInfo;
 
         // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
+        if (!state) {
+            state = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.updateRecentMessageState(state);
         }
 
         // Compose transfer context
         const transferContext = composeContext({
-            state: currentState,
+            state,
             template: transferTemplate,
         });
 
@@ -154,7 +148,7 @@ export default {
 
             const APT_DECIMALS = 8;
             const adjustedAmount = BigInt(
-                Number(content.amount) * (10 ** APT_DECIMALS)
+                Number(content.amount) * Math.pow(10, APT_DECIMALS)
             );
             elizaLogger.log(
                 `Transferring: ${content.amount} tokens (${adjustedAmount} base units)`
