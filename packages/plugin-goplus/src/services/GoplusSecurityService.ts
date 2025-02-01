@@ -80,7 +80,7 @@ export class GoplusSecurityService extends Service implements IGoplusSecuritySer
                     checkResult = await goPlusManage.dappSecurityAndPhishingSite(obj.url);
                     break;
                 default:
-                    throw new Error("type is invalid")
+                    throw new Error("type is invaild")
             }
 
             elizaLogger.log("checkResult text", checkResult);
