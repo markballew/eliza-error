@@ -8,7 +8,6 @@ import getTrendingPools from "./actions/getTrendingPools";
 import getNewlyListed from "./actions/getNewlyListed";
 import { categoriesProvider } from "./providers/categoriesProvider";
 import { coinsProvider } from "./providers/coinsProvider";
-import { networksProvider } from "./providers/networkProvider";
 
 export const coingeckoPlugin: Plugin = {
     name: "coingecko",
@@ -23,7 +22,7 @@ export const coingeckoPlugin: Plugin = {
         getNewlyListed,
     ],
     evaluators: [],
-    providers: [categoriesProvider, coinsProvider, networksProvider],
+    providers: [categoriesProvider, coinsProvider],
 };
 
 export default coingeckoPlugin;
