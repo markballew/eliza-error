@@ -12,7 +12,7 @@ import {
     type GenerateObjectResult,
     type StepResult as AIStepResult,
 } from "ai";
-import { Buffer } from "node:buffer";
+import { Buffer } from "buffer";
 import { createOllama } from "ollama-ai-provider";
 import OpenAI from "openai";
 import { encodingForModel, type TiktokenModel } from "js-tiktoken";
@@ -20,6 +20,12 @@ import { AutoTokenizer } from "@huggingface/transformers";
 import Together from "together-ai";
 import type { ZodSchema } from "zod";
 import { elizaLogger } from "./index.ts";
+import {
+    models,
+    getModelSettings,
+    getImageModelSettings,
+    getEndpoint,
+} from "./models.ts";
 import {
     parseBooleanFromText,
     parseJsonArrayFromText,
@@ -52,15 +58,6 @@ import { createPublicClient, http } from "viem";
 type Tool = CoreTool<any, any>;
 type StepResult = AIStepResult<any>;
 
-// Add logging helper function at the top
-function logFunctionCall(functionName: string, runtime: IAgentRuntime) {
-    elizaLogger.info(`Function call: ${functionName}`, {
-        functionName,
-        modelProvider: runtime.modelProvider,
-        endpoint: runtime.character.modelEndpointOverride,
-    });
-}
-
 /**
  * Trims the provided text context to a specified token limit using a tokenizer model and type.
  *
@@ -87,7 +84,6 @@ export async function trimTokens(
     maxTokens: number,
     runtime: IAgentRuntime
 ) {
-    logFunctionCall('trimTokens', runtime);
     if (!context) return "";
     if (maxTokens <= 0) throw new Error("maxTokens must be positive");
 
@@ -221,8 +217,9 @@ async function getOnChainEternalAISystemPrompt(
                 const content = Buffer.from(value, "hex").toString("utf-8");
                 elizaLogger.info("on-chain system-prompt", content);
                 return await fetchEternalAISystemPrompt(runtime, content);
+            } else {
+                return undefined;
             }
-            return undefined;
         } catch (error) {
             elizaLogger.error(error);
             elizaLogger.error("err", error);
@@ -236,7 +233,7 @@ async function getOnChainEternalAISystemPrompt(
  * @returns System Prompt
  */
 async function fetchEternalAISystemPrompt(
-    _runtime: IAgentRuntime,
+    runtime: IAgentRuntime,
     content: string
 ): Promise<string> | undefined {
     const IPFS = "ipfs://";
@@ -254,23 +251,26 @@ async function fetchEternalAISystemPrompt(
         if (responseLH.ok) {
             const data = await responseLH.text();
             return data;
+        } else {
+            const gcs = content.replace(
+                IPFS,
+                "https://cdn.eternalai.org/upload/"
+            );
+            elizaLogger.info("fetch gcs", gcs);
+            const responseGCS = await fetch(gcs, {
+                method: "GET",
+            });
+            elizaLogger.info("fetch lightHouse gcs", responseGCS);
+            if (responseGCS.ok) {
+                const data = await responseGCS.text();
+                return data;
+            } else {
+                throw new Error("invalid on-chain system prompt");
+            }
         }
-        const gcs = content.replace(
-            IPFS,
-            "https://cdn.eternalai.org/upload/"
-        );
-        elizaLogger.info("fetch gcs", gcs);
-        const responseGCS = await fetch(gcs, {
-            method: "GET",
-        });
-        elizaLogger.info("fetch lightHouse gcs", responseGCS);
-        if (responseGCS.ok) {
-            const data = await responseGCS.text();
-            return data;
-        }
-        throw new Error("invalid on-chain system prompt");
+    } else {
+        return content;
     }
-    return content;
 }
 
 /**
@@ -362,7 +362,6 @@ export async function generateText({
     verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
     verifiableInferenceOptions?: VerifiableInferenceOptions;
 }): Promise<string> {
-    logFunctionCall('generateText', runtime);
     if (!context) {
         console.error("generateText context is empty");
         return "";
@@ -525,8 +524,6 @@ export async function generateText({
             `Using provider: ${provider}, model: ${model}, temperature: ${temperature}, max response length: ${max_response_length}`
         );
 
-        logFunctionCall('generateText', runtime);
-
         switch (provider) {
             // OPENAI & LLAMACLOUD shared same structure.
             case ModelProviderName.OPENAI:
@@ -570,7 +567,7 @@ export async function generateText({
                 });
 
                 response = openaiResponse;
-                elizaLogger.debug("Received response from OpenAI model.");
+                console.log("Received response from OpenAI model.");
                 break;
             }
 
@@ -936,7 +933,7 @@ export async function generateText({
                     elizaLogger.debug("Initializing Ollama model.");
 
                     const ollamaProvider = createOllama({
-                        baseURL: `${getEndpoint(provider)}/api`,
+                        baseURL: getEndpoint(provider) + "/api",
                         fetch: runtime.fetch,
                     });
                     const ollama = ollamaProvider(model);
@@ -994,7 +991,7 @@ export async function generateText({
             case ModelProviderName.GAIANET: {
                 elizaLogger.debug("Initializing GAIANET model.");
 
-                let baseURL = getEndpoint(provider);
+                var baseURL = getEndpoint(provider);
                 if (!baseURL) {
                     switch (modelClass) {
                         case ModelClass.SMALL:
@@ -1253,7 +1250,7 @@ export async function generateText({
                     stream: false,
                 };
 
-                const fetchResponse = await runtime.fetch(`${endpoint}/llm`, {
+                const fetchResponse = await runtime.fetch(endpoint + "/llm", {
                     method: "POST",
                     headers: {
                         accept: "text/event-stream",
@@ -1323,7 +1320,6 @@ export async function generateShouldRespond({
     context: string;
     modelClass: ModelClass;
 }): Promise<"RESPOND" | "IGNORE" | "STOP" | null> {
-    logFunctionCall('generateShouldRespond', runtime);
     let retryDelay = 1000;
     while (true) {
         try {
@@ -1342,8 +1338,9 @@ export async function generateShouldRespond({
             if (parsedResponse) {
                 elizaLogger.debug("Parsed response:", parsedResponse);
                 return parsedResponse;
-            }
+            } else {
                 elizaLogger.debug("generateShouldRespond no response");
+            }
         } catch (error) {
             elizaLogger.error("Error in generateShouldRespond:", error);
             if (
@@ -1374,7 +1371,7 @@ export async function splitChunks(
     chunkSize = 512,
     bleed = 20
 ): Promise<string[]> {
-    elizaLogger.debug("[splitChunks] Starting text split");
+    elizaLogger.debug(`[splitChunks] Starting text split`);
 
     const textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: Number(chunkSize),
@@ -1382,7 +1379,7 @@ export async function splitChunks(
     });
 
     const chunks = await textSplitter.splitText(content);
-    elizaLogger.debug("[splitChunks] Split complete:", {
+    elizaLogger.debug(`[splitChunks] Split complete:`, {
         numberOfChunks: chunks.length,
         averageChunkSize:
             chunks.reduce((acc, chunk) => acc + chunk.length, 0) /
@@ -1415,7 +1412,6 @@ export async function generateTrueOrFalse({
     context: string;
     modelClass: ModelClass;
 }): Promise<boolean> {
-    logFunctionCall('generateTrueOrFalse', runtime);
     let retryDelay = 1000;
     const modelSettings = getModelSettings(runtime.modelProvider, modelClass);
     const stop = Array.from(
@@ -1468,7 +1464,6 @@ export async function generateTextArray({
     context: string;
     modelClass: ModelClass;
 }): Promise<string[]> {
-    logFunctionCall('generateTextArray', runtime);
     if (!context) {
         elizaLogger.error("generateTextArray context is empty");
         return [];
@@ -1505,7 +1500,6 @@ export async function generateObjectDeprecated({
     context: string;
     modelClass: ModelClass;
 }): Promise<any> {
-    logFunctionCall('generateObjectDeprecated', runtime);
     if (!context) {
         elizaLogger.error("generateObjectDeprecated context is empty");
         return null;
@@ -1542,7 +1536,6 @@ export async function generateObjectArray({
     context: string;
     modelClass: ModelClass;
 }): Promise<any[]> {
-    logFunctionCall('generateObjectArray', runtime);
     if (!context) {
         elizaLogger.error("generateObjectArray context is empty");
         return [];
@@ -1591,7 +1584,6 @@ export async function generateMessageResponse({
     context: string;
     modelClass: ModelClass;
 }): Promise<Content> {
-    logFunctionCall('generateMessageResponse', runtime);
     const modelSettings = getModelSettings(runtime.modelProvider, modelClass);
     const max_context_length = modelSettings.maxInputTokens;
 
@@ -1649,7 +1641,6 @@ export const generateImage = async (
     data?: string[];
     error?: any;
 }> => {
-    logFunctionCall('generateImage', runtime);
     const modelSettings = getImageModelSettings(runtime.imageModelProvider);
     if (!modelSettings) {
         elizaLogger.warn("No model settings found for the image model provider.");
@@ -1664,33 +1655,33 @@ export const generateImage = async (
         runtime.imageModelProvider === runtime.modelProvider
             ? runtime.token
             : (() => {
-                // First try to match the specific provider
-                switch (runtime.imageModelProvider) {
-                    case ModelProviderName.HEURIST:
-                        return runtime.getSetting("HEURIST_API_KEY");
-                    case ModelProviderName.TOGETHER:
-                        return runtime.getSetting("TOGETHER_API_KEY");
-                    case ModelProviderName.FAL:
-                        return runtime.getSetting("FAL_API_KEY");
-                    case ModelProviderName.OPENAI:
-                        return runtime.getSetting("OPENAI_API_KEY");
-                    case ModelProviderName.VENICE:
-                        return runtime.getSetting("VENICE_API_KEY");
-                    case ModelProviderName.LIVEPEER:
-                        return runtime.getSetting("LIVEPEER_GATEWAY_URL");
-                    default:
-                        // If no specific match, try the fallback chain
-                        return (
-                            runtime.getSetting("HEURIST_API_KEY") ??
-                            runtime.getSetting("NINETEEN_AI_API_KEY") ??
-                            runtime.getSetting("TOGETHER_API_KEY") ??
-                            runtime.getSetting("FAL_API_KEY") ??
-                            runtime.getSetting("OPENAI_API_KEY") ??
-                            runtime.getSetting("VENICE_API_KEY") ??
-                            runtime.getSetting("LIVEPEER_GATEWAY_URL")
-                        );
-                }
-            })();
+                  // First try to match the specific provider
+                  switch (runtime.imageModelProvider) {
+                      case ModelProviderName.HEURIST:
+                          return runtime.getSetting("HEURIST_API_KEY");
+                      case ModelProviderName.TOGETHER:
+                          return runtime.getSetting("TOGETHER_API_KEY");
+                      case ModelProviderName.FAL:
+                          return runtime.getSetting("FAL_API_KEY");
+                      case ModelProviderName.OPENAI:
+                          return runtime.getSetting("OPENAI_API_KEY");
+                      case ModelProviderName.VENICE:
+                          return runtime.getSetting("VENICE_API_KEY");
+                      case ModelProviderName.LIVEPEER:
+                          return runtime.getSetting("LIVEPEER_GATEWAY_URL");
+                      default:
+                          // If no specific match, try the fallback chain
+                          return (
+                              runtime.getSetting("HEURIST_API_KEY") ??
+                              runtime.getSetting("NINETEEN_AI_API_KEY") ??
+                              runtime.getSetting("TOGETHER_API_KEY") ??
+                              runtime.getSetting("FAL_API_KEY") ??
+                              runtime.getSetting("OPENAI_API_KEY") ??
+                              runtime.getSetting("VENICE_API_KEY") ??
+                              runtime.getSetting("LIVEPEER_GATEWAY_URL")
+                          );
+                  }
+              })();
     try {
         if (runtime.imageModelProvider === ModelProviderName.HEURIST) {
             const response = await fetch(
@@ -1729,7 +1720,7 @@ export const generateImage = async (
 
             const imageURL = await response.json();
             return { success: true, data: [imageURL] };
-        } if (
+        } else if (
             runtime.imageModelProvider === ModelProviderName.TOGETHER ||
             // for backwards compat
             runtime.imageModelProvider === ModelProviderName.LLAMACLOUD
@@ -1787,7 +1778,7 @@ export const generateImage = async (
 
             elizaLogger.debug(`Generated ${base64s.length} images`);
             return { success: true, data: base64s };
-        }if (runtime.imageModelProvider === ModelProviderName.FAL) {
+        } else if (runtime.imageModelProvider === ModelProviderName.FAL) {
             fal.config({
                 credentials: apiKey as string,
             });
@@ -1809,13 +1800,13 @@ export const generateImage = async (
                 seed: data.seed ?? 6252023,
                 ...(runtime.getSetting("FAL_AI_LORA_PATH")
                     ? {
-                        loras: [
-                            {
-                                path: runtime.getSetting("FAL_AI_LORA_PATH"),
-                                scale: 1,
-                            },
-                        ],
-                    }
+                          loras: [
+                              {
+                                  path: runtime.getSetting("FAL_AI_LORA_PATH"),
+                                  scale: 1,
+                              },
+                          ],
+                      }
                     : {}),
             };
 
@@ -1840,7 +1831,7 @@ export const generateImage = async (
 
             const base64s = await Promise.all(base64Promises);
             return { success: true, data: base64s };
-        }if (runtime.imageModelProvider === ModelProviderName.VENICE) {
+        } else if (runtime.imageModelProvider === ModelProviderName.VENICE) {
             const response = await fetch(
                 "https://api.venice.ai/api/v1/image/generate",
                 {
@@ -1881,7 +1872,7 @@ export const generateImage = async (
             });
 
             return { success: true, data: base64s };
-        }if (
+        } else if (
             runtime.imageModelProvider === ModelProviderName.NINETEEN_AI
         ) {
             const response = await fetch(
@@ -1920,7 +1911,7 @@ export const generateImage = async (
             });
 
             return { success: true, data: base64s };
-        }if (runtime.imageModelProvider === ModelProviderName.LIVEPEER) {
+        } else if (runtime.imageModelProvider === ModelProviderName.LIVEPEER) {
             if (!apiKey) {
                 throw new Error("Livepeer Gateway is not defined");
             }
@@ -1953,8 +1944,8 @@ export const generateImage = async (
                 }
                 const base64Images = await Promise.all(
                     result.images.map(async (image) => {
-                        elizaLogger.debug("imageUrl console log", image.url);
-                        let imageUrl: string | URL | Request;
+                        console.log("imageUrl console log", image.url);
+                        let imageUrl;
                         if (image.url.includes("http")) {
                             imageUrl = image.url;
                         } else {
@@ -2022,7 +2013,6 @@ export const generateCaption = async (
     title: string;
     description: string;
 }> => {
-    logFunctionCall('generateCaption', runtime);
     const { imageUrl } = data;
     const imageDescriptionService =
         runtime.getService<IImageDescriptionService>(
@@ -2091,7 +2081,6 @@ export const generateObject = async ({
     verifiableInferenceAdapter,
     verifiableInferenceOptions,
 }: GenerationOptions): Promise<GenerateObjectResult<unknown>> => {
-    logFunctionCall('generateObject', runtime);
     if (!context) {
         const errorMessage = "generateObject context is empty";
         console.error(errorMessage);
@@ -2186,9 +2175,23 @@ export async function handleProvider(
         //verifiableInferenceOptions,
     } = options;
     switch (provider) {
-
-        case ModelProviderName.OLLAMA:
-            return await handleOllama(options);
+        case ModelProviderName.OPENAI:
+        case ModelProviderName.ETERNALAI:
+        case ModelProviderName.ALI_BAILIAN:
+        case ModelProviderName.VOLENGINE:
+        case ModelProviderName.LLAMACLOUD:
+        case ModelProviderName.TOGETHER:
+        case ModelProviderName.NANOGPT:
+        case ModelProviderName.AKASH_CHAT_API:
+        case ModelProviderName.LMSTUDIO:
+            return await handleOpenAI(options);
+        case ModelProviderName.ANTHROPIC:
+        case ModelProviderName.CLAUDE_VERTEX:
+            return await handleAnthropic(options);
+        case ModelProviderName.GROK:
+            return await handleGrok(options);
+        case ModelProviderName.GROQ:
+            return await handleGroq(options);
         case ModelProviderName.LLAMALOCAL:
             return await generateObjectDeprecated({
                 runtime,
@@ -2197,15 +2200,22 @@ export async function handleProvider(
             });
         case ModelProviderName.GOOGLE:
             return await handleGoogle(options);
-        case ModelProviderName.ANTHROPIC:
-        case ModelProviderName.CLAUDE_VERTEX:
-            return await handleAnthropic(options);
         case ModelProviderName.MISTRAL:
             return await handleMistral(options);
+        case ModelProviderName.REDPILL:
+            return await handleRedPill(options);
+        case ModelProviderName.OPENROUTER:
+            return await handleOpenRouter(options);
+        case ModelProviderName.OLLAMA:
+            return await handleOllama(options);
+        case ModelProviderName.DEEPSEEK:
+            return await handleDeepSeek(options);
+        case ModelProviderName.LIVEPEER:
+            return await handleLivepeer(options);
         default: {
-            runtime.getProvider()
+            const errorMessage = `Unsupported provider: ${provider}`;
             elizaLogger.error(errorMessage);
-            return await handleOpenAI(options);
+            throw new Error(errorMessage);
         }
     }
 }
@@ -2230,7 +2240,6 @@ async function handleOpenAI({
         getCloudflareGatewayBaseURL(runtime, "openai") ||
         models.openai.endpoint;
     const openai = createOpenAI({ apiKey, baseURL });
-    elizaLogger.debug({openai, baseURL, ...modelOptions, model});
     return await aiGenerateObject({
         model: openai.languageModel(model),
         schema,
@@ -2276,6 +2285,62 @@ async function handleAnthropic({
     });
 }
 
+/**
+ * Handles object generation for Grok models.
+ *
+ * @param {ProviderOptions} options - Options specific to Grok.
+ * @returns {Promise<GenerateObjectResult<unknown>>} - A promise that resolves to generated objects.
+ */
+async function handleGrok({
+    model,
+    apiKey,
+    schema,
+    schemaName,
+    schemaDescription,
+    mode = "json",
+    modelOptions,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    const grok = createOpenAI({ apiKey, baseURL: models.grok.endpoint });
+    return await aiGenerateObject({
+        model: grok.languageModel(model, { parallelToolCalls: false }),
+        schema,
+        schemaName,
+        schemaDescription,
+        mode,
+        ...modelOptions,
+    });
+}
+
+/**
+ * Handles object generation for Groq models.
+ *
+ * @param {ProviderOptions} options - Options specific to Groq.
+ * @returns {Promise<GenerateObjectResult<unknown>>} - A promise that resolves to generated objects.
+ */
+async function handleGroq({
+    model,
+    apiKey,
+    schema,
+    schemaName,
+    schemaDescription,
+    mode = "json",
+    modelOptions,
+    runtime,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    elizaLogger.debug("Handling Groq request with Cloudflare check");
+    const baseURL = getCloudflareGatewayBaseURL(runtime, "groq");
+    elizaLogger.debug("Groq handleGroq baseURL:", { baseURL });
+
+    const groq = createGroq({ apiKey, baseURL });
+    return await aiGenerateObject({
+        model: groq.languageModel(model),
+        schema,
+        schemaName,
+        schemaDescription,
+        mode,
+        ...modelOptions,
+    });
+}
 
 /**
  * Handles object generation for Google models.
@@ -2328,6 +2393,60 @@ async function handleMistral({
     });
 }
 
+/**
+ * Handles object generation for Redpill models.
+ *
+ * @param {ProviderOptions} options - Options specific to Redpill.
+ * @returns {Promise<GenerateObjectResult<unknown>>} - A promise that resolves to generated objects.
+ */
+async function handleRedPill({
+    model,
+    apiKey,
+    schema,
+    schemaName,
+    schemaDescription,
+    mode = "json",
+    modelOptions,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    const redPill = createOpenAI({ apiKey, baseURL: models.redpill.endpoint });
+    return await aiGenerateObject({
+        model: redPill.languageModel(model),
+        schema,
+        schemaName,
+        schemaDescription,
+        mode,
+        ...modelOptions,
+    });
+}
+
+/**
+ * Handles object generation for OpenRouter models.
+ *
+ * @param {ProviderOptions} options - Options specific to OpenRouter.
+ * @returns {Promise<GenerateObjectResult<unknown>>} - A promise that resolves to generated objects.
+ */
+async function handleOpenRouter({
+    model,
+    apiKey,
+    schema,
+    schemaName,
+    schemaDescription,
+    mode = "json",
+    modelOptions,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    const openRouter = createOpenAI({
+        apiKey,
+        baseURL: models.openrouter.endpoint,
+    });
+    return await aiGenerateObject({
+        model: openRouter.languageModel(model),
+        schema,
+        schemaName,
+        schemaDescription,
+        mode,
+        ...modelOptions,
+    });
+}
 
 /**
  * Handles object generation for Ollama models.
@@ -2345,11 +2464,93 @@ async function handleOllama({
     provider,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
     const ollamaProvider = createOllama({
-        baseURL: `${getEndpoint(provider)}/api`,
+        baseURL: getEndpoint(provider) + "/api",
     });
     const ollama = ollamaProvider(model);
     return await aiGenerateObject({
         model: ollama,
+        schema,
+        schemaName,
+        schemaDescription,
+        mode,
+        ...modelOptions,
+    });
+}
+
+/**
+ * Handles object generation for DeepSeek models.
+ *
+ * @param {ProviderOptions} options - Options specific to DeepSeek.
+ * @returns {Promise<GenerateObjectResult<unknown>>} - A promise that resolves to generated objects.
+ */
+async function handleDeepSeek({
+    model,
+    apiKey,
+    schema,
+    schemaName,
+    schemaDescription,
+    mode,
+    modelOptions,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    const openai = createOpenAI({ apiKey, baseURL: models.deepseek.endpoint });
+    return await aiGenerateObject({
+        model: openai.languageModel(model),
+        schema,
+        schemaName,
+        schemaDescription,
+        mode,
+        ...modelOptions,
+    });
+}
+
+/**
+ * Handles object generation for Amazon Bedrock models.
+ *
+ * @param {ProviderOptions} options - Options specific to Amazon Bedrock.
+ * @returns {Promise<GenerateObjectResult<unknown>>} - A promise that resolves to generated objects.
+ */
+async function handleBedrock({
+    model,
+    schema,
+    schemaName,
+    schemaDescription,
+    mode,
+    modelOptions,
+    provider,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    return await aiGenerateObject({
+        model: bedrock(model),
+        schema,
+        schemaName,
+        schemaDescription,
+        mode,
+        ...modelOptions,
+    });
+}
+
+async function handleLivepeer({
+    model,
+    apiKey,
+    schema,
+    schemaName,
+    schemaDescription,
+    mode,
+    modelOptions,
+}: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+    console.log("Livepeer provider api key:", apiKey);
+    if (!apiKey) {
+        throw new Error(
+            "Livepeer provider requires LIVEPEER_GATEWAY_URL to be configured"
+        );
+    }
+
+    const livepeerClient = createOpenAI({
+        apiKey,
+        baseURL: apiKey, // Use the apiKey as the baseURL since it contains the gateway URL
+    });
+
+    return await aiGenerateObject({
+        model: livepeerClient.languageModel(model),
         schema,
         schemaName,
         schemaDescription,
@@ -2376,7 +2577,6 @@ export async function generateTweetActions({
     context: string;
     modelClass: ModelClass;
 }): Promise<ActionResponse | null> {
-    logFunctionCall('generateTweetActions', runtime);
     let retryDelay = 1000;
     while (true) {
         try {
@@ -2393,8 +2593,9 @@ export async function generateTweetActions({
             if (actions) {
                 elizaLogger.debug("Parsed tweet actions:", actions);
                 return actions;
-            }
+            } else {
                 elizaLogger.debug("generateTweetActions no valid response");
+            }
         } catch (error) {
             elizaLogger.error("Error in generateTweetActions:", error);
             if (
