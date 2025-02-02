@@ -6,8 +6,10 @@ import getTopGainersLosers from "./actions/getTopGainersLosers";
 import getTrending from "./actions/getTrending";
 import getTrendingPools from "./actions/getTrendingPools";
 import getNewlyListed from "./actions/getNewlyListed";
+import getNetworkTrendingPools from "./actions/getNetworkTrendingPools";
 import { categoriesProvider } from "./providers/categoriesProvider";
 import { coinsProvider } from "./providers/coinsProvider";
+import { networksProvider } from "./providers/networkProvider";
 
 export const coingeckoPlugin: Plugin = {
     name: "coingecko",
@@ -20,9 +22,10 @@ export const coingeckoPlugin: Plugin = {
         getMarkets,
         getTopGainersLosers,
         getNewlyListed,
+        getNetworkTrendingPools,
     ],
     evaluators: [],
-    providers: [categoriesProvider, coinsProvider],
+    providers: [categoriesProvider, coinsProvider, networksProvider],
 };
 
 export default coingeckoPlugin;
