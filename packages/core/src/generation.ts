@@ -1162,14 +1162,7 @@ export async function generateText({
                     maxTokens: max_response_length,
                 });
 
-                // console.warn("veniceResponse:")
-                // console.warn(veniceResponse)
-                //rferrari: remove all text from <think> to </think>\n\n
-                response = veniceResponse
-                    .replace(/<think>[\s\S]*?<\/think>\s*\n*/g, '');
-                // console.warn(response)
-
-                // response = veniceResponse;
+                response = veniceResponse;
                 elizaLogger.debug("Received response from Venice model.");
                 break;
             }
