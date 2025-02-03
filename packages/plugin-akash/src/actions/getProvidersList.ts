@@ -162,7 +162,7 @@ export const getProvidersListAction: Action = {
         } as ActionExample
     ]],
 
-    validate: async (_runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
+    validate: async (runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
         elizaLogger.debug("Validating get providers list request", { message });
         try {
             const params = message.content as Partial<GetProvidersListContent>;
@@ -210,7 +210,7 @@ export const getProvidersListAction: Action = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State | undefined,
+        state: State | undefined,
         _options: { [key: string]: unknown; } = {},
         callback?: HandlerCallback
     ): Promise<boolean> => {
