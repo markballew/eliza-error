@@ -152,7 +152,7 @@ export function parseJSONObjectFromText(
         } catch (e) {
             console.error("Error parsing JSON:", e);
             console.error("Text is not JSON", text);
-            return extractAttributes(text);
+            return extractAttributes(parsingText);
         }
     } else {
         const objectPattern = /{[\s\S]*?}/;
@@ -165,7 +165,7 @@ export function parseJSONObjectFromText(
             } catch (e) {
                 console.error("Error parsing JSON:", e);
                 console.error("Text is not JSON", text);
-                return extractAttributes(text);
+                return extractAttributes(parsingText);
             }
         }
     }
