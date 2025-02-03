@@ -99,17 +99,15 @@ export const deployTokenAction: Action = {
 	): Promise<boolean> => {
 		elizaLogger.log("Starting Abstract DEPLOY_TOKEN handler...");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
-        } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
-        }
+		if (!state) {
+			state = (await runtime.composeState(message)) as State;
+		} else {
+			state = await runtime.updateRecentMessageState(state);
+		}
 
-		currentState.currentMessage = `${currentState.recentMessagesData[1].content.text}`;
+		state.currentMessage = `${state.recentMessagesData[1].content.text}`;
 		const deployContext = composeContext({
-			state: currentState,
+			state,
 			template: deployTemplate,
 		});
 
