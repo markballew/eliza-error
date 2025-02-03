@@ -143,7 +143,7 @@ export const getDeploymentStatusAction: Action = {
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state: State | undefined,
+        state: State | undefined,
         _options: { [key: string]: unknown } = {},
         callback?: HandlerCallback
     ): Promise<boolean> => {
