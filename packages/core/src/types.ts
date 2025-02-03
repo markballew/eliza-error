@@ -725,13 +725,13 @@ export type Character = {
     system?: string;
 
     /** Model provider to use */
-    modelProvider: ModelProviderName;
+    modelProvider: string;
 
     /** Image model provider to use, if different from modelProvider */
-    imageModelProvider?: ModelProviderName;
+    imageModelProvider?: string;
 
     /** Image Vision model provider to use, if different from modelProvider */
-    imageVisionModelProvider?: ModelProviderName;
+    imageVisionModelProvider?: string;
 
     /** Optional model endpoint override */
     modelEndpointOverride?: string;
@@ -1273,9 +1273,14 @@ export interface IAgentRuntime {
     serverUrl: string;
     databaseAdapter: IDatabaseAdapter;
     token: string | null;
-    modelProvider: ModelProviderName;
-    imageModelProvider: ModelProviderName;
-    imageVisionModelProvider: ModelProviderName;
+
+    // TODO: remove these three
+    modelProvider: string;
+    imageModelProvider: string;
+    imageVisionModelProvider: string;
+    //////////////////////////////
+
+    
     character: Character;
     providers: Provider[];
     actions: Action[];
@@ -1311,6 +1316,8 @@ export interface IAgentRuntime {
     registerService(service: Service): void;
 
     getSetting(key: string): string | null;
+
+    getModelProvider(): IModelProvider;
 
     // Methods
     getConversationLength(): number;
@@ -1665,4 +1672,19 @@ export interface DirectoryItem {
 export interface ChunkRow {
     id: string;
     // Add other properties if needed
+}
+
+
+export interface IModelProvider {
+    apiKey: string;
+    provider: string;
+    endpoint: string;
+    defaultModel?: string;
+    smallModel?: string;
+    largeModel?: string;
+    mediumModel?: string;
+    embeddingModel?: string;
+    imageModel?: string;
+    imageVisionModel?: string;
+    modelSettings?: Record<string, ImageModelSettings | EmbeddingModelSettings | ModelSettings>;
 }

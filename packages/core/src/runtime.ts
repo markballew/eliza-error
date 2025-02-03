@@ -1,5 +1,5 @@
-import { readFile } from "fs/promises";
-import { join } from "path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -40,7 +40,7 @@ import {
     // RAGKnowledgeItem,
     //Media,
     ModelClass,
-    ModelProviderName,
+    type ModelProviderName,
     type Plugin,
     type Provider,
     type Service,
@@ -52,10 +52,11 @@ import {
     type Evaluator,
     type Memory,
     type DirectoryItem,
+    type IModelProvider,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { glob } from "glob";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
 /**
  * Represents the runtime environment for an agent, handling message processing,
  * action registration, and interaction with external services like OpenAI and Supabase.
@@ -115,17 +116,17 @@ export class AgentRuntime implements IAgentRuntime {
     /**
      * The model to use for generateText.
      */
-    modelProvider: ModelProviderName;
+    modelProvider: string;
 
     /**
      * The model to use for generateImage.
      */
-    imageModelProvider: ModelProviderName;
+    imageModelProvider: string;
 
     /**
      * The model to use for describing images.
      */
-    imageVisionModelProvider: ModelProviderName;
+    imageVisionModelProvider: string;
 
     /**
      * Fetch function to use
@@ -343,13 +344,13 @@ export class AgentRuntime implements IAgentRuntime {
             knowledgeRoot: this.knowledgeRoot,
         });
 
-        (opts.managers ?? []).forEach((manager: IMemoryManager) => {
+        for (const manager of (opts.managers ?? [])) {
             this.registerMemoryManager(manager);
-        });
+        }
 
-        (opts.services ?? []).forEach((service: Service) => {
+        for (const service of (opts.services ?? [])) {
             this.registerService(service);
-        });
+        }
 
         this.serverUrl = opts.serverUrl ?? this.serverUrl;
 
@@ -370,18 +371,18 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.imageModelProvider =
             this.character.imageModelProvider ?? this.modelProvider;
-        
+
         this.imageVisionModelProvider =
             this.character.imageVisionModelProvider ?? this.modelProvider;
-            
+
         elizaLogger.info(
-          `${this.character.name}(${this.agentId}) - Selected model provider:`,
-          this.modelProvider
+            `${this.character.name}(${this.agentId}) - Selected model provider:`,
+            this.modelProvider
         );
 
         elizaLogger.info(
-          `${this.character.name}(${this.agentId}) - Selected image model provider:`,
-          this.imageModelProvider
+            `${this.character.name}(${this.agentId}) - Selected image model provider:`,
+            this.imageModelProvider
         );
 
         elizaLogger.info(
@@ -390,13 +391,10 @@ export class AgentRuntime implements IAgentRuntime {
         );
 
         // Validate model provider
-        if (!Object.values(ModelProviderName).includes(this.modelProvider)) {
+        // must be string, without special characters other than hyphen
+        if (typeof this.modelProvider !== "string" || !/^[a-zA-Z0-9-]+$/.test(this.modelProvider)) {
             elizaLogger.error("Invalid model provider:", this.modelProvider);
-            elizaLogger.error(
-                "Available providers:",
-                Object.values(ModelProviderName),
-            );
-            throw new Error(`Invalid model provider: ${this.modelProvider}`);
+            throw new Error(`Invalid model provider Name: ${this.modelProvider}`);
         }
 
         if (!this.serverUrl) {
@@ -410,37 +408,50 @@ export class AgentRuntime implements IAgentRuntime {
             ...(opts.plugins ?? []),
         ];
 
-        this.plugins.forEach((plugin) => {
-            plugin.actions?.forEach((action) => {
+        for (const plugin of this.plugins) {
+            for (const action of (plugin.actions ?? [])) {
                 this.registerAction(action);
-            });
+            }
 
-            plugin.evaluators?.forEach((evaluator) => {
+            for (const evaluator of (plugin.evaluators ?? [])) {
                 this.registerEvaluator(evaluator);
-            });
+            }
 
-            plugin.services?.forEach((service) => {
+            for (const service of (plugin.services ?? [])) {
                 this.registerService(service);
-            });
+            }
 
-            plugin.providers?.forEach((provider) => {
+            for (const provider of (plugin.providers ?? [])) {
                 this.registerContextProvider(provider);
-            });
-        });
+            }
+        }
 
-        (opts.actions ?? []).forEach((action) => {
+        for (const action of (opts.actions ?? [])) {
             this.registerAction(action);
-        });
+        }
 
-        (opts.providers ?? []).forEach((provider) => {
+        for (const provider of (opts.providers ?? [])) {
             this.registerContextProvider(provider);
-        });
+        }
 
-        (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
+        for (const evaluator of (opts.evaluators ?? [])) {
             this.registerEvaluator(evaluator);
-        });
+        }
 
         this.verifiableInferenceAdapter = opts.verifiableInferenceAdapter;
+    }
+    getModelProvider(): IModelProvider {
+        return {
+            endpoint: this.getSetting("MODEL_ENDPOINT"),
+            defaultModel: this.getSetting("DEFAULT_MODEL"),
+            apiKey: this.getSetting("MODEL_API_KEY"),
+            provider: this.getSetting("MODEL_PROVIDER"),
+            smallModel: this.getSetting("SMALL_MODEL"),
+            embeddingModel: this.getSetting("EMBEDDING_MODEL"),
+            imageModel: this.getSetting("IMAGE_MODEL"),
+            imageVisionModel: this.getSetting("IMAGE_VISION_MODEL"),
+            modelSettings: this.getSetting("MODEL_SETTINGS"),
+        }
     }
 
     async initialize() {
@@ -471,15 +482,14 @@ export class AgentRuntime implements IAgentRuntime {
         */
 
         if (
-            this.character &&
-            this.character.knowledge &&
+            this.character?.knowledge &&
             this.character.knowledge.length > 0
         ) {
             elizaLogger.info(
-                `[RAG Check] RAG Knowledge enabled: ${this.character.settings.ragKnowledge ? true : false}`,
+                `[RAG Check] RAG Knowledge enabled: ${!!this.character.settings.ragKnowledge}`,
             );
             elizaLogger.info(
-                `[RAG Check] Knowledge items:`,
+                "[RAG Check] Knowledge items:",
                 this.character.knowledge,
             );
 
@@ -522,7 +532,7 @@ export class AgentRuntime implements IAgentRuntime {
                 // Process each type of knowledge
                 if (directoryKnowledge.length > 0) {
                     elizaLogger.info(
-                        `[RAG Process] Processing directory knowledge sources:`,
+                        "[RAG Process] Processing directory knowledge sources:",
                     );
                     for (const dir of directoryKnowledge) {
                         elizaLogger.info(
@@ -534,14 +544,14 @@ export class AgentRuntime implements IAgentRuntime {
 
                 if (pathKnowledge.length > 0) {
                     elizaLogger.info(
-                        `[RAG Process] Processing individual file knowledge sources`,
+                        "[RAG Process] Processing individual file knowledge sources",
                     );
                     await this.processCharacterRAGKnowledge(pathKnowledge);
                 }
 
                 if (stringKnowledge.length > 0) {
                     elizaLogger.info(
-                        `[RAG Process] Processing direct string knowledge`,
+                        "[RAG Process] Processing direct string knowledge",
                     );
                     await this.processCharacterKnowledge(stringKnowledge);
                 }
@@ -555,10 +565,10 @@ export class AgentRuntime implements IAgentRuntime {
 
             // After all new knowledge is processed, clean up any deleted files
             elizaLogger.info(
-                `[RAG Cleanup] Starting cleanup of deleted knowledge files`,
+                "[RAG Cleanup] Starting cleanup of deleted knowledge files",
             );
             await this.ragKnowledgeManager.cleanupDeletedKnowledgeFiles();
-            elizaLogger.info(`[RAG Cleanup] Cleanup complete`);
+            elizaLogger.info("[RAG Cleanup] Cleanup complete");
         }
     }
 
@@ -687,12 +697,12 @@ export class AgentRuntime implements IAgentRuntime {
                             knowledgeCount: existingKnowledge.length,
                             firstResult: existingKnowledge[0]
                                 ? {
-                                      id: existingKnowledge[0].id,
-                                      agentId: existingKnowledge[0].agentId,
-                                      contentLength:
-                                          existingKnowledge[0].content.text
-                                              .length,
-                                  }
+                                    id: existingKnowledge[0].id,
+                                    agentId: existingKnowledge[0].agentId,
+                                    contentLength:
+                                        existingKnowledge[0].content.text
+                                            .length,
+                                }
                                 : null,
                             results: existingKnowledge.map((k) => ({
                                 id: k.id,
@@ -895,10 +905,10 @@ export class AgentRuntime implements IAgentRuntime {
                                 `[RAG Directory] Failed to process file: ${file}`,
                                 error instanceof Error
                                     ? {
-                                          name: error.name,
-                                          message: error.message,
-                                          stack: error.stack,
-                                      }
+                                        name: error.name,
+                                        message: error.message,
+                                        stack: error.stack,
+                                    }
                                     : error,
                             );
                         }
@@ -918,10 +928,10 @@ export class AgentRuntime implements IAgentRuntime {
                 `[RAG Directory] Failed to process directory: ${sanitizedDir}`,
                 error instanceof Error
                     ? {
-                          name: error.name,
-                          message: error.message,
-                          stack: error.stack,
-                      }
+                        name: error.name,
+                        message: error.message,
+                        stack: error.stack,
+                    }
                     : error,
             );
             throw error; // Re-throw to let caller handle it
@@ -1207,8 +1217,8 @@ export class AgentRuntime implements IAgentRuntime {
             ),
             this.ensureUserExists(
                 userId,
-                userName ?? "User" + userId,
-                userScreenName ?? "User" + userId,
+                userName ?? `User${userId}`,
+                userScreenName ?? `User${userId}`,
                 source,
             ),
             this.ensureRoomExists(roomId),
@@ -1313,9 +1323,9 @@ export class AgentRuntime implements IAgentRuntime {
                     const isWithinTime = msgTime >= oneHourBeforeLastMessage;
                     const attachments = msg.content.attachments || [];
                     if (!isWithinTime) {
-                        attachments.forEach((attachment) => {
+                        for (const attachment of attachments) {
                             attachment.text = "[Hidden]";
-                        });
+                        }
                     }
                     return attachments;
                 });
@@ -1486,12 +1496,12 @@ Text: ${attachment.text}
             lore,
             adjective:
                 this.character.adjectives &&
-                this.character.adjectives.length > 0
+                    this.character.adjectives.length > 0
                     ? this.character.adjectives[
-                          Math.floor(
-                              Math.random() * this.character.adjectives.length,
-                          )
-                      ]
+                    Math.floor(
+                        Math.random() * this.character.adjectives.length,
+                    )
+                    ]
                     : "",
             knowledge: formattedKnowledge,
             knowledgeData: knowledgeData,
@@ -1506,70 +1516,69 @@ Text: ${attachment.text}
             topic:
                 this.character.topics && this.character.topics.length > 0
                     ? this.character.topics[
-                          Math.floor(
-                              Math.random() * this.character.topics.length,
-                          )
-                      ]
+                    Math.floor(
+                        Math.random() * this.character.topics.length,
+                    )
+                    ]
                     : null,
             topics:
                 this.character.topics && this.character.topics.length > 0
-                    ? `${this.character.name} is interested in ` +
-                      this.character.topics
-                          .sort(() => 0.5 - Math.random())
-                          .slice(0, 5)
-                          .map((topic, index, array) => {
-                              if (index === array.length - 2) {
-                                  return topic + " and ";
-                              }
-                              // if last topic, don't add a comma
-                              if (index === array.length - 1) {
-                                  return topic;
-                              }
-                              return topic + ", ";
-                          })
-                          .join("")
+                    ? `${this.character.name} is interested in ${this.character.topics
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 5)
+                        .map((topic, index, array) => {
+                            if (index === array.length - 2) {
+                                return `${topic} and `;
+                            }
+                            // if last topic, don't add a comma
+                            if (index === array.length - 1) {
+                                return topic;
+                            }
+                            return `${topic}, `;
+                        })
+                        .join("")}`
                     : "",
             characterPostExamples:
                 formattedCharacterPostExamples &&
-                formattedCharacterPostExamples.replaceAll("\n", "").length > 0
+                    formattedCharacterPostExamples.replaceAll("\n", "").length > 0
                     ? addHeader(
-                          `# Example Posts for ${this.character.name}`,
-                          formattedCharacterPostExamples,
-                      )
+                        `# Example Posts for ${this.character.name}`,
+                        formattedCharacterPostExamples,
+                    )
                     : "",
             characterMessageExamples:
                 formattedCharacterMessageExamples &&
-                formattedCharacterMessageExamples.replaceAll("\n", "").length >
+                    formattedCharacterMessageExamples.replaceAll("\n", "").length >
                     0
                     ? addHeader(
-                          `# Example Conversations for ${this.character.name}`,
-                          formattedCharacterMessageExamples,
-                      )
+                        `# Example Conversations for ${this.character.name}`,
+                        formattedCharacterMessageExamples,
+                    )
                     : "",
             messageDirections:
                 this.character?.style?.all?.length > 0 ||
-                this.character?.style?.chat.length > 0
+                    this.character?.style?.chat.length > 0
                     ? addHeader(
-                          "# Message Directions for " + this.character.name,
-                          (() => {
-                              const all = this.character?.style?.all || [];
-                              const chat = this.character?.style?.chat || [];
-                              return [...all, ...chat].join("\n");
-                          })(),
-                      )
+                        `# Message Directions for ${this.character.name}`,
+                        (() => {
+                            const all = this.character?.style?.all || [];
+                            const chat = this.character?.style?.chat || [];
+                            return [...all, ...chat].join("\n");
+                        })(),
+                    )
                     : "",
 
             postDirections:
                 this.character?.style?.all?.length > 0 ||
-                this.character?.style?.post.length > 0
+                    this.character?.style?.post.length > 0
                     ? addHeader(
-                          "# Post Directions for " + this.character.name,
-                          (() => {
-                              const all = this.character?.style?.all || [];
-                              const post = this.character?.style?.post || [];
-                              return [...all, ...post].join("\n");
-                          })(),
-                      )
+                        `# Post Directions for ${this.character.name}`,
+                        (() => {
+                            const all = this.character?.style?.all || [];
+                            const post = this.character?.style?.post || [];
+                            return [...all, ...post].join("\n");
+                        })(),
+                    )
                     : "",
 
             //old logic left in for reference
@@ -1603,9 +1612,9 @@ Text: ${attachment.text}
             goals:
                 goals && goals.length > 0
                     ? addHeader(
-                          "# Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
-                          goals,
-                      )
+                        "# Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
+                        goals,
+                    )
                     : "",
             goalsData,
             recentMessages:
@@ -1658,20 +1667,20 @@ Text: ${attachment.text}
 
         const actionState = {
             actionNames:
-                "Possible response actions: " + formatActionNames(actionsData),
+                `Possible response actions: ${formatActionNames(actionsData)}`,
             actions:
                 actionsData.length > 0
                     ? addHeader(
-                          "# Available Actions",
-                          formatActions(actionsData),
-                      )
+                        "# Available Actions",
+                        formatActions(actionsData),
+                    )
                     : "",
             actionExamples:
                 actionsData.length > 0
                     ? addHeader(
-                          "# Action Examples",
-                          composeActionExamples(actionsData, 10),
-                      )
+                        "# Action Examples",
+                        composeActionExamples(actionsData, 10),
+                    )
                     : "",
             evaluatorsData,
             evaluators:
@@ -1707,7 +1716,7 @@ Text: ${attachment.text}
             actors: state.actorsData ?? [],
             messages: recentMessagesData.map((memory: Memory) => {
                 const newMemory = { ...memory };
-                delete newMemory.embedding;
+                newMemory.embedding = undefined;
                 return newMemory;
             }),
         });
