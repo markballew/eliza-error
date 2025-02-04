@@ -18,7 +18,6 @@ import { GraphqlProvider } from "../providers/graphql";
 import { MVX_NETWORK_CONFIG } from "../constants";
 import { NativeAuthProvider } from "../providers/nativeAuth";
 import { getToken } from "../utils/getToken";
-import { resolveHerotag } from "../utils/resolveHerotag";
 export interface TransferContent extends Content {
     tokenAddress: string;
     amount: string;
@@ -138,42 +137,6 @@ export default {
 
             const walletProvider = new WalletProvider(privateKey, network);
 
-            let receiverAddress = transferContent.tokenAddress;
-
-            if (!receiverAddress || receiverAddress.toLowerCase() === "null") {
-                elizaLogger.error(
-                    "Invalid recipient detected (null). Aborting transaction."
-                );
-                callback?.({
-                    text: "Invalid recipient. Please provide a valid address or Herotag.",
-                    content: { error: "Invalid recipient" },
-                });
-                return false;
-            }
-
-            if (!receiverAddress.startsWith("erd1")) {
-                elizaLogger.log(
-                    `Detected potential Herotag: ${receiverAddress}, resolving to an address...`
-                );
-
-                const resolvedAddress = await resolveHerotag(receiverAddress);
-
-                if (!resolvedAddress) {
-                    elizaLogger.error(
-                        `Failed to resolve Herotag: ${receiverAddress}. Aborting transaction.`
-                    );
-                    callback?.({
-                        text: `Could not resolve Herotag "${receiverAddress}". Please check the spelling.`,
-                        content: { error: "Unresolved Herotag" },
-                    });
-                    return false;
-                }
-
-                receiverAddress = resolvedAddress;
-            }
-
-            elizaLogger.log(`Final receiver address: ${receiverAddress}`);
-
             if (
                 transferContent.tokenIdentifier &&
                 transferContent.tokenIdentifier.toLowerCase() !== "egld"
@@ -206,7 +169,7 @@ export default {
                 }
 
                 const txHash = await walletProvider.sendESDT({
-                    receiverAddress: receiverAddress,
+                    receiverAddress: transferContent.tokenAddress,
                     amount: transferContent.amount,
                     identifier,
                 });
@@ -220,7 +183,7 @@ export default {
             }
 
             const txHash = await walletProvider.sendEGLD({
-                receiverAddress: receiverAddress,
+                receiverAddress: transferContent.tokenAddress,
                 amount: transferContent.amount,
             });
 
