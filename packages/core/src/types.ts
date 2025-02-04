@@ -696,7 +696,7 @@ export type TelemetrySettings = {
 
 export interface ModelConfiguration {
     temperature?: number;
-    maxOutputTokens?: number;
+    max_response_length?: number;
     frequency_penalty?: number;
     presence_penalty?: number;
     maxInputTokens?: number;

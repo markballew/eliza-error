@@ -1,12 +1,13 @@
 {
     "name": "@elizaos/client-deva",
-    "version": "0.25.6-alpha.1",
+    "version": "0.1.9",
     "main": "dist/index.js",
     "type": "module",
     "types": "dist/index.d.ts",
     "dependencies": {
         "@elizaos/core": "workspace:*",
-        "glob": "11.0.0"
+        "glob": "11.0.0",
+        "zod": "3.23.8"
     },
     "devDependencies": {
         "tsup": "8.3.5"

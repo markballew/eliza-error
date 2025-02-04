@@ -1,6 +1,6 @@
 {
     "name": "@elizaos/plugin-hyperbolic",
-    "version": "0.25.6-alpha.1",
+    "version": "0.1.9",
     "description": "HyperBolic Plugin for ElizaOS",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -25,6 +25,7 @@
         "cli-table3": "^0.6.3",
         "dotenv": "^16.4.1",
         "ora": "^8.0.1",
+        "zod": "^3.22.4",
         "ssh2": "^1.15.0",
         "@coinbase/coinbase-sdk": "^0.15.0",
         "viem": "^2.0.0",
@@ -44,7 +45,7 @@
         "typescript": "^5.3.3",
         "vite": "^5.0.10",
         "vite-tsconfig-paths": "^4.2.2",
-        "vitest": "^3.0.0"
+        "vitest": "^1.2.1"
     },
     "peerDependencies": {
         "@elizaos/core": "workspace:*"
