@@ -1462,16 +1462,14 @@ Text: ${attachment.text}
 
         if (this.character.settings?.ragKnowledge) {
             const recentContext = recentMessagesData
-                .sort((a, b) => b.createdAt - a.createdAt) // Sort by timestamp descending (newest first)
-                .slice(0, 3) // Get the 3 most recent messages
-                .reverse() // Reverse to get chronological order
+                .slice(-3) // Last 3 messages
                 .map((msg) => msg.content.text)
                 .join(" ");
 
             knowledgeData = await this.ragKnowledgeManager.getKnowledge({
                 query: message.content.text,
                 conversationContext: recentContext,
-                limit: 8,
+                limit: 5,
             });
 
             formattedKnowledge = formatKnowledge(knowledgeData);
@@ -1772,16 +1770,7 @@ Text: ${attachment.text}
 }
 
 const formatKnowledge = (knowledge: KnowledgeItem[]) => {
-    // Group related content in a more natural way
-    return knowledge.map(item => {
-        // Get the main content text
-        const text = item.content.text;
-        
-        // Clean up formatting but maintain natural text flow
-        const cleanedText = text
-            .trim()
-            .replace(/\n{3,}/g, '\n\n'); // Replace excessive newlines
-            
-        return cleanedText;
-    }).join('\n\n'); // Separate distinct pieces with double newlines
+    return knowledge
+        .map((knowledge) => `- ${knowledge.content.text}`)
+        .join("\n");
 };
