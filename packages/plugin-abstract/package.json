@@ -25,10 +25,7 @@
 		"viem": "2.22.2"
 	},
 	"scripts": {
-		"lint": "biome lint .",
-		"lint:fix": "biome check --apply .",
-		"format": "biome format .",
-		"format:fix": "biome format --write .",
+		"lint": "eslint --fix  --cache .",
 		"build": "tsup --format esm --no-dts",
 		"dev": "tsup --format esm --no-dts --watch",
 		"test": "vitest run",
@@ -36,7 +33,6 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
 		"tsup": "8.3.5",
 		"typescript": "4.9",
 		"vitest": "^1.0.0"

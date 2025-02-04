@@ -1,5 +1,5 @@
 const CHAIN_MAPPINGS = {
-    eth: ['eth', 'ethereum', 'ether', 'mainnet'],
+    ethereum: ['eth', 'ethereum', 'ether', 'mainnet'],
     bsc: ['bsc', 'binance', 'bnb', 'binance smart chain', 'smartchain'],
     polygon: ['polygon', 'matic', 'poly'],
     arbitrum: ['arbitrum', 'arb', 'arbitrum one'],
@@ -21,7 +21,7 @@ const CHAIN_MAPPINGS = {
     okex: ['okex', 'okexchain', 'okc'],
     zkera: ['zkera', 'zksync era', 'era'],
     zksync: ['zksync', 'zks'],
-    polygonzkevm: ['polygon zkevm', 'zkevm'],
+    polygon_zkevm: ['polygon zkevm', 'zkevm'],
     linea: ['linea'],
     mantle: ['mantle'],
     scroll: ['scroll'],
@@ -46,7 +46,7 @@ const CHAIN_MAPPINGS = {
     wanchain: ['wanchain', 'wan'],
     gochain: ['gochain'],
     ethereumpow: ['ethereumpow', 'ethw'],
-    pulse: ['pulsechain', 'pls'],
+    pulsechain: ['pulsechain', 'pls'],
     kava: ['kava'],
     milkomeda: ['milkomeda'],
     nahmii: ['nahmii'],
@@ -88,12 +88,11 @@ function normalizeChainName(chain: string): string | null {
     const normalizedInput = chain.toLowerCase().trim();
 
     for (const [standardName, variations] of Object.entries(CHAIN_MAPPINGS)) {
-        if (variations.some((v: string) => normalizedInput.includes(v))) {
+        if (variations.some(v => normalizedInput.includes(v))) {
             return standardName;
         }
     }
-
-    return normalizedInput;
+    return null;
 }
 
 export function extractTokenInfo(message: string): TokenInfo {
@@ -111,17 +110,21 @@ export function extractTokenInfo(message: string): TokenInfo {
     const prepositionMatch = cleanMessage.match(prepositionPattern);
 
     // 2. Look for chain names anywhere in the message
-    for (const [chainName, variations] of Object.entries(CHAIN_MAPPINGS)) {
-        if (variations.some((v: string) => cleanMessage.includes(v))) {
-            result.chain = chainName;
-            break;
+    if (!result.chain) {
+        for (const [chainName, variations] of Object.entries(CHAIN_MAPPINGS)) {
+            if (variations.some(v => cleanMessage.includes(v))) {
+                result.chain = chainName;
+                break;
+            }
         }
     }
 
-    // If chain wasn't found in mappings but was found through preposition pattern,
-    // use the exact chain name provided
-    if (!result.chain && prepositionMatch?.[1]) {
-        result.chain = normalizeChainName(prepositionMatch[1]);
+    // If chain was found through preposition pattern, normalize it
+    if (prepositionMatch?.[1]) {
+        const normalizedChain = normalizeChainName(prepositionMatch[1]);
+        if (normalizedChain) {
+            result.chain = normalizedChain;
+        }
     }
 
     // Find token address using different patterns
@@ -140,8 +143,9 @@ export function extractTokenInfo(message: string): TokenInfo {
 
     // If we still don't have a chain but have an EVM address, default to ethereum
     if (!result.chain && result.tokenAddress?.startsWith('0x')) {
-        result.chain = 'eth';
+        result.chain = 'ethereum';
     }
 
     return result;
 }
+
