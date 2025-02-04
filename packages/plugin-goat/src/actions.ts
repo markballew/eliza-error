@@ -12,32 +12,37 @@ import {
     ModelClass,
     type State,
     composeContext,
-    type Action,
 } from "@elizaos/core";
 
-import { initWalletClient } from "./wallet";
+export async function getOnChainActions(wallet: WalletClientBase) {
+    const actionsWithoutHandler = [
+        {
+            name: "SWAP_TOKENS",
+            description: "Swap two different tokens using KIM protocol",
+            similes: [],
+            validate: async () => true,
+            examples: [],
+        },
+        // 1. Add your actions here
+    ];
 
-const actionsWithoutHandler: Omit<Action, "handler">[] = [
-    {
-        name: "SWAP_TOKENS",
-        description: "Swap two different tokens using KIM protocol",
-        similes: [],
-        validate: async () => true,
-        examples: [],
-    },
-    // 1. Add your actions here
-];
+    const tools = await getOnChainTools({
+        wallet: wallet,
+        // 2. Configure the plugins you need to perform those actions
+        plugins: [sendETH(), erc20({ tokens: [USDC, MODE] }), kim()],
+    });
 
-export async function getOnChainActions(): Promise<Action[]> {
+    // 3. Let GOAT handle all the actions
     return actionsWithoutHandler.map((action) => ({
         ...action,
-        handler: getActionHandler(action.name, action.description),
+        handler: getActionHandler(action.name, action.description, tools),
     }));
 }
 
 function getActionHandler(
     actionName: string,
     actionDescription: string,
+    tools
 ) {
     return async (
         runtime: IAgentRuntime,
@@ -50,16 +55,7 @@ function getActionHandler(
         currentState = await runtime.updateRecentMessageState(currentState);
 
         try {
-            const wallet = initWalletClient(runtime);
-            if (!wallet) {
-                throw new Error("Wallet not initialized");
-            }
-
-            const tools = await getOnChainTools({
-                wallet,
-                plugins: [sendETH(), erc20({ tokens: [USDC, MODE] }), kim()],
-            });
-
+            // 1. Call the tools needed
             const context = composeActionContext(
                 actionName,
                 actionDescription,
@@ -70,13 +66,14 @@ function getActionHandler(
                 context,
                 tools,
                 maxSteps: 10,
-                 // Uncomment to see the log each tool call when debugging
+                // Uncomment to see the log each tool call when debugging
                 // onStepFinish: (step) => {
                 //     console.log(step.toolResults);
                 // },
                 modelClass: ModelClass.LARGE,
             });
 
+            // 2. Compose the response
             const response = composeResponseContext(result, currentState);
             const responseText = await generateResponse(runtime, response);
 

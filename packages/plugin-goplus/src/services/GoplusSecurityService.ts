@@ -32,14 +32,12 @@ export class GoplusSecurityService extends Service implements IGoplusSecuritySer
     async check(text: string): Promise<string> {
         try {
             elizaLogger.log("check input text", text);
-
             const obj = await generateObjectDeprecated({
                 runtime: this.runtime,
                 context: requestPrompt(text),
-                modelClass: ModelClass.SMALL,
+                modelClass: ModelClass.SMALL, // gpt-4o-mini
             }) as GoPlusParamType;
 
-        
             elizaLogger.log("check generateObjectDeprecated text", obj);
 
             const goPlusManage = new GoPlusManage(this.apiKey)
@@ -60,7 +58,7 @@ export class GoplusSecurityService extends Service implements IGoplusSecuritySer
                 case GoPlusType.NFT_SECURITY_CHECK:
                     checkResult = await goPlusManage.nftSecurity(obj.network, obj.token);
                     break;
-                case GoPlusType.ADRESS_SECURITY_CHECK:
+                case GoPlusType.ADDRESS_SECURITY_CHECK:
                     checkResult = await goPlusManage.addressSecurity(obj.wallet);
                     break;
                 case GoPlusType.APPROVAL_SECURITY_CHECK:

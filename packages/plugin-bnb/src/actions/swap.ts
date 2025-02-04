@@ -17,7 +17,7 @@ import {
     type WalletProvider,
 } from "../providers/wallet";
 import { swapTemplate } from "../templates";
-import { SwapParamsSchema, type SwapParams, type SwapResponse } from "../types";
+import type { SwapParams, SwapResponse } from "../types";
 
 export { swapTemplate };
 
@@ -114,15 +114,17 @@ export const swapAction = {
             runtime,
             context: swapContext,
             modelClass: ModelClass.LARGE,
-            schema: SwapParamsSchema,
-            schemaName: "SwapParams",
-            schemaDescription: "Swap parameters",
         });
 
         const walletProvider = initWalletProvider(runtime);
         const action = new SwapAction(walletProvider);
-        const swapOptions = content as SwapParams;
-        
+        const swapOptions: SwapParams = {
+            chain: content.chain,
+            fromToken: content.inputToken,
+            toToken: content.outputToken,
+            amount: content.amount,
+            slippage: content.slippage,
+        };
         try {
             const swapResp = await action.swap(swapOptions);
             callback?.({

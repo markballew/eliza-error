@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile } from "fs/promises";
+import { join } from "path";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -40,7 +40,7 @@ import {
     // RAGKnowledgeItem,
     //Media,
     ModelClass,
-    type ModelProviderName,
+    ModelProviderName,
     type Plugin,
     type Provider,
     type Service,
@@ -52,12 +52,10 @@ import {
     type Evaluator,
     type Memory,
     type DirectoryItem,
-    type IModelProvider,
-    type ModelSettings,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { glob } from "glob";
-import { existsSync } from "node:fs";
+import { existsSync } from "fs";
 /**
  * Represents the runtime environment for an agent, handling message processing,
  * action registration, and interaction with external services like OpenAI and Supabase.
@@ -117,17 +115,17 @@ export class AgentRuntime implements IAgentRuntime {
     /**
      * The model to use for generateText.
      */
-    modelProvider: string;
+    modelProvider: ModelProviderName;
 
     /**
      * The model to use for generateImage.
      */
-    imageModelProvider: string;
+    imageModelProvider: ModelProviderName;
 
     /**
      * The model to use for describing images.
      */
-    imageVisionModelProvider: string;
+    imageVisionModelProvider: ModelProviderName;
 
     /**
      * Fetch function to use
@@ -248,7 +246,7 @@ export class AgentRuntime implements IAgentRuntime {
         evaluators?: Evaluator[]; // Optional custom evaluators
         plugins?: Plugin[];
         providers?: Provider[];
-        modelProvider: ModelProviderName | 'string';
+        modelProvider: ModelProviderName;
 
         services?: Service[]; // Map of service name to service instance
         managers?: IMemoryManager[]; // Map of table name to memory manager
@@ -345,13 +343,13 @@ export class AgentRuntime implements IAgentRuntime {
             knowledgeRoot: this.knowledgeRoot,
         });
 
-        for (const manager of (opts.managers ?? [])) {
+        (opts.managers ?? []).forEach((manager: IMemoryManager) => {
             this.registerMemoryManager(manager);
-        }
+        });
 
-        for (const service of (opts.services ?? [])) {
+        (opts.services ?? []).forEach((service: Service) => {
             this.registerService(service);
-        }
+        });
 
         this.serverUrl = opts.serverUrl ?? this.serverUrl;
 
@@ -372,18 +370,18 @@ export class AgentRuntime implements IAgentRuntime {
 
         this.imageModelProvider =
             this.character.imageModelProvider ?? this.modelProvider;
-
+        
         this.imageVisionModelProvider =
             this.character.imageVisionModelProvider ?? this.modelProvider;
-
+            
         elizaLogger.info(
-            `${this.character.name}(${this.agentId}) - Selected model provider:`,
-            this.modelProvider
+          `${this.character.name}(${this.agentId}) - Selected model provider:`,
+          this.modelProvider
         );
 
         elizaLogger.info(
-            `${this.character.name}(${this.agentId}) - Selected image model provider:`,
-            this.imageModelProvider
+          `${this.character.name}(${this.agentId}) - Selected image model provider:`,
+          this.imageModelProvider
         );
 
         elizaLogger.info(
@@ -392,10 +390,13 @@ export class AgentRuntime implements IAgentRuntime {
         );
 
         // Validate model provider
-        // must be string, without special characters other than hyphen
-        if (typeof this.modelProvider !== "string" || !/^[a-zA-Z0-9-]+$/.test(this.modelProvider)) {
+        if (!Object.values(ModelProviderName).includes(this.modelProvider)) {
             elizaLogger.error("Invalid model provider:", this.modelProvider);
-            throw new Error(`Invalid model provider Name: ${this.modelProvider}`);
+            elizaLogger.error(
+                "Available providers:",
+                Object.values(ModelProviderName),
+            );
+            throw new Error(`Invalid model provider: ${this.modelProvider}`);
         }
 
         if (!this.serverUrl) {
@@ -409,154 +410,38 @@ export class AgentRuntime implements IAgentRuntime {
             ...(opts.plugins ?? []),
         ];
 
-        for (const plugin of this.plugins) {
-            for (const action of (plugin.actions ?? [])) {
+        this.plugins.forEach((plugin) => {
+            plugin.actions?.forEach((action) => {
                 this.registerAction(action);
-            }
+            });
 
-            for (const evaluator of (plugin.evaluators ?? [])) {
+            plugin.evaluators?.forEach((evaluator) => {
                 this.registerEvaluator(evaluator);
-            }
+            });
 
-            for (const service of (plugin.services ?? [])) {
+            plugin.services?.forEach((service) => {
                 this.registerService(service);
-            }
+            });
 
-            for (const provider of (plugin.providers ?? [])) {
+            plugin.providers?.forEach((provider) => {
                 this.registerContextProvider(provider);
-            }
-        }
+            });
+        });
 
-        for (const action of (opts.actions ?? [])) {
+        (opts.actions ?? []).forEach((action) => {
             this.registerAction(action);
-        }
+        });
 
-        for (const provider of (opts.providers ?? [])) {
+        (opts.providers ?? []).forEach((provider) => {
             this.registerContextProvider(provider);
-        }
+        });
 
-        for (const evaluator of (opts.evaluators ?? [])) {
+        (opts.evaluators ?? []).forEach((evaluator: Evaluator) => {
             this.registerEvaluator(evaluator);
-        }
+        });
 
         this.verifiableInferenceAdapter = opts.verifiableInferenceAdapter;
     }
-
-
-    
-
-
-    private parseNumber(value: string | undefined, defaultValue: number): number {
-        if (!value) return defaultValue;
-        const parsed = Number(value);
-        return Number.isNaN(parsed) ? defaultValue : parsed;
-    }
-    
-    private parseStringArray(value: string | undefined, delimiter = ','): string[] {
-        return value ? value.split(delimiter) : [];
-    }
-    
-    getModelProvider(): IModelProvider {
-        // Default model settings
-        const defaultModelSettings: ModelSettings = {
-            name: this.getSetting("DEFAULT_MODEL"),
-            maxInputTokens: this.parseNumber(this.getSetting("DEFAULT_MAX_INPUT_TOKENS"), 4096),
-            maxOutputTokens: this.parseNumber(this.getSetting("DEFAULT_MAX_OUTPUT_TOKENS"), 1024),
-            temperature: this.parseNumber(this.getSetting("DEFAULT_TEMPERATURE"), 0.7),
-            stop: this.parseStringArray(this.getSetting("DEFAULT_STOP_SEQUENCES")),
-            frequency_penalty: this.parseNumber(this.getSetting("DEFAULT_FREQUENCY_PENALTY"), 0),
-            presence_penalty: this.parseNumber(this.getSetting("DEFAULT_PRESENCE_PENALTY"), 0),
-            repetition_penalty: this.parseNumber(this.getSetting("DEFAULT_REPETITION_PENALTY"), 1.0)
-        };
-    
-        // Helper function to get model-specific settings
-        const getModelSettings = (prefix: string): ModelSettings => ({
-            name: this.getSetting(`${prefix}_MODEL`),
-            maxInputTokens: this.parseNumber(
-                this.getSetting(`${prefix}_MAX_INPUT_TOKENS`), 
-                defaultModelSettings.maxInputTokens
-            ),
-            maxOutputTokens: this.parseNumber(
-                this.getSetting(`${prefix}_MAX_OUTPUT_TOKENS`), 
-                defaultModelSettings.maxOutputTokens
-            ),
-            temperature: this.parseNumber(
-                this.getSetting(`${prefix}_TEMPERATURE`), 
-                defaultModelSettings.temperature
-            ),
-            stop: this.parseStringArray(
-                this.getSetting(`${prefix}_STOP_SEQUENCES`)
-            ) || defaultModelSettings.stop,
-            frequency_penalty: this.parseNumber(
-                this.getSetting(`${prefix}_FREQUENCY_PENALTY`), 
-                defaultModelSettings.frequency_penalty
-            ),
-            presence_penalty: this.parseNumber(
-                this.getSetting(`${prefix}_PRESENCE_PENALTY`), 
-                defaultModelSettings.presence_penalty
-            ),
-            repetition_penalty: this.parseNumber(
-                this.getSetting(`${prefix}_REPETITION_PENALTY`), 
-                defaultModelSettings.repetition_penalty
-            )
-        });
-    
-        return {
-            apiKey: this.getSetting("PROVIDER_API_KEY"),
-            endpoint: this.getSetting("PROVIDER_ENDPOINT"),
-            provider: this.getSetting("PROVIDER_NAME"),
-    
-            models: {
-                default: defaultModelSettings,
-    
-                ...(this.getSetting("SMALL_MODEL") && {
-                    [ModelClass.SMALL]: getModelSettings("SMALL")
-                }),
-    
-                ...(this.getSetting("MEDIUM_MODEL") && {
-                    [ModelClass.MEDIUM]: getModelSettings("MEDIUM")
-                }),
-    
-                ...(this.getSetting("LARGE_MODEL") && {
-                    [ModelClass.LARGE]: getModelSettings("LARGE")
-                }),
-    
-                ...(this.getSetting("EMBEDDING_MODEL") && {
-                    [ModelClass.EMBEDDING]: {
-                        name: this.getSetting("EMBEDDING_MODEL"),
-                        dimensions: this.parseNumber(
-                            this.getSetting("EMBEDDING_DIMENSIONS"), 
-                            1536
-                        )
-                    }
-                }),
-    
-                ...(this.getSetting("IMAGE_MODEL") && {
-                    [ModelClass.IMAGE]: {
-                        name: this.getSetting("IMAGE_MODEL"),
-                        steps: this.parseNumber(
-                            this.getSetting("IMAGE_STEPS"), 
-                            50
-                        )
-                    }
-                })
-            }
-        };
-    }
-    
-    
-    // Helper method to parse headers from settings
-    private parseHeaders(): Record<string, string> | undefined {
-        const customHeaders = this.getSetting("CUSTOM_HEADERS");
-        if (!customHeaders) return undefined;
-        
-        try {
-            return JSON.parse(customHeaders);
-        } catch {
-            return undefined;
-        }
-    }
-    
 
     async initialize() {
         for (const [serviceType, service] of this.services.entries()) {
@@ -586,14 +471,15 @@ export class AgentRuntime implements IAgentRuntime {
         */
 
         if (
-            this.character?.knowledge &&
+            this.character &&
+            this.character.knowledge &&
             this.character.knowledge.length > 0
         ) {
             elizaLogger.info(
-                `[RAG Check] RAG Knowledge enabled: ${!!this.character.settings.ragKnowledge}`,
+                `[RAG Check] RAG Knowledge enabled: ${this.character.settings.ragKnowledge ? true : false}`,
             );
             elizaLogger.info(
-                "[RAG Check] Knowledge items:",
+                `[RAG Check] Knowledge items:`,
                 this.character.knowledge,
             );
 
@@ -636,7 +522,7 @@ export class AgentRuntime implements IAgentRuntime {
                 // Process each type of knowledge
                 if (directoryKnowledge.length > 0) {
                     elizaLogger.info(
-                        "[RAG Process] Processing directory knowledge sources:",
+                        `[RAG Process] Processing directory knowledge sources:`,
                     );
                     for (const dir of directoryKnowledge) {
                         elizaLogger.info(
@@ -648,14 +534,14 @@ export class AgentRuntime implements IAgentRuntime {
 
                 if (pathKnowledge.length > 0) {
                     elizaLogger.info(
-                        "[RAG Process] Processing individual file knowledge sources",
+                        `[RAG Process] Processing individual file knowledge sources`,
                     );
                     await this.processCharacterRAGKnowledge(pathKnowledge);
                 }
 
                 if (stringKnowledge.length > 0) {
                     elizaLogger.info(
-                        "[RAG Process] Processing direct string knowledge",
+                        `[RAG Process] Processing direct string knowledge`,
                     );
                     await this.processCharacterKnowledge(stringKnowledge);
                 }
@@ -669,15 +555,12 @@ export class AgentRuntime implements IAgentRuntime {
 
             // After all new knowledge is processed, clean up any deleted files
             elizaLogger.info(
-                "[RAG Cleanup] Starting cleanup of deleted knowledge files",
+                `[RAG Cleanup] Starting cleanup of deleted knowledge files`,
             );
             await this.ragKnowledgeManager.cleanupDeletedKnowledgeFiles();
-            elizaLogger.info("[RAG Cleanup] Cleanup complete");
+            elizaLogger.info(`[RAG Cleanup] Cleanup complete`);
         }
     }
-
-    
-    
 
     async stop() {
         elizaLogger.debug("runtime::stop - character", this.character.name);
@@ -804,12 +687,12 @@ export class AgentRuntime implements IAgentRuntime {
                             knowledgeCount: existingKnowledge.length,
                             firstResult: existingKnowledge[0]
                                 ? {
-                                    id: existingKnowledge[0].id,
-                                    agentId: existingKnowledge[0].agentId,
-                                    contentLength:
-                                        existingKnowledge[0].content.text
-                                            .length,
-                                }
+                                      id: existingKnowledge[0].id,
+                                      agentId: existingKnowledge[0].agentId,
+                                      contentLength:
+                                          existingKnowledge[0].content.text
+                                              .length,
+                                  }
                                 : null,
                             results: existingKnowledge.map((k) => ({
                                 id: k.id,
@@ -878,12 +761,13 @@ export class AgentRuntime implements IAgentRuntime {
                             type: fileExtension as "pdf" | "md" | "txt",
                             isShared: isShared,
                         });
-                    } catch (error) {
+                    } catch (error: any) {
                         hasError = true;
                         elizaLogger.error(
                             `Failed to read knowledge file ${contentItem}. Error details:`,
                             error?.message || error || "Unknown error",
                         );
+                        continue;
                     }
                 } else {
                     // Handle direct knowledge string
@@ -1011,10 +895,10 @@ export class AgentRuntime implements IAgentRuntime {
                                 `[RAG Directory] Failed to process file: ${file}`,
                                 error instanceof Error
                                     ? {
-                                        name: error.name,
-                                        message: error.message,
-                                        stack: error.stack,
-                                    }
+                                          name: error.name,
+                                          message: error.message,
+                                          stack: error.stack,
+                                      }
                                     : error,
                             );
                         }
@@ -1034,10 +918,10 @@ export class AgentRuntime implements IAgentRuntime {
                 `[RAG Directory] Failed to process directory: ${sanitizedDir}`,
                 error instanceof Error
                     ? {
-                        name: error.name,
-                        message: error.message,
-                        stack: error.stack,
-                    }
+                          name: error.name,
+                          message: error.message,
+                          stack: error.stack,
+                      }
                     : error,
             );
             throw error; // Re-throw to let caller handle it
@@ -1323,8 +1207,8 @@ export class AgentRuntime implements IAgentRuntime {
             ),
             this.ensureUserExists(
                 userId,
-                userName ?? `User${userId}`,
-                userScreenName ?? `User${userId}`,
+                userName ?? "User" + userId,
+                userScreenName ?? "User" + userId,
                 source,
             ),
             this.ensureRoomExists(roomId),
@@ -1429,9 +1313,9 @@ export class AgentRuntime implements IAgentRuntime {
                     const isWithinTime = msgTime >= oneHourBeforeLastMessage;
                     const attachments = msg.content.attachments || [];
                     if (!isWithinTime) {
-                        for (const attachment of attachments) {
+                        attachments.forEach((attachment) => {
                             attachment.text = "[Hidden]";
-                        }
+                        });
                     }
                     return attachments;
                 });
@@ -1578,14 +1462,16 @@ Text: ${attachment.text}
 
         if (this.character.settings?.ragKnowledge) {
             const recentContext = recentMessagesData
-                .slice(-3) // Last 3 messages
+                .sort((a, b) => b.createdAt - a.createdAt) // Sort by timestamp descending (newest first)
+                .slice(0, 3) // Get the 3 most recent messages
+                .reverse() // Reverse to get chronological order
                 .map((msg) => msg.content.text)
                 .join(" ");
 
             knowledgeData = await this.ragKnowledgeManager.getKnowledge({
                 query: message.content.text,
                 conversationContext: recentContext,
-                limit: 5,
+                limit: 8,
             });
 
             formattedKnowledge = formatKnowledge(knowledgeData);
@@ -1602,12 +1488,12 @@ Text: ${attachment.text}
             lore,
             adjective:
                 this.character.adjectives &&
-                    this.character.adjectives.length > 0
+                this.character.adjectives.length > 0
                     ? this.character.adjectives[
-                    Math.floor(
-                        Math.random() * this.character.adjectives.length,
-                    )
-                    ]
+                          Math.floor(
+                              Math.random() * this.character.adjectives.length,
+                          )
+                      ]
                     : "",
             knowledge: formattedKnowledge,
             knowledgeData: knowledgeData,
@@ -1622,69 +1508,70 @@ Text: ${attachment.text}
             topic:
                 this.character.topics && this.character.topics.length > 0
                     ? this.character.topics[
-                    Math.floor(
-                        Math.random() * this.character.topics.length,
-                    )
-                    ]
+                          Math.floor(
+                              Math.random() * this.character.topics.length,
+                          )
+                      ]
                     : null,
             topics:
                 this.character.topics && this.character.topics.length > 0
-                    ? `${this.character.name} is interested in ${this.character.topics
-                        .sort(() => 0.5 - Math.random())
-                        .slice(0, 5)
-                        .map((topic, index, array) => {
-                            if (index === array.length - 2) {
-                                return `${topic} and `;
-                            }
-                            // if last topic, don't add a comma
-                            if (index === array.length - 1) {
-                                return topic;
-                            }
-                            return `${topic}, `;
-                        })
-                        .join("")}`
+                    ? `${this.character.name} is interested in ` +
+                      this.character.topics
+                          .sort(() => 0.5 - Math.random())
+                          .slice(0, 5)
+                          .map((topic, index, array) => {
+                              if (index === array.length - 2) {
+                                  return topic + " and ";
+                              }
+                              // if last topic, don't add a comma
+                              if (index === array.length - 1) {
+                                  return topic;
+                              }
+                              return topic + ", ";
+                          })
+                          .join("")
                     : "",
             characterPostExamples:
                 formattedCharacterPostExamples &&
-                    formattedCharacterPostExamples.replaceAll("\n", "").length > 0
+                formattedCharacterPostExamples.replaceAll("\n", "").length > 0
                     ? addHeader(
-                        `# Example Posts for ${this.character.name}`,
-                        formattedCharacterPostExamples,
-                    )
+                          `# Example Posts for ${this.character.name}`,
+                          formattedCharacterPostExamples,
+                      )
                     : "",
             characterMessageExamples:
                 formattedCharacterMessageExamples &&
-                    formattedCharacterMessageExamples.replaceAll("\n", "").length >
+                formattedCharacterMessageExamples.replaceAll("\n", "").length >
                     0
                     ? addHeader(
-                        `# Example Conversations for ${this.character.name}`,
-                        formattedCharacterMessageExamples,
-                    )
+                          `# Example Conversations for ${this.character.name}`,
+                          formattedCharacterMessageExamples,
+                      )
                     : "",
             messageDirections:
                 this.character?.style?.all?.length > 0 ||
-                    this.character?.style?.chat.length > 0
+                this.character?.style?.chat.length > 0
                     ? addHeader(
-                        `# Message Directions for ${this.character.name}`,
-                        (() => {
-                            const all = this.character?.style?.all || [];
-                            const chat = this.character?.style?.chat || [];
-                            return [...all, ...chat].join("\n");
-                        })(),
-                    )
+                          "# Message Directions for " + this.character.name,
+                          (() => {
+                              const all = this.character?.style?.all || [];
+                              const chat = this.character?.style?.chat || [];
+                              return [...all, ...chat].join("\n");
+                          })(),
+                      )
                     : "",
 
             postDirections:
                 this.character?.style?.all?.length > 0 ||
-                    this.character?.style?.post.length > 0
+                this.character?.style?.post.length > 0
                     ? addHeader(
-                        `# Post Directions for ${this.character.name}`,
-                        (() => {
-                            const all = this.character?.style?.all || [];
-                            const post = this.character?.style?.post || [];
-                            return [...all, ...post].join("\n");
-                        })(),
-                    )
+                          "# Post Directions for " + this.character.name,
+                          (() => {
+                              const all = this.character?.style?.all || [];
+                              const post = this.character?.style?.post || [];
+                              return [...all, ...post].join("\n");
+                          })(),
+                      )
                     : "",
 
             //old logic left in for reference
@@ -1718,9 +1605,9 @@ Text: ${attachment.text}
             goals:
                 goals && goals.length > 0
                     ? addHeader(
-                        "# Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
-                        goals,
-                    )
+                          "# Goals\n{{agentName}} should prioritize accomplishing the objectives that are in progress.",
+                          goals,
+                      )
                     : "",
             goalsData,
             recentMessages:
@@ -1773,20 +1660,20 @@ Text: ${attachment.text}
 
         const actionState = {
             actionNames:
-                `Possible response actions: ${formatActionNames(actionsData)}`,
+                "Possible response actions: " + formatActionNames(actionsData),
             actions:
                 actionsData.length > 0
                     ? addHeader(
-                        "# Available Actions",
-                        formatActions(actionsData),
-                    )
+                          "# Available Actions",
+                          formatActions(actionsData),
+                      )
                     : "",
             actionExamples:
                 actionsData.length > 0
                     ? addHeader(
-                        "# Action Examples",
-                        composeActionExamples(actionsData, 10),
-                    )
+                          "# Action Examples",
+                          composeActionExamples(actionsData, 10),
+                      )
                     : "",
             evaluatorsData,
             evaluators:
@@ -1822,7 +1709,7 @@ Text: ${attachment.text}
             actors: state.actorsData ?? [],
             messages: recentMessagesData.map((memory: Memory) => {
                 const newMemory = { ...memory };
-                newMemory.embedding = undefined;
+                delete newMemory.embedding;
                 return newMemory;
             }),
         });
@@ -1853,14 +1740,14 @@ Text: ${attachment.text}
 
         const formattedAttachments = allAttachments
             .map(
-            (attachment) =>
-                `ID: ${attachment.id}
-            Name: ${attachment.title}
-            URL: ${attachment.url}
-            Type: ${attachment.source}
-            Description: ${attachment.description}
-            Text: ${attachment.text}
-                `,
+                (attachment) =>
+                    `ID: ${attachment.id}
+Name: ${attachment.title}
+URL: ${attachment.url}
+Type: ${attachment.source}
+Description: ${attachment.description}
+Text: ${attachment.text}
+    `,
             )
             .join("\n");
 
@@ -1885,7 +1772,16 @@ Text: ${attachment.text}
 }
 
 const formatKnowledge = (knowledge: KnowledgeItem[]) => {
-    return knowledge
-        .map((knowledge) => `- ${knowledge.content.text}`)
-        .join("\n");
+    // Group related content in a more natural way
+    return knowledge.map(item => {
+        // Get the main content text
+        const text = item.content.text;
+        
+        // Clean up formatting but maintain natural text flow
+        const cleanedText = text
+            .trim()
+            .replace(/\n{3,}/g, '\n\n'); // Replace excessive newlines
+            
+        return cleanedText;
+    }).join('\n\n'); // Separate distinct pieces with double newlines
 };

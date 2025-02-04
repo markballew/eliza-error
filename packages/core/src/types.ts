@@ -129,13 +129,11 @@ export interface Goal {
  * Model size/type classification
  */
 export enum ModelClass {
-    DEFAULT = "default",
     SMALL = "small",
     MEDIUM = "medium",
     LARGE = "large",
     EMBEDDING = "embedding",
     IMAGE = "image",
-    IMAGE_VISION = "image_vision",
 }
 
 /**
@@ -698,7 +696,7 @@ export type TelemetrySettings = {
 
 export interface ModelConfiguration {
     temperature?: number;
-    max_response_length?: number;
+    maxOutputTokens?: number;
     frequency_penalty?: number;
     presence_penalty?: number;
     maxInputTokens?: number;
@@ -727,13 +725,13 @@ export type Character = {
     system?: string;
 
     /** Model provider to use */
-    modelProvider: string;
+    modelProvider: ModelProviderName;
 
     /** Image model provider to use, if different from modelProvider */
-    imageModelProvider?: string;
+    imageModelProvider?: ModelProviderName;
 
     /** Image Vision model provider to use, if different from modelProvider */
-    imageVisionModelProvider?: string;
+    imageVisionModelProvider?: ModelProviderName;
 
     /** Optional model endpoint override */
     modelEndpointOverride?: string;
@@ -1275,14 +1273,9 @@ export interface IAgentRuntime {
     serverUrl: string;
     databaseAdapter: IDatabaseAdapter;
     token: string | null;
-
-    // TODO: remove these three
-    modelProvider: string;
-    imageModelProvider: string;
-    imageVisionModelProvider: string;
-    //////////////////////////////
-
-    
+    modelProvider: ModelProviderName;
+    imageModelProvider: ModelProviderName;
+    imageVisionModelProvider: ModelProviderName;
     character: Character;
     providers: Provider[];
     actions: Action[];
@@ -1318,8 +1311,6 @@ export interface IAgentRuntime {
     registerService(service: Service): void;
 
     getSetting(key: string): string | null;
-
-    getModelProvider(): IModelProvider;
 
     // Methods
     getConversationLength(): number;
@@ -1675,33 +1666,3 @@ export interface ChunkRow {
     id: string;
     // Add other properties if needed
 }
-
-
-export interface IModelProvider {
-    // Core provider configuration 
-    apiKey: string;
-    endpoint: string;
-    provider: string;
-    
-    // Models configuration
-    models: {
-        // Required default model
-        default: ModelSettings;
-        
-        // Optional models
-        [ModelClass.SMALL]?: ModelSettings;
-        [ModelClass.MEDIUM]?: ModelSettings;
-        [ModelClass.LARGE]?: ModelSettings;
-        [ModelClass.EMBEDDING]?: EmbeddingModelSettings;
-        [ModelClass.IMAGE]?: ImageModelSettings;
-        [ModelClass.IMAGE_VISION]?: ImageModelSettings;
-    };
-
-    // Optional configuration
-    config?: {
-        maxRetries?: number;
-        timeout?: number;
-        headers?: Record<string, string>;  // For additional auth headers if needed
-    };
-}
-
