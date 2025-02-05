@@ -156,11 +156,9 @@ const buildTransferDetails = async (
         context: transferContext,
         schema: transferSchema,
         modelClass: ModelClass.SMALL,
-        schemaName: "TransferContent",
-        schemaDescription: "The content of a transfer request",
     });
 
-    let transferContent: TransferContent = content as TransferContent;
+    let transferContent: TransferContent = content.object as TransferContent;
 
     if (transferContent === undefined) {
         transferContent = content as unknown as TransferContent;

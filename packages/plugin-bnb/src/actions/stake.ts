@@ -254,8 +254,11 @@ export const stakeAction = {
 
         const walletProvider = initWalletProvider(runtime);
         const action = new StakeAction(walletProvider);
-        const paramOptions = content as StakeParams;
-        
+        const paramOptions: StakeParams = {
+            chain: content.chain,
+            action: content.action,
+            amount: content.amount,
+        };
         try {
             const stakeResp = await action.stake(paramOptions);
             callback?.({

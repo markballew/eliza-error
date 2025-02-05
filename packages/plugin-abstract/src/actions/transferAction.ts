@@ -26,27 +26,6 @@ import {
 	getTokenByName,
 } from "../utils/viemHelpers";
 
-// Define types for Abstract client
-interface AbstractTransactionRequest {
-	chain: typeof abstractTestnet;
-	to: string;
-	value: bigint;
-	kzg: undefined;
-}
-
-interface AbstractContractRequest {
-	chain: typeof abstractTestnet;
-	address: string;
-	abi: typeof erc20Abi;
-	functionName: string;
-	args: [string, bigint];
-}
-
-interface AbstractClient {
-	sendTransaction: (request: AbstractTransactionRequest) => Promise<Hash>;
-	writeContract: (request: AbstractContractRequest) => Promise<Hash>;
-}
-
 const TransferSchema = z.object({
 	tokenAddress: z.string().optional().nullable(),
 	recipient: z.string(),
@@ -128,18 +107,17 @@ export const transferAction: Action = {
 	): Promise<boolean> => {
 		elizaLogger.log("Starting Abstract SEND_TOKEN handler...");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
-        } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
-        }
+		// Initialize or update state
+		if (!state) {
+			state = (await runtime.composeState(message)) as State;
+		} else {
+			state = await runtime.updateRecentMessageState(state);
+		}
 
 		// Compose transfer context
-		currentState.currentMessage = `${currentState.recentMessagesData[1].content.text}`;
+		state.currentMessage = `${state.recentMessagesData[1].content.text}`;
 		const transferContext = composeContext({
-			state: currentState,
+			state,
 			template: transferTemplate,
 		});
 
@@ -226,7 +204,7 @@ export const transferAction: Action = {
 				const abstractClient = (await createAbstractClient({
 					chain: abstractTestnet,
 					signer: account,
-				})) as AbstractClient;
+				})) as any; // biome-ignore lint/suspicious/noExplicitAny: type being exported as never
 
 				if (isEthTransfer) {
 					hash = await abstractClient.sendTransaction({

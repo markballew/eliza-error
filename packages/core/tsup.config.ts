@@ -17,7 +17,6 @@ export default defineConfig({
         "path", // Externalize other built-ins if necessary
         "http",
         "https",
-        "ai",
         // Add other modules you want to externalize
         "onnxruntime-node",
         "sharp",

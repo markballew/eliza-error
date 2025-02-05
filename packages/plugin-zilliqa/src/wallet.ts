@@ -1,13 +1,12 @@
-import type { WalletClientBase } from "@goat-sdk/core";
-import { viem } from "@goat-sdk/wallet-viem";
-import type { Chain } from "viem";
+import { WalletClientBase } from "@goat-sdk/core";
+import { viem, type Chain } from "@goat-sdk/wallet-viem";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { mode } from "viem/chains";
 import {
     zilliqaChainId,
     zilliqaJSViemWalletClient,
-    type ZilliqaWalletClient
+    ZilliqaWalletClient
 } from "@goat-sdk/wallet-zilliqa";
 import { Account } from "@zilliqa-js/zilliqa";
 
@@ -26,7 +25,7 @@ function getViemChain(provider: string, id: number, decimals: number): Chain {
         },
         rpcUrls: {
             default: {
-                http: [provider],
+                https: [provider],
             },
         },
     };

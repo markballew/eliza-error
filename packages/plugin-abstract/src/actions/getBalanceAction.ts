@@ -76,7 +76,7 @@ export const getBalanceAction: Action = {
 		"BALANCE_CHECK",
 		"TOKEN_BALANCE",
 	],
-	validate: async (runtime: IAgentRuntime, _message: Memory) => {
+	validate: async (runtime: IAgentRuntime, message: Memory) => {
 		await validateAbstractConfig(runtime);
 		return true;
 	},
@@ -90,18 +90,17 @@ export const getBalanceAction: Action = {
 	): Promise<boolean> => {
 		elizaLogger.log("Starting Abstract GET_BALANCE handler...");
 
-        // Initialize or update state
-        let currentState = state;
-        if (!currentState) {
-            currentState = (await runtime.composeState(message)) as State;
-        } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
-        }
+		// Initialize or update state
+		if (!state) {
+			state = (await runtime.composeState(message)) as State;
+		} else {
+			state = await runtime.updateRecentMessageState(state);
+		}
 
 		// Compose balance context
-		currentState.currentMessage = `${currentState.recentMessagesData[1].content.text}`;
+		state.currentMessage = `${state.recentMessagesData[1].content.text}`;
 		const balanceContext = composeContext({
-			state: currentState,
+			state,
 			template: balanceTemplate,
 		});
 
