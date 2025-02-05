@@ -2357,14 +2357,14 @@ async function handleGroq({
  */
 async function handleGoogle({
     model,
-    apiKey,
+    apiKey: _apiKey,
     schema,
     schemaName,
     schemaDescription,
     mode = "json",
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    const google = createGoogleGenerativeAI({apiKey});
+    const google = createGoogleGenerativeAI();
     return await aiGenerateObject({
         model: google(model),
         schema,
