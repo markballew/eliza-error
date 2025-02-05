@@ -32,12 +32,14 @@ export class GoplusSecurityService extends Service implements IGoplusSecuritySer
     async check(text: string): Promise<string> {
         try {
             elizaLogger.log("check input text", text);
+
             const obj = await generateObjectDeprecated({
                 runtime: this.runtime,
                 context: requestPrompt(text),
-                modelClass: ModelClass.SMALL, // gpt-4o-mini
+                modelClass: ModelClass.SMALL,
             }) as GoPlusParamType;
 
+        
             elizaLogger.log("check generateObjectDeprecated text", obj);
 
             const goPlusManage = new GoPlusManage(this.apiKey)
@@ -80,7 +82,7 @@ export class GoplusSecurityService extends Service implements IGoplusSecuritySer
                     checkResult = await goPlusManage.dappSecurityAndPhishingSite(obj.url);
                     break;
                 default:
-                    throw new Error("type is invaild")
+                    throw new Error("type is invalid")
             }
 
             elizaLogger.log("checkResult text", checkResult);
