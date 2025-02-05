@@ -23,22 +23,16 @@
 		"dompurify": "3.2.2",
 		"tsup": "8.3.5",
 		"uuid": "11.0.3",
-		"vitest": "2.1.9"
+		"vitest": "2.1.5"
 	},
 	"scripts": {
 		"build": "tsup --format esm --dts",
 		"dev": "tsup --format esm --dts --watch",
 		"test": "vitest run",
-		"test:watch": "vitest",
-		"lint": "biome check src/",
-		"lint:fix": "biome check --apply src/",
-		"format": "biome format src/",
-		"format:fix": "biome format --write src/"
+		"test:watch": "vitest"
 	},
 	"devDependencies": {
-		"@types/dompurify": "3.2.0",
-		"@biomejs/biome": "1.5.3",
-		"tsup": "^8.3.5"
+		"@types/dompurify": "3.2.0"
 	},
 	"peerDependencies": {
 		"whatwg-url": "7.1.0"

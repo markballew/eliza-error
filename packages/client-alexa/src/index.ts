@@ -1,4 +1,4 @@
-import { type Client, type IAgentRuntime, elizaLogger } from "@elizaos/core";
+import { Client, IAgentRuntime, elizaLogger } from "@elizaos/core";
 import { AlexaClient } from "./alexa-client";
 
 export const AlexaClientInterface: Client = {

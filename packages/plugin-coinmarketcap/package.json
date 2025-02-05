@@ -20,9 +20,6 @@
 		"lint": "biome lint .",
 		"lint:fix": "biome check --apply .",
 		"format": "biome format .",
-		"format:fix": "biome format --write .",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage"
+		"format:fix": "biome format --write ."
 	}
 }

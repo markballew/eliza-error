@@ -118,11 +118,6 @@ export class TwitterPostClient {
         elizaLogger.log(
             `- Dry Run Mode: ${this.isDryRun ? "enabled" : "disabled"}`
         );
-
-        elizaLogger.log(
-            `- Enable Post: ${this.client.twitterConfig.ENABLE_TWITTER_POST_GENERATION ? "enabled" : "disabled"}`
-        );
-
         elizaLogger.log(
             `- Post Interval: ${this.client.twitterConfig.POST_INTERVAL_MIN}-${this.client.twitterConfig.POST_INTERVAL_MAX} minutes`
         );
@@ -292,10 +287,8 @@ export class TwitterPostClient {
             await this.generateNewTweet();
         }
 
-        if (this.client.twitterConfig.ENABLE_TWITTER_POST_GENERATION) {
-            generateNewTweetLoop();
-            elizaLogger.log("Tweet generation loop started");
-        }
+        generateNewTweetLoop();
+        elizaLogger.log("Tweet generation loop started");
 
         if (this.client.twitterConfig.ENABLE_ACTION_PROCESSING) {
             processActionsLoop().catch((error) => {

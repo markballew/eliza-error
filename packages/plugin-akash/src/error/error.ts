@@ -1,3 +1,4 @@
+
 export enum AkashErrorCategory {
     WALLET = 'WALLET',
     DEPLOYMENT = 'DEPLOYMENT',
@@ -116,7 +117,7 @@ export async function withRetry<T>(
         } catch (error) {
             lastError = error as Error;
             if (i < maxRetries - 1) {
-                await new Promise(resolve => setTimeout(resolve, delay * (2 ** i)));
+                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
             }
         }
     }
