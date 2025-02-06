@@ -6,8 +6,6 @@ import { LensInteractionManager } from "./interactions";
 import StorjProvider from "./providers/StorjProvider";
 
 export class LensAgentClient implements Client {
-    name = 'lens';
-
     client: LensClient;
     posts: LensPostManager;
     interactions: LensInteractionManager;

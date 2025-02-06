@@ -332,7 +332,6 @@ export class SlackClient extends EventEmitter {
 }
 
 export const SlackClientInterface: ElizaClient = {
-    name: 'slack',
     start: async (runtime: IAgentRuntime) => {
         const client = new SlackClient(runtime);
         await client.start();

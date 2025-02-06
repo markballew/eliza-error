@@ -64,8 +64,6 @@ class FarcasterManager {
 }
 
 export const FarcasterClientInterface: Client = {
-    name: 'farcaster',
-
     async start(runtime: IAgentRuntime) {
         const farcasterConfig = await validateFarcasterConfig(runtime);
 

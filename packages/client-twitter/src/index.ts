@@ -49,7 +49,6 @@ class TwitterManager {
 }
 
 export const TwitterClientInterface: Client = {
-    name: 'twitter',
     async start(runtime: IAgentRuntime) {
         const twitterConfig: TwitterConfig =
             await validateTwitterConfig(runtime);

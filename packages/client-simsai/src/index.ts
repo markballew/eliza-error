@@ -22,7 +22,6 @@ class SimsAIManager {
 let activeManager: SimsAIManager | null = null;
 
 export const JeeterClientInterface: Client = {
-    name: 'jeeter',
     async start(runtime: IAgentRuntime) {
         if (activeManager) {
             elizaLogger.warn("SimsAI client already started");

@@ -1,5 +1,5 @@
 {
-  "name": "@elizaos/plugin-fuel",
+  "name": "@elizaos/adapter-redis",
   "version": "0.1.9",
   "type": "module",
   "main": "dist/index.js",
@@ -20,24 +20,20 @@
   ],
   "dependencies": {
     "@elizaos/core": "workspace:*",
-    "fuels": "0.97.2",
-    "tsup": "8.3.5",
-    "vitest": "2.1.9"
+    "ioredis": "5.4.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4"
+    "@types/ioredis": "^5.0.0",
+    "tsup": "8.3.5",
+    "vitest": "^3.0.2"
   },
   "scripts": {
     "build": "tsup --format esm --dts",
     "dev": "tsup --format esm --dts --watch",
     "test": "vitest run",
-    "lint": "biome lint .",
-    "lint:fix": "biome check --apply .",
-    "format": "biome format .",
-    "format:fix": "biome format --write ."
+    "test:watch": "vitest"
   },
   "peerDependencies": {
-    "form-data": "4.0.1",
     "whatwg-url": "7.1.0"
   }
 }
