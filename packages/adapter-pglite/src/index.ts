@@ -15,6 +15,9 @@ import {
     DatabaseAdapter,
     EmbeddingProvider,
     type RAGKnowledgeItem,
+    type Adapter,
+    type IAgentRuntime,
+    type Plugin,
 } from "@elizaos/core";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -31,7 +34,7 @@ import { fuzzystrmatch } from "@electric-sql/pglite/contrib/fuzzystrmatch";
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
-export class PGLiteDatabaseAdapter
+class PGLiteDatabaseAdapter
     extends DatabaseAdapter<PGlite>
     implements IDatabaseCacheAdapter
 {
@@ -828,12 +831,12 @@ export class PGLiteDatabaseAdapter
                         SELECT
                             embedding,
                             COALESCE(
-                                content->>$2,
+                                content->$2->>$3,
                                 ''
                             ) as content_text
                         FROM memories
-                        WHERE type = $3
-                        AND content->>$2 IS NOT NULL
+                        WHERE type = $4
+                        AND content->$2->>$3 IS NOT NULL
                     )
                     SELECT
                         embedding,
@@ -845,9 +848,9 @@ export class PGLiteDatabaseAdapter
                     WHERE levenshtein(
                         $1,
                         content_text
-                    ) <= $5  -- Add threshold check
+                    ) <= $6  -- Add threshold check
                     ORDER BY levenshtein_score
-                    LIMIT $4
+                    LIMIT $5
                 `;
 
                 const { rows } = await this.query<{
@@ -855,6 +858,7 @@ export class PGLiteDatabaseAdapter
                     levenshtein_score: number;
                 }>(sql, [
                     opts.query_input,
+                    opts.query_field_name,
                     opts.query_field_sub_name,
                     opts.query_table_name,
                     opts.query_match_count,
@@ -1560,4 +1564,25 @@ export class PGLiteDatabaseAdapter
     }
 }
 
-export default PGLiteDatabaseAdapter;
+const pgLiteAdapter: Adapter = {
+    init: (runtime: IAgentRuntime) => {
+        const PGLITE_DATA_DIR = runtime.getSetting("PGLITE_DATA_DIR");
+        if (PGLITE_DATA_DIR) {
+            elizaLogger.info("Initializing PgLite adapter...");
+            // `dataDir: memory://` for in memory pg
+            const db = new PGLiteDatabaseAdapter({
+                dataDir: PGLITE_DATA_DIR,
+            });
+            return db;
+        } else {
+            throw new Error("PGLITE_DATA_DIR is not set");
+        }
+    },
+};
+
+const pgLite: Plugin = {
+    name: "pglite",
+    description: "PgLite database adapter plugin",
+    adapters: [pgLiteAdapter],
+};
+export default pgLite;

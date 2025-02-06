@@ -504,26 +504,7 @@ export class MessageManager {
                     }
                 };
 
-                const action = this.runtime.actions.find((a) => a.name === responseContent.action);
-                const shouldSuppressInitialMessage = action?.suppressInitialMessage;
-
-                let responseMessages = [];
-
-                if (!shouldSuppressInitialMessage) {
-                    responseMessages = await callback(responseContent);
-                } else {
-                    responseMessages = [
-                        {
-                            id: stringToUuid(messageId + "-" + this.runtime.agentId),
-                            userId: this.runtime.agentId,
-                            agentId: this.runtime.agentId,
-                            content: responseContent,
-                            roomId,
-                            embedding: getEmbeddingZeroVector(),
-                            createdAt: Date.now(),
-                        }
-                    ]
-                }
+                const responseMessages = await callback(responseContent);
 
                 state = await this.runtime.updateRecentMessageState(state);
 

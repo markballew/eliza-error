@@ -2240,13 +2240,12 @@ async function handleOpenAI({
     schemaDescription,
     mode = "json",
     modelOptions,
-    provider,
+    provider: _provider,
     runtime,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
-    const endpoint =
-        runtime.character.modelEndpointOverride || getEndpoint(provider);
     const baseURL =
-        getCloudflareGatewayBaseURL(runtime, "openai") || endpoint;
+        getCloudflareGatewayBaseURL(runtime, "openai") ||
+        models.openai.endpoint;
     const openai = createOpenAI({ apiKey, baseURL });
     return await aiGenerateObject({
         model: openai.languageModel(model),

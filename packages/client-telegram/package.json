@@ -1,6 +1,6 @@
 {
-    "name": "@elizaos/client-telegram",
-    "version": "0.25.6-alpha.1",
+    "name": "@elizaos-plugins/client-telegram",
+    "version": "0.1.9",
     "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -21,7 +21,8 @@
     "dependencies": {
         "@elizaos/core": "workspace:*",
         "@telegraf/types": "7.1.0",
-        "telegraf": "4.16.3"
+        "telegraf": "4.16.3",
+        "zod": "3.23.8"
     },
     "devDependencies": {
         "tsup": "8.3.5",
