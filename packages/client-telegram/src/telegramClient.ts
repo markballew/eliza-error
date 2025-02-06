@@ -7,7 +7,7 @@ import { getOrCreateRecommenderInBe } from "./getOrCreateRecommenderInBe.ts";
 export class TelegramClient {
     private bot: Telegraf<Context>;
     private runtime: IAgentRuntime;
-    public messageManager: MessageManager;
+    private messageManager: MessageManager;
     private backend;
     private backendToken;
     private tgTrader;
