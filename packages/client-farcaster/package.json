@@ -1,6 +1,6 @@
 {
-    "name": "@elizaos-plugins/client-farcaster",
-    "version": "0.1.9",
+    "name": "@elizaos/client-farcaster",
+    "version": "0.25.6-alpha.1",
     "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -33,5 +33,8 @@
         "test": "vitest run",
         "test:watch": "vitest watch",
         "test:coverage": "vitest run --coverage"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }

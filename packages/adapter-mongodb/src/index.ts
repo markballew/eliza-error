@@ -11,9 +11,6 @@ import {
     type Memory,
     type Relationship,
     type UUID, elizaLogger,
-    type Plugin,
-    type Adapter,
-    type IAgentRuntime,
 } from "@elizaos/core";
 import { v4 } from "uuid";
 
@@ -38,7 +35,7 @@ interface KnowledgeDocument {
     isShared: boolean;
 }
 
-class MongoDBDatabaseAdapter
+export class MongoDBDatabaseAdapter
     extends DatabaseAdapter<MongoClient>
     implements IDatabaseCacheAdapter
 {
@@ -1446,46 +1443,3 @@ class MongoDBDatabaseAdapter
 
 }
 
-const mongoDBAdapter: Adapter = {
-    init: (runtime: IAgentRuntime) => {
-        const MONGODB_CONNECTION_STRING = runtime.getSetting("MONGODB_CONNECTION_STRING");
-        if (MONGODB_CONNECTION_STRING) {
-            elizaLogger.log("Initializing database on MongoDB Atlas");
-            const client = new MongoClient(MONGODB_CONNECTION_STRING, {
-                maxPoolSize: 100,
-                minPoolSize: 5,
-                maxIdleTimeMS: 60000,
-                connectTimeoutMS: 10000,
-                serverSelectionTimeoutMS: 5000,
-                socketTimeoutMS: 45000,
-                compressors: ["zlib"],
-                retryWrites: true,
-                retryReads: true,
-            });
-    
-            const dbName = runtime.getSetting("MONGODB_DATABASE") || "elizaAgent";
-            const db = new MongoDBDatabaseAdapter(client, dbName);
-    
-            // Test the connection
-            db.init()
-                .then(() => {
-                    elizaLogger.success("Successfully connected to MongoDB Atlas");
-                })
-                .catch((error) => {
-                    elizaLogger.error("Failed to connect to MongoDB Atlas:", error);
-                    throw error; // Re-throw to handle it in the calling code
-                });
-    
-            return db;
-        } else {
-            throw new Error("MONGODB_CONNECTION_STRING is not set");
-        }
-    },
-};
-
-const mongodbPlugin: Plugin = {
-    name: "mongodb",
-    description: "MongoDB database adapter plugin",
-    adapters: [mongoDBAdapter],
-};
-export default mongodbPlugin;

@@ -1,4 +1,4 @@
-import { type Client, elizaLogger, type IAgentRuntime, type Plugin } from "@elizaos/core";
+import { type Client, elizaLogger, type IAgentRuntime } from "@elizaos/core";
 import { ClientBase } from "./base.ts";
 import { validateTwitterConfig, type TwitterConfig } from "./environment.ts";
 import { TwitterInteractionClient } from "./interactions.ts";
@@ -46,14 +46,9 @@ class TwitterManager {
             this.space = new TwitterSpaceClient(this.client, runtime);
         }
     }
-
-    async stop() {
-        elizaLogger.warn("Twitter client does not support stopping yet");
-    }
 }
 
 export const TwitterClientInterface: Client = {
-    name: 'twitter',
     async start(runtime: IAgentRuntime) {
         const twitterConfig: TwitterConfig =
             await validateTwitterConfig(runtime);
@@ -83,11 +78,10 @@ export const TwitterClientInterface: Client = {
 
         return manager;
     },
+
+    async stop(_runtime: IAgentRuntime) {
+        elizaLogger.warn("Twitter client does not support stopping yet");
+    },
 };
 
-const twitterPlugin: Plugin = {
-    name: "twitter",
-    description: "Twitter client",
-    clients: [TwitterClientInterface],
-};
-export default twitterPlugin;
+export default TwitterClientInterface;

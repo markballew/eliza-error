@@ -21,7 +21,6 @@ import {
     stringToUuid,
     settings,
     type IAgentRuntime,
-    type Plugin,
 } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
 import * as fs from "fs";
@@ -1018,7 +1017,7 @@ export class DirectClient {
         process.on("SIGINT", gracefulShutdown);
     }
 
-    public async stop() {
+    public stop() {
         if (this.server) {
             this.server.close(() => {
                 elizaLogger.success("Server stopped");
@@ -1028,8 +1027,6 @@ export class DirectClient {
 }
 
 export const DirectClientInterface: Client = {
-    name: 'direct',
-    config: {},
     start: async (_runtime: IAgentRuntime) => {
         elizaLogger.log("DirectClientInterface start");
         const client = new DirectClient();
@@ -1037,16 +1034,11 @@ export const DirectClientInterface: Client = {
         client.start(serverPort);
         return client;
     },
-    // stop: async (_runtime: IAgentRuntime, client?: Client) => {
-    //     if (client instanceof DirectClient) {
-    //         client.stop();
-    //     }
-    // },
+    stop: async (_runtime: IAgentRuntime, client?: Client) => {
+        if (client instanceof DirectClient) {
+            client.stop();
+        }
+    },
 };
 
-const directPlugin: Plugin = {
-    name: "direct",
-    description: "Direct client",
-    clients: [DirectClientInterface],
-};
-export default directPlugin;
+export default DirectClientInterface;

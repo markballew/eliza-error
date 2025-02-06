@@ -12,7 +12,6 @@ import {
     type IAgentRuntime,
     knowledge,
     stringToUuid,
-    type Plugin,
 } from "@elizaos/core";
 import { validateGithubConfig } from "./environment";
 
@@ -202,14 +201,9 @@ export class GitHubClient {
         await git.commit(message);
         await git.push();
     }
-
-    async stop() {
-        elizaLogger.warn("GitHub client does not support stopping yet");
-    }
 }
 
 export const GitHubClientInterface: Client = {
-    name: 'github',
     start: async (runtime: IAgentRuntime) => {
         await validateGithubConfig(runtime);
         elizaLogger.log("GitHubClientInterface start");
@@ -220,11 +214,9 @@ export const GitHubClientInterface: Client = {
 
         return client;
     },
+    stop: async (_runtime: IAgentRuntime) => {
+        elizaLogger.log("GitHubClientInterface stop");
+    },
 };
 
-const githubPlugin: Plugin = {
-    name: "github",
-    description: "GitHub client",
-    clients: [GitHubClientInterface],
-};
-export default githubPlugin;
+export default GitHubClientInterface;

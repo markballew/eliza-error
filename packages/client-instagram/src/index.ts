@@ -1,12 +1,11 @@
 // src/index.ts
-import { type Client, type IAgentRuntime, elizaLogger, type Plugin } from "@elizaos/core";
+import { type Client, type IAgentRuntime, elizaLogger } from "@elizaos/core";
 import { validateInstagramConfig } from "./environment";
 import { initializeClient } from "./lib/auth";
 import { InstagramInteractionService } from "./services/interaction";
 import { InstagramPostService } from "./services/post";
 
-const InstagramClientInterface: Client = {
-    name: 'instagram',
+export const InstagramClientInterface: Client = {
     async start(runtime: IAgentRuntime) {
         try {
             // Validate configuration
@@ -42,21 +41,17 @@ const InstagramClientInterface: Client = {
                 post: postService,
                 interaction: interactionService,
                 state,
-                async stop() {
-                    elizaLogger.log("Stopping Instagram client services...");
-                },
             };
         } catch (error) {
             elizaLogger.error("Failed to start Instagram client:", error);
             throw error;
         }
     },
+    // eslint-disable-next-line
+    async stop(runtime: IAgentRuntime) {
+        elizaLogger.log("Stopping Instagram client services...");
+        // Cleanup will be handled by the services themselves
+    },
 };
 
-const instagramPlugin: Plugin = {
-    name: "instagram",
-    description: "Instagram client plugin",
-    clients: [InstagramClientInterface],
-};
-
-export default instagramPlugin;
+export default InstagramClientInterface;

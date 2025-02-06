@@ -27,8 +27,4 @@ export class DevaClient {
             throw error;
         }
     }
-
-    async stop() {
-        elizaLogger.warn("Deva client does not support stopping yet");
-    }
 }

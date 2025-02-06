@@ -1,13 +1,9 @@
-import {
-    elizaLogger,
-    type Plugin,
-} from "@elizaos/core";
+import { elizaLogger } from "@elizaos/core";
 import type { Client, IAgentRuntime } from "@elizaos/core";
 import { TelegramClient } from "./telegramClient.ts";
 import { validateTelegramConfig } from "./environment.ts";
 
-const TelegramClientInterface: Client = {
-    name: 'telegram',
+export const TelegramClientInterface: Client = {
     start: async (runtime: IAgentRuntime) => {
         await validateTelegramConfig(runtime);
 
@@ -23,10 +19,9 @@ const TelegramClientInterface: Client = {
         );
         return tg;
     },
+    stop: async (_runtime: IAgentRuntime) => {
+        elizaLogger.warn("Telegram client does not support stopping yet");
+    },
 };
-const telegramPlugin: Plugin = {
-    name: "telegram",
-    description: "Telegram client plugin",
-    clients: [TelegramClientInterface],
-};
-export default telegramPlugin;
+
+export default TelegramClientInterface;

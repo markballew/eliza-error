@@ -35,10 +35,6 @@ export class AlexaClient {
         }
     }
 
-    public async stop(): Promise<void> {
-        elizaLogger.log("🚀 Stopping Alexa bot...");
-    }
-
     private async initializeBot(): Promise<void> {
         const authenticationConfiguration = {
             clientId: this.clientId,

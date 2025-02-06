@@ -1,6 +1,6 @@
 {
-    "name": "@elizaos-plugins/client-slack",
-    "version": "0.1.9",
+    "name": "@elizaos/client-slack",
+    "version": "0.25.6-alpha.1",
     "description": "Slack client plugin for Eliza framework",
     "type": "module",
     "main": "dist/index.js",
@@ -52,5 +52,8 @@
     },
     "engines": {
         "node": ">=14.0.0"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }

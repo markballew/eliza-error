@@ -1,6 +1,6 @@
 {
     "name": "@elizaos/plugin-binance",
-    "version": "0.1.9",
+    "version": "0.25.6-alpha.1",
     "type": "module",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -20,8 +20,7 @@
     ],
     "dependencies": {
         "@binance/connector": "^3.6.0",
-        "@elizaos/core": "workspace:*",
-        "zod": "^3.22.4"
+        "@elizaos/core": "workspace:*"
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
@@ -34,5 +33,8 @@
         "dev": "tsup --format esm --dts --watch",
         "test": "vitest run",
         "test:watch": "vitest"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }

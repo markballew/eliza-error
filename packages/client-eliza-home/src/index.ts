@@ -6,15 +6,13 @@ import {
     stringToUuid,
     getEmbeddingZeroVector,
     Memory,
-    // Content,
-    type Plugin,
+    Content,
 } from "@elizaos/core";
 import { validateHomeConfig } from "./environment.ts";
 import { CapabilityManager } from "./capabilities.ts";
 import { EntityManager } from "./entities.ts";
 import { StateManager } from "./state.ts";
 import { SmartHomeManager } from "./smart_home.ts";
-
 import controlDeviceAction from "./actions/control_device.ts";
 import discoverDevicesAction from "./actions/discover_devices.ts";
 import deviceStateProvider from "./providers/device_state.ts";
@@ -97,32 +95,20 @@ export class HomeClient extends EventEmitter {
         await this.runtime.messageManager.createMemory(memory);
         return this.smartHomeManager.handleCommand(command, userId);
     }
-
-    async stop() {
-        elizaLogger.warn("Home Assistant client does not support stopping yet");
-    }
 }
 
-const HomeClientInterface: ElizaClient = {
-    name: 'home',
+export const HomeClientInterface: ElizaClient = {
     start: async (runtime: IAgentRuntime) => new HomeClient(runtime),
-    // stop: async (runtime: IAgentRuntime) => {
-    //     elizaLogger.warn("Home Assistant client does not support stopping yet");
-    // }
+    stop: async (runtime: IAgentRuntime) => {
+        elizaLogger.warn("Home Assistant client does not support stopping yet");
+    }
 };
 
-// function startHome(runtime: IAgentRuntime) {
-//     return new HomeClient(runtime);
-// }
+export function startHome(runtime: IAgentRuntime) {
+    return new HomeClient(runtime);
+}
 
-// export {
-//     homeShouldRespondTemplate,
-//     homeMessageHandlerTemplate
-// } from "./templates";
-
-const homePlugin: Plugin = {
-    name: "home",
-    description: "Home Assistant client",
-    clients: [HomeClientInterface],
-};
-export default homePlugin;
+export {
+    homeShouldRespondTemplate,
+    homeMessageHandlerTemplate
+} from "./templates";

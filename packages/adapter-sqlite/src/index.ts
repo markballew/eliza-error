@@ -1,6 +1,3 @@
-import path from "path";
-import fs from "fs";
-
 export * from "./sqliteTables.ts";
 export * from "./sqlite_vec.ts";
 
@@ -20,19 +17,14 @@ import type {
     UUID,
     RAGKnowledgeItem,
     ChunkRow,
-    Adapter,
-    IAgentRuntime,
-    Plugin,
 } from "@elizaos/core";
-import type { Database as BetterSqlite3Database } from "better-sqlite3";
+import type { Database } from "better-sqlite3";
 import { v4 } from "uuid";
 import { load } from "./sqlite_vec.ts";
 import { sqliteTables } from "./sqliteTables.ts";
 
-import Database from "better-sqlite3";
-
-class SqliteDatabaseAdapter
-    extends DatabaseAdapter<BetterSqlite3Database>
+export class SqliteDatabaseAdapter
+    extends DatabaseAdapter<Database>
     implements IDatabaseCacheAdapter
 {
     async getRoom(roomId: UUID): Promise<UUID | null> {
@@ -83,7 +75,7 @@ class SqliteDatabaseAdapter
         stmt.run(state, roomId, userId);
     }
 
-    constructor(db: BetterSqlite3Database) {
+    constructor(db: Database) {
         super();
         this.db = db;
         load(db);
@@ -1092,37 +1084,3 @@ class SqliteDatabaseAdapter
         }
     }
 }
-
-const sqliteDatabaseAdapter: Adapter = {
-    init: (runtime: IAgentRuntime) => {
-        const dataDir = path.join(process.cwd(), "data");
-
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
-
-        const filePath = runtime.getSetting("SQLITE_FILE") ?? path.resolve(dataDir, "db.sqlite");
-        elizaLogger.info(`Initializing SQLite database at ${filePath}...`);
-        const db = new SqliteDatabaseAdapter(new Database(filePath));
-
-        // Test the connection
-        db.init()
-            .then(() => {
-                elizaLogger.success(
-                    "Successfully connected to SQLite database"
-                );
-            })
-            .catch((error) => {
-                elizaLogger.error("Failed to connect to SQLite:", error);
-            });
-
-        return db;
-    },
-};
-
-const sqlitePlugin: Plugin = {
-    name: "sqlite",
-    description: "SQLite database adapter plugin",
-    adapters: [sqliteDatabaseAdapter],
-};
-export default sqlitePlugin;

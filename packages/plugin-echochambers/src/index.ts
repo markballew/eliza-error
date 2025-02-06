@@ -5,7 +5,6 @@ import type { EchoChamberConfig } from "./types";
 import { validateEchoChamberConfig } from "./environment";
 
 export const EchoChamberClientInterface: Client = {
-    name: "echochamber",
     async start(runtime: IAgentRuntime) {
         try {
             // Validate configuration before starting
@@ -47,33 +46,31 @@ export const EchoChamberClientInterface: Client = {
                 `✅ EchoChambers client successfully started for character ${runtime.character.name}`
             );
 
-            return {
-                client,
-                interactionClient,
-                async stop(runtime: IAgentRuntime) {
-                    try {
-                        elizaLogger.warn("Stopping EchoChambers client...");
-            
-                        // Get client instances if they exist
-                        const clients = (runtime as any).clients?.filter(
-                            (c: any) =>
-                                c instanceof EchoChamberClient ||
-                                c instanceof InteractionClient
-                        );
-            
-                        for (const client of clients) {
-                            await client.stop();
-                        }
-            
-                        elizaLogger.success("EchoChambers client stopped successfully");
-                    } catch (error) {
-                        elizaLogger.error("Error stopping EchoChambers client:", error);
-                        throw error;
-                    }
-                },
-            };
+            return { client, interactionClient };
         } catch (error) {
             elizaLogger.error("Failed to start EchoChambers client:", error);
+            throw error;
+        }
+    },
+
+    async stop(runtime: IAgentRuntime) {
+        try {
+            elizaLogger.warn("Stopping EchoChambers client...");
+
+            // Get client instances if they exist
+            const clients = (runtime as any).clients?.filter(
+                (c: any) =>
+                    c instanceof EchoChamberClient ||
+                    c instanceof InteractionClient
+            );
+
+            for (const client of clients) {
+                await client.stop();
+            }
+
+            elizaLogger.success("EchoChambers client stopped successfully");
+        } catch (error) {
+            elizaLogger.error("Error stopping EchoChambers client:", error);
             throw error;
         }
     },

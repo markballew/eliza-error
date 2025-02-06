@@ -43,7 +43,6 @@ import {
     ModelProviderName,
     type Plugin,
     type Provider,
-    type Adapter,
     type Service,
     type ServiceType,
     type State,
@@ -53,7 +52,6 @@ import {
     type Evaluator,
     type Memory,
     type DirectoryItem,
-    type ClientInstance,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { glob } from "glob";
@@ -111,11 +109,6 @@ export class AgentRuntime implements IAgentRuntime {
      * Context providers used to provide context for message generation.
      */
     providers: Provider[] = [];
-
-    /**
-     * Database adapters used to interact with the database.
-     */
-    adapters: Adapter[] = [];
 
     plugins: Plugin[] = [];
 
@@ -177,7 +170,7 @@ export class AgentRuntime implements IAgentRuntime {
     services: Map<ServiceType, Service> = new Map();
     memoryManagers: Map<string, IMemoryManager> = new Map();
     cacheManager: ICacheManager;
-    clients: ClientInstance[] = [];
+    clients: Record<string, any>;
 
     verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
 
@@ -257,10 +250,10 @@ export class AgentRuntime implements IAgentRuntime {
 
         services?: Service[]; // Map of service name to service instance
         managers?: IMemoryManager[]; // Map of table name to memory manager
-        databaseAdapter?: IDatabaseAdapter; // The database adapter used for interacting with the database
+        databaseAdapter: IDatabaseAdapter; // The database adapter used for interacting with the database
         fetch?: typeof fetch | unknown;
         speechModelPath?: string;
-        cacheManager?: ICacheManager;
+        cacheManager: ICacheManager;
         logging?: boolean;
         verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
     }) {
@@ -296,7 +289,22 @@ export class AgentRuntime implements IAgentRuntime {
         this.#conversationLength =
             opts.conversationLength ?? this.#conversationLength;
 
+        if (!opts.databaseAdapter) {
+            throw new Error("No database adapter provided");
+        }
         this.databaseAdapter = opts.databaseAdapter;
+
+        // By convention, we create a user and room using the agent id.
+        // Memories related to it are considered global context for the agent.
+        this.ensureRoomExists(this.agentId);
+        this.ensureUserExists(
+            this.agentId,
+            this.character.username || this.character.name,
+            this.character.name,
+        ).then(() => {
+            // postgres needs the user to exist before you can add a participant
+            this.ensureParticipantExists(this.agentId, this.agentId);
+        });
 
         elizaLogger.success(`Agent ID: ${this.agentId}`);
 
@@ -418,10 +426,6 @@ export class AgentRuntime implements IAgentRuntime {
             plugin.providers?.forEach((provider) => {
                 this.registerContextProvider(provider);
             });
-
-            plugin.adapters?.forEach((adapter) => {
-                this.registerAdapter(adapter);
-            });
         });
 
         (opts.actions ?? []).forEach((action) => {
@@ -439,23 +443,7 @@ export class AgentRuntime implements IAgentRuntime {
         this.verifiableInferenceAdapter = opts.verifiableInferenceAdapter;
     }
 
-    private async initializeDatabase() {
-        // By convention, we create a user and room using the agent id.
-        // Memories related to it are considered global context for the agent.
-        this.ensureRoomExists(this.agentId);
-        this.ensureUserExists(
-            this.agentId,
-            this.character.username || this.character.name,
-            this.character.name,
-        ).then(() => {
-            // postgres needs the user to exist before you can add a participant
-            this.ensureParticipantExists(this.agentId, this.agentId);
-        });
-    }
-
     async initialize() {
-        this.initializeDatabase();
-
         for (const [serviceType, service] of this.services.entries()) {
             try {
                 await service.initialize(this);
@@ -584,14 +572,15 @@ export class AgentRuntime implements IAgentRuntime {
         // services (just initialized), clients
 
         // client have a start
-        for (const c of this.clients) {
+        for (const cStr in this.clients) {
+            const c = this.clients[cStr];
             elizaLogger.log(
                 "runtime::stop - requesting",
-                c,
+                cStr,
                 "client stop for",
                 this.character.name,
             );
-            c.stop(this);
+            c.stop();
         }
         // we don't need to unregister with directClient
         // don't need to worry about knowledge
@@ -988,14 +977,6 @@ export class AgentRuntime implements IAgentRuntime {
      */
     registerContextProvider(provider: Provider) {
         this.providers.push(provider);
-    }
-
-    /**
-     * Register an adapter for the agent to use.
-     * @param adapter The adapter to register.
-     */
-    registerAdapter(adapter: Adapter) {
-        this.adapters.push(adapter);
     }
 
     /**
@@ -1481,14 +1462,16 @@ Text: ${attachment.text}
 
         if (this.character.settings?.ragKnowledge) {
             const recentContext = recentMessagesData
-                .slice(-3) // Last 3 messages
+                .sort((a, b) => b.createdAt - a.createdAt) // Sort by timestamp descending (newest first)
+                .slice(0, 3) // Get the 3 most recent messages
+                .reverse() // Reverse to get chronological order
                 .map((msg) => msg.content.text)
                 .join(" ");
 
             knowledgeData = await this.ragKnowledgeManager.getKnowledge({
                 query: message.content.text,
                 conversationContext: recentContext,
-                limit: 5,
+                limit: 8,
             });
 
             formattedKnowledge = formatKnowledge(knowledgeData);
@@ -1789,7 +1772,16 @@ Text: ${attachment.text}
 }
 
 const formatKnowledge = (knowledge: KnowledgeItem[]) => {
-    return knowledge
-        .map((knowledge) => `- ${knowledge.content.text}`)
-        .join("\n");
+    // Group related content in a more natural way
+    return knowledge.map(item => {
+        // Get the main content text
+        const text = item.content.text;
+        
+        // Clean up formatting but maintain natural text flow
+        const cleanedText = text
+            .trim()
+            .replace(/\n{3,}/g, '\n\n'); // Replace excessive newlines
+            
+        return cleanedText;
+    }).join('\n\n'); // Separate distinct pieces with double newlines
 };
