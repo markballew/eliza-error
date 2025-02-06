@@ -1027,6 +1027,8 @@ export class DirectClient {
 }
 
 export const DirectClientInterface: Client = {
+    name: 'direct',
+    config: {},
     start: async (_runtime: IAgentRuntime) => {
         elizaLogger.log("DirectClientInterface start");
         const client = new DirectClient();
