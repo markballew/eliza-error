@@ -129,11 +129,13 @@ export interface Goal {
  * Model size/type classification
  */
 export enum ModelClass {
+    DEFAULT = "default",
     SMALL = "small",
     MEDIUM = "medium",
     LARGE = "large",
     EMBEDDING = "embedding",
     IMAGE = "image",
+    IMAGE_VISION = "image_vision",
 }
 
 /**
@@ -725,13 +727,13 @@ export type Character = {
     system?: string;
 
     /** Model provider to use */
-    modelProvider: ModelProviderName;
+    modelProvider: string;
 
     /** Image model provider to use, if different from modelProvider */
-    imageModelProvider?: ModelProviderName;
+    imageModelProvider?: string;
 
     /** Image Vision model provider to use, if different from modelProvider */
-    imageVisionModelProvider?: ModelProviderName;
+    imageVisionModelProvider?: string;
 
     /** Optional model endpoint override */
     modelEndpointOverride?: string;
@@ -1273,9 +1275,14 @@ export interface IAgentRuntime {
     serverUrl: string;
     databaseAdapter: IDatabaseAdapter;
     token: string | null;
-    modelProvider: ModelProviderName;
-    imageModelProvider: ModelProviderName;
-    imageVisionModelProvider: ModelProviderName;
+
+    // TODO: remove these three
+    modelProvider: string;
+    imageModelProvider: string;
+    imageVisionModelProvider: string;
+    //////////////////////////////
+
+    
     character: Character;
     providers: Provider[];
     actions: Action[];
@@ -1311,6 +1318,8 @@ export interface IAgentRuntime {
     registerService(service: Service): void;
 
     getSetting(key: string): string | null;
+
+    getModelProvider(): IModelProvider;
 
     // Methods
     getConversationLength(): number;
@@ -1666,3 +1675,33 @@ export interface ChunkRow {
     id: string;
     // Add other properties if needed
 }
+
+
+export interface IModelProvider {
+    // Core provider configuration 
+    apiKey: string;
+    endpoint: string;
+    provider: string;
+    
+    // Models configuration
+    models: {
+        // Required default model
+        default: ModelSettings;
+        
+        // Optional models
+        [ModelClass.SMALL]?: ModelSettings;
+        [ModelClass.MEDIUM]?: ModelSettings;
+        [ModelClass.LARGE]?: ModelSettings;
+        [ModelClass.EMBEDDING]?: EmbeddingModelSettings;
+        [ModelClass.IMAGE]?: ImageModelSettings;
+        [ModelClass.IMAGE_VISION]?: ImageModelSettings;
+    };
+
+    // Optional configuration
+    config?: {
+        maxRetries?: number;
+        timeout?: number;
+        headers?: Record<string, string>;  // For additional auth headers if needed
+    };
+}
+

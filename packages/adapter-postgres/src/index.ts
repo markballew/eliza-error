@@ -20,15 +20,15 @@ import {
     type Relationship,
     type UUID,
 } from "@elizaos/core";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import type {
     QueryConfig,
     QueryConfigValues,
     QueryResult,
     QueryResultRow,
 } from "pg";
-import { fileURLToPath } from "url";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -1016,12 +1016,12 @@ export class PostgresDatabaseAdapter
                         SELECT
                             embedding,
                             COALESCE(
-                                content->>$2,
+                                content->$2->>$3,
                                 ''
                             ) as content_text
                         FROM memories
-                        WHERE type = $3
-                        AND content->>$2 IS NOT NULL
+                        WHERE type = $4
+                        AND content->$2->>$3 IS NOT NULL
                     )
                     SELECT
                         embedding,
@@ -1033,13 +1033,14 @@ export class PostgresDatabaseAdapter
                     WHERE levenshtein(
                         $1,
                         content_text
-                    ) <= $5  -- Add threshold check
+                    ) <= $6  -- Add threshold check
                     ORDER BY levenshtein_score
-                    LIMIT $4
+                    LIMIT $5
                 `;
 
                 const { rows } = await this.pool.query(sql, [
                     opts.query_input,
+                    opts.query_field_name,
                     opts.query_field_sub_name,
                     opts.query_table_name,
                     opts.query_match_count,
