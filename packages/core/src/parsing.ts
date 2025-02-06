@@ -146,7 +146,6 @@ export function parseJSONObjectFromText(
     const jsonBlockMatch = text.match(jsonBlockPattern);
 
     if (jsonBlockMatch) {
-        text = cleanJsonResponse(text);
         const parsingText = normalizeJsonString(text);
         try {
             jsonData = JSON.parse(parsingText);
@@ -160,7 +159,6 @@ export function parseJSONObjectFromText(
         const objectMatch = text.match(objectPattern);
 
         if (objectMatch) {
-            text = cleanJsonResponse(text);
             const parsingText = normalizeJsonString(text);
             try {
                 jsonData = JSON.parse(parsingText);
@@ -216,7 +214,7 @@ export function extractAttributes(
         });
     }
 
-    return Object.entries(attributes).length > 0 ? attributes : null;
+    return attributes;
 }
 
 /**
