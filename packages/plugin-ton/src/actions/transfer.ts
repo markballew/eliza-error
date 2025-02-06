@@ -10,13 +10,13 @@ import {
     type State,
 } from "@elizaos/core";
 import { z } from "zod";
-import { sleep, base64ToHex } from "../util.ts";
 import {
     initWalletProvider,
     type WalletProvider,
     nativeWalletProvider,
 } from "../providers/wallet";
 import { internal } from "@ton/ton";
+import { base64ToHex, sleep } from "../utils/util";
 
 export interface TransferContent extends Content {
     recipient: string;
@@ -156,11 +156,9 @@ const buildTransferDetails = async (
         context: transferContext,
         schema: transferSchema,
         modelClass: ModelClass.SMALL,
-        schemaName: "TransferContent",
-        schemaDescription: "The content of a transfer request",
     });
 
-    let transferContent: TransferContent = content as TransferContent;
+    let transferContent: TransferContent = content.object as TransferContent;
 
     if (transferContent === undefined) {
         transferContent = content as unknown as TransferContent;

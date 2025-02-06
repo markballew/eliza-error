@@ -3,10 +3,9 @@ import {
     type VerifiableInferenceOptions,
     type VerifiableInferenceResult,
     VerifiableInferenceProvider,
-    type ModelProviderName,
+    ModelProviderName,
+    models,
     elizaLogger,
-    type IAgentRuntime,
-    type Models
 } from "@elizaos/core";
 import { verifyProof } from "./utils/api";
 interface OpacityOptions {
@@ -19,20 +18,22 @@ interface OpacityOptions {
 
 export class OpacityAdapter implements IVerifiableInferenceAdapter {
     public options: OpacityOptions;
-    private runtime: IAgentRuntime;
+
     constructor(options: OpacityOptions) {
         this.options = options;
     }
 
-    // TODO: REVISIT THIS
     async generateText(
         context: string,
         modelClass: string,
         options?: VerifiableInferenceOptions
     ): Promise<VerifiableInferenceResult> {
-        const provider = this.options.modelProvider ?? this.runtime.modelProvider;
-        const model = this.runtime.getModelProvider().models[modelClass];
-
+        const provider = this.options.modelProvider || ModelProviderName.OPENAI;
+        const baseEndpoint =
+            options?.endpoint ||
+            `https://gateway.ai.cloudflare.com/v1/${this.options.teamId}/${this.options.teamName}`;
+        const model = models[provider].model[modelClass];
+        const apiKey = this.options.token;
 
         elizaLogger.log("Generating text with options:", {
             modelProvider: provider,
@@ -40,19 +41,46 @@ export class OpacityAdapter implements IVerifiableInferenceAdapter {
         });
 
         // Get provider-specific endpoint
-        const endpoint = this.runtime.getModelProvider().endpoint
-        const apiKey = this.runtime.getModelProvider().apiKey
-        
+        let endpoint: string;
+        let authHeader: string;
+
+        switch (provider) {
+            case ModelProviderName.OPENAI:
+                endpoint = `${baseEndpoint}/openai/chat/completions`;
+                authHeader = `Bearer ${apiKey}`;
+                break;
+            default:
+                throw new Error(`Unsupported model provider: ${provider}`);
+        }
+
         try {
             let body: Record<string, unknown>;
             // Handle different API formats
-            
+            switch (provider) {
+                case ModelProviderName.OPENAI:
+                    body = {
+                        model: model.name,
+                        messages: [
+                            {
+                                role: "system",
+                                content: context,
+                            },
+                        ],
+                        temperature: model.temperature || 0.7,
+                        max_tokens: model.maxOutputTokens,
+                        frequency_penalty: model.frequency_penalty,
+                        presence_penalty: model.presence_penalty,
+                    };
+                    break;
+                default:
+                    throw new Error(`Unsupported model provider: ${provider}`);
+            }
 
             elizaLogger.debug("Request body:", JSON.stringify(body, null, 2));
             const requestBody = JSON.stringify(body);
             const requestHeaders = {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
+                Authorization: authHeader,
                 ...options?.headers,
             };
 

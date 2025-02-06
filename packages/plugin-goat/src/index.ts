@@ -1,34 +1,21 @@
-export * from "./actions";
-export * from "./wallet";
-
 import type { Plugin } from "@elizaos/core";
-import { goatWalletProvider } from "./wallet";
 import { getOnChainActions } from "./actions";
+import { getWalletClient, getWalletProvider } from "./wallet";
 
-console.log("\n┌════════════════════════════════════════┐");
-console.log("│          GOAT SDK PLUGIN               │");
-console.log("├────────────────────────────────────────┤");
-console.log("│  Initializing GOAT Plugin...           │");
-console.log("└════════════════════════════════════════┘");
+async function createGoatPlugin(
+    getSetting: (key: string) => string | undefined
+): Promise<Plugin> {
+    const walletClient = getWalletClient(getSetting);
+    const actions = await getOnChainActions(walletClient);
 
-const initializeActions = async () => {
-    try {
-        const actions = await getOnChainActions();
-        console.log("✔ GOAT actions initialized successfully.");
-        return actions;
-    } catch (error) {
-        console.error("❌ Failed to initialize GOAT actions:", error);
-        return [];
-    }
-};
+    return {
+        name: "[GOAT] Onchain Actions",
+        description: "Mode integration plugin",
+        providers: [getWalletProvider(walletClient)],
+        evaluators: [],
+        services: [],
+        actions: actions,
+    };
+}
 
-export const goatPlugin: Plugin = {
-    name: "[GOAT] Onchain Actions",
-    description: "Goat SDK integration for EVM chains",
-    providers: [goatWalletProvider],
-    evaluators: [],
-    services: [],
-    actions: await initializeActions(),
-};
-
-export default goatPlugin;
+export default createGoatPlugin;

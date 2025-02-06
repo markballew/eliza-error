@@ -42,7 +42,7 @@ import {
     type ICacheManager,
     type IDatabaseAdapter,
     type IDatabaseCacheAdapter,
-    type ModelProviderName,
+    ModelProviderName,
     parseBooleanFromText,
     settings,
     stringToUuid,
@@ -53,6 +53,7 @@ import { footballPlugin } from "@elizaos/plugin-football";
 
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import { normalizeCharacter } from "@elizaos/plugin-di";
+import createGoatPlugin from "@elizaos/plugin-goat";
 import createZilliqaPlugin from "@elizaos/plugin-zilliqa";
 
 // import { intifacePlugin } from "@elizaos/plugin-intiface";
@@ -138,10 +139,10 @@ import { nvidiaNimPlugin } from "@elizaos/plugin-nvidia-nim";
 import { zxPlugin } from "@elizaos/plugin-0x";
 import { hyperbolicPlugin } from "@elizaos/plugin-hyperbolic";
 import Database from "better-sqlite3";
-import fs from "node:fs";
-import net from "node:net";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from "fs";
+import net from "net";
+import path from "path";
+import { fileURLToPath } from "url";
 import yargs from "yargs";
 import { emailPlugin } from "@elizaos/plugin-email";
 import { emailAutomationPlugin } from "@elizaos/plugin-email-automation";
@@ -156,8 +157,6 @@ import { ankrPlugin } from "@elizaos/plugin-ankr";
 import { formPlugin } from "@elizaos/plugin-form";
 import { MongoClient } from "mongodb";
 import { quickIntelPlugin } from "@elizaos/plugin-quick-intel";
-import { goatPlugin } from "@elizaos/plugin-goat";
-import { zilliqaPlugin } from "@elizaos/plugin-zilliqa";
 
 import { trikonPlugin } from "@elizaos/plugin-trikon";
 import arbitragePlugin from "@elizaos/plugin-arbitrage";
@@ -206,52 +205,38 @@ function tryLoadFile(filePath: string): string | null {
         return null;
     }
 }
-function mergeCharacters(base: Character, child: Partial<Character>): Character {
-    if (!base) return { ...child, name: child.name || '' } as Character;
-    if (!child) return base;
-  
-    const result = { ...base };
-    const allKeys = new Set([...Object.keys(base), ...Object.keys(child)]);
-  
-    for (const key of allKeys) {
-      const baseValue = base[key];
-      const childValue = child[key];
-  
-      if (childValue === undefined) {
-        result[key] = baseValue;
-        continue;
-      }
-  
-      if (baseValue === undefined) {
-        result[key] = childValue;
-        continue;
-      }
-  
-      if (Array.isArray(baseValue) || Array.isArray(childValue)) {
-        result[key] = [
-          ...(Array.isArray(baseValue) ? baseValue : []),
-          ...(Array.isArray(childValue) ? childValue : [])
-        ];
-        continue;
-      }
-  
-      if (
-        baseValue &&
-        childValue &&
-        typeof baseValue === "object" &&
-        typeof childValue === "object"
-      ) {
-        result[key] = mergeCharacters(baseValue, childValue);
-        continue;
-      }
-  
-      result[key] = childValue;
-    }
-  
-    return result as Character;
-  }
-  
-
+function mergeCharacters(base: Character, child: Character): Character {
+    const mergeObjects = (baseObj: any, childObj: any) => {
+        const result: any = {};
+        const keys = new Set([
+            ...Object.keys(baseObj || {}),
+            ...Object.keys(childObj || {}),
+        ]);
+        keys.forEach((key) => {
+            if (
+                typeof baseObj[key] === "object" &&
+                typeof childObj[key] === "object" &&
+                !Array.isArray(baseObj[key]) &&
+                !Array.isArray(childObj[key])
+            ) {
+                result[key] = mergeObjects(baseObj[key], childObj[key]);
+            } else if (
+                Array.isArray(baseObj[key]) ||
+                Array.isArray(childObj[key])
+            ) {
+                result[key] = [
+                    ...(baseObj[key] || []),
+                    ...(childObj[key] || []),
+                ];
+            } else {
+                result[key] =
+                    childObj[key] !== undefined ? childObj[key] : baseObj[key];
+            }
+        });
+        return result;
+    };
+    return mergeObjects(base, child);
+}
 function isAllStrings(arr: unknown[]): boolean {
     return Array.isArray(arr) && arr.every((item) => typeof item === "string");
 }
@@ -277,7 +262,7 @@ export async function loadCharacterFromOnchain(): Promise<Character[]> {
                 const settingKey = key.slice(characterPrefix.length);
                 settings[settingKey] = value;
                 return settings;
-            }, {} as Character["settings"]);
+            }, {});
 
         if (Object.keys(characterSettings).length > 0) {
             character.settings = character.settings || {};
@@ -335,7 +320,7 @@ async function loadCharactersFromUrl(url: string): Promise<Character[]> {
 
 async function jsonToCharacter(
     filePath: string,
-    character: Partial<Character>
+    character: any
 ): Promise<Character> {
     validateCharacterConfig(character);
 
@@ -348,7 +333,7 @@ async function jsonToCharacter(
         .filter(([key]) => key.startsWith(characterPrefix))
         .reduce((settings, [key, value]) => {
             const settingKey = key.slice(characterPrefix.length);
-            return { ...settings, [settingKey]: value } as Character["settings"];
+            return { ...settings, [settingKey]: value };
         }, {});
     if (Object.keys(characterSettings).length > 0) {
         character.settings = character.settings || {};
@@ -358,24 +343,22 @@ async function jsonToCharacter(
         };
     }
     // Handle plugins
-    character.plugins = await handlePluginImporting(character.plugins as unknown as Array<string>);
+    character.plugins = await handlePluginImporting(character.plugins);
     if (character.extends) {
         elizaLogger.info(
             `Merging  ${character.name} character with parent characters`
         );
-        let mergedCharacter = character;
         for (const extendPath of character.extends) {
             const baseCharacter = await loadCharacter(
                 path.resolve(path.dirname(filePath), extendPath)
             );
-            mergedCharacter = mergeCharacters(baseCharacter, mergedCharacter);
+            character = mergeCharacters(baseCharacter, character);
             elizaLogger.info(
-                `Merged ${mergedCharacter.name} with ${baseCharacter.name}`
+                `Merged ${character.name} with ${baseCharacter.name}`
             );
         }
-        return mergedCharacter as Character;
     }
-    return character as Character;
+    return character;
 }
 
 async function loadCharacter(filePath: string): Promise<Character> {
@@ -391,6 +374,7 @@ async function loadCharacterTryPath(characterPath: string): Promise<Character> {
     let content: string | null = null;
     let resolvedPath = "";
 
+    // Try different path resolutions in order
     const pathsToTry = [
         characterPath, // exact path as specified
         path.resolve(process.cwd(), characterPath), // relative to cwd
@@ -405,13 +389,13 @@ async function loadCharacterTryPath(characterPath: string): Promise<Character> {
         ), // relative to project root characters dir
     ];
 
-    elizaLogger.info("Trying paths:");
-    for (const p of pathsToTry) {
-        elizaLogger.info({
+    elizaLogger.info(
+        "Trying paths:",
+        pathsToTry.map((p) => ({
             path: p,
             exists: fs.existsSync(p),
-        });
-    }
+        }))
+    );
 
     for (const tryPath of pathsToTry) {
         content = tryLoadFile(tryPath);
@@ -426,9 +410,7 @@ async function loadCharacterTryPath(characterPath: string): Promise<Character> {
             `Error loading character from ${characterPath}: File not found in any of the expected locations`
         );
         elizaLogger.error("Tried the following paths:");
-        for (const p of pathsToTry) {
-            elizaLogger.error(` - ${p}`);
-        }
+        pathsToTry.forEach((p) => elizaLogger.error(` - ${p}`));
         throw new Error(
             `Error loading character from ${characterPath}: File not found in any of the expected locations`
         );
@@ -454,9 +436,9 @@ async function readCharactersFromStorage(
         const uploadDir = path.join(process.cwd(), "data", "characters");
         await fs.promises.mkdir(uploadDir, { recursive: true });
         const fileNames = await fs.promises.readdir(uploadDir);
-        for (const fileName of fileNames) { 
+        fileNames.forEach((fileName) => {
             characterPaths.push(path.join(uploadDir, fileName));
-        }
+        });
     } catch (err) {
         elizaLogger.error(`Error reading directory: ${err.message}`);
     }
@@ -482,7 +464,7 @@ export async function loadCharacters(
                     characterPath
                 );
                 loadedCharacters.push(character);
-            } catch {
+            } catch (e) {
                 process.exit(1);
             }
         }
@@ -515,9 +497,10 @@ async function handlePluginImporting(plugins: string[]) {
                 try {
                     const importedPlugin = await import(plugin);
                     const functionName =
-                        `${plugin
+                        plugin
                             .replace("@elizaos/plugin-", "")
-                            .replace(/-./g, (x) => x[1].toUpperCase())}Plugin`; // Assumes plugin function is camelCased with Plugin suffix
+                            .replace(/-./g, (x) => x[1].toUpperCase()) +
+                        "Plugin"; // Assumes plugin function is camelCased with Plugin suffix
                     return (
                         importedPlugin.default || importedPlugin[functionName]
                     );
@@ -531,119 +514,280 @@ async function handlePluginImporting(plugins: string[]) {
             })
         );
         return importedPlugins;
-    }
+    } else {
         return [];
+    }
 }
 
 export function getTokenForProvider(
+    provider: ModelProviderName,
     character: Character
 ): string | undefined {
-    // change: unified single PROVIDER_API_KEY for all providers
-    return character.settings?.secrets?.PROVIDER_API_KEY || settings.PROVIDER_API_KEY;
+    switch (provider) {
+        // no key needed for llama_local, ollama, lmstudio, gaianet or bedrock
+        case ModelProviderName.LLAMALOCAL:
+            return "";
+        case ModelProviderName.OLLAMA:
+            return "";
+        case ModelProviderName.LMSTUDIO:
+            return "";
+        case ModelProviderName.GAIANET:
+            return "";
+        case ModelProviderName.BEDROCK:
+            return "";
+        case ModelProviderName.OPENAI:
+            return (
+                character.settings?.secrets?.OPENAI_API_KEY ||
+                settings.OPENAI_API_KEY
+            );
+        case ModelProviderName.ETERNALAI:
+            return (
+                character.settings?.secrets?.ETERNALAI_API_KEY ||
+                settings.ETERNALAI_API_KEY
+            );
+        case ModelProviderName.NINETEEN_AI:
+            return (
+                character.settings?.secrets?.NINETEEN_AI_API_KEY ||
+                settings.NINETEEN_AI_API_KEY
+            );
+        case ModelProviderName.LLAMACLOUD:
+        case ModelProviderName.TOGETHER:
+            return (
+                character.settings?.secrets?.LLAMACLOUD_API_KEY ||
+                settings.LLAMACLOUD_API_KEY ||
+                character.settings?.secrets?.TOGETHER_API_KEY ||
+                settings.TOGETHER_API_KEY ||
+                character.settings?.secrets?.OPENAI_API_KEY ||
+                settings.OPENAI_API_KEY
+            );
+        case ModelProviderName.CLAUDE_VERTEX:
+        case ModelProviderName.ANTHROPIC:
+            return (
+                character.settings?.secrets?.ANTHROPIC_API_KEY ||
+                character.settings?.secrets?.CLAUDE_API_KEY ||
+                settings.ANTHROPIC_API_KEY ||
+                settings.CLAUDE_API_KEY
+            );
+        case ModelProviderName.REDPILL:
+            return (
+                character.settings?.secrets?.REDPILL_API_KEY ||
+                settings.REDPILL_API_KEY
+            );
+        case ModelProviderName.OPENROUTER:
+            return (
+                character.settings?.secrets?.OPENROUTER_API_KEY ||
+                settings.OPENROUTER_API_KEY
+            );
+        case ModelProviderName.GROK:
+            return (
+                character.settings?.secrets?.GROK_API_KEY ||
+                settings.GROK_API_KEY
+            );
+        case ModelProviderName.HEURIST:
+            return (
+                character.settings?.secrets?.HEURIST_API_KEY ||
+                settings.HEURIST_API_KEY
+            );
+        case ModelProviderName.GROQ:
+            return (
+                character.settings?.secrets?.GROQ_API_KEY ||
+                settings.GROQ_API_KEY
+            );
+        case ModelProviderName.GALADRIEL:
+            return (
+                character.settings?.secrets?.GALADRIEL_API_KEY ||
+                settings.GALADRIEL_API_KEY
+            );
+        case ModelProviderName.FAL:
+            return (
+                character.settings?.secrets?.FAL_API_KEY || settings.FAL_API_KEY
+            );
+        case ModelProviderName.ALI_BAILIAN:
+            return (
+                character.settings?.secrets?.ALI_BAILIAN_API_KEY ||
+                settings.ALI_BAILIAN_API_KEY
+            );
+        case ModelProviderName.VOLENGINE:
+            return (
+                character.settings?.secrets?.VOLENGINE_API_KEY ||
+                settings.VOLENGINE_API_KEY
+            );
+        case ModelProviderName.NANOGPT:
+            return (
+                character.settings?.secrets?.NANOGPT_API_KEY ||
+                settings.NANOGPT_API_KEY
+            );
+        case ModelProviderName.HYPERBOLIC:
+            return (
+                character.settings?.secrets?.HYPERBOLIC_API_KEY ||
+                settings.HYPERBOLIC_API_KEY
+            );
+
+        case ModelProviderName.VENICE:
+            return (
+                character.settings?.secrets?.VENICE_API_KEY ||
+                settings.VENICE_API_KEY
+            );
+        case ModelProviderName.ATOMA:
+            return (
+                character.settings?.secrets?.ATOMASDK_BEARER_AUTH ||
+                settings.ATOMASDK_BEARER_AUTH
+            );
+        case ModelProviderName.NVIDIA:
+            return (
+                character.settings?.secrets?.NVIDIA_API_KEY ||
+                settings.NVIDIA_API_KEY
+            );
+        case ModelProviderName.AKASH_CHAT_API:
+            return (
+                character.settings?.secrets?.AKASH_CHAT_API_KEY ||
+                settings.AKASH_CHAT_API_KEY
+            );
+        case ModelProviderName.GOOGLE:
+            return (
+                character.settings?.secrets?.GOOGLE_GENERATIVE_AI_API_KEY ||
+                settings.GOOGLE_GENERATIVE_AI_API_KEY
+            );
+        case ModelProviderName.MISTRAL:
+            return (
+                character.settings?.secrets?.MISTRAL_API_KEY ||
+                settings.MISTRAL_API_KEY
+            );
+        case ModelProviderName.LETZAI:
+            return (
+                character.settings?.secrets?.LETZAI_API_KEY ||
+                settings.LETZAI_API_KEY
+            );
+        case ModelProviderName.INFERA:
+            return (
+                character.settings?.secrets?.INFERA_API_KEY ||
+                settings.INFERA_API_KEY
+            );
+        case ModelProviderName.DEEPSEEK:
+            return (
+                character.settings?.secrets?.DEEPSEEK_API_KEY ||
+                settings.DEEPSEEK_API_KEY
+            );
+        case ModelProviderName.LIVEPEER:
+            return (
+                character.settings?.secrets?.LIVEPEER_GATEWAY_URL ||
+                settings.LIVEPEER_GATEWAY_URL
+            );
+        default:
+            const errorMessage = `Failed to get token - unsupported model provider: ${provider}`;
+            elizaLogger.error(errorMessage);
+            throw new Error(errorMessage);
+    }
 }
 
 function initializeDatabase(dataDir: string) {
-    let db;
-    
-    switch (true) {
-        case !!process.env.MONGODB_CONNECTION_STRING: {
-            elizaLogger.log("Initializing database on MongoDB Atlas");
-            const client = new MongoClient(process.env.MONGODB_CONNECTION_STRING, {
-                maxPoolSize: 100,
-                minPoolSize: 5,
-                maxIdleTimeMS: 60000,
-                connectTimeoutMS: 10000,
-                serverSelectionTimeoutMS: 5000,
-                socketTimeoutMS: 45000,
-                compressors: ["zlib"],
-                retryWrites: true,
-                retryReads: true,
+    if (process.env.MONGODB_CONNECTION_STRING) {
+        elizaLogger.log("Initializing database on MongoDB Atlas");
+        const client = new MongoClient(process.env.MONGODB_CONNECTION_STRING, {
+            maxPoolSize: 100,
+            minPoolSize: 5,
+            maxIdleTimeMS: 60000,
+            connectTimeoutMS: 10000,
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+            compressors: ["zlib"],
+            retryWrites: true,
+            retryReads: true,
+        });
+
+        const dbName = process.env.MONGODB_DATABASE || "elizaAgent";
+        const db = new MongoDBDatabaseAdapter(client, dbName);
+
+        // Test the connection
+        db.init()
+            .then(() => {
+                elizaLogger.success("Successfully connected to MongoDB Atlas");
+            })
+            .catch((error) => {
+                elizaLogger.error("Failed to connect to MongoDB Atlas:", error);
+                throw error; // Re-throw to handle it in the calling code
             });
 
-            const dbName = process.env.MONGODB_DATABASE || "elizaAgent";
-            db = new MongoDBDatabaseAdapter(client, dbName);
+        return db;
+    } else if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+        elizaLogger.info("Initializing Supabase connection...");
+        const db = new SupabaseDatabaseAdapter(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_ANON_KEY
+        );
 
-            db.init()
-                .then(() => {
-                    elizaLogger.success("Successfully connected to MongoDB Atlas");
-                })
-                .catch((error) => {
-                    elizaLogger.error("Failed to connect to MongoDB Atlas:", error);
-                    throw error;
-                });
-            break;
-        }
-
-        case !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY):
-            elizaLogger.info("Initializing Supabase connection...");
-            db = new SupabaseDatabaseAdapter(
-                process.env.SUPABASE_URL,
-                process.env.SUPABASE_ANON_KEY
-            );
-
-            db.init()
-                .then(() => {
-                    elizaLogger.success("Successfully connected to Supabase database");
-                })
-                .catch((error) => {
-                    elizaLogger.error("Failed to connect to Supabase:", error);
-                });
-            break;
-
-        case !!process.env.POSTGRES_URL:
-            elizaLogger.info("Initializing PostgreSQL connection...");
-            db = new PostgresDatabaseAdapter({
-                connectionString: process.env.POSTGRES_URL,
-                parseInputs: true,
+        // Test the connection
+        db.init()
+            .then(() => {
+                elizaLogger.success(
+                    "Successfully connected to Supabase database"
+                );
+            })
+            .catch((error) => {
+                elizaLogger.error("Failed to connect to Supabase:", error);
             });
 
-            db.init()
-                .then(() => {
-                    elizaLogger.success("Successfully connected to PostgreSQL database");
-                })
-                .catch((error) => {
-                    elizaLogger.error("Failed to connect to PostgreSQL:", error);
-                });
-            break;
+        return db;
+    } else if (process.env.POSTGRES_URL) {
+        elizaLogger.info("Initializing PostgreSQL connection...");
+        const db = new PostgresDatabaseAdapter({
+            connectionString: process.env.POSTGRES_URL,
+            parseInputs: true,
+        });
 
-        case !!process.env.PGLITE_DATA_DIR:
-            elizaLogger.info("Initializing PgLite adapter...");
-            db = new PGLiteDatabaseAdapter({
-                dataDir: process.env.PGLITE_DATA_DIR,
+        // Test the connection
+        db.init()
+            .then(() => {
+                elizaLogger.success(
+                    "Successfully connected to PostgreSQL database"
+                );
+            })
+            .catch((error) => {
+                elizaLogger.error("Failed to connect to PostgreSQL:", error);
             });
-            break;
 
-        case !!(process.env.QDRANT_URL && 
-                process.env.QDRANT_KEY && 
-                process.env.QDRANT_PORT && 
-                process.env.QDRANT_VECTOR_SIZE):
-            elizaLogger.info("Initializing Qdrant adapter...");
-            db = new QdrantDatabaseAdapter(
-                process.env.QDRANT_URL,
-                process.env.QDRANT_KEY,
-                Number(process.env.QDRANT_PORT),
-                Number(process.env.QDRANT_VECTOR_SIZE)
-            );
-            break;
+        return db;
+    } else if (process.env.PGLITE_DATA_DIR) {
+        elizaLogger.info("Initializing PgLite adapter...");
+        // `dataDir: memory://` for in memory pg
+        const db = new PGLiteDatabaseAdapter({
+            dataDir: process.env.PGLITE_DATA_DIR,
+        });
+        return db;
+    } else if (
+        process.env.QDRANT_URL &&
+        process.env.QDRANT_KEY &&
+        process.env.QDRANT_PORT &&
+        process.env.QDRANT_VECTOR_SIZE
+    ) {
+        elizaLogger.info("Initializing Qdrant adapter...");
+        const db = new QdrantDatabaseAdapter(
+            process.env.QDRANT_URL,
+            process.env.QDRANT_KEY,
+            Number(process.env.QDRANT_PORT),
+            Number(process.env.QDRANT_VECTOR_SIZE)
+        );
+        return db;
+    } else {
+        const filePath =
+            process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
+        elizaLogger.info(`Initializing SQLite database at ${filePath}...`);
+        const db = new SqliteDatabaseAdapter(new Database(filePath));
 
-        default: {
-            const filePath = process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
-            elizaLogger.info(`Initializing SQLite database at ${filePath}...`);
-            db = new SqliteDatabaseAdapter(new Database(filePath));
+        // Test the connection
+        db.init()
+            .then(() => {
+                elizaLogger.success(
+                    "Successfully connected to SQLite database"
+                );
+            })
+            .catch((error) => {
+                elizaLogger.error("Failed to connect to SQLite:", error);
+            });
 
-            db.init()
-                .then(() => {
-                    elizaLogger.success("Successfully connected to SQLite database");
-                })
-                .catch((error) => {
-                    elizaLogger.error("Failed to connect to SQLite:", error);
-                });
-        }
+        return db;
     }
-
-    return db;
 }
-
 
 // also adds plugins from character file into the runtime
 export async function initializeClients(
@@ -784,21 +928,92 @@ export async function createAgent(
     cache: ICacheManager,
     token: string
 ): Promise<AgentRuntime> {
-    elizaLogger.log(`Creating runtime for character ${character.name} and token ${token} and db ${db} and cache ${cache}`);
+    elizaLogger.log(`Creating runtime for character ${character.name}`);
 
     nodePlugin ??= createNodePlugin();
 
     const teeMode = getSecret(character, "TEE_MODE") || "OFF";
     const walletSecretSalt = getSecret(character, "WALLET_SECRET_SALT");
 
-    // TODO: handle TEE mode
-    // TODO: handle wallet secret salt
-    // TODO: handle Verifiable Inference
+    // Validate TEE configuration
+    if (teeMode !== TEEMode.OFF && !walletSecretSalt) {
+        elizaLogger.error(
+            "A WALLET_SECRET_SALT required when TEE_MODE is enabled"
+        );
+        throw new Error("Invalid TEE configuration");
+    }
+
+    let goatPlugin: any | undefined;
+
+    if (getSecret(character, "EVM_PRIVATE_KEY")) {
+        goatPlugin = await createGoatPlugin((secret) =>
+            getSecret(character, secret)
+        );
+    }
+
+    let zilliqaPlugin: any | undefined;
+    if (getSecret(character, "ZILLIQA_PRIVATE_KEY")) {
+        zilliqaPlugin = await createZilliqaPlugin((secret) =>
+            getSecret(character, secret)
+        );
+    }
+
+    // Initialize Reclaim adapter if environment variables are present
+    // let verifiableInferenceAdapter;
+    // if (
+    //     process.env.RECLAIM_APP_ID &&
+    //     process.env.RECLAIM_APP_SECRET &&
+    //     process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
+    // ) {
+    //     verifiableInferenceAdapter = new ReclaimAdapter({
+    //         appId: process.env.RECLAIM_APP_ID,
+    //         appSecret: process.env.RECLAIM_APP_SECRET,
+    //         modelProvider: character.modelProvider,
+    //         token,
+    //     });
+    //     elizaLogger.log("Verifiable inference adapter initialized");
+    // }
+    // Initialize Opacity adapter if environment variables are present
+    let verifiableInferenceAdapter;
+    if (
+        process.env.OPACITY_TEAM_ID &&
+        process.env.OPACITY_CLOUDFLARE_NAME &&
+        process.env.OPACITY_PROVER_URL &&
+        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
+    ) {
+        verifiableInferenceAdapter = new OpacityAdapter({
+            teamId: process.env.OPACITY_TEAM_ID,
+            teamName: process.env.OPACITY_CLOUDFLARE_NAME,
+            opacityProverUrl: process.env.OPACITY_PROVER_URL,
+            modelProvider: character.modelProvider,
+            token: token,
+        });
+        elizaLogger.log("Verifiable inference adapter initialized");
+        elizaLogger.log("teamId", process.env.OPACITY_TEAM_ID);
+        elizaLogger.log("teamName", process.env.OPACITY_CLOUDFLARE_NAME);
+        elizaLogger.log("opacityProverUrl", process.env.OPACITY_PROVER_URL);
+        elizaLogger.log("modelProvider", character.modelProvider);
+        elizaLogger.log("token", token);
+    }
+    if (
+        process.env.PRIMUS_APP_ID &&
+        process.env.PRIMUS_APP_SECRET &&
+        process.env.VERIFIABLE_INFERENCE_ENABLED === "true"
+    ) {
+        verifiableInferenceAdapter = new PrimusAdapter({
+            appId: process.env.PRIMUS_APP_ID,
+            appSecret: process.env.PRIMUS_APP_SECRET,
+            attMode: "proxytls",
+            modelProvider: character.modelProvider,
+            token,
+        });
+        elizaLogger.log("Verifiable inference primus adapter initialized");
+    }
 
     return new AgentRuntime({
         databaseAdapter: db,
         token,
-        modelProvider: character.modelProvider as ModelProviderName,
+        modelProvider: character.modelProvider,
         evaluators: [],
         character,
         // character.plugins are handled when clients are added
@@ -850,7 +1065,8 @@ export async function createAgent(
                 ? nearPlugin
                 : null,
             getSecret(character, "EVM_PUBLIC_KEY") ||
-            (getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
+            (getSecret(character, "WALLET_PUBLIC_KEY") &&
+                getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
                 ? evmPlugin
                 : null,
             (getSecret(character, "EVM_PRIVATE_KEY") ||
@@ -923,11 +1139,14 @@ export async function createAgent(
             getSecret(character, "COINBASE_NOTIFICATION_URI")
                 ? webhookPlugin
                 : null,
+            goatPlugin,
+            zilliqaPlugin,
             getSecret(character, "COINGECKO_API_KEY") ||
             getSecret(character, "COINGECKO_PRO_API_KEY")
                 ? coingeckoPlugin
                 : null,
             getSecret(character, "MORALIS_API_KEY") ? moralisPlugin : null,
+            getSecret(character, "EVM_PROVIDER_URL") ? goatPlugin : null,
             getSecret(character, "ABSTRACT_PRIVATE_KEY")
                 ? abstractPlugin
                 : null,
@@ -1086,8 +1305,6 @@ export async function createAgent(
             getSecret(character, "DESK_EXCHANGE_NETWORK")
                 ? deskExchangePlugin
                 : null,
-            getSecret(character, "GOAT_EVM_PRIVATE_KEY") ? goatPlugin : null,
-            getSecret(character, "ZILLIQA_PRIVATE_KEY") ? zilliqaPlugin : null,
         ]
             .flat()
             .filter(Boolean),
@@ -1095,7 +1312,7 @@ export async function createAgent(
         managers: [],
         cacheManager: cache,
         fetch: logFetch,
-        // verifiableInferenceAdapter,
+        verifiableInferenceAdapter,
     });
 }
 
@@ -1140,17 +1357,19 @@ function initializeCache(
                 return new CacheManager(
                     new DbCacheAdapter(redisClient, character.id) // Using DbCacheAdapter since RedisClient also implements IDatabaseCacheAdapter
                 );
-            }
+            } else {
                 throw new Error("REDIS_URL environment variable is not set.");
+            }
 
         case CacheStore.DATABASE:
             if (db) {
                 elizaLogger.info("Using Database Cache...");
                 return initializeDbCache(character, db);
-            }
+            } else {
                 throw new Error(
                     "Database adapter is not provided for CacheStore.Database."
                 );
+            }
 
         case CacheStore.FILESYSTEM:
             elizaLogger.info("Using File System Cache...");
@@ -1177,7 +1396,7 @@ async function startAgent(
         character.id ??= stringToUuid(character.name);
         character.username ??= character.name;
 
-        const token = getTokenForProvider(character);
+        const token = getTokenForProvider(character.modelProvider, character);
         const dataDir = path.join(__dirname, "../data");
 
         if (!fs.existsSync(dataDir)) {
@@ -1201,8 +1420,6 @@ async function startAgent(
             cache,
             token
         );
-
-        elizaLogger.info(`Runtime initialized for ${character.name}`);
 
         // start services/plugins/process knowledge
         await runtime.initialize();
@@ -1308,7 +1525,7 @@ const startAgents = async () => {
         elizaLogger.log(`Server started on alternate port ${serverPort}`);
     }
 
-    elizaLogger.log(
+    elizaLogger.info(
         "Run `pnpm start:client` to start the client and visit the outputted URL (http://localhost:5173) to chat with your agents. When running multiple agents, use client with different port `SERVER_PORT=3001 pnpm start:client`"
     );
 };
@@ -1324,12 +1541,12 @@ if (
     parseBooleanFromText(process.env.PREVENT_UNHANDLED_EXIT)
 ) {
     // Handle uncaught exceptions to prevent the process from crashing
-    process.on("uncaughtException", (err) => {
+    process.on("uncaughtException", function (err) {
         console.error("uncaughtException", err);
     });
 
     // Handle unhandled rejections to prevent the process from crashing
-    process.on("unhandledRejection", (err) => {
+    process.on("unhandledRejection", function (err) {
         console.error("unhandledRejection", err);
     });
 }

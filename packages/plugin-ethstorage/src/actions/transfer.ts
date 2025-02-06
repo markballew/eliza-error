@@ -13,7 +13,6 @@ import {
 } from "@elizaos/core";
 import { ethstorageConfig } from "../environment";
 import { ethers } from "ethers";
-import { z } from "zod";
 
 export interface TransferContent extends Content {
     recipient: string;
@@ -95,21 +94,15 @@ export default {
         });
 
         // Generate transfer content
-        const {object} = await generateObjectDeprecated({
+        const content = await generateObjectDeprecated({
             runtime,
             context: transferContext,
             modelClass: ModelClass.SMALL,
-            schema: z.object({
-                recipient: z.string(),
-                amount: z.string(),
-            }),
-            schemaName: "TransferContent",
-            schemaDescription: "The content of a transfer request",
         });
 
         // Validate transfer content
-        if (!isTransferContent(object)) {
-            console.log(object);
+        if (!isTransferContent(content)) {
+            console.log(content);
             console.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
@@ -120,7 +113,7 @@ export default {
             return false;
         }
 
-        if (object.amount != null && object.recipient != null) {
+        if (content.amount != null && content.recipient != null) {
             try {
                 const RPC = runtime.getSetting("ETHSTORAGE_RPC_URL");
                 const PRIVATE_KEY = runtime.getSetting("ETHSTORAGE_PRIVATE_KEY");
@@ -131,8 +124,8 @@ export default {
                 const provider = new ethers.JsonRpcProvider(RPC);
                 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
                 const tx = await wallet.sendTransaction({
-                    to: object.recipient,
-                    value: ethers.parseEther(object.amount.toString()),
+                    to: content.recipient,
+                    value: ethers.parseEther(content.amount.toString()),
                 });
                 await tx.wait();
 

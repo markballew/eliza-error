@@ -23,8 +23,8 @@ import {
     type WalletProvider,
 } from "../providers/wallet";
 import { transferTemplate } from "../templates";
-import type { SupportedChain, TransferParams, TransferResponse } from "../types";
-import { TransferParamsSchema } from "../types";
+import type { TransferParams, TransferResponse } from "../types";
+
 export { transferTemplate };
 
 // Exported for tests
@@ -41,15 +41,15 @@ export class TransferAction {
 
         const fromAddress = this.walletProvider.getAddress();
 
-        this.walletProvider.switchChain(params.chain as SupportedChain);
+        this.walletProvider.switchChain(params.chain);
 
         const nativeToken =
             this.walletProvider.chains[params.chain].nativeCurrency.symbol;
 
         const resp: TransferResponse = {
-            chain: params.chain as SupportedChain,
+            chain: params.chain,
             txHash: "0x",
-            recipient: params.toAddress as `0x${string}`,
+            recipient: params.toAddress,
             amount: "",
             token: params.token ?? nativeToken,
         };
@@ -57,7 +57,7 @@ export class TransferAction {
         if (!params.token || params.token === nativeToken) {
             // Native token transfer
             const options: { gas?: bigint; gasPrice?: bigint; data?: Hex } = {
-                data: params.data as `0x${string}`,
+                data: params.data,
             };
             let value: bigint;
             if (!params.amount) {
@@ -78,8 +78,8 @@ export class TransferAction {
 
             resp.amount = formatEther(value);
             resp.txHash = await this.walletProvider.transfer(
-                params.chain as SupportedChain,
-                params.toAddress as `0x${string}`,
+                params.chain,
+                params.toAddress,
                 value,
                 options
             );
@@ -116,9 +116,9 @@ export class TransferAction {
 
             resp.amount = formatUnits(value, decimals);
             resp.txHash = await this.walletProvider.transferERC20(
-                params.chain as SupportedChain,
+                params.chain,
                 tokenAddress as `0x${string}`,
-                params.toAddress as `0x${string}`,
+                params.toAddress,
                 value
             );
         }
@@ -189,14 +189,17 @@ export const transferAction = {
             runtime,
             context: transferContext,
             modelClass: ModelClass.LARGE,
-            schema: TransferParamsSchema,
-            schemaName: "TransferParams",
-            schemaDescription: "Transfer parameters",
         });
 
         const walletProvider = initWalletProvider(runtime);
         const action = new TransferAction(walletProvider);
-        const paramOptions = content as TransferParams;
+        const paramOptions: TransferParams = {
+            chain: content.chain,
+            token: content.token,
+            amount: content.amount,
+            toAddress: content.toAddress,
+            data: content.data,
+        };
         try {
             const transferResp = await action.transfer(paramOptions);
             callback?.({
