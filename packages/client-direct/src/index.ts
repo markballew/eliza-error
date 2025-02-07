@@ -24,8 +24,8 @@ import {
     type Plugin,
 } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
-import * as fs from "node:fs";
-import * as path from "node:path";
+import * as fs from "fs";
+import * as path from "path";
 import { createVerifiableLogApiRouter } from "./verifiable-log-api.ts";
 import OpenAI from "openai";
 
@@ -75,7 +75,7 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 {{actions}}
 
 # Instructions: Write the next message for {{agentName}}.
-${messageCompletionFooter}`;
+` + messageCompletionFooter;
 
 export const hyperfiHandlerTemplate = `{{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
@@ -303,7 +303,7 @@ export class DirectClient {
 
                 // save response to memory
                 const responseMessage: Memory = {
-                    id: stringToUuid(`${messageId}-${runtime.agentId}`),
+                    id: stringToUuid(messageId + "-" + runtime.agentId),
                     ...userMessage,
                     userId: runtime.agentId,
                     content: response,

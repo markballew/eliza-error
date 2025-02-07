@@ -31,11 +31,12 @@ export const formatGoalsAsString = ({ goals }: { goals: Goal[] }) => {
     const goalStrings = goals.map((goal: Goal) => {
         const header = `Goal: ${goal.name}\nid: ${goal.id}`;
         const objectives =
-            `Objectives:\n${goal.objectives
+            "Objectives:\n" +
+            goal.objectives
                 .map((objective: Objective) => {
                     return `- ${objective.completed ? "[x]" : "[ ]"} ${objective.description} ${objective.completed ? " (DONE)" : " (IN PROGRESS)"}`;
                 })
-                .join("\n")}`;
+                .join("\n");
         return `${header}\n${objectives}`;
     });
     return goalStrings.join("\n");

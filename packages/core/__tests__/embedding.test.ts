@@ -1,13 +1,12 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 import {
     embed,
-    EmbeddingProvider,
     getEmbeddingConfig,
     getEmbeddingType,
-    getEmbeddingZeroVector
+    getEmbeddingZeroVector,
 } from "../src/embedding.ts";
+import { type IAgentRuntime, ModelProviderName } from "../src/types.ts";
 import settings from "../src/settings.ts";
-import { type IAgentRuntime, type IDatabaseAdapter, ModelClass, ModelProviderName } from "../src/types.ts";
 
 // Mock environment-related settings
 vi.mock("../settings", () => ({
@@ -15,170 +14,78 @@ vi.mock("../settings", () => ({
         USE_OPENAI_EMBEDDING: "false",
         USE_OLLAMA_EMBEDDING: "false",
         USE_GAIANET_EMBEDDING: "false",
+        OPENAI_API_KEY: "mock-openai-key",
+        OPENAI_API_URL: "https://api.openai.com/v1",
+        GAIANET_API_KEY: "mock-gaianet-key",
+        OLLAMA_EMBEDDING_MODEL: "mxbai-embed-large",
+        GAIANET_EMBEDDING_MODEL: "nomic-embed",
     },
 }));
 
-
-describe("Embedding Configuration", () => {
-    test("should return default config when no runtime provided", () => {
-        const config = getEmbeddingConfig();
-        expect(config.provider).toBe(EmbeddingProvider.OpenAI);
-        expect(config.model).toBe("text-embedding-3-small");
-        expect(config.dimensions).toBe(1536);
-    });
-}); 
-
-
 // Mock fastembed module for local embeddings
-vi.mock("fastembed", () => {
-    class MockFlagEmbedding {
-        
+vi.mock("fastembed", () => ({
+    FlagEmbedding: {
+        init: vi.fn().mockResolvedValue({
+            queryEmbed: vi
+                .fn()
+                .mockResolvedValue(new Float32Array(384).fill(0.1)),
+        }),
+    },
+    EmbeddingModel: {
+        BGESmallENV15: "BGE-small-en-v1.5",
+    },
+}));
 
-        static async init() {
-            return new MockFlagEmbedding();
-        }
-
-        async queryEmbed(text: string | string[]) {
-            return [new Float32Array(384).fill(0.1)];
-        }
-    }
-
-    return {
-        FlagEmbedding: MockFlagEmbedding,
-        EmbeddingModel: {
-            BGESmallENV15: "BGE-small-en-v1.5",
-        },
-    };
-});
-
-// Mock fetch for remote embedding calls
-global.fetch = vi.fn();
+// Mock global fetch for remote embedding requests
+const mockFetch = vi.fn();
+(global as any).fetch = mockFetch;
 
 describe("Embedding Module", () => {
     let mockRuntime: IAgentRuntime;
 
     beforeEach(() => {
-        // Reset all mocks
-        vi.clearAllMocks();
-        
-        // Reset settings
-        vi.mocked(settings).USE_OPENAI_EMBEDDING = "false";
-        
         // Prepare a mock runtime
         mockRuntime = {
-            agentId: "00000000-0000-0000-0000-000000000000" as `${string}-${string}-${string}-${string}-${string}`,
-            serverUrl: "http://test-server",
-            token: "test-token",
-            modelProvider: ModelProviderName.OPENAI,
-            imageModelProvider: ModelProviderName.OPENAI,
-            imageVisionModelProvider: ModelProviderName.OPENAI,
-            providers: [],
-            actions: [],
-            evaluators: [],
-            plugins: [],
             character: {
-                modelProvider: ModelProviderName.OPENAI,
-                name: "Test Character",
-                username: "test",
-                bio: ["Test bio"],
-                lore: ["Test lore"],
-                messageExamples: [],
+                modelProvider: ModelProviderName.OLLAMA,
+                modelEndpointOverride: null,
             },
-            getModelProvider: () => ({
-                apiKey: "test-key",
-                endpoint: "test-endpoint",
-                provider: ModelProviderName.OPENAI,
-                models: {
-                    [ModelClass.EMBEDDING]: {
-                        name: "text-embedding-3-small",
-                        dimensions: 1536
-                    }
-                },
-            }),
-            getSetting: (key: string) => {
-                const settings = {
-                    USE_OPENAI_EMBEDDING: "false",
-                    PROVIDER_ENDPOINT: "https://api.openai.com/v1",
-                    PROVIDER_API_KEY: "test-key"
-                };
-                return settings[key as keyof typeof settings] || "";
-            },
+            token: "mock-token",
             messageManager: {
-                getCachedEmbeddings: vi.fn().mockResolvedValue([])
-            }
+                getCachedEmbeddings: vi.fn().mockResolvedValue([]),
+            },
         } as unknown as IAgentRuntime;
 
-        // Reset fetch mock with proper Response object
-        const mockResponse = {
-            ok: true,
-            json: async () => ({
-                data: [{ embedding: new Array(384).fill(0.1) }],
-            }),
-            headers: new Headers(),
-            redirected: false,
-            status: 200,
-            statusText: "OK",
-            type: "basic",
-            url: "https://api.openai.com/v1/embeddings",
-            body: null,
-            bodyUsed: false,
-            clone: () => ({} as Response),
-            arrayBuffer: async () => new ArrayBuffer(0),
-            blob: async () => new Blob(),
-            formData: async () => new FormData(),
-            text: async () => ""
-        } as Response;
-
-        vi.mocked(global.fetch).mockReset();
-        vi.mocked(global.fetch).mockResolvedValue(mockResponse);
+        vi.clearAllMocks();
+        mockFetch.mockReset();
     });
 
     describe("getEmbeddingConfig", () => {
-        test("should return OpenAI config by default", () => {
+        test("should return BGE config by default", () => {
             const config = getEmbeddingConfig();
-            expect(config.provider).toBe(EmbeddingProvider.OpenAI);
-            expect(config.model).toBe("text-embedding-3-small");
-            expect(config.dimensions).toBe(1536);
+            expect(config.dimensions).toBe(384);
+            expect(config.model).toBe("BGE-small-en-v1.5");
+            expect(config.provider).toBe("BGE");
         });
 
-        test("should use runtime provider when available", () => {
-            const mockModelProvider = {
-                provider: EmbeddingProvider.OpenAI,
-                models: {
-                    [ModelClass.EMBEDDING]: {
-                        name: "text-embedding-3-small",
-                        dimensions: 1536
-                    }
-                }
-            };
-
-            const runtime = {
-                getModelProvider: () => mockModelProvider
-            } as unknown as IAgentRuntime;
-
-            const config = getEmbeddingConfig(runtime);
-            expect(config.provider).toBe(EmbeddingProvider.OpenAI);
-            expect(config.model).toBe("text-embedding-3-small");
+        test("should return OpenAI config when USE_OPENAI_EMBEDDING is true", () => {
+            vi.mocked(settings).USE_OPENAI_EMBEDDING = "true";
+            const config = getEmbeddingConfig();
             expect(config.dimensions).toBe(1536);
+            expect(config.model).toBe("text-embedding-3-small");
+            expect(config.provider).toBe("OpenAI");
         });
     });
 
     describe("getEmbeddingType", () => {
-        test("should return 'local' by default", () => {
+        test("should return 'remote' for Ollama provider", () => {
             const type = getEmbeddingType(mockRuntime);
-            expect(type).toBe("local");
+            expect(type).toBe("remote");
         });
 
-        test("should return 'remote' when using OpenAI", () => {
-            const runtimeWithOpenAI = {
-                ...mockRuntime,
-                getSetting: (key: string) => {
-                    if (key === "USE_OPENAI_EMBEDDING") return "true";
-                    return mockRuntime.getSetting(key);
-                },
-            } as IAgentRuntime;
-
-            const type = getEmbeddingType(runtimeWithOpenAI);
+        test("should return 'remote' for OpenAI provider", () => {
+            mockRuntime.character.modelProvider = ModelProviderName.OPENAI;
+            const type = getEmbeddingType(mockRuntime);
             expect(type).toBe("remote");
         });
     });
@@ -186,6 +93,8 @@ describe("Embedding Module", () => {
     describe("getEmbeddingZeroVector", () => {
         beforeEach(() => {
             vi.mocked(settings).USE_OPENAI_EMBEDDING = "false";
+            vi.mocked(settings).USE_OLLAMA_EMBEDDING = "false";
+            vi.mocked(settings).USE_GAIANET_EMBEDDING = "false";
         });
 
         test("should return 384-length zero vector by default (BGE)", () => {
@@ -203,6 +112,17 @@ describe("Embedding Module", () => {
     });
 
     describe("embed function", () => {
+        beforeEach(() => {
+            // Mock a successful remote response with an example 384-dim embedding
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () =>
+                    Promise.resolve({
+                        data: [{ embedding: new Array(384).fill(0.1) }],
+                    }),
+            });
+        });
+
         test("should return an empty array for empty input text", async () => {
             const result = await embed(mockRuntime, "");
             expect(result).toEqual([]);
@@ -218,61 +138,57 @@ describe("Embedding Module", () => {
             expect(result).toBe(cachedEmbedding);
         });
 
-        test("should handle local embedding successfully", async () => {
+        test("should handle local embedding successfully (fastembed fallback)", async () => {
+            // By default, it tries local first if in Node.
+            // Then uses the mock fastembed response above.
             const result = await embed(mockRuntime, "test input");
             expect(result).toHaveLength(384);
             expect(result.every((v) => typeof v === "number")).toBe(true);
         });
 
-        test("should handle remote embedding successfully", async () => {
-            // Force remote embedding
-            const runtimeWithOpenAI = {
-                ...mockRuntime,
-                getSetting: (key: string) => {
-                    if (key === "USE_OPENAI_EMBEDDING") return "true";
-                    return mockRuntime.getSetting(key);
-                },
-                getModelProvider: () => ({
-                    ...mockRuntime.getModelProvider(),
-                    provider: EmbeddingProvider.OpenAI,
-                    models: {
-                        [ModelClass.EMBEDDING]: {
-                            name: "text-embedding-3-small",
-                            dimensions: 1536
-                        }
-                    }
-                })
-            } as IAgentRuntime;
-            
-            const result = await embed(runtimeWithOpenAI, "test input");
+        test("should fallback to remote if local embedding fails", async () => {
+            // Force fastembed import to fail
+            vi.mock("fastembed", () => {
+                throw new Error("Module not found");
+            });
+
+            // Mock a valid remote response
+            const mockResponse = {
+                ok: true,
+                json: () =>
+                    Promise.resolve({
+                        data: [{ embedding: new Array(384).fill(0.1) }],
+                    }),
+            };
+            mockFetch.mockResolvedValueOnce(mockResponse);
+
+            const result = await embed(mockRuntime, "test input");
             expect(result).toHaveLength(384);
-            expect(vi.mocked(global.fetch)).toHaveBeenCalled();
+            expect(mockFetch).toHaveBeenCalled();
         });
 
         test("should throw on remote embedding if fetch fails", async () => {
-            // Force remote embedding
-            const runtimeWithOpenAI = {
-                ...mockRuntime,
-                getSetting: (key: string) => {
-                    if (key === "USE_OPENAI_EMBEDDING") return "true";
-                    return mockRuntime.getSetting(key);
-                },
-                getModelProvider: () => ({
-                    ...mockRuntime.getModelProvider(),
-                    provider: EmbeddingProvider.OpenAI,
-                    models: {
-                        [ModelClass.EMBEDDING]: {
-                            name: "text-embedding-3-small",
-                            dimensions: 1536
-                        }
-                    }
-                })
-            } as IAgentRuntime;
+            mockFetch.mockRejectedValueOnce(new Error("API Error"));
+            vi.mocked(settings).USE_OPENAI_EMBEDDING = "true"; // Force remote
 
-            // Mock fetch to reject
-            vi.mocked(global.fetch).mockRejectedValueOnce(new Error("API Error"));
+            await expect(embed(mockRuntime, "test input")).rejects.toThrow(
+                "API Error"
+            );
+        });
 
-            await expect(embed(runtimeWithOpenAI, "test input")).rejects.toThrow("API Error");
+        test("should throw on non-200 remote response", async () => {
+            const errorResponse = {
+                ok: false,
+                status: 400,
+                statusText: "Bad Request",
+                text: () => Promise.resolve("Invalid input"),
+            };
+            mockFetch.mockResolvedValueOnce(errorResponse);
+            vi.mocked(settings).USE_OPENAI_EMBEDDING = "true"; // Force remote
+
+            await expect(embed(mockRuntime, "test input")).rejects.toThrow(
+                "Embedding API Error"
+            );
         });
 
         test("should handle concurrent embedding requests", async () => {
@@ -280,75 +196,6 @@ describe("Embedding Module", () => {
                 .fill(null)
                 .map(() => embed(mockRuntime, "concurrent test"));
             await expect(Promise.all(promises)).resolves.toBeDefined();
-        });
-    });
-
-    // Add tests for new embedding configurations
-    describe("embedding configuration", () => {
-        test("should handle embedding provider configuration", async () => {
-            const mockModelProvider = {
-                generateText: vi.fn(),
-                generateObject: vi.fn(),
-                generateImage: vi.fn(),
-                generateEmbedding: vi.fn(),
-                provider: EmbeddingProvider.OpenAI,
-                models: {
-                    [ModelClass.EMBEDDING]: {
-                        name: "text-embedding-3-small",
-                        dimensions: 1536
-                    }
-                },
-                getModelProvider: () => mockModelProvider
-            };
-
-            const runtime = {
-                agentId: "test-agent",
-                serverUrl: "http://test.com",
-                databaseAdapter: {} as IDatabaseAdapter,
-                token: "test-token",
-                modelProvider: mockModelProvider,
-                imageModelProvider: mockModelProvider,
-                imageVisionModelProvider: mockModelProvider,
-                embeddingModelProvider: mockModelProvider,
-                getModelProvider: () => mockModelProvider,
-                settings: {
-                    USE_OPENAI_EMBEDDING: "true",
-                    USE_OLLAMA_EMBEDDING: "true",
-                    USE_GAIANET_EMBEDDING: "false",
-                    OPENAI_API_KEY: "test-key",
-                    OLLAMA_EMBEDDING_MODEL: "mxbai-embed-large",
-                }
-            } as unknown as IAgentRuntime;
-
-            const config = getEmbeddingConfig(runtime);
-            expect(config.provider).toBe(EmbeddingProvider.OpenAI);
-            expect(config.model).toBe("text-embedding-3-small");
-            expect(config.dimensions).toBe(1536);
-        });
-
-        test("should return default config when no runtime provided", () => {
-            const config = getEmbeddingConfig();
-            expect(config.provider).toBe(EmbeddingProvider.OpenAI);
-            expect(config.model).toBe("text-embedding-3-small");
-            expect(config.dimensions).toBe(1536);
-        });
-    });
-
-    describe("embedding type detection", () => {
-        test("should determine embedding type based on runtime configuration", () => {
-            const mockRuntimeRemote = {
-                ...mockRuntime,
-                getSetting: (key: string) => key === "USE_OPENAI_EMBEDDING" ? "true" : "false"
-            } as IAgentRuntime;
-
-            expect(getEmbeddingType(mockRuntimeRemote)).toBe("remote");
-
-            const mockRuntimeLocal = {
-                ...mockRuntime,
-                getSetting: (key: string) => "false"
-            } as IAgentRuntime;
-
-            expect(getEmbeddingType(mockRuntimeLocal)).toBe("local");
         });
     });
 });
