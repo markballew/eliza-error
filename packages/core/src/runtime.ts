@@ -34,7 +34,7 @@ import {
     type IDatabaseAdapter,
     type IMemoryManager,
     type IRAGKnowledgeManager,
-    type IVerifiableInferenceAdapter,
+    // type IVerifiableInferenceAdapter,
     type KnowledgeItem,
     // RAGKnowledgeItem,
     //Media,
@@ -178,7 +178,7 @@ export class AgentRuntime implements IAgentRuntime {
     cacheManager: ICacheManager;
     clients: ClientInstance[] = [];
 
-    verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+    // verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
 
     registerMemoryManager(manager: IMemoryManager): void {
         if (!manager.tableName) {
@@ -261,7 +261,7 @@ export class AgentRuntime implements IAgentRuntime {
         speechModelPath?: string;
         cacheManager?: ICacheManager;
         logging?: boolean;
-        verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
+        // verifiableInferenceAdapter?: IVerifiableInferenceAdapter;
     }) {
         // use the character id if it exists, otherwise use the agentId if it is passed in, otherwise use the character name
         this.agentId =
@@ -439,7 +439,7 @@ export class AgentRuntime implements IAgentRuntime {
             this.registerEvaluator(evaluator);
         });
 
-        this.verifiableInferenceAdapter = opts.verifiableInferenceAdapter;
+        // this.verifiableInferenceAdapter = opts.verifiableInferenceAdapter;
     }
 
     private async initializeDatabase() {
@@ -1138,7 +1138,7 @@ export class AgentRuntime implements IAgentRuntime {
             runtime: this,
             context,
             modelClass: ModelClass.SMALL,
-            verifiableInferenceAdapter: this.verifiableInferenceAdapter,
+            // verifiableInferenceAdapter: this.verifiableInferenceAdapter,
         });
 
         const evaluators = parseJsonArrayFromText(
@@ -1189,8 +1189,14 @@ export class AgentRuntime implements IAgentRuntime {
                 id: userId,
                 name: name || this.character.name || "Unknown User",
                 username: userName || this.character.username || "Unknown",
-                email: email || this.character.email || userId, // Temporary
-                details: this.character || { summary: "" },
+                // TODO: We might not need these account pieces
+                email: email || this.character.email || userId,
+                // When invoke ensureUserExists and saving account.details
+                // Performing a complete JSON.stringify on character will cause a TypeError: Converting circular structure to JSON error in some more complex plugins.
+                details: this.character ? Object.assign({}, this.character, {
+                    source,
+                    plugins: this.character?.plugins?.map((plugin) => plugin.name),
+                }) : { summary: "" },
             });
             elizaLogger.success(`User ${userName} created successfully.`);
         }
@@ -1782,14 +1788,6 @@ Text: ${attachment.text}
             recentMessagesData,
             attachments: formattedAttachments,
         } as State;
-    }
-
-    getVerifiableInferenceAdapter(): IVerifiableInferenceAdapter | undefined {
-        return this.verifiableInferenceAdapter;
-    }
-
-    setVerifiableInferenceAdapter(adapter: IVerifiableInferenceAdapter): void {
-        this.verifiableInferenceAdapter = adapter;
     }
 }
 
