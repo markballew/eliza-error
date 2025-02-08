@@ -1,4 +1,3 @@
-import type { ActionResponse } from "./types.ts";
 const jsonBlockPattern = /```json\n([\s\S]*?)\n```/;
 
 export const messageCompletionFooter = `\nResponse format should be formatted in a valid JSON block like this:
@@ -86,7 +85,7 @@ export function parseJsonArrayFromText(text: string) {
     let jsonData = null;
 
     // First try to parse with the original JSON format
-    const jsonBlockMatch = text.match(jsonBlockPattern);
+    const jsonBlockMatch = text?.match(jsonBlockPattern);
 
     if (jsonBlockMatch) {
         try {
@@ -144,6 +143,8 @@ export function parseJSONObjectFromText(
 ): Record<string, any> | null {
     let jsonData = null;
     const jsonBlockMatch = text.match(jsonBlockPattern);
+
+    console.log("parseJsonArrayFromText", text);
 
     try {
         if (jsonBlockMatch) {
@@ -255,6 +256,13 @@ export function cleanJsonResponse(response: string): string {
 }
 
 export const postActionResponseFooter = "Choose any combination of [LIKE], [RETWEET], [QUOTE], and [REPLY] that are appropriate. Each action must be on its own line. Your response must only include the chosen actions.";
+
+type ActionResponse = {
+    like: boolean;
+    retweet: boolean;
+    quote?: boolean;
+    reply?: boolean;
+}
 
 export const parseActionResponseFromText = (
     text: string

@@ -1,10 +1,14 @@
-import { type Character, ModelProviderName } from "@elizaos/core";
+import { type Character } from "@elizaos/core";
+import { openaiPlugin } from "@elizaos/plugin-openai";
+import { anthropicPlugin } from "@elizaos/plugin-anthropic";
 
 export const defaultCharacter: Character = {
     name: "Eliza",
     username: "eliza",
-    plugins: [],
-    modelProvider: ModelProviderName.OPENAI,
+    plugins: [
+        anthropicPlugin,
+        openaiPlugin,
+    ],
     settings: {
         secrets: {},
         voice: {

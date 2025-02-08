@@ -1,32 +1,26 @@
+import {
+    composeContext,
+    logger,
+    generateCaption,
+    generateImage,
+    generateMessageResponse,
+    generateObject,
+    messageCompletionFooter,
+    ModelType,
+    stringToUuid,
+    type Content,
+    type Media,
+    type Memory,
+    type IAgentRuntime
+} from "@elizaos/core";
 import bodyParser from "body-parser";
 import cors from "cors";
 import express, { type Request as ExpressRequest } from "express";
 import multer from "multer";
-import { z } from "zod";
-import {
-    type AgentRuntime,
-    elizaLogger,
-    messageCompletionFooter,
-    generateCaption,
-    generateImage,
-    type Media,
-    getEmbeddingZeroVector,
-    composeContext,
-    generateMessageResponse,
-    generateObject,
-    type Content,
-    type Memory,
-    ModelClass,
-    type Client,
-    stringToUuid,
-    settings,
-    type IAgentRuntime,
-    type Plugin,
-} from "@elizaos/core";
-import { createApiRouter } from "./api.ts";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import OpenAI from "openai";
+import { z } from "zod";
+import { createApiRouter } from "./api.ts";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -110,14 +104,14 @@ Response format should be formatted in a JSON block like this:
 
 export class CharacterServer {
     public app: express.Application;
-    private agents: Map<string, AgentRuntime>; // container management
+    private agents: Map<string, IAgentRuntime>; // container management
     private server: any; // Store server instance
     public startAgent: Function; // Store startAgent functor
     public loadCharacterTryPath: Function; // Store loadCharacterTryPath functor
     public jsonToCharacter: Function; // Store jsonToCharacter functor
 
     constructor() {
-        elizaLogger.log("DirectClient constructor");
+        logger.log("DirectClient constructor");
         this.app = express();
         this.app.use(cors());
         this.agents = new Map();
@@ -157,7 +151,6 @@ export class CharacterServer {
                 }
 
                 let runtime = this.agents.get(agentId);
-                const apiKey = runtime.getSetting("OPENAI_API_KEY");
 
                 // if runtime is null, look for runtime with the same name
                 if (!runtime) {
@@ -173,11 +166,7 @@ export class CharacterServer {
                     return;
                 }
 
-                const openai = new OpenAI({
-                    apiKey,
-                });
-
-                const transcription = await openai.audio.transcriptions.create({
+                const transcription = await runtime.call(ModelType.TRANSCRIPTION, {
                     file: fs.createReadStream(audioFile.path),
                     model: "whisper-1",
                 });
@@ -287,7 +276,7 @@ export class CharacterServer {
                 const response = await generateMessageResponse({
                     runtime: runtime,
                     context,
-                    modelClass: ModelClass.LARGE,
+                    modelType: ModelType.TEXT_LARGE,
                 });
 
                 if (!response) {
@@ -297,13 +286,15 @@ export class CharacterServer {
                     return;
                 }
 
+                const zeroVector = await runtime.call(ModelType.TEXT_EMBEDDING, text);
+
                 // save response to memory
                 const responseMessage: Memory = {
                     id: stringToUuid(`${messageId}-${runtime.agentId}`),
                     ...userMessage,
                     userId: runtime.agentId,
                     content: response,
-                    embedding: getEmbeddingZeroVector(),
+                    embedding: zeroVector,
                     createdAt: Date.now(),
                 };
 
@@ -499,7 +490,7 @@ export class CharacterServer {
                 const response = await generateObject({
                     runtime,
                     context,
-                    modelClass: ModelClass.SMALL, // 1s processing time on openai small
+                    modelType: ModelType.TEXT_SMALL,
                     schema: hyperfiOutSchema,
                 });
 
@@ -514,7 +505,7 @@ export class CharacterServer {
                 try {
                     hfOut = hyperfiOutSchema.parse(response.object);
                 } catch {
-                    elizaLogger.error(
+                    logger.error(
                         "cant serialize response",
                         response.object
                     );
@@ -658,13 +649,13 @@ export class CharacterServer {
                     assetId
                 );
 
-                elizaLogger.log("Download directory:", downloadDir);
+                logger.log("Download directory:", downloadDir);
 
                 try {
-                    elizaLogger.log("Creating directory...");
+                    logger.log("Creating directory...");
                     await fs.promises.mkdir(downloadDir, { recursive: true });
 
-                    elizaLogger.log("Fetching file...");
+                    logger.log("Fetching file...");
                     const fileResponse = await fetch(
                         `https://api.bageldb.ai/api/v1/asset/${assetId}/download`,
                         {
@@ -680,7 +671,7 @@ export class CharacterServer {
                         );
                     }
 
-                    elizaLogger.log("Response headers:", fileResponse.headers);
+                    logger.log("Response headers:", fileResponse.headers);
 
                     const fileName =
                         fileResponse.headers
@@ -688,19 +679,19 @@ export class CharacterServer {
                             ?.split("filename=")[1]
                             ?.replace(/"/g, /* " */ "") || "default_name.txt";
 
-                    elizaLogger.log("Saving as:", fileName);
+                    logger.log("Saving as:", fileName);
 
                     const arrayBuffer = await fileResponse.arrayBuffer();
                     const buffer = Buffer.from(arrayBuffer);
 
                     const filePath = path.join(downloadDir, fileName);
-                    elizaLogger.log("Full file path:", filePath);
+                    logger.log("Full file path:", filePath);
 
                     await fs.promises.writeFile(filePath, buffer);
 
                     // Verify file was written
                     const stats = await fs.promises.stat(filePath);
-                    elizaLogger.log(
+                    logger.log(
                         "File written successfully. Size:",
                         stats.size,
                         "bytes"
@@ -715,7 +706,7 @@ export class CharacterServer {
                         fileSize: stats.size,
                     });
                 } catch (error) {
-                    elizaLogger.error("Detailed error:", error);
+                    logger.error("Detailed error:", error);
                     res.status(500).json({
                         error: "Failed to download files from BagelDB",
                         details: error.message,
@@ -802,7 +793,7 @@ export class CharacterServer {
                 const response = await generateMessageResponse({
                     runtime: runtime,
                     context,
-                    modelClass: ModelClass.LARGE,
+                    modelType: ModelType.TEXT_LARGE,
                 });
 
                 // save response to memory
@@ -835,42 +826,9 @@ export class CharacterServer {
                 // Get the text to convert to speech
                 const textToSpeak = response.text;
 
-                // Convert to speech using ElevenLabs
-                const elevenLabsApiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}`;
-                const apiKey = process.env.ELEVENLABS_XI_API_KEY;
-
-                if (!apiKey) {
-                    throw new Error("ELEVENLABS_XI_API_KEY not configured");
-                }
-
-                const speechResponse = await fetch(elevenLabsApiUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "xi-api-key": apiKey,
-                    },
-                    body: JSON.stringify({
-                        text: textToSpeak,
-                        model_id:
-                            process.env.ELEVENLABS_MODEL_ID ||
-                            "eleven_multilingual_v2",
-                        voice_settings: {
-                            stability: Number.parseFloat(
-                                process.env.ELEVENLABS_VOICE_STABILITY || "0.5"
-                            ),
-                            similarity_boost: Number.parseFloat(
-                                process.env.ELEVENLABS_VOICE_SIMILARITY_BOOST ||
-                                    "0.9"
-                            ),
-                            style: Number.parseFloat(
-                                process.env.ELEVENLABS_VOICE_STYLE || "0.66"
-                            ),
-                            use_speaker_boost:
-                                process.env
-                                    .ELEVENLABS_VOICE_USE_SPEAKER_BOOST ===
-                                "true",
-                        },
-                    }),
+                const speechResponse = await runtime.call(ModelType.TRANSCRIPTION, {
+                    text: textToSpeak,
+                    runtime,
                 });
 
                 if (!speechResponse.ok) {
@@ -889,7 +847,7 @@ export class CharacterServer {
 
                 res.send(Buffer.from(audioBuffer));
             } catch (error) {
-                elizaLogger.error(
+                logger.error(
                     "Error processing message or generating speech:",
                     error
                 );
@@ -962,7 +920,7 @@ export class CharacterServer {
 
                 res.send(Buffer.from(audioBuffer));
             } catch (error) {
-                elizaLogger.error(
+                logger.error(
                     "Error processing message or generating speech:",
                     error
                 );
@@ -975,34 +933,34 @@ export class CharacterServer {
     }
 
     // agent/src/index.ts:startAgent calls this
-    public registerAgent(runtime: AgentRuntime) {
+    public registerAgent(runtime: IAgentRuntime) {
         // register any plugin endpoints?
         // but once and only once
         this.agents.set(runtime.agentId, runtime);
     }
 
-    public unregisterAgent(runtime: AgentRuntime) {
+    public unregisterAgent(runtime: IAgentRuntime) {
         this.agents.delete(runtime.agentId);
     }
 
     public start(port: number) {
         this.server = this.app.listen(port, () => {
-            elizaLogger.success(
+            logger.success(
                 `REST API bound to 0.0.0.0:${port}. If running locally, access it at http://localhost:${port}.`
             );
         });
 
         // Handle graceful shutdown
         const gracefulShutdown = () => {
-            elizaLogger.log("Received shutdown signal, closing server...");
+            logger.log("Received shutdown signal, closing server...");
             this.server.close(() => {
-                elizaLogger.success("Server closed successfully");
+                logger.success("Server closed successfully");
                 process.exit(0);
             });
 
             // Force close after 5 seconds if server hasn't closed
             setTimeout(() => {
-                elizaLogger.error(
+                logger.error(
                     "Could not close connections in time, forcefully shutting down"
                 );
                 process.exit(1);
@@ -1017,7 +975,7 @@ export class CharacterServer {
     public async stop() {
         if (this.server) {
             this.server.close(() => {
-                elizaLogger.success("Server stopped");
+                logger.success("Server stopped");
             });
         }
     }

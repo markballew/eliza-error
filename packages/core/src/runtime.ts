@@ -1,9 +1,6 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
 import { v4 as uuidv4 } from "uuid";
-import { existsSync } from "node:fs";
-import { glob } from "glob";
 import {
     composeActionExamples,
     formatActionNames,
@@ -18,48 +15,35 @@ import {
 } from "./evaluators.ts";
 import { generateText } from "./generation.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { elizaLogger } from "./index.ts";
+import { logger } from "./index.ts";
 import knowledge from "./knowledge.ts";
 import { MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
 import { parseJsonArrayFromText } from "./parsing.ts";
 import { formatPosts } from "./posts.ts";
 import { getProviders } from "./providers.ts";
-import { RAGKnowledgeManager } from "./ragknowledge.ts";
 import settings from "./settings.ts";
 import {
+    type Action,
+    type Actor,
+    type Adapter,
     type Character,
+    type ClientInstance,
+    type DirectoryItem,
+    type Evaluator,
     type Goal,
     type HandlerCallback,
     type IAgentRuntime,
     type ICacheManager,
     type IDatabaseAdapter,
     type IMemoryManager,
-    type IRAGKnowledgeManager,
     type KnowledgeItem,
-    ModelClass,
-    type ModelProviderName,
+    type Memory,
+    ModelType,
     type Plugin,
     type Provider,
-    type Service,
-    type ServiceType,
     type State,
-    type UUID,
-    type Action,
-    type Actor,
-    type Evaluator,
-    type Memory,
-    type DirectoryItem,
-    type IModelProvider,
-    type ModelSettings,
-    type ImageModelSettings,
-    type EmbeddingModelSettings,
-    type ActionResponse,
-    type Content,
-    type IImageDescriptionService,
-    type TelemetrySettings,
-    type ClientInstance,
-    type Adapter,
+    type UUID
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 
@@ -92,7 +76,7 @@ class KnowledgeManager {
     }
 
     private async handleProcessingError(error: any, context: string) {
-        elizaLogger.error(
+        logger.error(
             `Error ${context}:`,
             error?.message || error || "Unknown error"
         );
@@ -112,7 +96,7 @@ class KnowledgeManager {
                     continue;
                 }
 
-                elizaLogger.info(
+                logger.info(
                     "Processing knowledge for ",
                     this.runtime.character.name,
                     " - ",
@@ -130,467 +114,6 @@ class KnowledgeManager {
             }
         }
     }
-
-    async processCharacterRAGKnowledge(items: (string | { path: string; shared?: boolean })[]) {
-        let hasError = false;
-
-        for (const item of items) {
-            if (!item) continue;
-
-            try {
-                const { contentItem, isShared } = this.parseKnowledgeItem(item);
-                const knowledgeId = this.runtime.ragKnowledgeManager.generateScopedId(
-                    contentItem,
-                    isShared,
-                );
-                const fileExtension = this.getFileExtension(contentItem);
-
-                if (fileExtension && ["md", "txt", "pdf"].includes(fileExtension)) {
-                    await this.processFile(contentItem, isShared, knowledgeId, fileExtension);
-                } else {
-                    await this.processDirectKnowledge(contentItem, knowledgeId);
-                }
-            } catch (error: any) {
-                hasError = true;
-                await this.handleProcessingError(error, `processing knowledge item ${item}`);
-            }
-        }
-
-        if (hasError) {
-            elizaLogger.warn(
-                "Some knowledge items failed to process, but continuing with available knowledge",
-            );
-        }
-    }
-
-    private parseKnowledgeItem(item: string | { path: string; shared?: boolean }): { contentItem: string; isShared: boolean } {
-        if (typeof item === "object" && "path" in item) {
-            return {
-                isShared: item.shared === true,
-                contentItem: item.path
-            };
-        }
-        return {
-            isShared: false,
-            contentItem: item as string
-        };
-    }
-
-    private getFileExtension(path: string): string | null {
-        return path.split(".").pop()?.toLowerCase() || null;
-    }
-
-    private async processFile(path: string, isShared: boolean, knowledgeId: UUID, fileExtension: string) {
-        try {
-            const filePath = join(this.knowledgeRoot, path);
-            const content: string = await readFile(filePath, "utf8");
-            
-            if (!content) {
-                throw new Error("Empty file content");
-            }
-
-            const existingKnowledge = await this.runtime.ragKnowledgeManager.getKnowledge({
-                id: knowledgeId,
-                agentId: this.runtime.agentId,
-            });
-
-            if (existingKnowledge.length > 0) {
-                await this.handleExistingKnowledge(existingKnowledge[0], content, path, isShared);
-                return;
-            }
-
-            elizaLogger.info(
-                `Processing ${fileExtension.toUpperCase()} file content for`,
-                this.runtime.character.name,
-                "-",
-                path,
-            );
-
-            await this.runtime.ragKnowledgeManager.processFile({
-                path,
-                content,
-                type: fileExtension as "pdf" | "md" | "txt",
-                isShared,
-            });
-        } catch (error) {
-            await this.handleProcessingError(error, "processing file");
-        }
-    }
-
-    private async handleExistingKnowledge(existingKnowledge: any, newContent: string, path: string, isShared: boolean) {
-        const existingContent = existingKnowledge.content.text;
-        if (existingContent === newContent) {
-            elizaLogger.info(
-                `${isShared ? "Shared knowledge" : "Knowledge"} ${path} unchanged, skipping`,
-            );
-            return;
-        }
-
-        elizaLogger.info(
-            `${isShared ? "Shared knowledge" : "Knowledge"} ${path} changed, updating...`,
-        );
-        
-        const knowledgeId = existingKnowledge.id;
-        await this.runtime.ragKnowledgeManager.removeKnowledge(knowledgeId);
-        await this.runtime.ragKnowledgeManager.removeKnowledge(`${knowledgeId}-chunk-*` as UUID);
-    }
-
-    private async processDirectKnowledge(content: string, knowledgeId: UUID) {
-        elizaLogger.info(
-            "Processing direct knowledge for",
-            this.runtime.character.name,
-            "-",
-            content.slice(0, 100),
-        );
-
-        const existingKnowledge = await this.runtime.ragKnowledgeManager.getKnowledge({
-            id: knowledgeId,
-            agentId: this.runtime.agentId,
-        });
-
-        if (existingKnowledge.length > 0) {
-            elizaLogger.info(
-                `Direct knowledge ${knowledgeId} already exists, skipping`,
-            );
-            return;
-        }
-
-        await this.runtime.ragKnowledgeManager.createKnowledge({
-            id: knowledgeId,
-            agentId: this.runtime.agentId,
-            content: {
-                text: content,
-                metadata: {
-                    type: "direct",
-                },
-            },
-        });
-    }
-
-    async processCharacterRAGDirectory(dirConfig: { directory: string; shared?: boolean }) {
-        if (!dirConfig.directory) {
-            elizaLogger.error("[RAG Directory] No directory specified");
-            return;
-        }
-
-        const sanitizedDir = dirConfig.directory.replace(/\.\./g, "");
-        const dirPath = join(this.knowledgeRoot, sanitizedDir);
-
-        try {
-            if (!existsSync(dirPath)) {
-                elizaLogger.error(
-                    `[RAG Directory] Directory does not exist: ${sanitizedDir}`,
-                );
-                return;
-            }
-
-            elizaLogger.debug(`[RAG Directory] Searching in: ${dirPath}`);
-            const files = await glob("**/*.{md,txt,pdf}", {
-                cwd: dirPath,
-                nodir: true,
-                absolute: false,
-            });
-
-            if (files.length === 0) {
-                elizaLogger.warn(
-                    `No matching files found in directory: ${dirConfig.directory}`,
-                );
-                return;
-            }
-
-            elizaLogger.info(
-                `[RAG Directory] Found ${files.length} files in ${dirConfig.directory}`,
-            );
-
-            const BATCH_SIZE = 5;
-            for (let i = 0; i < files.length; i += BATCH_SIZE) {
-                const batch = files.slice(i, i + BATCH_SIZE);
-                await this.processBatch(batch, sanitizedDir, dirConfig.shared);
-                elizaLogger.debug(
-                    `[RAG Directory] Completed batch ${Math.min(i + BATCH_SIZE, files.length)}/${files.length} files`,
-                );
-            }
-
-            elizaLogger.success(
-                `[RAG Directory] Successfully processed directory: ${sanitizedDir}`,
-            );
-        } catch (error) {
-            elizaLogger.error(
-                `[RAG Directory] Failed to process directory: ${sanitizedDir}`,
-                error instanceof Error
-                    ? {
-                        name: error.name,
-                        message: error.message,
-                        stack: error.stack,
-                    }
-                    : error,
-            );
-            throw error;
-        }
-    }
-
-    private async processBatch(batch: string[], sanitizedDir: string, shared?: boolean) {
-        await Promise.all(
-            batch.map(async (file) => {
-                try {
-                    const relativePath = join(sanitizedDir, file);
-                    elizaLogger.debug(
-                        "[RAG Directory] Processing file:",
-                        {
-                            file,
-                            relativePath,
-                            shared,
-                        },
-                    );
-
-                    await this.processCharacterRAGKnowledge([
-                        {
-                            path: relativePath,
-                            shared,
-                        },
-                    ]);
-                } catch (error) {
-                    elizaLogger.error(
-                        `[RAG Directory] Failed to process file: ${file}`,
-                        error instanceof Error
-                            ? {
-                                name: error.name,
-                                message: error.message,
-                                stack: error.stack,
-                            }
-                            : error,
-                    );
-                }
-            }),
-        );
-    }
-}
-
-/**
- * Manages model provider settings and configuration
- */
-class ModelProviderManager {
-    private runtime: AgentRuntime;
-
-    constructor(runtime: AgentRuntime) {
-        this.runtime = runtime;
-    }
-
-    private getSetting(key: string): string | undefined {
-        return this.runtime.getSetting(key);
-    }
-
-    private parseNumber(value: string | undefined, defaultValue: number): number {
-        if (!value) return defaultValue;
-        const parsed = Number(value);
-        return Number.isNaN(parsed) ? defaultValue : parsed;
-    }
-
-    private parseStringArray(value: string | undefined, delimiter = ','): string[] {
-        return value ? value.split(delimiter) : [];
-    }
-
-    private getModelSettingsForClass(modelClass: ModelClass, defaultSettings: ModelSettings): ModelSettings | undefined {
-        const prefix = modelClass.toUpperCase();
-        const modelName = this.getSetting(`${prefix}_MODEL`);
-
-        elizaLogger.debug(`[getModelSettingsForClass] Loading settings for ${modelClass}:`, {
-            modelName,
-            settingKey: `${prefix}_MODEL`,
-            allSettings: {
-                model: modelName,
-                maxInputTokens: this.getSetting(`${prefix}_MAX_INPUT_TOKENS`),
-                maxOutputTokens: this.getSetting(`${prefix}_MAX_OUTPUT_TOKENS`),
-                temperature: this.getSetting(`${prefix}_TEMPERATURE`),
-                stop: this.getSetting(`${prefix}_STOP_SEQUENCES`),
-                frequencyPenalty: this.getSetting(`${prefix}_FREQUENCY_PENALTY`),
-                presencePenalty: this.getSetting(`${prefix}_PRESENCE_PENALTY`),
-                repetitionPenalty: this.getSetting(`${prefix}_REPETITION_PENALTY`)
-            }
-        });
-
-        if (!modelName) {
-            elizaLogger.debug(`No model name found for ${modelClass}`);
-            return undefined;
-        }
-
-        return {
-            name: modelName,
-            maxInputTokens: this.parseNumber(
-                this.getSetting(`${prefix}_MAX_INPUT_TOKENS`), 
-                defaultSettings.maxInputTokens
-            ),
-            maxOutputTokens: this.parseNumber(
-                this.getSetting(`${prefix}_MAX_OUTPUT_TOKENS`), 
-                defaultSettings.maxOutputTokens
-            ),
-            temperature: this.parseNumber(
-                this.getSetting(`${prefix}_TEMPERATURE`), 
-                defaultSettings.temperature
-            ),
-            stop: this.parseStringArray(
-                this.getSetting(`${prefix}_STOP_SEQUENCES`)
-            ) || defaultSettings.stop,
-            frequency_penalty: this.parseNumber(
-                this.getSetting(`${prefix}_FREQUENCY_PENALTY`), 
-                defaultSettings.frequency_penalty
-            ),
-            presence_penalty: this.parseNumber(
-                this.getSetting(`${prefix}_PRESENCE_PENALTY`), 
-                defaultSettings.presence_penalty
-            ),
-            repetition_penalty: this.parseNumber(
-                this.getSetting(`${prefix}_REPETITION_PENALTY`), 
-                defaultSettings.repetition_penalty
-            )
-        };
-    }
-
-    private getSpecializedModelSettings(modelClass: ModelClass, defaultSettings: ModelSettings): ModelSettings | undefined {
-        if (modelClass === ModelClass.DEFAULT) {
-            return defaultSettings;
-        }
-        return this.getModelSettingsForClass(modelClass, defaultSettings);
-    }
-
-    private getImageModelSettings(): ImageModelSettings | undefined {
-        const modelName = this.getSetting("IMAGE_MODEL");
-        if (!modelName) return undefined;
-
-        return {
-            name: modelName,
-            steps: this.parseNumber(this.getSetting("IMAGE_STEPS"), 50)
-        };
-    }
-
-    private getEmbeddingModelSettings(): EmbeddingModelSettings | undefined {
-        const modelName = this.getSetting("EMBEDDING_MODEL");
-        if (!modelName) return undefined;
-
-        return {
-            name: modelName,
-            dimensions: this.parseNumber(this.getSetting("EMBEDDING_DIMENSIONS"), 1536)
-        };
-    }
-
-    getModelProvider(): IModelProvider {
-        const defaultModelSettings = this.getModelSettingsForClass(ModelClass.DEFAULT, {
-            name: "gpt-4",
-            maxInputTokens: 4096,
-            maxOutputTokens: 1024,
-            temperature: 0.7,
-            stop: [],
-            frequency_penalty: 0,
-            presence_penalty: 0,
-            repetition_penalty: 1.0
-        }) || {
-            name: "gpt-4",
-            maxInputTokens: 4096,
-            maxOutputTokens: 1024,
-            temperature: 0.7,
-            stop: [],
-            frequency_penalty: 0,
-            presence_penalty: 0,
-            repetition_penalty: 1.0
-        };
-
-        const modelClasses = [
-            ModelClass.DEFAULT,
-            ModelClass.SMALL,
-            ModelClass.MEDIUM,
-            ModelClass.LARGE,
-            ModelClass.IMAGE_VISION
-        ];
-
-        const modelSettings = {
-            ...Object.fromEntries(
-                modelClasses.map(modelClass => [
-                    modelClass,
-                    this.getSpecializedModelSettings(modelClass, defaultModelSettings)
-                ])
-            ),
-            [ModelClass.EMBEDDING]: this.getEmbeddingModelSettings(),
-            [ModelClass.IMAGE]: this.getImageModelSettings(),
-        } as Record<ModelClass, ModelSettings | ImageModelSettings | EmbeddingModelSettings | undefined>;
-
-        // Log model configurations for debugging
-        elizaLogger.debug("Model configurations:", {
-            provider: this.getSetting("PROVIDER_NAME"),
-            endpoint: this.getSetting("PROVIDER_ENDPOINT"),
-            models: Object.fromEntries(
-                Object.entries(modelSettings)
-                    .filter(([_, value]) => value !== undefined)
-                    .map(([key, value]) => [key, value.name])
-            )
-        });
-
-        return {
-            apiKey: this.getSetting("PROVIDER_API_KEY"),
-            endpoint: this.getSetting("PROVIDER_ENDPOINT"),
-            provider: this.getSetting("PROVIDER_NAME"),
-            models: modelSettings as Record<ModelClass, ModelSettings>
-        };
-    }
-}
-
-/**
- * Manages services and their lifecycle
- */
-class ServiceManager {
-    private runtime: AgentRuntime;
-    private services: Map<ServiceType, Service>;
-
-    constructor(runtime: AgentRuntime) {
-        this.runtime = runtime;
-        this.services = new Map();
-    }
-
-    async registerService(service: Service): Promise<void> {
-        const serviceType = service.serviceType;
-        elizaLogger.log(`${this.runtime.character.name}(${this.runtime.agentId}) - Registering service:`, serviceType);
-
-        if (this.services.has(serviceType)) {
-            elizaLogger.warn(
-                `${this.runtime.character.name}(${this.runtime.agentId}) - Service ${serviceType} is already registered. Skipping registration.`
-            );
-            return;
-        }
-
-        // Add the service to the services map
-        this.services.set(serviceType, service);
-        elizaLogger.success(`${this.runtime.character.name}(${this.runtime.agentId}) - Service ${serviceType} registered successfully`);
-    }
-
-    getService<T extends Service>(service: ServiceType): T | null {
-        const serviceInstance = this.services.get(service);
-        if (!serviceInstance) {
-            elizaLogger.error(`Service ${service} not found`);
-            return null;
-        }
-        return serviceInstance as T;
-    }
-
-    async initializeServices(): Promise<void> {
-        for (const [serviceType, service] of this.services.entries()) {
-            try {
-                await service.initialize(this.runtime);
-                this.services.set(serviceType, service);
-                elizaLogger.success(
-                    `${this.runtime.character.name}(${this.runtime.agentId}) - Service ${serviceType} initialized successfully`
-                );
-            } catch (error) {
-                elizaLogger.error(
-                    `${this.runtime.character.name}(${this.runtime.agentId}) - Failed to initialize service ${serviceType}:`,
-                    error
-                );
-                throw error;
-            }
-        }
-    }
-
-    getAllServices(): Map<ServiceType, Service> {
-        return this.services;
-    }
 }
 
 /**
@@ -599,7 +122,6 @@ class ServiceManager {
 class MemoryManagerService {
     private runtime: IAgentRuntime;
     private memoryManagers: Map<string, IMemoryManager>;
-    private ragKnowledgeManager: IRAGKnowledgeManager;
 
     constructor(runtime: IAgentRuntime, knowledgeRoot: string) {
         this.runtime = runtime;
@@ -639,16 +161,6 @@ class MemoryManagerService {
             runtime: this.runtime,
             tableName: "fragments",
         }));
-
-        // Initialize RAG knowledge manager
-        this.ragKnowledgeManager = new RAGKnowledgeManager({
-            runtime: this.runtime,
-            tableName: "knowledge",
-            knowledgeRoot,
-        });
-        
-        // Register RAG knowledge manager in the memory managers map
-        this.memoryManagers.set("knowledge", this.ragKnowledgeManager as unknown as IMemoryManager);
     }
 
     registerMemoryManager(manager: IMemoryManager): void {
@@ -657,7 +169,7 @@ class MemoryManagerService {
         }
 
         if (this.memoryManagers.has(manager.tableName)) {
-            elizaLogger.warn(
+            logger.warn(
                 `Memory manager ${manager.tableName} is already registered. Skipping registration.`,
             );
             return;
@@ -669,7 +181,7 @@ class MemoryManagerService {
     getMemoryManager(tableName: string): IMemoryManager | null {
         const manager = this.memoryManagers.get(tableName);
         if (!manager) {
-            elizaLogger.error(`Memory manager ${tableName} not found`);
+            logger.error(`Memory manager ${tableName} not found`);
             return null;
         }
         return manager;
@@ -678,7 +190,7 @@ class MemoryManagerService {
     private getRequiredMemoryManager(tableName: string, managerType: string): IMemoryManager {
         const manager = this.getMemoryManager(tableName);
         if (!manager) {
-            elizaLogger.error(`${managerType} manager not found`);
+            logger.error(`${managerType} manager not found`);
             throw new Error(`${managerType} manager not found`);
         }
         return manager;
@@ -704,10 +216,6 @@ class MemoryManagerService {
         return this.getRequiredMemoryManager("fragments", "Knowledge");
     }
 
-    getRAGKnowledgeManager(): IRAGKnowledgeManager {
-        return this.ragKnowledgeManager;
-    }
-
     getAllManagers(): Map<string, IMemoryManager> {
         return this.memoryManagers;
     }
@@ -721,41 +229,32 @@ export class AgentRuntime implements IAgentRuntime {
     readonly #conversationLength = 32 as number;
     readonly agentId: UUID;
     readonly character: Character;
-    readonly serverUrl: string;
     public databaseAdapter!: IDatabaseAdapter;
-    readonly token: string | null;
     readonly actions: Action[] = [];
     readonly evaluators: Evaluator[] = [];
     readonly providers: Provider[] = [];
     readonly plugins: Plugin[] = [];
-    readonly modelProvider: string;
-    readonly imageModelProvider: string;
-    readonly imageVisionModelProvider: string;
-    readonly embeddingModelProvider: string;
+
     readonly fetch = fetch;
     public cacheManager!: ICacheManager;
     public clients: ClientInstance[] = [];
-    readonly services: Map<ServiceType, Service>;
     
     public adapters: Adapter[];
 
     private readonly knowledgeRoot: string;
-    private readonly modelProviderManager: ModelProviderManager;
-    private readonly serviceManager: ServiceManager;
     private readonly memoryManagerService: MemoryManagerService;
+
+    handlers = new Map<ModelType, ((params: any) => Promise<any>)[]>();
 
     constructor(opts: {
         conversationLength?: number;
         agentId?: UUID;
         character?: Character;
-        token: string;
         serverUrl?: string;
         actions?: Action[];
         evaluators?: Evaluator[];
         plugins?: Plugin[];
         providers?: Provider[];
-        modelProvider: ModelProviderName | string;
-        services?: Service[];
         managers?: IMemoryManager[];
         databaseAdapter?: IDatabaseAdapter;
         fetch?: typeof fetch;
@@ -769,15 +268,7 @@ export class AgentRuntime implements IAgentRuntime {
             stringToUuid(opts.character?.name ?? uuidv4());
         this.character = opts.character;
 
-        
-
-        elizaLogger.info(`${this.character.name}(${this.agentId}) - Initializing AgentRuntime with options:`, {
-            character: opts.character?.name,
-            modelProvider: opts.modelProvider,
-            characterModelProvider: opts.character?.modelProvider,
-        });
-
-        elizaLogger.debug(
+        logger.debug(
             `[AgentRuntime] Process working directory: ${process.cwd()}`,
         );
 
@@ -789,7 +280,7 @@ export class AgentRuntime implements IAgentRuntime {
             "knowledge",
         );
 
-        elizaLogger.debug(
+        logger.debug(
             `[AgentRuntime] Process knowledgeRoot: ${this.knowledgeRoot}`,
         );
 
@@ -800,7 +291,7 @@ export class AgentRuntime implements IAgentRuntime {
             this.databaseAdapter = opts.databaseAdapter;
         }
 
-        elizaLogger.success(`Agent ID: ${this.agentId}`);
+        logger.success(`Agent ID: ${this.agentId}`);
 
         this.fetch = (opts.fetch as typeof fetch) ?? this.fetch;
 
@@ -808,11 +299,6 @@ export class AgentRuntime implements IAgentRuntime {
             this.cacheManager = opts.cacheManager;
         }
 
-        this.services = new Map();
-
-        // Initialize managers - moved modelProviderManager initialization earlier
-        this.modelProviderManager = new ModelProviderManager(this);
-        this.serviceManager = new ServiceManager(this);
         this.memoryManagerService = new MemoryManagerService(this, this.knowledgeRoot);
         
         // Register additional memory managers from options
@@ -821,65 +307,6 @@ export class AgentRuntime implements IAgentRuntime {
                 this.registerMemoryManager(manager);
             }
         }
-
-        // Register services from options and plugins
-        if (opts.services) {
-            for (const service of opts.services) {
-                this.registerService(service);
-            }
-        }
-
-        for (const plugin of this.plugins) {
-            if (plugin.services) {
-                for (const service of plugin.services) {
-                    this.registerService(service);
-                }
-            }
-        }
-
-
-        // Now initialize properties that depend on modelProviderManager
-        this.modelProvider =
-            this.character.modelProvider ??
-            opts.modelProvider ??
-            this.getModelProvider()?.models?.[ModelClass.DEFAULT]?.name;
-
-        this.imageModelProvider =
-            this.character.imageModelProvider ?? this.modelProvider
-
-        this.imageVisionModelProvider =
-            this.character.imageVisionModelProvider ?? this.modelProvider
-
-        this.embeddingModelProvider =
-            this.character.embeddingModelProvider ?? this.modelProvider
-
-        this.serverUrl = opts.serverUrl ?? this.character?.modelEndpointOverride  ?? this.getSetting("PROVIDER_ENDPOINT");
-
-        elizaLogger.info(
-            `${this.character.name}(${this.agentId}) - Selected model providers:\n` +
-            `- Default: ${`${this.modelProvider}--${this.getModelProvider()?.models?.[ModelClass.DEFAULT]?.name}`}\n` +
-            `- Image: ${`${this.imageModelProvider}--${this.getModelProvider()?.models?.[ModelClass.IMAGE]?.name}`}\n` +
-            `- Image Vision: ${`${this.imageVisionModelProvider}--${this.getModelProvider()?.models?.[ModelClass.IMAGE_VISION]?.name}`}\n` +
-            `- Embedding: ${`${this.embeddingModelProvider}--${this.getModelProvider()?.models?.[ModelClass.EMBEDDING]?.name}`}` +
-            `- Endpoint: ${`${this.serverUrl}`}`
-        );
-
-        elizaLogger.info(
-            `${this.character.name}(${this.agentId}) - Selected [${this.serverUrl}] server url`,
-        );
-
-        // Validate model provider
-        // Must be a string containing only allowed characters: lowercase letters, digits, hyphen and underscore
-        if (typeof this.modelProvider !== "string" || !/^[a-z0-9_-]+$/.test(this.modelProvider)) {
-            elizaLogger.error("Invalid model provider:", this.modelProvider);
-            throw new Error(`Invalid model provider Name: ${this.modelProvider}`);
-        }
-
-        if (!this.serverUrl) {
-            elizaLogger.warn("No serverUrl provided, defaulting to localhost");
-        }
-
-        this.token = opts.token;
 
         this.plugins = [
             ...(opts.character?.plugins ?? []),
@@ -893,10 +320,6 @@ export class AgentRuntime implements IAgentRuntime {
 
             for (const evaluator of (plugin.evaluators ?? [])) {
                 this.registerEvaluator(evaluator);
-            }
-
-            for (const service of (plugin.services ?? [])) {
-                this.registerService(service);
             }
 
             for (const provider of (plugin.providers ?? [])) {
@@ -920,22 +343,6 @@ export class AgentRuntime implements IAgentRuntime {
         this.adapters = opts.adapters ?? [];
     }
 
-    getModelProvider(): IModelProvider {
-        return this.modelProviderManager.getModelProvider();
-    }
-
-    // Helper method to parse headers from settings
-    private parseHeaders(): Record<string, string> | undefined {
-        const customHeaders = this.getSetting("CUSTOM_HEADERS");
-        if (!customHeaders) return undefined;
-
-        try {
-            return JSON.parse(customHeaders);
-        } catch {
-            return undefined;
-        }
-    }
-
     async initialize() {
         await this.ensureRoomExists(this.agentId);
         await this.ensureUserExists(
@@ -945,115 +352,24 @@ export class AgentRuntime implements IAgentRuntime {
         );
         await this.ensureParticipantExists(this.agentId, this.agentId);
 
-        await this.serviceManager.initializeServices();
-
         if (this.character?.knowledge && this.character.knowledge.length > 0) {
-            elizaLogger.info(
-                `[RAG Check] RAG Knowledge enabled: ${!!this.character.settings.ragKnowledge}`,
+            // Non-RAG mode: only process string knowledge
+            const stringKnowledge = this.character.knowledge.filter(
+                (item): item is string => typeof item === "string",
             );
-            elizaLogger.info(
-                "[RAG Check] Knowledge items:",
-                this.character.knowledge,
-            );
-
-            if (this.character.settings.ragKnowledge) {
-                // Type guards with logging for each knowledge type
-                const [directoryKnowledge, pathKnowledge, stringKnowledge] =
-                    this.character.knowledge.reduce(
-                        (acc, item) => {
-                            if (typeof item === "object") {
-                                if (isDirectoryItem(item)) {
-                                    elizaLogger.debug(
-                                        `[RAG Filter] Found directory item: ${JSON.stringify(item)}`,
-                                    );
-                                    acc[0].push(item);
-                                } else if ("path" in item) {
-                                    elizaLogger.debug(
-                                        `[RAG Filter] Found path item: ${JSON.stringify(item)}`,
-                                    );
-                                    acc[1].push(item);
-                                }
-                            } else if (typeof item === "string") {
-                                elizaLogger.debug(
-                                    `[RAG Filter] Found string item: ${item.slice(0, 100)}...`,
-                                );
-                                acc[2].push(item);
-                            }
-                            return acc;
-                        },
-                        [[], [], []] as [
-                            Array<{ directory: string; shared?: boolean }>,
-                            Array<{ path: string; shared?: boolean }>,
-                            Array<string>,
-                        ],
-                    );
-
-                elizaLogger.info(
-                    `[RAG Summary] Found ${directoryKnowledge.length} directories, ${pathKnowledge.length} paths, and ${stringKnowledge.length} strings`,
-                );
-
-                // Process each type of knowledge
-                if (directoryKnowledge.length > 0) {
-                    elizaLogger.info(
-                        "[RAG Process] Processing directory knowledge sources:",
-                    );
-                    for (const dir of directoryKnowledge) {
-                        elizaLogger.info(
-                            `  - Directory: ${dir.directory} (shared: ${!!dir.shared})`,
-                        );
-                        await this.processCharacterRAGDirectory(dir);
-                    }
-                }
-
-                if (pathKnowledge.length > 0) {
-                    elizaLogger.info(
-                        "[RAG Process] Processing individual file knowledge sources",
-                    );
-                    await this.processCharacterRAGKnowledge(pathKnowledge);
-                }
-
-                if (stringKnowledge.length > 0) {
-                    elizaLogger.info(
-                        "[RAG Process] Processing direct string knowledge",
-                    );
-                    await this.processCharacterKnowledge(stringKnowledge);
-                }
-            } else {
-                // Non-RAG mode: only process string knowledge
-                const stringKnowledge = this.character.knowledge.filter(
-                    (item): item is string => typeof item === "string",
-                );
-                await this.processCharacterKnowledge(stringKnowledge);
-            }
-
-            // After all new knowledge is processed, clean up any deleted files
-            elizaLogger.info(
-                "[RAG Cleanup] Starting cleanup of deleted knowledge files",
-            );
-            await this.ragKnowledgeManager.cleanupDeletedKnowledgeFiles();
-            elizaLogger.info("[RAG Cleanup] Cleanup complete");
+            await this.processCharacterKnowledge(stringKnowledge);
         }
     }
 
     async stop() {
-        elizaLogger.debug("runtime::stop - character", this.character.name);
+        logger.debug("runtime::stop - character", this.character.name);
         // Loop over the array of clients directly.
         for (const client of this.clients) {
-            elizaLogger.log("runtime::stop - requesting client stop for", this.character.name);
+            logger.log("runtime::stop - requesting client stop for", this.character.name);
             client.stop(this);
         }
         // we don't need to unregister with directClient
         // don't need to worry about knowledge
-    }
-
-    private async processCharacterRAGDirectory(dirConfig: { directory: string; shared?: boolean }) {
-        const knowledgeManager = new KnowledgeManager(this, this.knowledgeRoot);
-        await knowledgeManager.processCharacterRAGDirectory(dirConfig);
-    }
-
-    private async processCharacterRAGKnowledge(items: (string | { path: string; shared?: boolean })[]) {
-        const knowledgeManager = new KnowledgeManager(this, this.knowledgeRoot);
-        await knowledgeManager.processCharacterRAGKnowledge(items);
     }
 
     private async processCharacterKnowledge(items: string[]) {
@@ -1092,7 +408,7 @@ export class AgentRuntime implements IAgentRuntime {
      * @param action The action to register.
      */
     registerAction(action: Action) {
-        elizaLogger.success(`${this.character.name}(${this.agentId}) - Registering action: ${action.name}`);
+        logger.success(`${this.character.name}(${this.agentId}) - Registering action: ${action.name}`);
         this.actions.push(action);
     }
 
@@ -1125,7 +441,7 @@ export class AgentRuntime implements IAgentRuntime {
     ): Promise<void> {
         for (const response of responses) {
             if (!response.content?.action) {
-                elizaLogger.warn("No action found in the response content.");
+                logger.warn("No action found in the response content.");
                 continue;
             }
 
@@ -1133,7 +449,7 @@ export class AgentRuntime implements IAgentRuntime {
                 .toLowerCase()
                 .replace("_", "");
 
-            elizaLogger.success(`Normalized action: ${normalizedAction}`);
+            logger.success(`Normalized action: ${normalizedAction}`);
 
             let action = this.actions.find(
                 (a: { name: string }) =>
@@ -1147,7 +463,7 @@ export class AgentRuntime implements IAgentRuntime {
             );
 
             if (!action) {
-                elizaLogger.info("Attempting to find action in similes.");
+                logger.info("Attempting to find action in similes.");
                 for (const _action of this.actions) {
                     const simileAction = _action.similes.find(
                         (simile) =>
@@ -1161,7 +477,7 @@ export class AgentRuntime implements IAgentRuntime {
                     );
                     if (simileAction) {
                         action = _action;
-                        elizaLogger.success(
+                        logger.success(
                             `Action found in similes: ${action.name}`,
                         );
                         break;
@@ -1170,7 +486,7 @@ export class AgentRuntime implements IAgentRuntime {
             }
 
             if (!action) {
-                elizaLogger.error(
+                logger.error(
                     "No action found for",
                     response.content.action,
                 );
@@ -1178,17 +494,17 @@ export class AgentRuntime implements IAgentRuntime {
             }
 
             if (!action.handler) {
-                elizaLogger.error(`Action ${action.name} has no handler.`);
+                logger.error(`Action ${action.name} has no handler.`);
                 continue;
             }
 
             try {
-                elizaLogger.info(
+                logger.info(
                     `Executing handler for action: ${action.name}`,
                 );
                 await action.handler(this, message, state, {}, callback);
             } catch (error) {
-                elizaLogger.error(error);
+                logger.error(error);
             }
         }
     }
@@ -1209,7 +525,7 @@ export class AgentRuntime implements IAgentRuntime {
     ) {
         const evaluatorPromises = this.evaluators.map(
             async (evaluator: Evaluator) => {
-                elizaLogger.log("Evaluating", evaluator.name);
+                logger.log("Evaluating", evaluator.name);
                 if (!evaluator.handler) {
                     return null;
                 }
@@ -1248,8 +564,10 @@ export class AgentRuntime implements IAgentRuntime {
         const result = await generateText({
             runtime: this,
             context,
-            modelClass: ModelClass.SMALL,
+            modelType: ModelType.TEXT_SMALL,
         });
+
+        console.log("***** result", result);
 
         const evaluators = parseJsonArrayFromText(
             result,
@@ -1302,7 +620,7 @@ export class AgentRuntime implements IAgentRuntime {
                 email: email || this.character.email || userId, // Temporary
                 details: this.character || { summary: "" },
             });
-            elizaLogger.success(`User ${userName} created successfully.`);
+            logger.success(`User ${userName} created successfully.`);
         }
     }
 
@@ -1312,11 +630,11 @@ export class AgentRuntime implements IAgentRuntime {
         if (!participants.includes(userId)) {
             await this.databaseAdapter.addParticipant(userId, roomId);
             if (userId === this.agentId) {
-                elizaLogger.log(
+                logger.log(
                     `Agent ${this.character.name} linked to room ${roomId} successfully.`,
                 );
             } else {
-                elizaLogger.log(
+                logger.log(
                     `User ${userId} linked to room ${roomId} successfully.`,
                 );
             }
@@ -1363,7 +681,7 @@ export class AgentRuntime implements IAgentRuntime {
         const room = await this.databaseAdapter.getRoom(roomId);
         if (!room) {
             await this.databaseAdapter.createRoom(roomId);
-            elizaLogger.log(`Room ${roomId} created successfully.`);
+            logger.log(`Room ${roomId} created successfully.`);
         }
     }
 
@@ -1592,24 +910,9 @@ Text: ${attachment.text}
         let knowledgeData = [];
         let formattedKnowledge = "";
 
-        if (this.character.settings?.ragKnowledge) {
-            const recentContext = recentMessagesData
-                .slice(-3) // Last 3 messages
-                .map((msg) => msg.content.text)
-                .join(" ");
+        knowledgeData = await knowledge.get(this, message);
 
-            knowledgeData = await this.ragKnowledgeManager.getKnowledge({
-                query: message.content.text,
-                conversationContext: recentContext,
-                limit: 5,
-            });
-
-            formattedKnowledge = formatKnowledge(knowledgeData);
-        } else {
-            knowledgeData = await knowledge.get(this, message);
-
-            formattedKnowledge = formatKnowledge(knowledgeData);
-        }
+        formattedKnowledge = formatKnowledge(knowledgeData);
 
         const initialState = {
             agentId: this.agentId,
@@ -1627,7 +930,6 @@ Text: ${attachment.text}
                     : "",
             knowledge: formattedKnowledge,
             knowledgeData: knowledgeData,
-            ragKnowledgeData: knowledgeData,
             // Recent interactions between the sender and receiver, formatted as messages
             recentMessageInteractions: formattedMessageInteractions,
             // Recent interactions between the sender and receiver, formatted as posts
@@ -1900,14 +1202,6 @@ Text: ${attachment.text}
         return this.memoryManagerService.getMemoryManager(tableName);
     }
 
-    getService<T extends Service>(service: ServiceType): T | null {
-        return this.serviceManager.getService<T>(service);
-    }
-
-    async registerService(service: Service): Promise<void> {
-        await this.serviceManager.registerService(service);
-    }
-
     // Memory manager getters
     get messageManager(): IMemoryManager {
         return this.memoryManagerService.getMessageManager();
@@ -1929,7 +1223,26 @@ Text: ${attachment.text}
         return this.memoryManagerService.getKnowledgeManager();
     }
 
-    get ragKnowledgeManager(): IRAGKnowledgeManager {
-        return this.memoryManagerService.getRAGKnowledgeManager();
+    registerHandler(modelType: ModelType, handler: (params: any) => Promise<any>) {
+        if (!this.handlers.has(modelType)) {
+            this.handlers.set(modelType, []);
+        }
+        this.handlers.get(modelType)?.push(handler);
+    }
+
+    getHandler(modelType: ModelType): ((params: any) => Promise<any>) | undefined {
+        const handlers = this.handlers.get(modelType);
+        if (!handlers?.length) {
+            return undefined;
+        }
+        return handlers[0];
+    }
+
+    call(modelType: ModelType, params: any): Promise<any> {
+        const handler = this.getHandler(modelType);
+        if (!handler) {
+            throw new Error(`No handler found for model type: ${modelType}`);
+        }
+        return handler(params);
     }
 }

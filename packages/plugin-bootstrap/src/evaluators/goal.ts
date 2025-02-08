@@ -5,8 +5,7 @@ import { parseJsonArrayFromText } from "@elizaos/core";
 import {
     type IAgentRuntime,
     type Memory,
-    ModelClass,
-    type Objective,
+    ModelType,
     type Goal,
     type State,
     type Evaluator,
@@ -65,7 +64,7 @@ async function handler(
     const response = await generateText({
         runtime,
         context,
-        modelClass: ModelClass.LARGE,
+        modelType: ModelType.TEXT_LARGE,
     });
 
     // Parse the JSON response to extract goal updates
