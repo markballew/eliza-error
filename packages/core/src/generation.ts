@@ -1,17 +1,17 @@
 // ================ IMPORTS ================
 import { z, type ZodSchema } from "zod";
-import { logFunctionCall, logger } from "./index.ts";
+import { logger } from "./index.ts";
 import { parseJSONObjectFromText } from "./parsing.ts";
 import {
     type Content,
     type IAgentRuntime,
-    ModelType
+    ModelClass
 } from "./types.ts";
 
 interface GenerateObjectOptions {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   output?: "object" | "array" | "enum" | "no-schema" | undefined;
   schema?: ZodSchema;
   schemaName?: string;
@@ -65,22 +65,69 @@ async function withRetry<T>(
   }
 }
 
+/**
+ * Trims the provided text context to a specified token limit using a tokenizer model and type.
+ *
+ * The function dynamically determines the truncation method based on the tokenizer settings
+ * provided by the runtime. If no tokenizer settings are defined, it defaults to using the
+ * TikToken truncation method with the "gpt-4o" model.
+ *
+ * @async
+ * @function trimTokens
+ * @param {string} context - The text to be tokenized and trimmed.
+ * @param {number} maxTokens - The maximum number of tokens allowed after truncation.
+ * @param {IAgentRuntime} runtime - The runtime interface providing tokenizer settings.
+ *
+ * @returns {Promise<string>} A promise that resolves to the trimmed text.
+ *
+ * @throws {Error} Throws an error if the runtime settings are invalid or missing required fields.
+ *
+ * @example
+ * const trimmedText = await trimTokens("This is an example text", 50, runtime);
+ * console.log(trimmedText); // Output will be a truncated version of the input text.
+ */
+export async function trimTokens(
+  context: string,
+  maxTokens: number,
+  runtime: IAgentRuntime
+) {
+  if (!context) return "";
+  if (maxTokens <= 0) throw new Error("maxTokens must be positive");
+
+  try {
+      const tokens = await runtime.call(ModelClass.TEXT_TOKENIZER_ENCODE, context);
+
+      // If already within limits, return unchanged
+      if (tokens.length <= maxTokens) {
+          return context;
+      }
+
+      // Keep the most recent tokens by slicing from the end
+      const truncatedTokens = tokens.slice(-maxTokens);
+
+      // Decode back to text - js-tiktoken decode() returns a string directly
+      return await runtime.call(ModelClass.TEXT_TOKENIZER_DECODE, truncatedTokens);
+  } catch (error) {
+      logger.error("Error in trimTokens:", error);
+      // Return truncated string if tokenization fails
+      return context.slice(-maxTokens * 4); // Rough estimate of 4 chars per token
+  }
+}
+
 // ================ TEXT GENERATION FUNCTIONS ================
 export async function generateText({
   runtime,
   context,
-  modelType = ModelType.TEXT_SMALL,
-  stopSequences,
+  modelClass = ModelClass.TEXT_SMALL,
+  stopSequences = [],
 }: {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   stopSequences?: string[];
   customSystemPrompt?: string;
 }): Promise<string> {
-  logFunctionCall("generateText", runtime);
-
-  const text = await runtime.call(modelType, {
+  const text = await runtime.call(modelClass, {
     runtime,
     context,
     stopSequences,
@@ -92,21 +139,19 @@ export async function generateText({
 export async function generateTextArray({
   runtime,
   context,
-  modelType = ModelType.TEXT_SMALL,
+  modelClass = ModelClass.TEXT_SMALL,
   stopSequences,
 }: {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   stopSequences?: string[];
 }): Promise<string[]> {
-  logFunctionCall("generateTextArray", runtime);
-
   const result = await withRetry(async () => {
     const result = await generateObject({
       runtime,
       context,
-      modelType,
+      modelClass,
       schema: z.array(z.string()),
       stopSequences,
     });
@@ -120,20 +165,18 @@ export async function generateTextArray({
 async function generateEnum<T extends string>({
   runtime,
   context,
-  modelType = ModelType.TEXT_SMALL,
+  modelClass = ModelClass.TEXT_SMALL,
   enumValues,
   functionName,
   stopSequences,
 }: {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   enumValues: Array<T>;
   functionName: string;
   stopSequences?: string[];
 }): Promise<any> {
-  logFunctionCall(functionName, runtime);
-
   const enumResult = await withRetry(async () => {
     logger.debug(
       "Attempting to generate enum value with context:",
@@ -142,7 +185,7 @@ async function generateEnum<T extends string>({
     const result = await generateObject({
       runtime,
       context,
-      modelType,
+      modelClass,
       output: "enum",
       enum: enumValues,
       mode: "json",
@@ -159,12 +202,12 @@ async function generateEnum<T extends string>({
 export async function generateShouldRespond({
   runtime,
   context,
-  modelType = ModelType.TEXT_SMALL,
+  modelClass = ModelClass.TEXT_SMALL,
   stopSequences,
 }: {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   stopSequences?: string[];
 }): Promise<"RESPOND" | "IGNORE" | "STOP" | null> {
   const RESPONSE_VALUES = ["RESPOND", "IGNORE", "STOP"] as string[];
@@ -172,7 +215,7 @@ export async function generateShouldRespond({
   const result = await generateEnum({
     runtime,
     context,
-    modelType,
+    modelClass,
     enumValues: RESPONSE_VALUES,
     functionName: "generateShouldRespond",
     stopSequences,
@@ -184,22 +227,20 @@ export async function generateShouldRespond({
 export async function generateTrueOrFalse({
   runtime,
   context = "",
-  modelType = ModelType.TEXT_SMALL,
+  modelClass = ModelClass.TEXT_SMALL,
   stopSequences,
 }: {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   stopSequences?: string[];
 }): Promise<boolean> {
-  logFunctionCall("generateTrueOrFalse", runtime);
-
   const BOOL_VALUES = ["true", "false"];
 
   const result = await generateEnum({
     runtime,
     context,
-    modelType,
+    modelClass,
     enumValues: BOOL_VALUES,
     functionName: "generateTrueOrFalse",
     stopSequences,
@@ -212,44 +253,42 @@ export async function generateTrueOrFalse({
 export const generateObject = async ({
   runtime,
   context,
-  modelType = ModelType.TEXT_SMALL,
+  modelClass = ModelClass.TEXT_SMALL,
   stopSequences,
 }: GenerateObjectOptions): Promise<any> => {
-  logFunctionCall("generateObject", runtime);
   if (!context) {
     const errorMessage = "generateObject context is empty";
     console.error(errorMessage);
     throw new Error(errorMessage);
   }
 
-  const { object } = await runtime.call(modelType, {
+  const { object } = await runtime.call(modelClass, {
     runtime,
     context,
-    modelType,
+    modelClass,
     stopSequences,
     object: true,
   });
 
-  logger.debug(`Received Object response from ${modelType} model.`);
+  logger.debug(`Received Object response from ${modelClass} model.`);
   return object;
 };
 
 export async function generateObjectArray({
   runtime,
   context,
-  modelType = ModelType.TEXT_SMALL,
+  modelClass = ModelClass.TEXT_SMALL,
   schema,
   schemaName,
   schemaDescription,
 }: {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   schema?: ZodSchema;
   schemaName?: string;
   schemaDescription?: string;
 }): Promise<z.infer<typeof schema>[]> {
-  logFunctionCall("generateObjectArray", runtime);
   if (!context) {
     logger.error("generateObjectArray context is empty");
     return [];
@@ -257,7 +296,7 @@ export async function generateObjectArray({
   const result = await generateObject({
     runtime,
     context,
-    modelType,
+    modelClass,
     output: "array",
     schema,
     schemaName,
@@ -270,20 +309,18 @@ export async function generateObjectArray({
 export async function generateMessageResponse({
   runtime,
   context,
-  modelType = ModelType.TEXT_SMALL,
+  modelClass = ModelClass.TEXT_SMALL,
   stopSequences,
 }: {
   runtime: IAgentRuntime;
   context: string;
-  modelType: ModelType;
+  modelClass: ModelClass;
   stopSequences?: string[];
 }): Promise<Content> {
-  logFunctionCall("generateMessageResponse", runtime);
-
   logger.debug("Context:", context);
 
   return await withRetry(async () => {
-    const text = await runtime.call(modelType, {
+    const text = await runtime.call(modelClass, {
     runtime,
       context,
       stop: stopSequences,
@@ -326,11 +363,9 @@ export const generateImage = async (
   data?: string[];
   error?: any;
 }> => {
-  logFunctionCall("generateImage", runtime);
-
   return await withRetry(
     async () => {
-      const result = await runtime.call(ModelType.IMAGE, data);
+      const result = await runtime.call(ModelClass.IMAGE, data);
       return {
         success: true,
         data: result.images,
@@ -351,9 +386,8 @@ export const generateCaption = async (
   title: string;
   description: string;
 }> => {
-  logFunctionCall("generateCaption", runtime);
   const { imageUrl } = data;
-  const resp = await runtime.call(ModelType.IMAGE_DESCRIPTION, imageUrl);
+  const resp = await runtime.call(ModelClass.IMAGE_DESCRIPTION, imageUrl);
 
   return {
     title: resp.title.trim(),

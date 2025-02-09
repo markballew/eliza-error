@@ -39,11 +39,13 @@ import {
     type IMemoryManager,
     type KnowledgeItem,
     type Memory,
-    ModelType,
+    ModelClass,
     type Plugin,
     type Provider,
     type State,
-    type UUID
+    type UUID,
+    ServiceType,
+    Service
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 
@@ -234,30 +236,27 @@ export class AgentRuntime implements IAgentRuntime {
     readonly evaluators: Evaluator[] = [];
     readonly providers: Provider[] = [];
     readonly plugins: Plugin[] = [];
+    events: Map<string, ((params: any) => Promise<any>)[]> = new Map();
 
     readonly fetch = fetch;
     public cacheManager!: ICacheManager;
     public clients: ClientInstance[] = [];
-    
+    services: Map<ServiceType, Service> = new Map();
+
     public adapters: Adapter[];
 
     private readonly knowledgeRoot: string;
     private readonly memoryManagerService: MemoryManagerService;
 
-    handlers = new Map<ModelType, ((params: any) => Promise<any>)[]>();
+    handlers = new Map<ModelClass, ((params: any) => Promise<any>)[]>();
 
     constructor(opts: {
         conversationLength?: number;
         agentId?: UUID;
         character?: Character;
-        serverUrl?: string;
-        actions?: Action[];
-        evaluators?: Evaluator[];
         plugins?: Plugin[];
-        providers?: Provider[];
-        managers?: IMemoryManager[];
-        databaseAdapter?: IDatabaseAdapter;
         fetch?: typeof fetch;
+        databaseAdapter?: IDatabaseAdapter;
         cacheManager?: ICacheManager;
         adapters?: Adapter[];
     }) {
@@ -300,13 +299,6 @@ export class AgentRuntime implements IAgentRuntime {
         }
 
         this.memoryManagerService = new MemoryManagerService(this, this.knowledgeRoot);
-        
-        // Register additional memory managers from options
-        if (opts.managers) {
-            for (const manager of opts.managers) {
-                this.registerMemoryManager(manager);
-            }
-        }
 
         this.plugins = [
             ...(opts.character?.plugins ?? []),
@@ -325,18 +317,10 @@ export class AgentRuntime implements IAgentRuntime {
             for (const provider of (plugin.providers ?? [])) {
                 this.registerContextProvider(provider);
             }
-        }
 
-        for (const action of (opts.actions ?? [])) {
-            this.registerAction(action);
-        }
-
-        for (const provider of (opts.providers ?? [])) {
-            this.registerContextProvider(provider);
-        }
-
-        for (const evaluator of (opts.evaluators ?? [])) {
-            this.registerEvaluator(evaluator);
+            for (const manager of (plugin.memoryManagers ?? [])) {
+                this.registerMemoryManager(manager)
+            }
         }
 
         // Initialize adapters from options or empty array if not provided
@@ -351,6 +335,22 @@ export class AgentRuntime implements IAgentRuntime {
             this.character.name,
         );
         await this.ensureParticipantExists(this.agentId, this.agentId);
+
+        for (const [serviceType, service] of this.services.entries()) {
+            try {
+                await service.initialize(this);
+                this.services.set(serviceType, service);
+                logger.success(
+                    `${this.character.name}(${this.agentId}) - Service ${serviceType} initialized successfully`
+                );
+            } catch (error) {
+                logger.error(
+                    `${this.character.name}(${this.agentId}) - Failed to initialize service ${serviceType}:`,
+                    error
+                );
+                throw error;
+            }
+        }
 
         if (this.character?.knowledge && this.character.knowledge.length > 0) {
             // Non-RAG mode: only process string knowledge
@@ -564,7 +564,7 @@ export class AgentRuntime implements IAgentRuntime {
         const result = await generateText({
             runtime: this,
             context,
-            modelType: ModelType.TEXT_SMALL,
+            modelClass: ModelClass.TEXT_SMALL,
         });
 
         console.log("***** result", result);
@@ -1202,6 +1202,31 @@ Text: ${attachment.text}
         return this.memoryManagerService.getMemoryManager(tableName);
     }
 
+    getService<T extends Service>(service: ServiceType): T | null {
+        const serviceInstance = this.services.get(service);
+        if (!serviceInstance) {
+            logger.error(`Service ${service} not found`);
+            return null;
+        }
+        return serviceInstance as T;
+    }
+
+    async registerService(service: Service): Promise<void> {
+        const serviceType = service.serviceType;
+        logger.log(`${this.character.name}(${this.agentId}) - Registering service:`, serviceType);
+
+        if (this.services.has(serviceType)) {
+            logger.warn(
+                `${this.character.name}(${this.agentId}) - Service ${serviceType} is already registered. Skipping registration.`
+            );
+            return;
+        }
+
+        // Add the service to the services map
+        this.services.set(serviceType, service);
+        logger.success(`${this.character.name}(${this.agentId}) - Service ${serviceType} registered successfully`);
+    }
+
     // Memory manager getters
     get messageManager(): IMemoryManager {
         return this.memoryManagerService.getMessageManager();
@@ -1223,26 +1248,49 @@ Text: ${attachment.text}
         return this.memoryManagerService.getKnowledgeManager();
     }
 
-    registerHandler(modelType: ModelType, handler: (params: any) => Promise<any>) {
-        if (!this.handlers.has(modelType)) {
-            this.handlers.set(modelType, []);
+    registerHandler(handlerType: ModelClass, handler: (params: any) => Promise<any>) {
+        if (!this.handlers.has(handlerType)) {
+            this.handlers.set(handlerType, []);
         }
-        this.handlers.get(modelType)?.push(handler);
+        this.handlers.get(handlerType)?.push(handler);
     }
 
-    getHandler(modelType: ModelType): ((params: any) => Promise<any>) | undefined {
-        const handlers = this.handlers.get(modelType);
+    getHandler(handlerType: ModelClass): ((params: any) => Promise<any>) | undefined {
+        const handlers = this.handlers.get(handlerType);
         if (!handlers?.length) {
             return undefined;
         }
         return handlers[0];
     }
 
-    call(modelType: ModelType, params: any): Promise<any> {
-        const handler = this.getHandler(modelType);
+    async call(handlerType: ModelClass, params: any): Promise<any> {
+        const handler = this.getHandler(handlerType);
         if (!handler) {
-            throw new Error(`No handler found for model type: ${modelType}`);
+            throw new Error(`No handler found for delegate type: ${handlerType}`);
         }
-        return handler(params);
+        return await handler(params);
     }
+
+    registerEvent(event: string, handler: (params: any) => Promise<any>) {
+        if (!this.events.has(event)) {
+            this.events.set(event, []);
+        }
+        this.events.get(event)?.push(handler);
+    }
+
+    getEvent(event: string): ((params: any) => Promise<any>)[] | undefined {
+        return this.events.get(event);
+    }
+
+    async onEvent(event: string, params: any) {
+        // call the events associated with the event
+        const eventHandlers = this.events.get(event);
+        if (eventHandlers) {
+            for (const handler of eventHandlers) {
+                await handler(params);
+            }
+        }
+    }
+
+    
 }

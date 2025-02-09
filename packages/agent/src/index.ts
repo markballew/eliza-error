@@ -10,7 +10,7 @@ import {
     type IDatabaseAdapter,
     type IDatabaseCacheAdapter,
     logger,
-    ModelType,
+    ModelClass,
     parseBooleanFromText,
     settings,
     stringToUuid,
@@ -24,6 +24,10 @@ import { fileURLToPath } from "node:url";
 import yargs from "yargs";
 import { defaultCharacter } from "./defaultCharacter.ts";
 import { CharacterServer } from "./server";
+
+// dotenv
+import dotenv from "dotenv";
+dotenv.config({ path: "../../.env" });
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -339,8 +343,11 @@ export async function initializeClients(
     // const clientTypes = clients.map((c) => c.name);
     // logger.log("initializeClients", clientTypes, "for", character.name);
 
-    if (character.plugins?.length > 0) {
-        for (const plugin of character.plugins) {
+    // load the character plugins dymamically from string
+    const plugins = await handlePluginImporting(character.plugins);
+
+    if (plugins?.length > 0) {
+        for (const plugin of plugins) {
             if (plugin.clients) {
                 for (const client of plugin.clients) {
                     const startedClient = await client.start(runtime);
@@ -351,16 +358,14 @@ export async function initializeClients(
                 }
             }
             if (plugin.handlers) {
-                for (const [modelType, handler] of Object.entries(plugin.handlers)) {
-                    runtime.registerHandler(modelType as ModelType, handler);
+                for (const [modelClass, handler] of Object.entries(plugin.handlers)) {
+                    runtime.registerHandler(modelClass as ModelClass, handler as (params: any) => Promise<any>);
                 }
             }
         }
     }
 
     runtime.clients = clients;
-    
-
 }
 
 export async function createAgent(
@@ -368,16 +373,7 @@ export async function createAgent(
 ): Promise<AgentRuntime> {
     logger.log(`Creating runtime for character ${character.name}`);
     return new AgentRuntime({
-        evaluators: [],
         character,
-        // character.plugins are handled when clients are added
-        plugins: [
-            bootstrapPlugin,
-        ]
-            .flat()
-            .filter(Boolean),
-        providers: [],
-        managers: [],
         fetch: logFetch,
     });
 }
