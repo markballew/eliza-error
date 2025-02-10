@@ -1,11 +1,10 @@
 #!/usr/bin/env bun
 import { init } from "@/src/commands/init"
 import { plugins } from "@/src/commands/plugins"
-import { character } from "@/src/commands/character"
+// import { agent } from "@/src/commands/agent"
 import { Command } from "commander"
 import { logger } from "@/src/utils/logger"
 import { teeCommand as tee } from "@/src/commands/tee"
-import { agent } from "@/src/commands/agent"
 
 process.on("SIGINT", () => process.exit(0))
 process.on("SIGTERM", () => process.exit(0))
@@ -19,8 +18,7 @@ async function main() {
   program
     .addCommand(init)
     .addCommand(plugins)
-    .addCommand(character)
-    .addCommand(agent)
+    // .addCommand(agent)
     .addCommand(tee)
   program.parse(process.argv)
 }

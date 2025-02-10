@@ -9,6 +9,7 @@ export const defaultCharacter: Character = {
     "@elizaos/plugin-discord",
     "@elizaos/plugin-node",
     "@elizaos/plugin-telegram",
+    "@elizaos/plugin-twitter",
   ],
   settings: {
     secrets: {},
