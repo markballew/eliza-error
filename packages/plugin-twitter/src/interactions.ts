@@ -348,7 +348,7 @@ export class TwitterInteractionClient {
         const imageDescriptionsArray = [];
         try{
             for (const photo of tweet.photos) {
-                const description = await this.runtime.call(ModelClass.IMAGE_DESCRIPTION, photo.url)
+                const description = await this.runtime.useModel(ModelClass.IMAGE_DESCRIPTION, photo.url)
                 imageDescriptionsArray.push(description);
             }
         } catch (error) {
@@ -453,7 +453,7 @@ export class TwitterInteractionClient {
         const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
-            modelClass: ModelClass.LARGE,
+            modelClass: ModelClass.TEXT_LARGE,
         });
 
         const removeQuotes = (str: string) =>

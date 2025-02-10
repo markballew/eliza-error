@@ -7,7 +7,6 @@ import {
     type Plugin,
     type State,
     composeContext,
-    composeRandomUser,
     logger,
     generateMessageResponse,
     generateShouldRespond,
@@ -288,7 +287,7 @@ export class SttTtsPlugin implements Plugin {
             const wavBuffer = await this.convertPcmToWavInMemory(merged, 48000);
 
             // Whisper STT
-            const sttText = await this.runtime.call(ModelClass.TRANSCRIPTION, wavBuffer);
+            const sttText = await this.runtime.useModel(ModelClass.TRANSCRIPTION, wavBuffer);
 
             logger.log(
                 `[SttTtsPlugin] Transcription result: "${sttText}"`,
@@ -487,7 +486,7 @@ export class SttTtsPlugin implements Plugin {
         const response = await generateMessageResponse({
             runtime: this.runtime,
             context,
-            modelClass: ModelClass.SMALL,
+            modelClass: ModelClass.TEXT_SMALL,
         });
 
         response.source = "discord";
@@ -579,13 +578,13 @@ export class SttTtsPlugin implements Plugin {
                 this.runtime.character.templates
                     ?.twitterShouldRespondTemplate ||
                 this.runtime.character.templates?.shouldRespondTemplate ||
-                composeRandomUser(twitterShouldRespondTemplate, 2),
+                twitterShouldRespondTemplate,
         });
 
         const response = await generateShouldRespond({
             runtime: this.runtime,
             context: shouldRespondContext,
-            modelClass: ModelClass.SMALL,
+            modelClass: ModelClass.TEXT_SMALL,
         });
 
         if (response === "RESPOND") {

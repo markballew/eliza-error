@@ -91,11 +91,15 @@ export async function trimTokens(
   maxTokens: number,
   runtime: IAgentRuntime
 ) {
-  if (!context) return "";
+  if (!context) throw new Error("Trim tokens received a null context");
+  
+  // if context is less than of maxtokens / 5, skip
+  if (context.length < (maxTokens / 5)) return context;
+
   if (maxTokens <= 0) throw new Error("maxTokens must be positive");
 
   try {
-      const tokens = await runtime.call(ModelClass.TEXT_TOKENIZER_ENCODE, context);
+      const tokens = await runtime.useModel(ModelClass.TEXT_TOKENIZER_ENCODE, { context });
 
       // If already within limits, return unchanged
       if (tokens.length <= maxTokens) {
@@ -106,7 +110,7 @@ export async function trimTokens(
       const truncatedTokens = tokens.slice(-maxTokens);
 
       // Decode back to text - js-tiktoken decode() returns a string directly
-      return await runtime.call(ModelClass.TEXT_TOKENIZER_DECODE, truncatedTokens);
+      return await runtime.useModel(ModelClass.TEXT_TOKENIZER_DECODE, { tokens: truncatedTokens });
   } catch (error) {
       logger.error("Error in trimTokens:", error);
       // Return truncated string if tokenization fails
@@ -127,7 +131,7 @@ export async function generateText({
   stopSequences?: string[];
   customSystemPrompt?: string;
 }): Promise<string> {
-  const text = await runtime.call(modelClass, {
+  const text = await runtime.useModel(modelClass, {
     runtime,
     context,
     stopSequences,
@@ -262,7 +266,7 @@ export const generateObject = async ({
     throw new Error(errorMessage);
   }
 
-  const { object } = await runtime.call(modelClass, {
+  const { object } = await runtime.useModel(modelClass, {
     runtime,
     context,
     modelClass,
@@ -320,7 +324,7 @@ export async function generateMessageResponse({
   logger.debug("Context:", context);
 
   return await withRetry(async () => {
-    const text = await runtime.call(modelClass, {
+    const text = await runtime.useModel(modelClass, {
     runtime,
       context,
       stop: stopSequences,
@@ -338,59 +342,3 @@ export async function generateMessageResponse({
     return parsedContent;
   });
 }
-
-// ================ IMAGE-RELATED FUNCTIONS ================
-export const generateImage = async (
-  data: {
-    prompt: string;
-    width: number;
-    height: number;
-    count?: number;
-    negativePrompt?: string;
-    numIterations?: number;
-    guidanceScale?: number;
-    seed?: number;
-    modelId?: string;
-    jobId?: string;
-    stylePreset?: string;
-    hideWatermark?: boolean;
-    safeMode?: boolean;
-    cfgScale?: number;
-  },
-  runtime: IAgentRuntime
-): Promise<{
-  success: boolean;
-  data?: string[];
-  error?: any;
-}> => {
-  return await withRetry(
-    async () => {
-      const result = await runtime.call(ModelClass.IMAGE, data);
-      return {
-        success: true,
-        data: result.images,
-        error: undefined,
-      };
-    },
-    {
-      maxRetries: 2,
-      initialDelay: 2000,
-    }
-  );
-};
-
-export const generateCaption = async (
-  data: { imageUrl: string },
-  runtime: IAgentRuntime
-): Promise<{
-  title: string;
-  description: string;
-}> => {
-  const { imageUrl } = data;
-  const resp = await runtime.call(ModelClass.IMAGE_DESCRIPTION, imageUrl);
-
-  return {
-    title: resp.title.trim(),
-    description: resp.description.trim(),
-  };
-};

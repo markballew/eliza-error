@@ -37,7 +37,7 @@ export const anthropicPlugin: Plugin = {
       throw error;
     }
   },
-  handlers: {
+  models: {
     [ModelClass.TEXT_SMALL]: async ({
       runtime,
       context,

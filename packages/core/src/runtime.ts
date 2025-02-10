@@ -248,7 +248,7 @@ export class AgentRuntime implements IAgentRuntime {
     private readonly knowledgeRoot: string;
     private readonly memoryManagerService: MemoryManagerService;
 
-    handlers = new Map<ModelClass, ((params: any) => Promise<any>)[]>();
+    models = new Map<ModelClass, ((params: any) => Promise<any>)[]>();
 
     constructor(opts: {
         conversationLength?: number;
@@ -317,6 +317,10 @@ export class AgentRuntime implements IAgentRuntime {
             for (const manager of (plugin.memoryManagers ?? [])) {
                 this.registerMemoryManager(manager)
             }
+
+            for(const service of plugin.services){
+                this.registerService(service);
+            }
         }
 
         this.plugins = plugins;
@@ -328,7 +332,7 @@ export class AgentRuntime implements IAgentRuntime {
     async initialize() {
         // load the character plugins dymamically from string
         if(this.character.plugins){
-            const plugins = await handlePluginImporting(this.character.plugins);
+            const plugins = await handlePluginImporting(this.character.plugins) as Plugin[];
             if (plugins?.length > 0) {
                 for (const plugin of plugins) {
                     if(!plugin) {
@@ -343,13 +347,24 @@ export class AgentRuntime implements IAgentRuntime {
                             this.clients.push(startedClient);
                         }
                     }
-                    if (plugin.handlers) {
-                        for (const [modelClass, handler] of Object.entries(plugin.handlers)) {
-                            this.registerHandler(modelClass as ModelClass, handler as (params: any) => Promise<any>);
+                    if (plugin.models) {
+                        for (const [modelClass, handler] of Object.entries(plugin.models)) {
+                            this.registerModel(modelClass as ModelClass, handler as (params: any) => Promise<any>);
+                        }
+                    }
+                    if (plugin.services) {
+                        for(const service of plugin.services){
+                            this.services.set(service.serviceType, service);
                         }
                     }
                     this.plugins.push(plugin);
                 }
+            }
+        }
+
+        if (this.services) {
+            for(const [_, service] of this.services.entries()) {
+                await service.initialize(this);
             }
         }
         
@@ -360,22 +375,6 @@ export class AgentRuntime implements IAgentRuntime {
             this.character.name,
         );
         await this.ensureParticipantExists(this.agentId, this.agentId);
-
-        for (const [serviceType, service] of this.services.entries()) {
-            try {
-                await service.initialize(this);
-                this.services.set(serviceType, service);
-                logger.success(
-                    `${this.character.name}(${this.agentId}) - Service ${serviceType} initialized successfully`
-                );
-            } catch (error) {
-                logger.error(
-                    `${this.character.name}(${this.agentId}) - Failed to initialize service ${serviceType}:`,
-                    error
-                );
-                throw error;
-            }
-        }
 
         if (this.character?.knowledge && this.character.knowledge.length > 0) {
             // Non-RAG mode: only process string knowledge
@@ -1272,25 +1271,25 @@ Text: ${attachment.text}
         return this.memoryManagerService.getKnowledgeManager();
     }
 
-    registerHandler(handlerType: ModelClass, handler: (params: any) => Promise<any>) {
-        if (!this.handlers.has(handlerType)) {
-            this.handlers.set(handlerType, []);
+    registerModel(modelClass: ModelClass, handler: (params: any) => Promise<any>) {
+        if (!this.models.has(modelClass)) {
+            this.models.set(modelClass, []);
         }
-        this.handlers.get(handlerType)?.push(handler);
+        this.models.get(modelClass)?.push(handler);
     }
 
-    getHandler(handlerType: ModelClass): ((params: any) => Promise<any>) | undefined {
-        const handlers = this.handlers.get(handlerType);
-        if (!handlers?.length) {
+    getModel(modelClass: ModelClass): ((params: any) => Promise<any>) | undefined {
+        const models = this.models.get(modelClass);
+        if (!models?.length) {
             return undefined;
         }
-        return handlers[0];
+        return models[0];
     }
 
-    async call(handlerType: ModelClass, params: any): Promise<any> {
-        const handler = this.getHandler(handlerType);
+    async useModel(modelClass: ModelClass, params: any): Promise<any> {
+        const handler = this.getModel(modelClass);
         if (!handler) {
-            throw new Error(`No handler found for delegate type: ${handlerType}`);
+            throw new Error(`No handler found for delegate type: ${modelClass}`);
         }
         return await handler(params);
     }

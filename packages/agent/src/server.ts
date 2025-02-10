@@ -1,8 +1,6 @@
 import {
     composeContext,
     logger,
-    generateCaption,
-    generateImage,
     generateMessageResponse,
     generateObject,
     messageCompletionFooter,
@@ -166,10 +164,7 @@ export class CharacterServer {
                     return;
                 }
 
-                const transcription = await runtime.call(ModelClass.TRANSCRIPTION, {
-                    file: fs.createReadStream(audioFile.path),
-                    model: "whisper-1",
-                });
+                const transcription = await runtime.useModel(ModelClass.TRANSCRIPTION, fs.createReadStream(audioFile.path));
 
                 res.json(transcription);
             }
@@ -591,15 +586,11 @@ export class CharacterServer {
                     res.status(404).send("Agent not found");
                     return;
                 }
-
-                const images = await generateImage({ ...req.body }, agent);
+                const images = await agent.useModel(ModelClass.IMAGE, { ...req.body });
                 const imagesRes: { image: string; caption: string }[] = [];
                 if (images.data && images.data.length > 0) {
                     for (let i = 0; i < images.data.length; i++) {
-                        const caption = await generateCaption(
-                            { imageUrl: images.data[i] },
-                            agent
-                        );
+                        const caption = await agent.useModel(ModelClass.IMAGE_DESCRIPTION, images.data[i]);
                         imagesRes.push({
                             image: images.data[i],
                             caption: caption.title,
@@ -823,10 +814,7 @@ export class CharacterServer {
                 // Get the text to convert to speech
                 const textToSpeak = response.text;
 
-                const speechResponse = await runtime.call(ModelClass.TRANSCRIPTION, {
-                    text: textToSpeak,
-                    runtime,
-                });
+                const speechResponse = await runtime.useModel(ModelClass.TEXT_TO_SPEECH, textToSpeak);
 
                 if (!speechResponse.ok) {
                     throw new Error(

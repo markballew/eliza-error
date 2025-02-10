@@ -1,4 +1,4 @@
-import { generateCaption, generateText, trimTokens } from "@elizaos/core";
+import { generateText, trimTokens } from "@elizaos/core";
 import { parseJSONObjectFromText } from "@elizaos/core";
 import {
     type IAgentRuntime,
@@ -133,7 +133,7 @@ export class AttachmentManager {
                 throw new Error("Unsupported audio/video format");
             }
 
-            const transcription = await this.runtime.call(ModelClass.TRANSCRIPTION, audioBuffer);
+            const transcription = await this.runtime.useModel(ModelClass.TRANSCRIPTION, audioBuffer);
             const { title, description } = await generateSummary(
                 this.runtime,
                 transcription
@@ -212,8 +212,12 @@ export class AttachmentManager {
         try {
             const response = await fetch(attachment.url);
             const pdfBuffer = await response.arrayBuffer();
+            console.log("service")
+            console.log(this.runtime
+                .getService<IPdfService>(ServiceType.PDF))
             const text = await this.runtime
                 .getService<IPdfService>(ServiceType.PDF)
+                .getInstance()
                 .convertPdfToText(Buffer.from(pdfBuffer));
             const { title, description } = await generateSummary(
                 this.runtime,
@@ -280,10 +284,8 @@ export class AttachmentManager {
         attachment: Attachment
     ): Promise<Media> {
         try {
-            const { description, title } = await generateCaption(
-                { imageUrl: attachment.url },
-                this.runtime
-            );
+            const { description, title } = await
+                this.runtime.useModel(ModelClass.IMAGE_DESCRIPTION, attachment.url);
             return {
                 id: attachment.id,
                 url: attachment.url,

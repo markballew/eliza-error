@@ -1,10 +1,9 @@
-import { z } from "zod";
-import type { Plugin } from "@elizaos/core";
-import { ModelClass, logger } from "@elizaos/core";
+import { ModelClass, Plugin, logger } from "@elizaos/core";
 import { AutoTokenizer } from "@huggingface/transformers";
-import { FlagEmbedding, EmbeddingModel } from "fastembed";
+import { EmbeddingModel, FlagEmbedding } from "fastembed";
 import path from "node:path";
 import { fileURLToPath } from "url";
+import { z } from "zod";
 
 // Configuration schema for the local AI plugin
 const configSchema = z.object({
@@ -135,7 +134,7 @@ export const localAIPlugin: Plugin = {
     }
   },
 
-  handlers: {
+  models: {
     // Text generation for small tasks
     [ModelClass.TEXT_SMALL]: async ({
       context,
@@ -209,7 +208,7 @@ export const localAIPlugin: Plugin = {
     },
 
     // Image description using local Florence model
-    [ModelClass.IMAGE_DESCRIPTION]: async ({ imageUrl, runtime }) => {
+    [ModelClass.IMAGE_DESCRIPTION]: async (imageUrlw) => {
       try {
         
         // TODO: Add florence

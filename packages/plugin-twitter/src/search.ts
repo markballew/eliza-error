@@ -135,7 +135,7 @@ export class TwitterSearchClient {
             const mostInterestingTweetResponse = await generateText({
                 runtime: this.runtime,
                 context: prompt,
-                modelClass: ModelClass.SMALL,
+                modelClass: ModelClass.TEXT_SMALL,
             });
 
             const tweetId = mostInterestingTweetResponse.trim();
@@ -219,7 +219,7 @@ export class TwitterSearchClient {
             // Generate image descriptions using GPT-4 vision API
             const imageDescriptions = [];
             for (const photo of selectedTweet.photos) {
-                const description = await this.runtime.call(ModelClass.IMAGE_DESCRIPTION, photo.url)
+                const description = await this.runtime.useModel(ModelClass.IMAGE_DESCRIPTION, photo.url)
                 imageDescriptions.push(description);
             }
 
@@ -249,7 +249,7 @@ export class TwitterSearchClient {
             const responseContent = await generateMessageResponse({
                 runtime: this.runtime,
                 context,
-                modelClass: ModelClass.LARGE,
+                modelClass: ModelClass.TEXT_LARGE,
             });
 
             responseContent.inReplyTo = message.id;

@@ -1,5 +1,3 @@
-import type { Readable } from "stream";
-
 /**
  * Represents a UUID string in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
  */
@@ -592,8 +590,8 @@ export type Plugin = {
   /** Optional memory managers */
   memoryManagers?: IMemoryManager[];
 
-  /** Optional handlers */
-  handlers?: {
+  /** Optional models */
+  models?: {
     [key: string]: (...args: any[]) => Promise<any>;
   };
 
@@ -1023,9 +1021,11 @@ export interface IAgentRuntime {
 
   updateRecentMessageState(state: State): Promise<State>;
 
-  call<T = any>(modelClass: ModelClass, params: T): Promise<any>;
-  registerHandler(modelClass: ModelClass, handler: (params: any) => Promise<any>): void;
-  getHandler(modelClass: ModelClass): ((params: any) => Promise<any>) | undefined;
+  useModel<T = any>(modelClass: ModelClass, params: T): Promise<any>;
+  registerModel(modelClass: ModelClass, handler: (params: any) => Promise<any>): void;
+  getModel(modelClass: ModelClass): ((params: any) => Promise<any>) | undefined;
+
+  stop(): Promise<void>;
 }
 
 export enum LoggingLevel {
@@ -1095,7 +1095,7 @@ export type InventoryAction = {
 export type InventoryProvider = {
   name: string
   description: string
-  items: InventoryItem[]
+  providers: (runtime: IAgentRuntime, params: any) => Promise<InventoryItem[]>
   actions: InventoryAction[]
 }
 

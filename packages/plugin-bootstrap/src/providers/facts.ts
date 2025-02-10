@@ -16,7 +16,7 @@ const factsProvider: Provider = {
             actors: state?.actorsData,
         });
 
-        const embedding = await runtime.call(ModelClass.TEXT_EMBEDDING, recentMessages);
+        const embedding = await runtime.useModel(ModelClass.TEXT_EMBEDDING, recentMessages);
 
         const memoryManager = new MemoryManager({
             runtime,

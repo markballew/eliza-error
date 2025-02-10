@@ -47,7 +47,7 @@ Only return the text, no additional formatting.
         const output = await generateText({
             runtime,
             context,
-            modelClass: ModelClass.SMALL,
+            modelClass: ModelClass.TEXT_SMALL,
         });
         return output.trim();
     } catch (err) {
@@ -99,7 +99,7 @@ Example:
         const response = await generateText({
             runtime,
             context,
-            modelClass: ModelClass.SMALL,
+            modelClass: ModelClass.TEXT_SMALL,
         });
         const topics = response
             .split(",")

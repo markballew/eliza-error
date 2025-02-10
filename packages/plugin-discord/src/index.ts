@@ -1,11 +1,10 @@
 import {
     logger,
-    ModelClass,
     stringToUuid,
     type Character,
     type Client as ElizaClient,
     type IAgentRuntime,
-    type Plugin,
+    type Plugin
 } from "@elizaos/core";
 import {
     Client,
@@ -27,8 +26,8 @@ import transcribe_media from "./actions/transcribe_media.ts";
 import { MessageManager } from "./messages.ts";
 import channelStateProvider from "./providers/channelState.ts";
 import voiceStateProvider from "./providers/voiceState.ts";
-import { VoiceManager } from "./voice.ts";
 import { IDiscordClient } from "./types.ts";
+import { VoiceManager } from "./voice.ts";
 
 export class DiscordClient extends EventEmitter implements IDiscordClient {
     apiToken: string;
@@ -69,16 +68,6 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
         this.client.login(this.apiToken);
 
         this.setupEventListeners();
-
-        this.runtime.registerAction(joinvoice);
-        this.runtime.registerAction(leavevoice);
-        this.runtime.registerAction(summarize);
-        this.runtime.registerAction(chat_with_attachments);
-        this.runtime.registerAction(transcribe_media);
-        this.runtime.registerAction(download_media);
-
-        this.runtime.providers.push(channelStateProvider);
-        this.runtime.providers.push(voiceStateProvider);
     }
 
     private setupEventListeners() {
@@ -405,5 +394,17 @@ const discordPlugin: Plugin = {
     name: "discord",
     description: "Discord client plugin",
     clients: [DiscordClientInterface],
+    actions: [
+        chat_with_attachments,
+        download_media,
+        joinvoice,
+        leavevoice,
+        summarize,
+        transcribe_media,
+    ],
+    providers: [
+        channelStateProvider,
+        voiceStateProvider,
+    ]
 };
 export default discordPlugin;
