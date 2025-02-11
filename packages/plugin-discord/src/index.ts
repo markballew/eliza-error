@@ -1,6 +1,7 @@
 import {
     logger,
     stringToUuid,
+    type TestSuite,
     type Character,
     type Client as ElizaClient,
     type IAgentRuntime,
@@ -27,7 +28,7 @@ import { MessageManager } from "./messages.ts";
 import channelStateProvider from "./providers/channelState.ts";
 import voiceStateProvider from "./providers/voiceState.ts";
 import reply from "./actions/reply.ts";
-import { IDiscordClient } from "./types.ts";
+import type { IDiscordClient } from "./types.ts";
 import { VoiceManager } from "./voice.ts";
 
 export class DiscordClient extends EventEmitter implements IDiscordClient {
@@ -391,6 +392,19 @@ const DiscordClientInterface: ElizaClient = {
     start: async (runtime: IAgentRuntime) => new DiscordClient(runtime),
 };
 
+const testSuite: TestSuite = {
+    name: "discord",
+    tests: [
+        {
+            name: "discord",
+            fn: async (runtime: IAgentRuntime) => {
+                const discordClient = new DiscordClient(runtime);
+                console.log("Created a discord client");
+            }
+        }
+    ]
+};
+
 const discordPlugin: Plugin = {
     name: "discord",
     description: "Discord client plugin",
@@ -407,6 +421,9 @@ const discordPlugin: Plugin = {
     providers: [
         channelStateProvider,
         voiceStateProvider,
+    ],
+    tests: [
+        testSuite,
     ]
 };
 export default discordPlugin;

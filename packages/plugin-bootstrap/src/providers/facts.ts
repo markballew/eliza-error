@@ -1,7 +1,7 @@
 import type { Memory, Provider, State } from "@elizaos/core";
 import {
     formatMessages,
-    IAgentRuntime,
+    type IAgentRuntime,
     MemoryManager,
     ModelClass
 } from "@elizaos/core";
@@ -10,6 +10,8 @@ import { formatFacts } from "../evaluators/fact.ts";
 const factsProvider: Provider = {
     get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
         const recentMessagesData = state?.recentMessagesData?.slice(-10);
+        console.log("get", message);
+
 
         const recentMessages = formatMessages({
             messages: recentMessagesData,
