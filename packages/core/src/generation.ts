@@ -131,18 +131,11 @@ export async function generateText({
   stopSequences?: string[];
   customSystemPrompt?: string;
 }): Promise<string> {
-  
-  logger.debug("Generating text")
-  logger.debug(context)
-
   const text = await runtime.useModel(modelClass, {
     runtime,
     context,
     stopSequences,
   });
-
-  logger.debug("Generated text")
-  logger.debug(text)
 
   return text;
 }
@@ -264,7 +257,7 @@ export async function generateTrueOrFalse({
 export const generateObject = async ({
   runtime,
   context,
-  modelClass = ModelClass.TEXT_LARGE,
+  modelClass = ModelClass.TEXT_SMALL,
   stopSequences,
 }: GenerateObjectOptions): Promise<any> => {
   if (!context) {
@@ -273,7 +266,7 @@ export const generateObject = async ({
     throw new Error(errorMessage);
   }
 
-  const obj = await runtime.useModel(modelClass, {
+  const { object } = await runtime.useModel(modelClass, {
     runtime,
     context,
     modelClass,
@@ -281,29 +274,8 @@ export const generateObject = async ({
     object: true,
   });
 
-  let jsonString = obj;
-
-  // try to find a first and last bracket
-  const firstBracket = obj.indexOf("{");
-  const lastBracket = obj.lastIndexOf("}");
-  if (firstBracket !== -1 && lastBracket !== -1 && firstBracket < lastBracket) {
-    jsonString = obj.slice(firstBracket, lastBracket + 1);
-  }
-
-  if (jsonString.length === 0) {
-    logger.error("Failed to extract JSON string from model response");
-    return null;
-  }
-
-  // parse the json string
-  try {
-    const json = JSON.parse(jsonString);
-    return json;
-  } catch (error) {
-    logger.error("Failed to parse JSON string");
-    logger.error(jsonString);
-    return null;
-  }
+  logger.debug(`Received Object response from ${modelClass} model.`);
+  return object;
 };
 
 export async function generateObjectArray({
