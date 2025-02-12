@@ -1,8 +1,23 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
-  "extends": ["../../biome.json"],
   "organizeImports": {
     "enabled": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error"
+      },
+      "style": {
+        "useConst": "error",
+        "useImportType": "off"
+      }
+    }
   },
   "formatter": {
     "enabled": true,
@@ -12,7 +27,8 @@
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "single"
+      "quoteStyle": "single",
+      "trailingCommas": "es5"
     }
   },
   "files": {
