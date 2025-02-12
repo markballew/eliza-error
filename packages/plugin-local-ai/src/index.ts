@@ -10,10 +10,10 @@ import {
   RawImage,
   type Tensor,
 } from "@huggingface/transformers";
-import { exec } from "node:child_process";
+import { exec } from "child_process";
 import * as Echogarden from "echogarden";
 import { EmbeddingModel, FlagEmbedding } from "fastembed";
-import fs from "node:fs";
+import fs from "fs";
 import {
   getLlama,
   type Llama,
@@ -24,11 +24,11 @@ import {
   type LlamaModel
 } from "node-llama-cpp";
 import { nodewhisper } from "nodejs-whisper";
-import os from "node:os";
-import path from "node:path";
-import { PassThrough, Readable } from "node:stream";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
+import os from "os";
+import path from "path";
+import { PassThrough, Readable } from "stream";
+import { fileURLToPath } from "url";
+import { promisify } from "util";
 import { z } from "zod";
 
 const execAsync = promisify(exec);
@@ -285,11 +285,9 @@ class LocalAIManager {
     if (!this.sequence) {
       throw new Error("LLaMA model not initialized");
     }
+
     const session = new LlamaChatSession({ contextSequence: this.sequence });
-    if (!this.model) {
-      throw new Error("Model is not initialized");
-    }
-    const wordsToPunishTokens = wordsToPunish.flatMap((word) => this.model.tokenize(word));
+    const wordsToPunishTokens = wordsToPunish.flatMap((word) => this.model!.tokenize(word));
 
     const repeatPenalty: LlamaChatSessionRepeatPenalty = {
       punishTokensFilter: () => wordsToPunishTokens,
@@ -449,11 +447,9 @@ export const localAIPlugin: Plugin = {
   async init(config: Record<string, string>) {
     try {
       const validatedConfig = await configSchema.parseAsync(config);
-      for (const [key, value] of Object.entries(validatedConfig)) {
-        if (value) {
-          process.env[key] = value;
-        }
-      }
+      Object.entries(validatedConfig).forEach(([key, value]) => {
+        if (value) process.env[key] = value;
+      });
 
       await localAIManager.initialize();
     } catch (error) {

@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import AIWriter from "react-aiwriter";
 import { AudioRecorder } from "./audio-recorder";
 import CopyButton from "./copy-button";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import ChatTtsButton from "./ui/chat/chat-tts-button";
 import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
@@ -30,70 +30,6 @@ type ExtraContentFields = {
 };
 
 type ContentWithUser = Content & ExtraContentFields;
-
-function MessageContent({
-    message,
-    agentId,
-}: {
-    message: ContentWithUser;
-    agentId: UUID;
-}) {
-    return (
-        <div className="flex flex-col">
-            <ChatBubbleMessage
-                isLoading={message.isLoading}
-                {...(message.user === "user" ? { variant: "sent" } : {})}
-            >
-                {message.user === "user" ? message.text : <AIWriter>{message.text}</AIWriter>}
-                {/* Attachments */}
-                <div>
-                    {message.attachments?.map((attachment: IAttachment) => (
-                        <div
-                            className="flex flex-col gap-1 mt-2"
-                            key={`${attachment.url}-${attachment.title}`}
-                        >
-                            <img
-                                alt="attachment"
-                                src={attachment.url}
-                                width="100%"
-                                height="100%"
-                                className="w-64 rounded-md"
-                            />
-                            <div className="flex items-center justify-between gap-4">
-                                <span />
-                                <span />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </ChatBubbleMessage>
-            <div className="flex items-center gap-4 justify-between w-full mt-1">
-                {message.text && !message.isLoading ? (
-                    <div className="flex items-center gap-1">
-                        <CopyButton text={message.text} />
-                        <ChatTtsButton agentId={agentId} text={message.text} />
-                    </div>
-                ) : null}
-                <div
-                    className={cn([
-                        message.isLoading ? "mt-2" : "",
-                        "flex items-center justify-between gap-4 select-none",
-                    ])}
-                >
-                    {message.source ? (
-                        <Badge variant="outline">{message.source}</Badge>
-                    ) : null}
-                    {message.action ? (
-                        <Badge variant="outline">{message.action}</Badge>
-                    ) : null}
-                    {message.createdAt ? (
-                        <ChatBubbleTimestamp timestamp={moment(message.createdAt).format("LT")} />
-                    ) : null}
-                </div>
-            </div>
-        </div>
-    );
-}
 
 export default function Page({ agentId }: { agentId: UUID }) {
     const { toast } = useToast();
@@ -147,7 +83,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
         const newMessages = [
             {
                 text: input,
-                user: "user",
+                user: "{{user1}}",
                 createdAt: Date.now(),
                 attachments,
             },
@@ -227,9 +163,9 @@ export default function Page({ agentId }: { agentId: UUID }) {
                     disableAutoScroll={disableAutoScroll}
                 >
                     {messages.map((message: ContentWithUser) => {
+                        const variant = getMessageVariant(message?.user);
                         return (
                             <div
-                                key={message.createdAt}
                                 style={{
                                     display: "flex",
                                     flexDirection: "column",
@@ -238,27 +174,90 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                 }}
                             >
                                 <ChatBubble
-                                    variant={getMessageVariant(message.user)}
+                                    variant={variant}
                                     className="flex flex-row items-center gap-2"
                                 >
-                                    {message.user !== "user" ? (
-                                        <>
-                                            <Avatar className="size-8 p-1 border rounded-full select-none">
-                                                <AvatarImage src="/elizaos-icon.png" />
-                                            </Avatar>
-                                            <MessageContent message={message} agentId={agentId} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <MessageContent message={message} agentId={agentId} />
-                                            <Avatar className="size-8 p-1 border rounded-full select-none">
-                                                <AvatarImage src="/user-icon.png" />
-                                                <AvatarFallback>
-                                                    U
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        </>
-                                    )}
+                                    {message?.user !== "user" ? (
+                                        <Avatar className="size-8 p-1 border rounded-full select-none">
+                                            <AvatarImage src="/elizaos-icon.png" />
+                                        </Avatar>
+                                    ) : null}
+                                    <div className="flex flex-col">
+                                        <ChatBubbleMessage
+                                            isLoading={message?.isLoading}
+                                        >
+                                            {message?.user !== "user" ? (
+                                                <AIWriter>
+                                                    {message?.text}
+                                                </AIWriter>
+                                            ) : (
+                                                message?.text
+                                            )}
+                                            {/* Attachments */}
+                                            <div>
+                                                {message?.attachments?.map(
+                                                    (attachment: IAttachment) => (
+                                                        <div
+                                                            className="flex flex-col gap-1 mt-2"
+                                                            key={`${attachment.url}-${attachment.title}`}
+                                                        >
+                                                            <img
+                                                                alt="attachment"
+                                                                src={attachment.url}
+                                                                width="100%"
+                                                                height="100%"
+                                                                className="w-64 rounded-md"
+                                                            />
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <span />
+                                                                <span />
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        </ChatBubbleMessage>
+                                        <div className="flex items-center gap-4 justify-between w-full mt-1">
+                                            {message?.text &&
+                                            !message?.isLoading ? (
+                                                <div className="flex items-center gap-1">
+                                                    <CopyButton
+                                                        text={message?.text}
+                                                    />
+                                                    <ChatTtsButton
+                                                        agentId={agentId}
+                                                        text={message?.text}
+                                                    />
+                                                </div>
+                                            ) : null}
+                                            <div
+                                                className={cn([
+                                                    message?.isLoading
+                                                        ? "mt-2"
+                                                        : "",
+                                                    "flex items-center justify-between gap-4 select-none",
+                                                ])}
+                                            >
+                                                {message?.source ? (
+                                                    <Badge variant="outline">
+                                                        {message.source}
+                                                    </Badge>
+                                                ) : null}
+                                                {message?.action ? (
+                                                    <Badge variant="outline">
+                                                        {message.action}
+                                                    </Badge>
+                                                ) : null}
+                                                {message?.createdAt ? (
+                                                    <ChatBubbleTimestamp
+                                                        timestamp={moment(
+                                                            message?.createdAt
+                                                        ).format("LT")}
+                                                    />
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </ChatBubble>
                             </div>
                         );
