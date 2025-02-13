@@ -19,8 +19,6 @@ import {
     MESSAGE_LENGTH_THRESHOLDS
 } from "./constants.ts";
 import {
-    discordAnnouncementHypeTemplate,
-    discordAutoPostTemplate,
     discordMessageHandlerTemplate,
     discordShouldRespondTemplate
 } from "./templates.ts";
@@ -52,9 +50,6 @@ export class MessageManager {
     private interestChannels: InterestChannels = {};
     private discordClient: any;
     private voiceManager: VoiceManager;
-    //Auto post
-    private lastChannelActivity: { [channelId: string]: number } = {};
-    private autoPostInterval: NodeJS.Timeout;
 
     constructor(discordClient: any, voiceManager: VoiceManager) {
         this.client = discordClient.client;
@@ -69,9 +64,6 @@ export class MessageManager {
             !this.runtime.character.clientConfig.discord.allowedChannelIds.includes(message.channelId)) {
             return;
         }
-
-        // Update last activity time for the channel
-        this.lastChannelActivity[message.channelId] = Date.now();
 
         if (
             message.interaction ||
@@ -619,7 +611,7 @@ export class MessageManager {
             modelClass: ModelClass.TEXT_SMALL,
         });
 
-        if (response === "RESPOND") {
+        if (response.includes("RESPOND")) {
             if (channelState) {
                 channelState.previousContext = {
                     content: message.content,
@@ -628,9 +620,9 @@ export class MessageManager {
             }
 
             return true;
-        } else if (response === "IGNORE") {
+        } else if (response.includes("IGNORE")) {
             return false;
-        } else if (response === "STOP") {
+        } else if (response.includes("STOP")) {
             delete this.interestChannels[message.channelId];
             return false;
         } else {
