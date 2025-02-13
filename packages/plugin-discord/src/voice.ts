@@ -509,7 +509,7 @@ export class VoiceManager extends EventEmitter {
             } finally {
                 this.processingVoice = false;
             }
-        }, DEBOUNCE_TRANSCRIPTION_THRESHOLD) as unknown as NodeJS.Timeout;
+        }, DEBOUNCE_TRANSCRIPTION_THRESHOLD);
     }
 
     async handleUserStream(
