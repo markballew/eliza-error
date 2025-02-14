@@ -296,27 +296,27 @@ export const openaiPlugin: Plugin = {
       name: "openai_plugin_tests",
       tests: [
         {
-          name: 'openai_test_url_and_api_key_validation',
+          name: 'test_url_and_api_key_validation',
           fn: async (runtime) => {
             const baseURL =
               runtime.getSetting("OPENAI_BASE_URL") ?? "https://api.openai.com/v1";
             const response = await fetch(`${baseURL}/models`, {
               headers: { Authorization: `Bearer ${runtime.getSetting("OPENAI_API_KEY")}` },
             });
-            const data = await response.json();
-            console.log("Models Available:", (data as any)?.data.length);
+            console.log("response", await response.json());
             if (!response.ok) {
               throw new Error(`Failed to validate OpenAI API key: ${response.statusText}`);
             }
           }
         },
         {
-          name: 'openai_test_text_large',
+          name: 'test_text_large',
           fn: async (runtime) => {
+            console.log("test_openai_plugin");
             try {
               const text = await runtime.useModel(ModelClass.TEXT_LARGE, {
-                context: "Debug Mode:",
-                prompt: "What is the nature of reality in 10 words?",
+                context: "Test Mode: Reply with a short answer",
+                prompt: "What is the nature of reality?",
               });
               if (text.length === 0) {
                 throw new Error("Failed to generate text");
@@ -329,11 +329,12 @@ export const openaiPlugin: Plugin = {
           }
         },
         {
-          name: 'openai_test_text_small',
+          name: 'test_text_small',
           fn: async (runtime) => {
+            console.log("test_openai_plugin");
             try {
               const text = await runtime.useModel(ModelClass.TEXT_SMALL, {
-                context: "Debug Mode:",
+                context: "Test Mode:",
                 prompt: "What is the nature of reality in 10 words?",
               });
               if (text.length === 0) {
@@ -347,15 +348,18 @@ export const openaiPlugin: Plugin = {
           }
         },
         {
-          name: 'openai_test_image_generation',
+          name: 'test_image_generation',
           fn: async (runtime) => {
-            console.log("openai_test_image_generation");
+            console.log("test_openai_plugin");
             try {
               const image = await runtime.useModel(ModelClass.IMAGE, {
                 prompt: "A beautiful sunset over a calm ocean",
                 n: 1,
                 size: "1024x1024"
               });
+              if (image.length === 0) {
+                throw new Error("Failed to generate image");
+              }
               console.log("generated with test_image_generation:", image);
             } catch (error) {
               console.error("Error in test_image_generation:", error);
