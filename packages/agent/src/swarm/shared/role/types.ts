@@ -8,6 +8,12 @@ export enum RoleName {
     IGNORE = "IGNORE"
 }
 
+export interface UserRole {
+    userId: string;
+    serverId: string;
+    role: RoleName;
+}
+
 export interface ServerRoleState {
     roles: {
         [userId: string]: UserRole;
@@ -35,15 +41,6 @@ export function canModifyRole(modifierRole: RoleName, targetRole: RoleName, newR
     return false; // Other roles can't modify roles
 }
 
-export interface UserRole {
-    userId: string;
-    platformId: string; // Discord ID, Telegram ID, etc
-    serverId: string;
-    role: RoleName;
-    assignedBy: string;
-    assignedAt: number;
-}
-
 // Role access helpers
 export async function getUserServerRole(
     runtime: IAgentRuntime,
@@ -59,47 +56,5 @@ export async function getUserServerRole(
     } catch (error) {
         logger.error("Error getting user role:", error);
         return RoleName.NONE;
-    }
-}
-
-export async function setUserServerRole(
-    runtime: IAgentRuntime,
-    userRole: UserRole
-): Promise<void> {
-    try {
-        const cacheKey = ROLE_CACHE_KEYS.SERVER_ROLES(userRole.serverId);
-        let roleState = await runtime.cacheManager.get<ServerRoleState>(cacheKey);
-
-        if (!roleState) {
-            roleState = {
-                roles: {},
-                lastUpdated: Date.now()
-            };
-        }
-
-        roleState.roles[userRole.userId] = userRole;
-        roleState.lastUpdated = Date.now();
-
-        await runtime.cacheManager.set(
-            cacheKey,
-            roleState
-        );
-
-        // Log role change
-        await runtime.databaseAdapter.log({
-            body: {
-                type: "role_update",
-                targetUser: userRole.userId,
-                serverId: userRole.serverId,
-                newRole: userRole.role,
-                assignedBy: userRole.assignedBy
-            },
-            userId: runtime.agentId,
-            roomId: userRole.serverId as UUID,
-            type: "role_management"
-        });
-    } catch (error) {
-        logger.error("Error setting user role:", error);
-        throw error;
     }
 }
