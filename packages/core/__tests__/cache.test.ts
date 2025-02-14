@@ -32,7 +32,7 @@ describe("CacheManager", () => {
         expect(await cache.get("foo")).toEqual("bar");
 
         expect(cache.adapter.data.get("foo")).toEqual(
-            JSON.stringify({ value: "bar" })
+            JSON.stringify({ value: "bar", expires: expires })
         );
 
         vi.setSystemTime(expires + 1000);

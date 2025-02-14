@@ -1,11 +1,12 @@
 import {
-  logger,
-  stringToUuid,
-  type Character,
-  type Client as ElizaClient,
-  type IAgentRuntime,
-  type Plugin,
-  type TestSuite,
+    logger,
+    stringToUuid,
+    type TestSuite,
+    type Character,
+    type Client as ElizaClient,
+    type IAgentRuntime,
+    type Plugin,
+    ClientInstance
 } from "@elizaos/core";
 import {
   Client,
@@ -22,30 +23,30 @@ import chat_with_attachments from "./actions/chat_with_attachments.ts";
 import download_media from "./actions/download_media.ts";
 import joinvoice from "./actions/joinvoice.ts";
 import leavevoice from "./actions/leavevoice.ts";
-import reply from "./actions/reply.ts";
 import summarize from "./actions/summarize_conversation.ts";
 import transcribe_media from "./actions/transcribe_media.ts";
-import { DISCORD_CLIENT_NAME } from "./constants.ts";
 import { MessageManager } from "./messages.ts";
 import channelStateProvider from "./providers/channelState.ts";
 import voiceStateProvider from "./providers/voiceState.ts";
+import reply from "./actions/reply.ts";
 import type { IDiscordClient } from "./types.ts";
 import { VoiceManager } from "./voice.ts";
+import { validateDiscordConfig, DiscordConfig } from "./environment.ts";
+import { DiscordTestSuite } from "./test-suite.ts";
+import { DISCORD_CLIENT_NAME } from "./constants.ts";
 
 export class DiscordClient extends EventEmitter implements IDiscordClient {
   apiToken: string;
   client: Client;
   runtime: IAgentRuntime;
   character: Character;
-  private messageManager: MessageManager;
-  private voiceManager: VoiceManager;
+  messageManager: MessageManager;
+  voiceManager: VoiceManager;
 
-  constructor(runtime: IAgentRuntime) {
+  constructor(runtime: IAgentRuntime, discordConfig: DiscordConfig) {
     super();
 
-    console.log("Discord client constructor was engaged");
-
-    this.apiToken = runtime.getSetting("DISCORD_API_TOKEN") as string;
+    this.apiToken = discordConfig.DISCORD_API_TOKEN;
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds,
@@ -358,9 +359,6 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
   private handleGuildCreate(guild: Guild) {
     console.log(`Joined guild ${guild.name}`);
     this.voiceManager.scanGuild(guild);
-    this.runtime.emitEvent("DISCORD_JOIN_SERVER", {
-      guild,
-    });
   }
 
   private async handleInteractionCreate(interaction: any) {
@@ -386,20 +384,11 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
 }
 
 const DiscordClientInterface: ElizaClient = {
-  name: DISCORD_CLIENT_NAME,
-  start: async (runtime: IAgentRuntime) => new DiscordClient(runtime),
-};
-
-const testSuite: TestSuite = {
   name: "discord",
-  tests: [
-    {
-      name: "test creating discord client",
-      fn: async (runtime: IAgentRuntime) => {
-        console.log("Discord test was engaged");
-      },
-    },
-  ],
+  start: async (runtime: IAgentRuntime) => {
+    const discordConfig: DiscordConfig = await validateDiscordConfig(runtime);
+    return new DiscordClient(runtime, discordConfig);
+  },
 };
 
 const discordPlugin: Plugin = {
@@ -416,6 +405,6 @@ const discordPlugin: Plugin = {
     transcribe_media,
   ],
   providers: [channelStateProvider, voiceStateProvider],
-  tests: [testSuite],
+  tests: [new DiscordTestSuite()],
 };
 export default discordPlugin;

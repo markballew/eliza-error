@@ -66,7 +66,7 @@ export const twitterEnvSchema = z.object({
         .optional()
         .default(''),
     */
-    TWITTER_ENABLE_POST_GENERATION: z.boolean(),
+    ENABLE_TWITTER_POST_GENERATION: z.boolean(),
     POST_INTERVAL_MIN: z.number().int(),
     POST_INTERVAL_MAX: z.number().int(),
     ACTION_INTERVAL: z.number().int(),
@@ -109,8 +109,7 @@ function safeParseInt(
 // we also do a lot of typing/parsing here
 // so we can do it once and only once per character
 export async function validateTwitterConfig(
-    runtime: IAgentRuntime,
-    config: Partial<TwitterConfig> = {}
+    runtime: IAgentRuntime
 ): Promise<TwitterConfig> {
     try {
         const twitterConfig = {
@@ -166,10 +165,10 @@ export async function validateTwitterConfig(
             ),
 
             // bool
-            TWITTER_ENABLE_POST_GENERATION:
+            ENABLE_TWITTER_POST_GENERATION:
                 parseBooleanFromText(
-                    runtime.getSetting("TWITTER_ENABLE_POST_GENERATION") ||
-                        process.env.TWITTER_ENABLE_POST_GENERATION
+                    runtime.getSetting("ENABLE_TWITTER_POST_GENERATION") ||
+                        process.env.ENABLE_TWITTER_POST_GENERATION
                 ) ?? true,
 
 
@@ -206,7 +205,6 @@ export async function validateTwitterConfig(
                     runtime.getSetting("TWITTER_SPACES_ENABLE") ||
                         process.env.TWITTER_SPACES_ENABLE
                 ) ?? false,
-            ...config,
         };
 
         return twitterEnvSchema.parse(twitterConfig);
