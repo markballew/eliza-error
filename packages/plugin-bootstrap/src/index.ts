@@ -10,8 +10,6 @@ import { factEvaluator } from "./evaluators/fact.ts";
 import { goalEvaluator } from "./evaluators/goal.ts";
 import { factsProvider } from "./providers/facts.ts";
 import { timeProvider } from "./providers/time.ts";
-import { cancelTaskAction } from "./actions/cancel.ts";
-import { confirmTaskAction } from "./actions/confirm.ts";
 
 export * as actions from "./actions";
 export * as evaluators from "./evaluators";
@@ -28,8 +26,6 @@ export const bootstrapPlugin: Plugin = {
         noneAction,
         muteRoomAction,
         unmuteRoomAction,
-        cancelTaskAction,
-        confirmTaskAction,
     ],
     evaluators: [factEvaluator, goalEvaluator],
     providers: [timeProvider, factsProvider],

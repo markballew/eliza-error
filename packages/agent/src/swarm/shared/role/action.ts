@@ -21,8 +21,8 @@ import {
   type State,
   logger,
 } from "@elizaos/core";
-import type { Message } from "discord.js";
-import type { ServerRoleState } from "./types";
+import { type Message } from "discord.js";
+import { ServerRoleState } from "./types";
 
 export enum RoleName {
   OWNER = "OWNER",
@@ -64,8 +64,8 @@ const updateOrgRoleAction: Action = {
     state: State
   ): Promise<boolean> => {
     const discordMessage = state.discordMessage as Message;
-    if (!discordMessage?.guild?.id) {
-      return false;
+    if (!discordMessage.guild?.id) {
+      return;
     }
 
     if (!discordMessage?.guild?.id) {

@@ -5,10 +5,10 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "../../.env" });
 
-import type { Character, IAgentRuntime } from "@elizaos/core";
-import type { Client, Guild, Message } from "discord.js";
+import { Character, IAgentRuntime } from "@elizaos/core";
+import { Client, Guild, Message } from "discord.js";
 import { initializeOnboarding } from "../shared/onboarding/initialize";
-import type { OnboardingConfig } from "../shared/onboarding/types";
+import { OnboardingConfig } from "../shared/onboarding/types";
 import { initializeRole } from "../shared/role/initialize";
 
 const character: Character = {
@@ -18,8 +18,10 @@ const character: Character = {
     "@elizaos/plugin-openai",
     "@elizaos/plugin-discord",
     "@elizaos/plugin-node",
-    "@elizaos/plugin-bootstrap",
   ],
+  settings: {
+
+  },
   secrets: {
     DISCORD_APPLICATION_ID: process.env.COMMUNITY_MANAGER_DISCORD_APPLICATION_ID,
     DISCORD_API_TOKEN: process.env.COMMUNITY_MANAGER_DISCORD_API_TOKEN,
@@ -403,4 +405,3 @@ export default {
     });
   }
 };
-

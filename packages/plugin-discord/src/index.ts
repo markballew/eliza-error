@@ -4,7 +4,8 @@ import {
   type Character,
   type Client as ElizaClient,
   type IAgentRuntime,
-  type Plugin
+  type Plugin,
+  type TestSuite,
 } from "@elizaos/core";
 import {
   Client,
@@ -28,9 +29,10 @@ import { DISCORD_CLIENT_NAME } from "./constants.ts";
 import { MessageManager } from "./messages.ts";
 import channelStateProvider from "./providers/channelState.ts";
 import voiceStateProvider from "./providers/voiceState.ts";
-import { DiscordTestSuite } from "./test-suite.ts";
 import type { IDiscordClient } from "./types.ts";
 import { VoiceManager } from "./voice.ts";
+import { validateDiscordConfig, DiscordConfig } from "./environment.ts";
+import { DiscordTestSuite } from "./test-suite.ts";
 
 export class DiscordClient extends EventEmitter implements IDiscordClient {
   apiToken: string;
@@ -49,8 +51,6 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences,
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.MessageContent,
@@ -390,7 +390,7 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
       // send in 1 second
       setTimeout(() => {
         // for each server the client is in, fire a connected event
-        for (const [, guild] of guilds) {
+        for (const guild of guilds) {
           console.log("DISCORD SERVER CONNECTED", guild);
           this.runtime.emitEvent("DISCORD_SERVER_CONNECTED", { guild });
         }

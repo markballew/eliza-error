@@ -1,3 +1,9 @@
+// Provide the current onboarding state
+// For each setting or secret, indicate what has been set and what is missing
+// At the end of the string output, indicate the next step in the onboarding process based on the first missing setting or secret
+// Each setting should have a name and description
+// Only validate the provider if its in a DM with a user who is an OWNER role in a server where the agent is invited
+
 import {
     type IAgentRuntime,
     type Memory,
@@ -5,8 +11,8 @@ import {
     type State,
     logger,
 } from "@elizaos/core";
-import type { Message } from "discord.js";
-import type { OnboardingConfig, OnboardingState } from "./types";
+import { type Message } from "discord.js";
+import { OnboardingConfig, OnboardingState } from "./types";
 
 export const createOnboardingProvider = (config: OnboardingConfig): Provider => ({
     get: async (
@@ -14,67 +20,49 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
         message: Memory,
         state?: State
     ): Promise<string> => {
+        console.log("*** get onboarding provider");
+
         if(!state?.discordMessage) {
-            logger.error("No discord message in state");
-            return "Error: No discord message found";
+            throw new Error("No discord message found");
         }
-
         const discordMessage = state.discordMessage as Message;
-        const userId = discordMessage.author.id;
-
-        // Get serverId from ownership state, just like in the action
-        const ownershipState = await runtime.cacheManager.get<{ servers: { [key: string]: { ownerId: string } } }>(
-            'server_ownership_state'
-        );
-
-        if (!ownershipState?.servers) {
-            logger.error("No ownership state found");
-            return "Error: No server ownership found";
+        let serverId;
+        if (discordMessage.guild?.id) {
+            serverId = discordMessage.guild.id;
+        } else if (discordMessage.channel.isDMBased()) {
+            serverId = discordMessage.channel.id;
+        } else {
+            logger.info("No valid ID found");
+            return "";
         }
 
-        const serverEntry = Object.entries(ownershipState.servers)
-            .find(([_, info]) => info.ownerId === userId);
-
-        if (!serverEntry) {
-            logger.error("User is not owner of any server");
-            return "Error: No server found for user";
-        }
-
-        const [serverId] = serverEntry;
-        
         try {
             // Get current onboarding state
             let onboardingState = await runtime.cacheManager.get<OnboardingState>(
                 `server_${serverId}_onboarding_state`
             );
 
-            // Initialize state if it doesn't exist
             if (!onboardingState) {
-                onboardingState = {};
-                
-                // Initialize each setting from config
-                for (const [key, configSetting] of Object.entries(config.settings)) {
-                    onboardingState[key] = {
-                        name: configSetting.name,
-                        description: configSetting.description,
-                        value: null,
-                        required: configSetting.required,
-                        validation: configSetting.validation || null,
-                        dependsOn: configSetting.dependsOn || [],
-                        onSetAction: configSetting.onSetAction || null,
-                        visibleIf: configSetting.visibleIf || null
-                    };
-                }
+                console.log("No onboarding state found");
+                // Initialize onboarding state with provided settings
+                onboardingState = Object.entries(config.settings).reduce((acc, [key, setting]) => ({
+                        ...acc,
+                        [key]: {
+                            ...setting,
+                            value: null
+                        }
+                    }), {})
 
-                // Save the initial state
+                console.log("Initializing onboarding state");
                 await runtime.cacheManager.set(
                     `server_${serverId}_onboarding_state`,
                     onboardingState
                 );
             }
 
-            let statusMessage = `# Onboarding flow\nAs ${state.agentName} your role is to get all of the onboarding information from your boss, who is here to help you get set up.\nYou must ask your boss for the information you need, and then save it to your settings. The user can change these settings at any time.\n\n# ONBOARDING STATUS\n`;
-
+            // Generate status message
+            let statusMessage = "# Onboarding Status\n\n";
+            console.log("Generating onboarding status message");
             // Add settings status
             for (const [key, setting] of Object.entries(onboardingState)) {
                 // Check if dependencies are met
@@ -90,19 +78,18 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
                 const requiredMark = setting.required ? "*" : "";
                 statusMessage += `${status} ${setting.name}${requiredMark}: ${setting.value !== null ? setting.value : "Not set"}\n`;
             }
+            console.log("statusMessage", statusMessage);
 
-            // Check if all required settings are completed
-            const completed = Object.values(onboardingState).every(setting => 
-                setting.value !== null || !setting.required
-            );
+            const completed = Object.values(onboardingState.settings).every(setting => setting.value !== null);
 
+            // Add next step if not completed
             if (!completed) {
-                // Find next unconfigured setting
-                const nextSetting = Object.entries(onboardingState)
-                    .find(([_, setting]) => {
-                        if (setting.value === null && (!setting.visibleIf || setting.visibleIf(onboardingState))) {
+                const nextSetting = Object.entries(onboardingState.settings)
+                    .find(([key, setting]) => {
+                        if (setting.value === null) {
+                            // Check if dependencies are met
                             const dependenciesMet = !setting.dependsOn || setting.dependsOn.every(dep => 
-                                onboardingState[dep]?.value !== null
+                                onboardingState.settings[dep]?.value !== null
                             );
                             return dependenciesMet;
                         }
@@ -110,13 +97,12 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
                     });
 
                 if (nextSetting) {
-                    const [_, setting] = nextSetting;
                     statusMessage += "\n## Next Step\n";
-                    statusMessage += `Configure ${setting.name}:\n`;
-                    statusMessage += `${setting.description}\n`;
+                    statusMessage += `Configure ${nextSetting[1].name}:\n`;
+                    statusMessage += `${nextSetting[1].description}\n`;
                 }
             } else {
-                statusMessage += "\n✓ Onboarding completed! All required settings are configured.\n";
+                statusMessage += "\n✓ Onboarding completed!\n";
             }
 
             return statusMessage;
@@ -127,5 +113,3 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
         }
     }
 });
-
-export default createOnboardingProvider;

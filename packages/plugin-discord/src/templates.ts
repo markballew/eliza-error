@@ -10,31 +10,31 @@ About {{agentName}}:
 # RESPONSE EXAMPLES
 {{user1}}: I just saw a really great movie
 {{user2}}: Oh? Which movie?
-Response: IGNORE
+Result: IGNORE
 
 {{agentName}}: Oh, this is my favorite scene
 {{user1}}: sick
 {{user2}}: wait, why is it your favorite scene
-Response: RESPOND
+Result: RESPOND
 
 {{user1}}: stfu bot
-Response: STOP
+Result: STOP
 
 {{user1}}: Hey {{agent}}, can you help me with something
-Response: RESPOND
+Result: RESPOND
 
 {{user1}}: {{agentName}} stfu plz
-Response: STOP
+Result: STOP
 
 {{user1}}: i need help
 {{agentName}}: how can I help you?
 {{user1}}: no. i need help from someone else
-Response: IGNORE
+Result: IGNORE
 
 {{user1}}: Hey {{agent}}, can I ask you a question
 {{agentName}}: Sure, what is it
 {{user1}}: can you ask claude to create a basic react module that demonstrates a counter
-Response: RESPOND
+Result: RESPOND
 
 {{user1}}: {{agentName}} can you tell me a story
 {{user1}}: about a girl named elara
@@ -42,25 +42,27 @@ Response: RESPOND
 {{agentName}}: Once upon a time, in a quaint little village, there was a curious girl named Elara.
 {{agentName}}: Elara was known for her adventurous spirit and her knack for finding beauty in the mundane.
 {{user1}}: I'm loving it, keep going
-Response: RESPOND
+Result: RESPOND
 
 {{user1}}: {{agentName}} stop responding plz
-Response: STOP
+Result: STOP
 
 {{user1}}: okay, i want to test something. can you say marco?
 {{agentName}}: marco
 {{user1}}: great. okay, now do it again
-Response: RESPOND
+Result: RESPOND
 
 Response options are RESPOND, IGNORE and STOP.
 
+{{agentName}} is in a room with other users and should only participate when directly addressed or when the conversation is relevant to them.
 Respond with the word RESPOND for messages that are directed at {{agentName}} or where a response from {{agentName}} is expected.
 Otherwise, respond with IGNORE
 If a user asks {{agentName}} to be quiet, respond with STOP
+{{agentName}} should only respond when directly addressed or when the conversation is relevant to them.
 
 {{recentMessages}}
 
-# INSTRUCTIONS: Choose the option that best describes {{agentName}}'s response to the last message.
+# INSTRUCTIONS: Choose the option that best describes {{agentName}}'s response to the last message. Ignore messages if they are addressed to someone else.
 ` + shouldRespondFooter;
 
 export const discordVoiceHandlerTemplate =
@@ -85,15 +87,13 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 
 export const discordMessageHandlerTemplate =
     // {{goals}}
-    `# Task: Generate dialog and actions for the character {{agentName}}.
-{{system}}
-
-{{actionExamples}}
+    `{{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
 
 # Knowledge
 {{knowledge}}
 
+# Task: Generate dialog and actions for the character {{agentName}}.
 About {{agentName}}:
 {{bio}}
 
@@ -117,7 +117,10 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 ` + messageCompletionFooter;
 
 export const discordAutoPostTemplate =
-    `# Task: Generate an engaging community message as {{agentName}}.
+    `# Action Examples
+NONE: Respond but perform no additional action. This is the default if the agent is speaking and not doing anything additional.
+
+# Task: Generate an engaging community message as {{agentName}}.
 About {{agentName}}:
 {{bio}}
 
@@ -147,11 +150,14 @@ Examples of {{agentName}}'s dialog and actions:
 - If the recent messages are mostly from {{agentName}}, make sure to create conversation starters, given there is no messages from others to reference.
 - DO NOT REPEAT THE SAME thing that you just said from your recent chat history, start the message different each time, and be organic, non reptitive.
 
-# Instructions: Write the next message for {{agentName}}. Include the "NONE" action only, as the only valid action currently is "NONE".
+# Instructions: Write the next message for {{agentName}}. Include the "NONE" action only, as the only valid action for auto-posts is "NONE".
 ` + messageCompletionFooter;
 
 export const discordAnnouncementHypeTemplate =
-    `# Task: Generate announcement hype message as {{agentName}}.
+    `# Action Examples
+NONE: Respond but perform no additional action. This is the default if the agent is speaking and not doing anything additional.
+
+# Task: Generate announcement hype message as {{agentName}}.
 About {{agentName}}:
 {{bio}}
 

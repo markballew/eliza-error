@@ -4,67 +4,19 @@ import {
     type HandlerCallback,
     type IAgentRuntime,
     type Memory,
-    ModelClass,
     type State,
-    composeContext,
-    generateObject,
-    generateObjectArray,
     logger
 } from "@elizaos/core";
 import { type Message, ChannelType } from "discord.js";
-import type { OnboardingState } from "./types";
-import { findServerForOwner } from "./ownership";
+import { RoleName, getUserServerRole } from "../role/types";
+import { type OnboardingSetting, type OnboardingState } from "./types";
+import { validateOnboardingAccess } from "./ownership";
 
-interface SettingUpdate {
-    key: string;
-    value: string;
+interface SettingCacheItem<T> {
+    value: T;
+    enabled?: boolean;
+    lastUpdated: number;
 }
-
-const categorizeSettings = (onboardingState: OnboardingState) => {
-    const configured = [];
-    const requiredUnconfigured = [];
-    const optionalUnconfigured = [];
-
-    for (const [key, setting] of Object.entries(onboardingState)) {
-        if (setting.value !== null) {
-            configured.push({ key, ...setting });
-        } else if (setting.required) {
-            requiredUnconfigured.push({ key, ...setting });
-        } else {
-            optionalUnconfigured.push({ key, ...setting });
-        }
-    }
-
-    return { configured, requiredUnconfigured, optionalUnconfigured };
-};
-
-const formatSettingsList = (settings: OnboardingState) => {
-    const { configured, requiredUnconfigured, optionalUnconfigured } = categorizeSettings(settings);
-    let list = "Current Settings Status:\n";
-
-    if (configured.length > 0) {
-        list += "\nConfigured Settings:\n";
-        configured.forEach(setting => {
-            list += `- ${setting.name}: ${setting.value}\n`;
-        });
-    }
-
-    if (requiredUnconfigured.length > 0) {
-        list += "\nRequired Settings (Not Yet Configured):\n";
-        requiredUnconfigured.forEach(setting => {
-            list += `- ${setting.name}: ${setting.description}\n`;
-        });
-    }
-
-    if (optionalUnconfigured.length > 0) {
-        list += "\nOptional Settings (Not Yet Configured):\n";
-        optionalUnconfigured.forEach(setting => {
-            list += `- ${setting.name}: ${setting.description}\n`;
-        });
-    }
-
-    return list;
-};
 
 const onboardingAction: Action = {
     name: "SAVE_SETTING",
@@ -76,185 +28,229 @@ const onboardingAction: Action = {
         message: Memory,
         state: State
     ): Promise<boolean> => {
+        console.log("*** validating onboarding action");
         if(!state?.discordMessage) {
+            console.log("*** no discord message found");
             return false;
         }
         const discordMessage = state.discordMessage as Message;
         
         if (discordMessage.channel.type !== ChannelType.DM) {
+            console.log("*** channel type not dm");
             return false;
         }
     
         const userId = discordMessage.author.id;
-
+    
         try {
-            // First check if there's an active onboarding session
-            const ownershipState = await runtime.cacheManager.get<{ servers: { [key: string]: { ownerId: string } } }>(
-                'server_ownership_state'
-            );
-
-            if (!ownershipState?.servers) {
-                return false;
-            }
-
-            // Find the server where this user is the owner
-            const serverEntry = Object.entries(ownershipState.servers)
-                .find(([_, info]) => info.ownerId === userId);
-
-            if (!serverEntry) {
-                return false;
-            }
-
-            const [targetServerId] = serverEntry;
-
-            // Check if there's an active onboarding state
-            const onboardingState = await runtime.cacheManager.get<OnboardingState>(
-                `server_${targetServerId}_onboarding_state`
-            );
-
-            if (!onboardingState) {
-                return false;
-            }
+            // Validate onboarding access using the new helper
+            const serverInfo = await validateOnboardingAccess(runtime, userId);
             
+            if (!serverInfo) {
+                console.log("*** no active onboarding found for user");
+                return false;
+            }
+    
+            // Store the server ID and onboarding state in state for handler
+            state.onboardingServerId = serverInfo.serverId;
+            state.onboardingState = serverInfo.onboardingState;
+            
+            console.log("*** found active onboarding for server", serverInfo.serverId);
             return true;
-
+    
         } catch (error) {
             logger.error("Error validating onboarding action:", error);
             return false;
         }
-    },
+    },    
 
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
         options: any,
-        callback: HandlerCallback
+        callback: HandlerCallback,
+        responses: Memory[]
     ): Promise<void> => {
         if(!state?.discordMessage) {
             return;
         }
         const discordMessage = state.discordMessage as Message;
+        if (!discordMessage.guild?.id) {
+            return;
+        }
+
+        const serverId = discordMessage.guild.id;
         const userId = discordMessage.author.id;
 
-        const serverOwnership = await findServerForOwner(runtime, userId, state);
-
-        if (!serverOwnership) {
-            return;
-        }
-
-        const serverId = serverOwnership.serverId;
-        const onboardingState = await runtime.cacheManager.get<OnboardingState>(
-            `server_${serverId}_onboarding_state`
-        );
-
-        if (!onboardingState) {
-            return;
-        }
-
         try {
-            const { requiredUnconfigured } = categorizeSettings(onboardingState);
-            
-            if (requiredUnconfigured.length === 0) {
+            // Verify admin role again in handler
+            const userRole = await getUserServerRole(runtime, userId, serverId);
+            if (userRole !== RoleName.OWNER) {
                 await callback({
-                    text: "All required settings have been configured.\n\n" + formatSettingsList(onboardingState),
-                    action: "SAVE_SETTING_COMPLETE",
+                    text: "You need admin permissions to configure settings.",
+                    action: "SAVE_SETTING",
                     source: "discord"
                 });
                 return;
             }
 
-            const extractionPrompt = `Extract setting values from the following message. Return an array of objects with 'key' and 'value' properties.
+            // Get current onboarding state
+            let onboardingState = await runtime.cacheManager.get<OnboardingState>(
+                `server_${serverId}_onboarding_state`
+            );
 
-${formatSettingsList(onboardingState)}
-
-Available Settings:
-${Object.entries(onboardingState).map(([key, setting]) => `
-${key}:
-  Name: ${setting.name}
-  Description: ${setting.description}
-  Required: ${setting.required}
-  Current Value: ${setting.value !== null ? setting.value : 'undefined'}
-`).join('\n')}
-
-{{recentMessages}}
-
-Message from {{senderName}}: \`${message.content.text}\`
-
-Extract setting values from the following message. Return an array of objects with 'key' and 'value' properties. Only set values that are present, ignore values that are not present.
-
-Don't include any other text in your response. Only return the array of objects. Response should be an array of objects like:
-[
-  { "key": "SETTING_KEY", "value": "extracted value" }
-]`;
-
-            const context = composeContext({ state, template: extractionPrompt });
-            const extractedSettings = await generateObjectArray({
-                runtime: runtime,
-                modelClass: ModelClass.TEXT_LARGE,
-                context: context,
-            }) as SettingUpdate[];
-
-            let updatedAny = false;
-            let responseText = "";
-
-            for (const update of extractedSettings) {
-                const setting = onboardingState[update.key];
-                if (!setting) {
-                    continue;
-                }
-
-                if (setting.validation && !setting.validation(update.value)) {
-                    responseText += `❌ Invalid value for ${setting.name}: ${update.value}\n`;
-                    continue;
-                }
-
-                onboardingState[update.key].value = update.value;
-                responseText += `✓ Saved ${setting.name}: ${update.value}\n`;
-                updatedAny = true;
-            }
-
-            if (updatedAny) {
-                await runtime.cacheManager.set(
-                    `server_${serverId}_onboarding_state`,
-                    onboardingState
-                );
-
-                responseText += `\n${formatSettingsList(onboardingState)}`;
-
+            if (!onboardingState) {
                 await callback({
-                    text: responseText,
+                    text: "Onboarding hasn't been initialized yet.",
                     action: "SAVE_SETTING",
                     source: "discord"
                 });
+                return;
+            }
 
-                // Log updates
-                for (const update of extractedSettings) {
-                    await runtime.databaseAdapter.log({
-                        body: {
-                            type: "setting_update",
-                            setting: update.key,
-                            serverId: serverId,
-                            updatedBy: userId
-                        },
-                        userId: runtime.agentId,
-                        roomId: message.roomId,
-                        type: "onboarding"
-                    });
-                }
-            } else {
+            // Find the next unconfigured setting
+            const nextSetting = Object.entries(onboardingState)
+                .find(([_, setting]) => {
+                    if (setting.value === null) {
+                        const dependenciesMet = !setting.dependsOn || setting.dependsOn.every(dep => 
+                            onboardingState[dep]?.value !== null
+                        );
+                        return dependenciesMet;
+                    }
+                    return false;
+                });
+
+            if (!nextSetting) {
+                await runtime.cacheManager.set(
+                    `server_${serverId}_onboarding_state`,
+                    onboardingState,
+                );
+
                 await callback({
-                    text: "Could not extract any valid settings from your message. Please try again.\n\n" + formatSettingsList(onboardingState),
-                    action: "SAVE_SETTING_FAILED",
+                    text: "Onboarding complete! All settings have been configured.",
+                    action: "SAVE_SETTING",
                     source: "discord"
                 });
+                return;
             }
+
+            const [settingKey, setting] = nextSetting as [string, OnboardingSetting];
+            const messageText = message.content.text.toLowerCase();
+
+            // Parse value based on the message
+            let value: string | boolean | null = null;
+
+            // Handle boolean settings
+            if (messageText.includes("yes") || messageText.includes("true") || messageText.includes("enable")) {
+                value = true;
+            } else if (messageText.includes("no") || messageText.includes("false") || messageText.includes("disable")) {
+                value = false;
+            } else {
+                // Extract potential channel mentions or other values
+                if (messageText.includes("<#")) {
+                    const channelMatch = messageText.match(/<#(\d+)>/);
+                    value = channelMatch ? channelMatch[1] : null;
+                    
+                    // Verify channel exists
+                    if (value) {
+                        const channel = discordMessage.guild.channels.cache.get(value);
+                        if (!channel) {
+                            await callback({
+                                text: "That channel doesn't exist in this server.",
+                                action: "SAVE_SETTING",
+                                source: "discord"
+                            });
+                            return;
+                        }
+                    }
+                } else {
+                    // Use the whole message as value, removing common prefixes
+                    value = messageText
+                        .replace(/^(set|configure|make it|use|let's use)\s+/i, '')
+                        .trim();
+                }
+            }
+
+            // Validate the value
+            if (setting.validation && value !== null) {
+                try {
+                    if (!setting.validation(value)) {
+                        await callback({
+                            text: `Invalid value for ${setting.name}. ${setting.description}`,
+                            action: "SAVE_SETTING",
+                            source: "discord"
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    logger.error("Error in setting validation:", error);
+                    await callback({
+                        text: "There was an error validating your input.",
+                        action: "SAVE_SETTING",
+                        source: "discord"
+                    });
+                    return;
+                }
+            }
+
+            // Update the setting
+            onboardingState[settingKey].value = value;
+            onboardingState.lastUpdated = Date.now();
+
+            // Save updated state
+            await runtime.cacheManager.set(
+                `server_${serverId}_onboarding_state`,
+                onboardingState
+            );
+
+            // Apply the setting to the appropriate cache location
+            await applySettingToCache(runtime, serverId, settingKey, value);
+
+            // Find next unconfigured setting
+            const nextUnconfiguredSetting = Object.entries(onboardingState as { [key: string]: OnboardingSetting })
+                .find(([_, s]) => s.value === null && (!s.dependsOn || s.dependsOn.every(dep => 
+                    onboardingState.settings[dep]?.value !== null
+                )));
+
+            let responseText = `✓ Saved ${setting.name}: ${value}\n\n`;
+
+            if (nextUnconfiguredSetting) {
+                const [_, nextSetting] = nextUnconfiguredSetting;
+                responseText += `Next setting: ${nextSetting.name}\n${nextSetting.description}`;
+            } else {
+                responseText += "All settings configured! Onboarding complete.";
+                await runtime.cacheManager.set(
+                    `server_${serverId}_onboarding_state`,
+                    onboardingState,
+                );
+            }
+
+            await callback({
+                text: responseText,
+                action: "SAVE_SETTING",
+                source: "discord"
+            });
+
+            // Log setting update
+            await runtime.databaseAdapter.log({
+                body: {
+                    type: "setting_update",
+                    setting: settingKey,
+                    value: value,
+                    serverId: serverId,
+                    updatedBy: userId
+                },
+                userId: runtime.agentId,
+                roomId: message.roomId,
+                type: "onboarding"
+            });
 
         } catch (error) {
             logger.error("Error in onboarding handler:", error);
             await callback({
-                text: "There was an error saving your settings.",
-                action: "SAVE_SETTING_FAILED",
+                text: "There was an error saving your setting.",
+                action: "SAVE_SETTING",
                 source: "discord"
             });
         }
@@ -265,19 +261,95 @@ Don't include any other text in your response. Only return the array of objects.
             {
                 user: "{{user1}}",
                 content: {
-                    text: "My Twitter username is @techguru and email is tech@example.com",
+                    text: "Yes, enable greeting new users",
                     source: "discord"
                 }
             },
             {
                 user: "{{user2}}",
                 content: {
-                    text: "✓ Saved Twitter Username: techguru\n✓ Saved Twitter Email: tech@example.com\n\nCurrent Settings:\nConfigured Settings:\n- Twitter Username: techguru\n- Twitter Email: tech@example.com\n\nRequired Settings (Not Yet Configured):\n- Twitter Password: Your Twitter password",
+                    text: "✓ Saved Greet New Users: true\n\nNext setting: Greeting Channel\nWhich channel should I use for greeting new users?",
+                    action: "SAVE_SETTING"
+                }
+            }
+        ],
+        [
+            {
+                user: "{{user1}}",
+                content: {
+                    text: "Use #welcome for greetings",
+                    source: "discord"
+                }
+            },
+            {
+                user: "{{user2}}",
+                content: {
+                    text: "✓ Saved Greeting Channel: #welcome\n\nNext setting: Allow Timeouts\nShould I be allowed to timeout users who violate community guidelines?",
                     action: "SAVE_SETTING"
                 }
             }
         ]
     ] as ActionExample[][]
 };
+
+async function applySettingToCache(
+    runtime: IAgentRuntime,
+    serverId: string,
+    settingKey: string,
+    value: any
+): Promise<void> {
+    try {
+        switch (settingKey) {
+            case "SHOULD_GREET_NEW_USERS":
+                await runtime.cacheManager.set<SettingCacheItem<boolean>>(
+                    `server_${serverId}_settings_greet`,
+                    { 
+                        value,
+                        enabled: value,
+                        lastUpdated: Date.now() 
+                    },
+                );
+                break;
+
+            case "ALLOW_TIMEOUTS":
+                await runtime.cacheManager.set<SettingCacheItem<boolean>>(
+                    `server_${serverId}_timeout_permissions`,
+                    { 
+                        value,
+                        enabled: value,
+                        lastUpdated: Date.now()
+                    }
+                );
+                break;
+
+            case "TIMEOUT_DURATION": {
+                const timeoutSettings = await runtime.cacheManager.get<SettingCacheItem<number>>(
+                    `server_${serverId}_timeout_permissions`
+                ) || { 
+                    value: 10,
+                    enabled: false,
+                    lastUpdated: Date.now()
+                };
+
+                timeoutSettings.value = value;
+                timeoutSettings.lastUpdated = Date.now();
+
+                await runtime.cacheManager.set(
+                    `server_${serverId}_timeout_permissions`,
+                    timeoutSettings
+                );
+                break;
+            }
+
+            default:
+                // For settings that don't need separate cache entries, 
+                // they're already stored in the onboarding state
+                break;
+        }
+    } catch (error) {
+        logger.error("Error applying setting to cache:", error);
+        throw error;
+    }
+}
 
 export default onboardingAction;

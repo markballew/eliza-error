@@ -1,4 +1,4 @@
-import { type IAgentRuntime, logger, UUID } from "@elizaos/core";
+import { IAgentRuntime, logger, UUID } from "@elizaos/core";
 
 export enum RoleName {
     OWNER = "OWNER",
@@ -51,6 +51,8 @@ export async function getUserServerRole(
         const roleState = await runtime.cacheManager.get<ServerRoleState>(
             ROLE_CACHE_KEYS.SERVER_ROLES(serverId)
         );
+
+        console.log("*** runtime.cacheManager roleState", roleState);
         
         return roleState?.roles[userId]?.role || RoleName.NONE;
     } catch (error) {

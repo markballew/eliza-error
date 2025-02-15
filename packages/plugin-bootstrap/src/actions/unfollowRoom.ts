@@ -11,7 +11,7 @@ import {
 } from "@elizaos/core";
 
 const shouldUnfollowTemplate =
-    `# Task: Decide if {{agentName}} should stop closely following this previously followed room and only respond when mentioned.
+    `Based on the conversation so far:
 
 {{recentMessages}}
 

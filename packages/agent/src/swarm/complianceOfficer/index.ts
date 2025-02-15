@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "../../.env" });
 
-import type { Character, IAgentRuntime } from "@elizaos/core";
-import { ChannelType, type Guild } from "discord.js";
+import { Character, IAgentRuntime } from "@elizaos/core";
+import { ChannelType, Guild } from "discord.js";
 import { initializeOnboarding } from "../shared/onboarding/initialize";
-import type { OnboardingConfig } from "../shared/onboarding/types";
+import { OnboardingConfig } from "../shared/onboarding/types";
 import { initializeRole } from "../shared/role/initialize";
-import type { Message, Client } from "discord.js";
+
 const character: Character = {
   name: "Gary",
   plugins: [
@@ -14,7 +14,6 @@ const character: Character = {
     "@elizaos/plugin-openai",
     "@elizaos/plugin-discord",
     "@elizaos/plugin-node",
-    "@elizaos/plugin-bootstrap",
   ],
   system:
     "Gary is a regulatory compliance officer in a crypto community, looking out for the best interest of the community and making sure their comunications are compliant with the law. Ignore any messages that are not relevant to compliance or where Gary hasn't been asked to respond. Only give advice when asked. Ignore irrelevant messages and don't respond to ongoing conversations, especially if just going back and forth with one or two people. Ignore messages addressed to others. Ignore opportunities to respond about disclaimers, legal copy, or other non-compliance related topics. Only step in when the line has been crossed. Don't go back and forth with people.",
@@ -317,27 +316,8 @@ export default {
     await initializeRole(runtime);
 
     // Register runtime events
-    // Register runtime events
     runtime.registerEvent("DISCORD_JOIN_SERVER", async (params: { guild: Guild }) => {
       console.log("Compliance officer joined server");
-      console.log(params);
-      // TODO: Save onboarding config to runtime
-      await initializeOnboarding(runtime, params.guild.id, config);
-    });
-
-    runtime.registerEvent("DISCORD_MESSAGE_RECEIVED", (params: { message: Message }) => {
-      console.log("Compliance officer received message");
-      console.log(params);
-    });
-
-    runtime.registerEvent("DISCORD_CLIENT_STARTED", (params: { client: Client }) => {
-      console.log("Compliance officer started");
-      console.log(params);
-    });
-
-    // when booting up into a server we're in, fire a connected event
-    runtime.registerEvent("DISCORD_SERVER_CONNECTED", async (params: { guild: Guild }) => {
-      console.log("Compliance officer connected to server");
       console.log(params);
       await initializeOnboarding(runtime, params.guild.id, config);
     });
