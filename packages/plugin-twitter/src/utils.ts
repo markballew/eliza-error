@@ -201,9 +201,10 @@ export async function sendTweet(
     twitterUsername: string,
     inReplyTo: string
 ): Promise<Memory[]> {
-    const isLongTweet = content.text.length > 280 - 1;
+    const maxTweetLength = client.twitterConfig.MAX_TWEET_LENGTH as number;
+    const isLongTweet = maxTweetLength > 280;
 
-    const tweetChunks = splitTweetContent(content.text, 280 - 1);
+    const tweetChunks = splitTweetContent(content.text, maxTweetLength);
     const sentTweets: Tweet[] = [];
     let previousTweetId = inReplyTo;
 
