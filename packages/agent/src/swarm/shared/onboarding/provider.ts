@@ -1,9 +1,3 @@
-// Provide the current onboarding state
-// For each setting or secret, indicate what has been set and what is missing
-// At the end of the string output, indicate the next step in the onboarding process based on the first missing setting or secret
-// Each setting should have a name and description
-// Only validate the provider if its in a DM with a user who is an OWNER role in a server where the agent is invited
-
 import {
     type IAgentRuntime,
     type Memory,
@@ -11,8 +5,18 @@ import {
     type State,
     logger,
 } from "@elizaos/core";
-import { type Message } from "discord.js";
-import { OnboardingConfig, OnboardingState } from "./types";
+import { Message, ChannelType } from "discord.js";
+import type { OnboardingConfig, OnboardingState, OnboardingSetting } from "./types";
+
+const formatSettingValue = (setting: OnboardingSetting, isOnboarding: boolean): string => {
+    if (setting.value === null) return "Not set";
+    if (setting.secret && !isOnboarding) return "****************";
+    return String(setting.value);
+};
+
+const getSettingDescription = (setting: any, isOnboarding: boolean): string => {
+    return isOnboarding ? setting.usageDescription : setting.description;
+};
 
 export const createOnboardingProvider = (config: OnboardingConfig): Provider => ({
     get: async (
@@ -20,89 +24,150 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
         message: Memory,
         state?: State
     ): Promise<string> => {
-        console.log("*** get onboarding provider");
-
         if(!state?.discordMessage) {
-            throw new Error("No discord message found");
-        }
-        const discordMessage = state.discordMessage as Message;
-        let serverId;
-        if (discordMessage.guild?.id) {
-            serverId = discordMessage.guild.id;
-        } else if (discordMessage.channel.isDMBased()) {
-            serverId = discordMessage.channel.id;
-        } else {
-            logger.info("No valid ID found");
-            return "";
+            logger.error("No discord message in state");
+            return "Error: No discord message found";
         }
 
+        const discordMessage = state.discordMessage as Message;
+        const isOnboarding = discordMessage.channel.type === ChannelType.DM;
+        const userId = discordMessage.author.id;
+
+        // Get serverId from ownership state
+        const ownershipState = await runtime.cacheManager.get(
+            'server_ownership_state'
+        ) as { servers: { [key: string]: { ownerId: string } } };
+
+        if (!ownershipState?.servers) {
+            logger.error("No ownership state found");
+            return "Error: No server ownership found";
+        }
+
+        const serverEntry = Object.entries(ownershipState.servers)
+            .find(([_, info]) => info.ownerId === userId);
+
+        if (!serverEntry) {
+            logger.error("User is not owner of any server");
+            return "Error: No server found for user";
+        }
+
+        const [serverId] = serverEntry;
+        
         try {
             // Get current onboarding state
-            let onboardingState = await runtime.cacheManager.get<OnboardingState>(
+            const onboardingState = await runtime.cacheManager.get<OnboardingState>(
                 `server_${serverId}_onboarding_state`
             );
 
             if (!onboardingState) {
-                console.log("No onboarding state found");
-                // Initialize onboarding state with provided settings
-                onboardingState = Object.entries(config.settings).reduce((acc, [key, setting]) => ({
-                        ...acc,
-                        [key]: {
-                            ...setting,
-                            value: null
-                        }
-                    }), {})
-
-                console.log("Initializing onboarding state");
-                await runtime.cacheManager.set(
-                    `server_${serverId}_onboarding_state`,
-                    onboardingState
-                );
+                logger.error("No onboarding state found");
+                return "Error: No configuration found";
             }
 
-            // Generate status message
-            let statusMessage = "# Onboarding Status\n\n";
-            console.log("Generating onboarding status message");
-            // Add settings status
-            for (const [key, setting] of Object.entries(onboardingState)) {
-                // Check if dependencies are met
-                const dependenciesMet = !setting.dependsOn || setting.dependsOn.every(dep => 
-                    onboardingState[dep]?.value !== null
-                );
+            let statusMessage = "";
 
-                if (!dependenciesMet) {
-                    continue;
+            if (isOnboarding) {
+                // Private channel (DM) display
+                statusMessage += `# Onboarding Configuration\n`;
+                statusMessage += `Hello! I'm ${state.agentName}, and I'm here to help get everything set up.\n\n`;
+                statusMessage += "## Settings Status\n";
+
+                // Group settings
+                const configuredSettings = [];
+                const requiredUnconfigured = [];
+                const optionalUnconfigured = [];
+
+                for (const [key, setting] of Object.entries(onboardingState) as [string, OnboardingSetting][]) {
+                    const dependenciesMet = !setting.dependsOn || setting.dependsOn.every(dep => 
+                        onboardingState[dep]?.value !== null
+                    );
+
+                    if (!dependenciesMet) continue;
+                    if (setting.visibleIf && !setting.visibleIf(onboardingState)) continue;
+
+                    const settingDisplay = {
+                        key,
+                        ...setting,
+                        displayValue: formatSettingValue(setting, true),
+                        displayDescription: getSettingDescription(setting, true)
+                    };
+
+                    if (setting.value !== null) {
+                        configuredSettings.push(settingDisplay);
+                    } else if (setting.required) {
+                        requiredUnconfigured.push(settingDisplay);
+                    } else {
+                        optionalUnconfigured.push(settingDisplay);
+                    }
                 }
 
-                const status = setting.value !== null ? "✓" : "○";
-                const requiredMark = setting.required ? "*" : "";
-                statusMessage += `${status} ${setting.name}${requiredMark}: ${setting.value !== null ? setting.value : "Not set"}\n`;
-            }
-            console.log("statusMessage", statusMessage);
+                // Display configured settings
+                if (configuredSettings.length > 0) {
+                    statusMessage += "\n### Configured Settings\n";
+                    for (const setting of configuredSettings) {
+                        statusMessage += `✓ ${setting.name} - ${setting.displayDescription}\n`;
+                        statusMessage += `  Current value: ${setting.displayValue}\n`;
+                    }
+                }
 
-            const completed = Object.values(onboardingState.settings).every(setting => setting.value !== null);
+                // Display required unconfigured settings
+                if (requiredUnconfigured.length > 0) {
+                    statusMessage += "\n### Required Settings (Not Configured)\n";
+                    for (const setting of requiredUnconfigured) {
+                        statusMessage += `○ ${setting.name} - ${setting.displayDescription}\n`;
+                    }
+                }
 
-            // Add next step if not completed
-            if (!completed) {
-                const nextSetting = Object.entries(onboardingState.settings)
-                    .find(([key, setting]) => {
-                        if (setting.value === null) {
-                            // Check if dependencies are met
-                            const dependenciesMet = !setting.dependsOn || setting.dependsOn.every(dep => 
-                                onboardingState.settings[dep]?.value !== null
-                            );
-                            return dependenciesMet;
-                        }
-                        return false;
-                    });
+                // Display optional settings
+                if (optionalUnconfigured.length > 0) {
+                    statusMessage += "\n### Optional Settings\n";
+                    for (const setting of optionalUnconfigured) {
+                        statusMessage += `○ ${setting.name} - ${setting.displayDescription}\n`;
+                    }
+                }
 
-                if (nextSetting) {
+                // Next steps
+                const allRequired = requiredUnconfigured.length === 0;
+                
+                if (!allRequired) {
                     statusMessage += "\n## Next Step\n";
-                    statusMessage += `Configure ${nextSetting[1].name}:\n`;
-                    statusMessage += `${nextSetting[1].description}\n`;
+                    const nextSetting = requiredUnconfigured[0];
+                    statusMessage += `Please configure ${nextSetting.name}:\n`;
+                    statusMessage += `${nextSetting.displayDescription}\n`;
+                } else if (optionalUnconfigured.length > 0) {
+                    statusMessage += "\n## Optional Setup\n";
+                    statusMessage += "All required settings are configured! Would you like to configure any optional settings?\n";
+                } else {
+                    statusMessage += "\n## Setup Complete!\n";
+                    statusMessage += "All settings have been configured. You can always update these settings later.\n";
                 }
             } else {
-                statusMessage += "\n✓ Onboarding completed!\n";
+                // Public channel display
+                statusMessage += "# Configuration\n\n";
+
+                // Only show configured public settings
+                let hasPublicSettings = false;
+                
+                for (const [key, setting] of Object.entries(onboardingState) as [string, OnboardingSetting][]) {
+                    // Skip if not public or not configured
+                    if (!setting.public || setting.value === null) continue;
+                    
+                    // Check dependencies
+                    const dependenciesMet = !setting.dependsOn || setting.dependsOn.every(dep => 
+                        onboardingState[dep]?.value !== null
+                    );
+                    if (!dependenciesMet) continue;
+                    
+                    // Check visibility condition
+                    if (setting.visibleIf && !setting.visibleIf(onboardingState)) continue;
+
+                    hasPublicSettings = true;
+                    statusMessage += `**${setting.name}**: ${formatSettingValue(setting, false)}\n`;
+                }
+
+                if (!hasPublicSettings) {
+                    statusMessage += "No public configuration settings available.";
+                }
             }
 
             return statusMessage;
@@ -113,3 +178,5 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
         }
     }
 });
+
+export default createOnboardingProvider;

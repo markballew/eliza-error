@@ -207,6 +207,9 @@ export interface State {
   /** ID of agent in conversation */
   agentId?: UUID;
 
+  /** System prompt */
+  system?: string;
+
   /** Agent's biography */
   bio: string;
 
@@ -523,6 +526,7 @@ export type Media = {
  * Client instance
  */
 export type ClientInstance = {
+  [key: string]: any;
   /** Stop client connection */
   stop: (runtime: IAgentRuntime) => Promise<unknown>;
 };
@@ -666,6 +670,7 @@ export type Character = {
     [key: string]: any | string | boolean | number;
   };
 
+  /** Optional secrets */
   secrets?: {
     [key: string]: string | boolean | number;
   };
@@ -676,9 +681,6 @@ export type Character = {
     chat?: string[];
     post?: string[];
   };
-
-  /**Optinal Parent characters to inherit information from */
-  extends?: string[];
 };
 
 export interface TwitterSpaceDecisionOptions {
@@ -971,11 +973,11 @@ export interface IAgentRuntime {
 
   setSetting(
     key: string,
-    value: string | boolean | null,
+    value: string | boolean | null | any,
     secret: boolean
   ): void;
 
-  getSetting(key: string): string | null;
+  getSetting(key: string): string | boolean | null | any;
 
   // Methods
   getConversationLength(): number;
@@ -1002,7 +1004,7 @@ export interface IAgentRuntime {
     name: string | null,
     source: string | null
   ): Promise<void>;
-  
+
   registerProvider(provider: Provider): void;
 
   registerAction(action: Action): void;
@@ -1266,23 +1268,6 @@ export interface SgxAttestation {
 export enum TeeType {
   SGX_GRAMINE = "sgx_gramine",
   TDX_DSTACK = "tdx_dstack",
-}
-
-export enum TeeVendors {
-  PHALA = "phala",
-  MARLIN = "marlin",
-  FLEEK = "fleek",
-  SGX_GRAMINE = "sgx_gramine",
-}
-
-export interface TeeVendorConfig {
-  // Add vendor-specific configuration options here
-  [key: string]: unknown;
-}
-
-export interface TeePluginConfig {
-  vendor?: TeeVendors;
-  vendorConfig?: TeeVendorConfig;
 }
 
 export const CACHE_KEYS = {
