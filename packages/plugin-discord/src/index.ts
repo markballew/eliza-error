@@ -4,8 +4,7 @@ import {
   type Character,
   type Client as ElizaClient,
   type IAgentRuntime,
-  type Plugin,
-  type TestSuite,
+  type Plugin
 } from "@elizaos/core";
 import {
   Client,
@@ -18,21 +17,20 @@ import {
   type User,
 } from "discord.js";
 import { EventEmitter } from "events";
-import chat_with_attachments from "./actions/chat_with_attachments.ts";
-import download_media from "./actions/download_media.ts";
-import joinvoice from "./actions/joinvoice.ts";
-import leavevoice from "./actions/leavevoice.ts";
+import chatWithAttachments from "./actions/chatWithAttachments.ts";
+import downloadMedia from "./actions/downloadMedia.ts";
+import joinVoice from "./actions/joinVoice.ts";
+import leaveVoice from "./actions/leaveVoice.ts";
 import reply from "./actions/reply.ts";
-import summarize from "./actions/summarize_conversation.ts";
-import transcribe_media from "./actions/transcribe_media.ts";
+import summarize from "./actions/summarizeConversation.ts";
+import transcribe_media from "./actions/transcribeMedia.ts";
 import { DISCORD_CLIENT_NAME } from "./constants.ts";
 import { MessageManager } from "./messages.ts";
 import channelStateProvider from "./providers/channelState.ts";
 import voiceStateProvider from "./providers/voiceState.ts";
+import { DiscordTestSuite } from "./test-suite.ts";
 import type { IDiscordClient } from "./types.ts";
 import { VoiceManager } from "./voice.ts";
-import { validateDiscordConfig, DiscordConfig } from "./environment.ts";
-import { DiscordTestSuite } from "./test-suite.ts";
 
 export class DiscordClient extends EventEmitter implements IDiscordClient {
   apiToken: string;
@@ -51,6 +49,8 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences,
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.MessageContent,
@@ -75,9 +75,6 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
     this.client.login(this.apiToken);
 
     this.setupEventListeners();
-
-    // fire a connected event
-    this.runtime.emitEvent("DISCORD_CLIENT_STARTED", { client: this.client });
   }
 
   private setupEventListeners() {
@@ -390,7 +387,7 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
       // send in 1 second
       setTimeout(() => {
         // for each server the client is in, fire a connected event
-        for (const guild of guilds) {
+        for (const [, guild] of guilds) {
           console.log("DISCORD SERVER CONNECTED", guild);
           this.runtime.emitEvent("DISCORD_SERVER_CONNECTED", { guild });
         }
@@ -410,10 +407,10 @@ const discordPlugin: Plugin = {
   clients: [DiscordClientInterface],
   actions: [
     reply,
-    chat_with_attachments,
-    download_media,
-    joinvoice,
-    leavevoice,
+    chatWithAttachments,
+    downloadMedia,
+    joinVoice,
+    leaveVoice,
     summarize,
     transcribe_media,
   ],
