@@ -18,13 +18,24 @@ export const cancelTaskAction: Action = {
     message: Memory,
     state: State
   ): Promise<boolean> => {
+    // Get all tasks with AWAITING_CONFIRMATION tag
     const pendingTasks = runtime.getTasks({
       roomId: message.roomId,
       tags: ["AWAITING_CONFIRMATION"],
-  });
+    });
 
-  // Only validate if there are pending tasks
-  return pendingTasks && pendingTasks.length > 0;
+    // validate the tasks
+
+    const validTasks = await Promise.all(
+      pendingTasks.map(async (task) => {
+        return task.validate
+          ? await task.validate(runtime, message, state)
+          : true;
+      })
+    );
+
+    // Only validate if there are pending tasks
+    return !!validTasks && validTasks.length > 0;
   },
 
   handler: async (
@@ -60,8 +71,19 @@ export const cancelTaskAction: Action = {
       for (const task of pendingTasks) {
         runtime.deleteTask(task.id);
       }
+
+      await callback({
+        text: "Task cancelled successfully.",
+        action: "CANCEL_TASK",
+        source: message.content.source,
+      });
     } catch (error) {
       logger.error("Error in cancel task handler:", error);
+      await callback({
+        text: "There was an error cancelling the task.",
+        action: "CANCEL_TASK",
+        source: message.content.source,
+      });
     }
   },
 

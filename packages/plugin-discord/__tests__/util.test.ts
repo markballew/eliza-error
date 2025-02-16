@@ -3,7 +3,7 @@ import {
     getWavHeader,
     sendMessageInChunks,
 } from "../src/utils.ts";
-import type { TextChannel } from "discord.js";
+import { TextChannel } from "discord.js";
 
 vi.mock("@elizaos/core", () => ({
     trimTokens: vi.fn((text) => Promise.resolve(text)),

@@ -46,8 +46,8 @@ import {
     type UUID,
     type ServiceType,
     type Service,
-    type Route,
-    type Task
+    Route,
+    Task
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 
@@ -465,7 +465,7 @@ export class AgentRuntime implements IAgentRuntime {
         await knowledgeManager.processCharacterKnowledge(items);
     }
 
-    setSetting(key: string, value: string | boolean | null | any, secret = false) {
+    setSetting(key: string, value: string | boolean | null, secret: boolean = false) {
         if(secret) {
             this.character.secrets[key] = value;
         } else {
@@ -473,15 +473,26 @@ export class AgentRuntime implements IAgentRuntime {
         }
     }
 
-    getSetting(key: string): string | boolean | null | any {
-        const value = this.character.secrets?.[key] || 
-                     this.character.settings?.[key] ||
-                     this.character.settings?.secrets?.[key] ||
-                     settings[key];
+    getSetting(key: string) {
+        // check if the key is in the character.secrets object
+        if (this.character.secrets?.[key]) {
+            return this.character.secrets[key];
+        }
+        // if not, check if it's in the settings object
+        if (this.character.settings?.[key]) {
+            return this.character.settings[key];
+        }
 
-        if (value === "true") return true;
-        if (value === "false") return false;
-        return value || null;
+        if(this.character.settings?.secrets?.[key]){
+            return this.character.settings.secrets[key];
+        }
+
+        // if not, check if it's in the settings object
+        if (settings[key]) {
+            return settings[key];
+        }
+
+        return null;
     }
 
     /**
@@ -995,12 +1006,9 @@ Text: ${attachment.text}
 
         formattedKnowledge = formatKnowledge(knowledgeData);
 
-        const system = this.character.system ?? "";
-
         const initialState = {
             agentId: this.agentId,
             agentName,
-            system,
             bio,
             adjective:
                 this.character.adjectives &&
@@ -1202,7 +1210,10 @@ Text: ${attachment.text}
                 evaluatorsData.length > 0
                     ? formatEvaluatorExamples(evaluatorsData)
                     : "",
-            providers,
+            providers: addHeader(
+                `# Additional Information About ${this.character.name} and The World`,
+                providers,
+            ),
         };
 
         return { ...initialState, ...actionState } as State;
