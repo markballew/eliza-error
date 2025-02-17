@@ -4,24 +4,14 @@ import crypto from 'crypto';
 import { type DeriveKeyResponse, TappdClient } from '@phala/dstack-sdk';
 import { privateKeyToAccount } from 'viem/accounts';
 import { type PrivateKeyAccount, keccak256 } from 'viem';
-import { PhalaRemoteAttestationProvider as RemoteAttestationProvider } from './remoteAttestationProvider';
+import { RemoteAttestationProvider } from './remoteAttestationProvider';
 import { TEEMode, type RemoteAttestationQuote, type DeriveKeyAttestationData } from '@elizaos/core';
-import { DeriveKeyProvider } from './base';
 
-
-/**
- * Phala TEE Cloud Provider
- * @example
- * ```ts
- * const provider = new PhalaDeriveKeyProvider(runtime.getSetting('TEE_MODE'));
- * ```
- */
-class PhalaDeriveKeyProvider extends DeriveKeyProvider {
+class DeriveKeyProvider {
     private client: TappdClient;
     private raProvider: RemoteAttestationProvider;
 
     constructor(teeMode?: string) {
-        super();
         let endpoint: string | undefined;
 
         // Both LOCAL and DOCKER modes use the simulator, just with different endpoints
@@ -166,10 +156,10 @@ class PhalaDeriveKeyProvider extends DeriveKeyProvider {
     }
 }
 
-const phalaDeriveKeyProvider: Provider = {
+const deriveKeyProvider: Provider = {
     get: async (runtime: IAgentRuntime, _message?: Memory, _state?: State) => {
         const teeMode = runtime.getSetting('TEE_MODE');
-        const provider = new PhalaDeriveKeyProvider(teeMode);
+        const provider = new DeriveKeyProvider(teeMode);
         const agentId = runtime.agentId;
         try {
             // Validate wallet configuration
@@ -203,68 +193,4 @@ const phalaDeriveKeyProvider: Provider = {
     },
 };
 
-/**
- * Marlin TEE Provider
- * @example
- * ```ts
- * const provider = new MarlinDeriveKeyProvider();
- * ```
- */
-class MarlinDeriveKeyProvider extends DeriveKeyProvider {
-    constructor() {
-        super();
-    }  
-}
-
-const marlinDeriveKeyProvider: Provider = {
-    get: async (_runtime: IAgentRuntime, _message?: Memory, _state?: State) => {
-        return 'Marlin Derive Key Provider';
-    },
-};
-
-
-
-/**
- * Fleek TEE Provider
- * @example
- * ```ts
- * const provider = new FleekDeriveKeyProvider();
- * ```
- */
-class FleekDeriveKeyProvider extends DeriveKeyProvider {
-    constructor() {
-        super();
-    }  
-}
-
-const fleekDeriveKeyProvider: Provider = {
-    get: async (_runtime: IAgentRuntime, _message?: Memory, _state?: State) => {
-        return 'Fleek Derive Key Provider';
-    },
-};
-
-/**
- * SGX Gramine TEE Provider
- * @example
- * ```ts
- * const provider = new SgxGramineDeriveKeyProvider();
- * ```
- */
-class SgxGramineDeriveKeyProvider extends DeriveKeyProvider {
-    constructor() {
-        super();
-    }
-}
-
-const sgxGramineDeriveKeyProvider: Provider = {
-    get: async (_runtime: IAgentRuntime, _message?: Memory, _state?: State) => {
-        return 'SGX Gramine Derive Key Provider';
-    },
-};  
-
-export { 
-    phalaDeriveKeyProvider, PhalaDeriveKeyProvider,
-    marlinDeriveKeyProvider, MarlinDeriveKeyProvider,
-    fleekDeriveKeyProvider, FleekDeriveKeyProvider,
-    sgxGramineDeriveKeyProvider, SgxGramineDeriveKeyProvider,
-};
+export { deriveKeyProvider, DeriveKeyProvider };

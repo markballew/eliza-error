@@ -220,14 +220,9 @@ export class DockerOperations {
       });
 
     // Get base name of character file without extension
-    let characterBaseName = '';
-    let characterBase64Data = '';
-    if (version === 'v1') {
-      characterBaseName = path.basename(characterName, path.extname(characterName));
-      characterBase64Data = fs.readFileSync(characterName, 'base64');
-    } else {
-      characterBaseName = characterName;
-    }
+    const characterBaseName = path.basename(characterName, path.extname(characterName));
+    
+    const characterBase64Data = fs.readFileSync(characterName, 'base64');
     
     // Select template based on version
     const template = version === 'v1' ? DOCKER_COMPOSE_ELIZA_V1_TEMPLATE : DOCKER_COMPOSE_ELIZA_V2_TEMPLATE;
@@ -247,7 +242,7 @@ export class DockerOperations {
 
     // Write the docker-compose file with standardized name in the compose directory
     const composeFile = path.join(composePath, `${characterBaseName}-tee-compose.yaml`);
-    fs.writeFileSync(composeFile, composeContent, { flag: 'w' });
+    fs.writeFileSync(composeFile, composeContent);
     
     console.log(`Docker compose file created at: ${composeFile}`);
     return composeFile;

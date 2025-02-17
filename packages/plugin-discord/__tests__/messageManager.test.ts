@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MessageManager } from "../src/messages.ts";
 import { ChannelType, Client, Collection } from "discord.js";
-import { type IAgentRuntime } from "@elizaos/core";
+import type { IAgentRuntime } from "@elizaos/core";
 import type { VoiceManager } from "../src/voice";
 
 vi.mock("@elizaos/core", () => ({
@@ -40,7 +40,7 @@ describe("Discord MessageManager", () => {
       character: {
         name: "TestBot",
         templates: {},
-        clientConfig: {
+        settings: {
           discord: {
             allowedChannelIds: ["mock-channal-id"],
             shouldIgnoreBotMessages: true,
@@ -61,6 +61,7 @@ describe("Discord MessageManager", () => {
         log: vi.fn(),
       },
       processActions: vi.fn(),
+      emitEvent: vi.fn(),
     } as unknown as IAgentRuntime;
 
     mockClient = new Client({ intents: [] });
