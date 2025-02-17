@@ -179,7 +179,7 @@ export function createApiRouter(
             return;
         }
 
-        if (agent.getSetting("USE_CHARACTER_STORAGE") as boolean) {
+        if (agent.getSetting("USE_CHARACTER_STORAGE") === "true") {
             try {
                 const filename = `${agent.agentId}.json`;
                 const uploadDir = path.join(

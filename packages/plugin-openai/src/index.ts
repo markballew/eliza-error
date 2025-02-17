@@ -167,11 +167,12 @@ export const openaiPlugin: Plugin = {
       {
       context,
       stopSequences = [],
-      maxTokens = 8192,
-      temperature = 0.7,
-      frequencyPenalty = 0.7,
-      presencePenalty = 0.7,
     }: GenerateTextParams) => {
+      const temperature = 0.7;
+      const frequency_penalty = 0.7;
+      const presence_penalty = 0.7;
+      const max_response_length = 8192;
+
       const baseURL =
         runtime.getSetting("OPENAI_BASE_URL") ?? "https://api.openai.com/v1";
 
@@ -188,9 +189,9 @@ export const openaiPlugin: Plugin = {
         prompt: context,
         system: runtime.character.system ?? undefined,
         temperature: temperature,
-        maxTokens: maxTokens,
-        frequencyPenalty: frequencyPenalty,
-        presencePenalty: presencePenalty,
+        maxTokens: max_response_length,
+        frequencyPenalty: frequency_penalty,
+        presencePenalty: presence_penalty,
         stopSequences: stopSequences,
       });
 

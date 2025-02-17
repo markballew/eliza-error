@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
-import { v4 as uuidv4, v4 } from "uuid";
+import { v4 as uuidv4 } from "uuid";
 import {
     composeActionExamples,
     formatActionNames,
@@ -46,8 +46,8 @@ import {
     type UUID,
     type ServiceType,
     type Service,
-    type Route,
-    type Task
+    Route,
+    Task
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 
@@ -399,8 +399,6 @@ export class AgentRuntime implements IAgentRuntime {
                         }
                     }
 
-                    logger.info("runtime initialize() plugin:", plugin);
-
                     if (plugin.actions) {
                         for (const action of plugin.actions) {
                             this.registerAction(action);
@@ -452,8 +450,6 @@ export class AgentRuntime implements IAgentRuntime {
             this.character.name,
         );
         await this.ensureParticipantExists(this.agentId, this.agentId);
-        await this.ensureCharacterExists(this.character);
-        await this.ensureEmbeddingDimension();
 
         if (this.character?.knowledge && this.character.knowledge.length > 0) {
             // Non-RAG mode: only process string knowledge
@@ -469,7 +465,7 @@ export class AgentRuntime implements IAgentRuntime {
         await knowledgeManager.processCharacterKnowledge(items);
     }
 
-    setSetting(key: string, value: string | boolean | null | any, secret = false) {
+    setSetting(key: string, value: string | boolean | null, secret: boolean = false) {
         if(secret) {
             this.character.secrets[key] = value;
         } else {
@@ -477,15 +473,26 @@ export class AgentRuntime implements IAgentRuntime {
         }
     }
 
-    getSetting(key: string): string | boolean | null | any {
-        const value = this.character.secrets?.[key] || 
-                     this.character.settings?.[key] ||
-                     this.character.settings?.secrets?.[key] ||
-                     settings[key];
+    getSetting(key: string) {
+        // check if the key is in the character.secrets object
+        if (this.character.secrets?.[key]) {
+            return this.character.secrets[key];
+        }
+        // if not, check if it's in the settings object
+        if (this.character.settings?.[key]) {
+            return this.character.settings[key];
+        }
 
-        if (value === "true") return true;
-        if (value === "false") return false;
-        return value || null;
+        if(this.character.settings?.secrets?.[key]){
+            return this.character.settings.secrets[key];
+        }
+
+        // if not, check if it's in the settings object
+        if (settings[key]) {
+            return settings[key];
+        }
+
+        return null;
     }
 
     /**
@@ -606,7 +613,6 @@ export class AgentRuntime implements IAgentRuntime {
                 await action.handler(this, message, state, {}, callback, responses);
             } catch (error) {
                 logger.error(error);
-                throw error;
             }
         }
     }
@@ -1000,12 +1006,9 @@ Text: ${attachment.text}
 
         formattedKnowledge = formatKnowledge(knowledgeData);
 
-        const system = this.character.system ?? "";
-
         const initialState = {
             agentId: this.agentId,
             agentName,
-            system,
             bio,
             adjective:
                 this.character.adjectives &&
@@ -1207,7 +1210,10 @@ Text: ${attachment.text}
                 evaluatorsData.length > 0
                     ? formatEvaluatorExamples(evaluatorsData)
                     : "",
-            providers,
+            providers: addHeader(
+                `# Additional Information About ${this.character.name} and The World`,
+                providers,
+            ),
         };
 
         return { ...initialState, ...actionState } as State;
@@ -1371,18 +1377,6 @@ Text: ${attachment.text}
                 handler(params);
             }
         }
-    }
-
-    async ensureCharacterExists(character: Character) {
-        const characterExists = await this.databaseAdapter.getCharacter(character.name);
-        if (!characterExists) {
-            await this.databaseAdapter.createCharacter(character);
-        }
-    }
-
-    async ensureEmbeddingDimension() {
-        const embedding = await this.useModel(ModelClass.TEXT_EMBEDDING, null);
-        this.databaseAdapter.ensureEmbeddingDimension(embedding.length, this.agentId);
     }
 
     registerTask(task: Task): UUID {

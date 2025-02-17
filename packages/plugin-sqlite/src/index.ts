@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export * from "./sqliteVec.ts";
+export * from "./sqlite_vec.ts";
 export * from "./sqliteTables.ts";
 
 import type {
@@ -25,7 +25,7 @@ import {
 } from "@elizaos/core";
 import type { Database as BetterSqlite3Database } from "better-sqlite3";
 import { v4 } from "uuid";
-import { load } from "./sqliteVec.ts";
+import { load } from "./sqlite_vec.ts";
 import { sqliteTables } from "./sqliteTables.ts";
 
 import Database from "better-sqlite3";
@@ -725,15 +725,15 @@ export class SqliteDatabaseAdapter
         );
     }
 
-    async updateCharacter(name: string, updates: Partial<Character>): Promise<void> {
+    async updateCharacter(character: Character): Promise<void> {
         const sql = "UPDATE characters SET name = ?, bio = ?, json = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?";
         await this.db
         .prepare(sql)
         .run(
-            updates.name,
-            updates.bio,
-            JSON.stringify(updates),
-            name
+            character.name,
+            character.bio,
+            JSON.stringify(character),
+            character.id
         );
 
     }
@@ -758,11 +758,10 @@ export class SqliteDatabaseAdapter
         return this.db.prepare(sql).get(id) as Character;
     }
 
-    async ensureEmbeddingDimension(dimension: number, agentId: UUID): Promise<void> {}
 }
 
 const sqliteDatabaseAdapter: Adapter = {
-    init: async (runtime: IAgentRuntime) => {
+    init: (runtime: IAgentRuntime) => {
         const dataDir = path.join(process.cwd(), "data");
 
         if (!fs.existsSync(dataDir)) {
@@ -773,13 +772,16 @@ const sqliteDatabaseAdapter: Adapter = {
         logger.info(`Initializing SQLite database at ${filePath}...`);
         const db = new SqliteDatabaseAdapter(new Database(filePath));
 
-        try { 
-            await db.init();
-            logger.success("Successfully connected to SQLite database");
-        } catch (error) {
-            logger.error("Failed to connect to SQLite:", error);
-            throw error;
-        }
+        // Test the connection
+        db.init()
+            .then(() => {
+                logger.success(
+                    "Successfully connected to SQLite database"
+                );
+            })
+            .catch((error) => {
+                logger.error("Failed to connect to SQLite:", error);
+            });
 
         return db;
     },

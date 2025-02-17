@@ -23,7 +23,7 @@ import { escapeMarkdown } from "./utils";
 
 import fs from "fs";
 
-export enum MediaType {
+enum MediaType {
     PHOTO = "photo",
     VIDEO = "video",
     DOCUMENT = "document",
@@ -106,10 +106,8 @@ export class MessageManager {
     ): Promise<boolean> {
         // Respond if bot is mentioned
         if (
-            ("text" in message &&
-            message.text?.includes(`@${this.bot.botInfo?.username}`)) || 
-            ("caption" in message &&
-            message.caption?.includes(`@${this.bot.botInfo?.username}`))
+            "text" in message &&
+            message.text?.includes(`@${this.bot.botInfo?.username}`)
         ) {
             logger.info(`Bot mentioned`);
             return true;
@@ -382,7 +380,7 @@ export class MessageManager {
 
             // Get message ID
             const messageId = stringToUuid(
-                roomId + "-" + message?.message_id?.toString()
+                roomId + "-" + message.message_id.toString()
             ) as UUID;
 
             // Handle images
@@ -529,7 +527,6 @@ export class MessageManager {
         } catch (error) {
             logger.error("❌ Error handling message:", error);
             logger.error("Error sending message:", error);
-            throw error;
         }
     }
 }

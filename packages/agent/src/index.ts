@@ -326,20 +326,24 @@ function initializeCache(
 async function findDatabaseAdapter(runtime: IAgentRuntime) {
   const { adapters } = runtime;
   let adapter: Adapter | undefined;
-  // if not found, default to drizzle
+  // if not found, default to sqlite
   if (adapters.length === 0) {
-    const drizzleAdapterPlugin = await import('@elizaos/plugin-drizzle');
-    const drizzleAdapterPluginDefault = drizzleAdapterPlugin.default;
-    adapter = drizzleAdapterPluginDefault.adapters[0];
+    const sqliteAdapterPlugin = await import("@elizaos/plugin-sqlite");
+    const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
+    adapter = sqliteAdapterPluginDefault.adapters[0];
     if (!adapter) {
-      throw new Error("Internal error: No database adapter found for default plugin-drizzle");
+      throw new Error(
+        "Internal error: No database adapter found for default plugin-sqlite"
+      );
     }
   } else if (adapters.length === 1) {
     adapter = adapters[0];
   } else {
-    throw new Error("Multiple database adapters found. You must have no more than one. Adjust your plugins configuration.");
-    }
-  const adapterInterface = await adapter?.init(runtime);
+    throw new Error(
+      "Multiple database adapters found. You must have no more than one. Adjust your plugins configuration."
+    );
+  }
+  const adapterInterface = adapter?.init(runtime);
   return adapterInterface;
 }
 
@@ -430,6 +434,7 @@ const startAgents = async () => {
   if (args.swarm) {
     try {
       for (const swarmMember of swarm) {
+        console.log("*** INIT", swarmMember.init)
         await startAgent(
           swarmMember.character,
           characterServer,
