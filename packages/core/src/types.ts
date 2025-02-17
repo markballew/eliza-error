@@ -207,6 +207,9 @@ export interface State {
   /** ID of agent in conversation */
   agentId?: UUID;
 
+  /** System prompt */
+  system?: string;
+
   /** Agent's biography */
   bio: string;
 
@@ -523,6 +526,7 @@ export type Media = {
  * Client instance
  */
 export type ClientInstance = {
+  [key: string]: any;
   /** Stop client connection */
   stop: (runtime: IAgentRuntime) => Promise<unknown>;
 };
@@ -543,7 +547,7 @@ export type Client = {
 
 export type Adapter = {
   /** Initialize adapter */
-  init: (runtime: IAgentRuntime) => IDatabaseAdapter & IDatabaseCacheAdapter;
+  init: (runtime: IAgentRuntime) => Promise<IDatabaseAdapter & IDatabaseCacheAdapter>;
 };
 
 export type Route = {
@@ -666,6 +670,7 @@ export type Character = {
     [key: string]: any | string | boolean | number;
   };
 
+  /** Optional secrets */
   secrets?: {
     [key: string]: string | boolean | number;
   };
@@ -676,9 +681,6 @@ export type Character = {
     chat?: string[];
     post?: string[];
   };
-
-  /**Optinal Parent characters to inherit information from */
-  extends?: string[];
 };
 
 export interface TwitterSpaceDecisionOptions {
@@ -837,6 +839,18 @@ export interface IDatabaseAdapter {
   }): Promise<Relationship | null>;
 
   getRelationships(params: { userId: UUID }): Promise<Relationship[]>;
+
+  createCharacter(character: Character): Promise<void>;
+
+  listCharacters(): Promise<Character[]>;
+
+  getCharacter(name: string): Promise<Character | null>;
+
+  updateCharacter(name: string, updates: Partial<Character>): Promise<void>;
+  
+  removeCharacter(name: string): Promise<void>;
+
+  ensureEmbeddingDimension(dimension: number, agentId: UUID): void;
 }
 
 export interface IDatabaseCacheAdapter {
@@ -971,11 +985,11 @@ export interface IAgentRuntime {
 
   setSetting(
     key: string,
-    value: string | boolean | null,
+    value: string | boolean | null | any,
     secret: boolean
   ): void;
 
-  getSetting(key: string): string | null;
+  getSetting(key: string): string | boolean | null | any;
 
   // Methods
   getConversationLength(): number;
@@ -1002,7 +1016,7 @@ export interface IAgentRuntime {
     name: string | null,
     source: string | null
   ): Promise<void>;
-  
+
   registerProvider(provider: Provider): void;
 
   registerAction(action: Action): void;
@@ -1052,6 +1066,10 @@ export interface IAgentRuntime {
   deleteTask(id: UUID): void;
 
   stop(): Promise<void>;
+
+  ensureEmbeddingDimension(): Promise<void>;
+
+  ensureCharacterExists(character: Character): Promise<void>;
 }
 
 export enum LoggingLevel {
@@ -1088,6 +1106,10 @@ export type GenerateTextParams = {
   runtime: IAgentRuntime;
   context: string;
   modelClass: ModelClass;
+  maxTokens?: number;
+  temperature?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
   stopSequences?: string[];
 };
 

@@ -182,9 +182,9 @@ You should only respond with the name of the voice channel or none, no commentar
 
             runtime.databaseAdapter.log({
                 body: { message, context, response: responseContent },
-                userId: message.userId,
+                userId: stringToUuid(message.userId),
                 roomId: message.roomId,
-                type: "joinvoice",
+                type: "joinVoice",
             });
 
             if (responseContent && responseContent.trim().length > 0) {

@@ -1,4 +1,4 @@
-import { IAgentRuntime, Plugin, logger, ModelClass } from "@elizaos/core";
+import { type IAgentRuntime, type Plugin, logger, ModelClass } from "@elizaos/core";
 import { Readable } from "node:stream";
 import { prependWavHeader } from "./utils.ts";
 
@@ -8,7 +8,7 @@ function getVoiceSettings(runtime: IAgentRuntime) {
   
   return {
     apiKey: getSetting("ELEVENLABS_XI_API_KEY"),
-    voiceId: getSetting("ELEVENLABS_VOICE_ID"),
+    voiceId: getSetting("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL"),
     model: getSetting("ELEVENLABS_MODEL_ID", "eleven_monolingual_v1"),
     stability: getSetting("ELEVENLABS_VOICE_STABILITY", "0.5"),
     latency: getSetting("ELEVENLABS_OPTIMIZE_STREAMING_LATENCY", "0"),
@@ -66,7 +66,7 @@ export const elevenLabsPlugin: Plugin = {
     [ModelClass.TEXT_TO_SPEECH]: async (runtime, text) => {
       const stream = await fetchSpeech(runtime, text);
       return getVoiceSettings(runtime).outputFormat.startsWith("pcm_")
-        ? prependWavHeader(stream, 1024 * 1024 * 100, parseInt(getVoiceSettings(runtime).outputFormat.slice(4)), 1, 16)
+        ? prependWavHeader(stream, 1024 * 1024 * 100, Number.parseInt(getVoiceSettings(runtime).outputFormat.slice(4)), 1, 16)
         : stream;
     },
   },
