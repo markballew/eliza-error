@@ -1,4 +1,5 @@
 import {
+    ChannelType,
     cleanJsonResponse,
     composeContext,
     extractAttributes,
@@ -40,6 +41,9 @@ export class TwitterPostClient {
     client: ClientBase;
     runtime: IAgentRuntime;
     twitterUsername: string;
+    private isProcessing = false;
+    private lastProcessTime = 0;
+    private stopProcessingActions = false;
     private isDryRun: boolean;
     private state: any;
 
@@ -176,7 +180,7 @@ export class TwitterPostClient {
         logger.log(`Tweet posted:\n ${tweet.permanentUrl}`);
 
         // Ensure the room and participant exist
-        await runtime.ensureRoomExists(roomId);
+        await runtime.ensureRoomExists(roomId, "twitter", ChannelType.FEED);
         await runtime.ensureParticipantInRoom(runtime.agentId, roomId);
 
         // Create a memory for the tweet
@@ -300,8 +304,7 @@ export class TwitterPostClient {
                 rawTweetContent
             );
         } catch (error) {
-            logger.error("Error sending tweet:");
-            throw error;
+            logger.error("Error sending tweet:", error);
         }
     }
 
@@ -439,6 +442,6 @@ export class TwitterPostClient {
     }
 
     async stop() {
-        
+        this.stopProcessingActions = true;
     }
 }

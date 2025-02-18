@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
-import { v4 as uuidv4, v4 } from "uuid";
+import { v4 as uuidv4 } from "uuid";
 import {
     composeActionExamples,
     formatActionNames,
@@ -47,7 +47,8 @@ import {
     type ServiceType,
     type Service,
     type Route,
-    type Task
+    type Task,
+    ChannelType
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 
@@ -399,8 +400,6 @@ export class AgentRuntime implements IAgentRuntime {
                         }
                     }
 
-                    logger.info("runtime initialize() plugin:", plugin);
-
                     if (plugin.actions) {
                         for (const action of plugin.actions) {
                             this.registerAction(action);
@@ -423,7 +422,6 @@ export class AgentRuntime implements IAgentRuntime {
                         for (const [modelClass, handler] of Object.entries(plugin.models)) {
                             this.registerModel(modelClass as ModelClass, handler as (params: any) => Promise<any>);
                         }
-                        await this.ensureEmbeddingDimension();
                     }
                     if (plugin.services) {
                         for(const service of plugin.services){
@@ -446,14 +444,13 @@ export class AgentRuntime implements IAgentRuntime {
             }
         }
         
-        await this.ensureRoomExists(this.agentId);
+        await this.ensureRoomExists(this.agentId, "self", ChannelType.SELF);
         await this.ensureUserExists(
             this.agentId,
             this.character.username || this.character.name,
             this.character.name,
         );
-        await this.ensureParticipantExists(this.agentId, this.agentId);
-        await this.ensureCharacterExists(this.character);
+        await this.ensureParticipantInRoom(this.agentId, this.agentId);
 
         if (this.character?.knowledge && this.character.knowledge.length > 0) {
             // Non-RAG mode: only process string knowledge
@@ -606,7 +603,6 @@ export class AgentRuntime implements IAgentRuntime {
                 await action.handler(this, message, state, {}, callback, responses);
             } catch (error) {
                 logger.error(error);
-                throw error;
             }
         }
     }
@@ -684,20 +680,6 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     /**
-     * Ensure the existence of a participant in the room. If the participant does not exist, they are added to the room.
-     * @param userId - The user ID to ensure the existence of.
-     * @throws An error if the participant cannot be added.
-     */
-    async ensureParticipantExists(userId: UUID, roomId: UUID) {
-        const participants =
-            await this.databaseAdapter.getParticipantsForAccount(userId);
-
-        if (participants?.length === 0) {
-            await this.databaseAdapter.addParticipant(userId, roomId);
-        }
-    }
-
-    /**
      * Ensure the existence of a user in the database. If the user does not exist, they are added to the database.
      * @param userId - The user ID to ensure the existence of.
      * @param userName - The user name to ensure the existence of.
@@ -709,7 +691,6 @@ export class AgentRuntime implements IAgentRuntime {
         userName: string | null,
         name: string | null,
         email?: string | null,
-        source?: string | null,
     ) {
         const account = await this.databaseAdapter.getAccountById(userId);
         if (!account) {
@@ -721,6 +702,16 @@ export class AgentRuntime implements IAgentRuntime {
             });
             logger.success(`User ${userName} created successfully.`);
         }
+    }
+
+    /**
+     * Get the profile of a user.
+     * @param userId - The user ID to get the profile of.
+     * @returns The profile of the user.
+     */
+    async getUserProfile(userId: UUID) {
+        const account = await this.databaseAdapter.getAccountById(userId);
+        return account;
     }
 
     async ensureParticipantInRoom(userId: UUID, roomId: UUID) {
@@ -740,13 +731,25 @@ export class AgentRuntime implements IAgentRuntime {
         }
     }
 
-    async ensureConnection(
+    async ensureConnection({
+        userId,
+        roomId,
+        userName,
+        userScreenName,
+        source,
+        channelId,
+        serverId,
+        type,
+    }: {
         userId: UUID,
         roomId: UUID,
         userName?: string,
         userScreenName?: string,
         source?: string,
-    ) {
+        type?: ChannelType
+        channelId?: string,
+        serverId?: string,
+    }) {
         await Promise.all([
             this.ensureUserExists(
                 this.agentId,
@@ -760,7 +763,7 @@ export class AgentRuntime implements IAgentRuntime {
                 userScreenName ?? `User${userId}`,
                 source,
             ),
-            this.ensureRoomExists(roomId),
+            this.ensureRoomExists(roomId, source, type, channelId, serverId),
         ]);
 
         await Promise.all([
@@ -776,12 +779,21 @@ export class AgentRuntime implements IAgentRuntime {
      * @returns The room ID of the room between the agent and the user.
      * @throws An error if the room cannot be created.
      */
-    async ensureRoomExists(roomId: UUID) {
+    async ensureRoomExists(roomId: UUID, source: string, type: ChannelType, channelId?: string, serverId?: string) {
         const room = await this.databaseAdapter.getRoom(roomId);
         if (!room) {
-            await this.databaseAdapter.createRoom(roomId);
+            await this.databaseAdapter.createRoom(roomId, source, type, channelId, serverId);
             logger.log(`Room ${roomId} created successfully.`);
         }
+    }
+
+    /**
+     * Get the room ID of the room between the agent and a user.
+     * @param userId - The user ID to get the room ID of.
+     * @returns The room ID of the room between the agent and the user.
+     */
+    async getRoom(userId: UUID) {
+        return await this.databaseAdapter.getRoom(userId);
     }
 
     /**
@@ -1363,53 +1375,20 @@ Text: ${attachment.text}
         return this.events.get(event);
     }
 
-    emitEvent(event: string, params: any) {
-        // call the events associated with the event
-        const eventHandlers = this.events.get(event);
-        if (eventHandlers) {
-            for (const handler of eventHandlers) {
-                handler(params);
-            }
-        }
-    }
-
-    async ensureCharacterExists(character: Character) {
-        const characterExists = await this.databaseAdapter.getCharacter(character.name);
-        if (!characterExists) {
-            await this.databaseAdapter.createCharacter(character);
-        }
-    }
-
-    async ensureEmbeddingDimension() {
-        console.log(`[AgentRuntime][${this.character.name}] Starting ensureEmbeddingDimension`);
+    emitEvent(event: string | string[], params: any) {
+        // Handle both single event string and array of event strings
+        const events = Array.isArray(event) ? event : [event];
         
-        if (!this.databaseAdapter) {
-            throw new Error(`[AgentRuntime][${this.character.name}] Database adapter not initialized before ensureEmbeddingDimension`);
-        }
-
-        try {
-            const model = this.getModel(ModelClass.TEXT_EMBEDDING);
-            if (!model) {
-                throw new Error(`[AgentRuntime][${this.character.name}] No TEXT_EMBEDDING model registered`);
+        // Call handlers for each event
+        for (const eventName of events) {
+            const eventHandlers = this.events.get(eventName);
+            if (eventHandlers) {
+                for (const handler of eventHandlers) {
+                    handler(params);
+                }
             }
-
-            console.log(`[AgentRuntime][${this.character.name}] Getting embedding dimensions`);
-            const embedding = await this.useModel(ModelClass.TEXT_EMBEDDING, null);
-            
-            if (!embedding || !embedding.length) {
-                throw new Error(`[AgentRuntime][${this.character.name}] Invalid embedding received`);
-            }
-
-            console.log(`[AgentRuntime][${this.character.name}] Setting embedding dimension: ${embedding.length}`);
-            await this.databaseAdapter.ensureEmbeddingDimension(embedding.length, this.agentId);
-            console.log(`[AgentRuntime][${this.character.name}] Successfully set embedding dimension`);
-        } catch (error) {
-            console.log(`[AgentRuntime][${this.character.name}] Error in ensureEmbeddingDimension:`, error);
-            throw error;
         }
     }
-
-
 
     registerTask(task: Task): UUID {
         // if task doesn't have an id, generate one

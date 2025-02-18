@@ -44,26 +44,22 @@ describe('Twitter Client Base', () => {
             TWITTER_RETRY_LIMIT: 5,
             TWITTER_POLL_INTERVAL: 120,
             TWITTER_ENABLE_POST_GENERATION: true,
-            TWITTER_POST_INTERVAL_MIN: 90,
-            TWITTER_POST_INTERVAL_MAX: 180,
+            POST_INTERVAL_MIN: 90,
+            POST_INTERVAL_MAX: 180,
             TWITTER_POST_IMMEDIATELY: false
         };
     });
 
     it('should create instance with correct configuration', () => {
-        const client = new ClientBase(mockRuntime, mockConfig);
+        const client = new ClientBase(mockRuntime);
         expect(client).toBeDefined();
         expect(mockRuntime.getSetting("TWITTER_USERNAME")).toBe('testuser');
-        expect(client.state["TWITTER_USERNAME"]).toBe('testuser');
-        expect(mockRuntime.getSetting("TWITTER_DRY_RUN")).toBe('true');
-        expect(client.state["TWITTER_DRY_RUN"]).toBe(true);
+        expect(mockRuntime.getSetting("TWITTER_DRY_RUN")).toBe(true);
     });
 
     it('should initialize with correct post intervals', () => {
-        const client = new ClientBase(mockRuntime, mockConfig);
-        expect(mockRuntime.getSetting("TWITTER_POST_INTERVAL_MIN")).toBe('90');
-        expect(client.state["TWITTER_POST_INTERVAL_MIN"]).toBe(90);
-        expect(mockRuntime.getSetting("TWITTER_POST_INTERVAL_MAX")).toBe('180');
-        expect(client.state["TWITTER_POST_INTERVAL_MAX"]).toBe(180);
+        const client = new ClientBase(mockRuntime);
+        expect(mockRuntime.getSetting("TWITTER_POST_INTERVAL_MIN")).toBe(90);
+        expect(mockRuntime.getSetting("TWITTER_POST_INTERVAL_MAX")).toBe(180);
     });
 });

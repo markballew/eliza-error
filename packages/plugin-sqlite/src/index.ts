@@ -8,6 +8,7 @@ import type {
     Account,
     Actor,
     Adapter,
+    ChannelType,
     Character,
     Goal,
     GoalStatus,
@@ -17,6 +18,7 @@ import type {
     Plugin,
     Relationship,
     UUID,
+    RoomData,
 } from "@elizaos/core";
 import {
     DatabaseAdapter,
@@ -34,12 +36,18 @@ export class SqliteDatabaseAdapter
     extends DatabaseAdapter<BetterSqlite3Database>
     implements IDatabaseCacheAdapter
 {
-    async getRoom(roomId: UUID): Promise<UUID | null> {
-        const sql = "SELECT id FROM rooms WHERE id = ?";
+    async getRoom(roomId: UUID): Promise<RoomData | null> {
+        const sql = "SELECT id, type, channelId, serverId FROM rooms WHERE id = ?";
         const room = this.db.prepare(sql).get(roomId) as
-            | { id: string }
+            | { id: string, type: ChannelType, source: string, channelId?: string, serverId?: string }
             | undefined;
-        return room ? (room.id as UUID) : null;
+        return room ? {
+            id: room.id as UUID,
+            type: room.type,
+            source: room.source,
+            channelId: room.channelId,
+            serverId: room.serverId,
+        } : null;
     }
 
     async getParticipantsForAccount(userId: UUID): Promise<Participant[]> {
@@ -565,11 +573,11 @@ export class SqliteDatabaseAdapter
         this.db.prepare(sql).run(roomId);
     }
 
-    async createRoom(roomId?: UUID): Promise<UUID> {
+    async createRoom(roomId: UUID, source: string, type: ChannelType, channelId?: string, serverId?: string): Promise<UUID> {
         roomId = roomId || (v4() as UUID);
         try {
-            const sql = "INSERT INTO rooms (id) VALUES (?)";
-            this.db.prepare(sql).run(roomId ?? (v4() as UUID));
+            const sql = "INSERT INTO rooms (id, source, type, channelId, serverId) VALUES (?, ?, ?, ?, ?)";
+            this.db.prepare(sql).run(roomId ?? (v4() as UUID), source, type, channelId ?? "", serverId ?? "");
         } catch (error) {
             console.log("Error creating room", error);
         }
@@ -725,15 +733,15 @@ export class SqliteDatabaseAdapter
         );
     }
 
-    async updateCharacter(name: string, updates: Partial<Character>): Promise<void> {
+    async updateCharacter(character: Character): Promise<void> {
         const sql = "UPDATE characters SET name = ?, bio = ?, json = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?";
         await this.db
         .prepare(sql)
         .run(
-            updates.name,
-            updates.bio,
-            JSON.stringify(updates),
-            name
+            character.name,
+            character.bio,
+            JSON.stringify(character),
+            character.id
         );
 
     }
@@ -758,11 +766,10 @@ export class SqliteDatabaseAdapter
         return this.db.prepare(sql).get(id) as Character;
     }
 
-    async ensureEmbeddingDimension(dimension: number, agentId: UUID): Promise<void> {}
 }
 
 const sqliteDatabaseAdapter: Adapter = {
-    init: async (runtime: IAgentRuntime) => {
+    init: (runtime: IAgentRuntime) => {
         const dataDir = path.join(process.cwd(), "data");
 
         if (!fs.existsSync(dataDir)) {
@@ -773,13 +780,16 @@ const sqliteDatabaseAdapter: Adapter = {
         logger.info(`Initializing SQLite database at ${filePath}...`);
         const db = new SqliteDatabaseAdapter(new Database(filePath));
 
-        try { 
-            await db.init();
-            logger.success("Successfully connected to SQLite database");
-        } catch (error) {
-            logger.error("Failed to connect to SQLite:", error);
-            throw error;
-        }
+        // Test the connection
+        db.init()
+            .then(() => {
+                logger.success(
+                    "Successfully connected to SQLite database"
+                );
+            })
+            .catch((error) => {
+                logger.error("Failed to connect to SQLite:", error);
+            });
 
         return db;
     },
