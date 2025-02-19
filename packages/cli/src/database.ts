@@ -1,4 +1,4 @@
-import { DrizzleDatabaseAdapter } from "@elizaos/plugin-sql";
+import { DrizzleDatabaseAdapter } from "@elizaos/plugin-drizzle";
 
 // Initialize database adapter
 export const adapter = new DrizzleDatabaseAdapter({

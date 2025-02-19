@@ -10,20 +10,12 @@ export default defineConfig({
         "dotenv", // Externalize dotenv to prevent bundling
         "fs", // Externalize fs to use Node.js built-in module
         "path", // Externalize other built-ins if necessary
-        "@reflink/reflink",
-        "@node-llama-cpp",
         "https",
         "http",
-        "agentkeepalive",
-        "safe-buffer",
-        "base-x",
-        "bs58",
-        "borsh",
-        "@solana/buffer-layout",
-        "stream",
-        "buffer",
-        "querystring",
-        "amqplib",
+        "uuid",
+        "better-sqlite3",
+        "node:fs",
         // Add other modules you want to externalize
     ],
 });
+

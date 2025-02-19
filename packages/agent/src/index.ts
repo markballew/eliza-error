@@ -25,8 +25,6 @@ import { fileURLToPath } from "node:url";
 import yargs from "yargs";
 import { defaultCharacter } from "./single-agent/character.ts";
 import { CharacterServer } from "./server/index.ts";
-import { startScenario } from "./swarm/scenario.ts";
-
 import swarm from "./swarm/index";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -49,7 +47,6 @@ export function parseArguments(): {
   character?: string;
   characters?: string;
   swarm?: boolean;
-  scenario?: boolean;
 } {
   try {
     return yargs(process.argv.slice(2))
@@ -64,15 +61,6 @@ export function parseArguments(): {
       .option("swarm", {
         type: "boolean",
         description: "Load characters from swarm",
-      })
-      .option("scenario", {
-        type: "boolean",
-        description: "Run scenario tests",
-      })
-      // scenario filter
-      .option("scenario-filter", {
-        type: "string",
-        description: "Filter scenario tests (only tests which contain this string)",
       })
       .parseSync();
   } catch (error) {
@@ -340,11 +328,11 @@ async function findDatabaseAdapter(runtime: IAgentRuntime) {
   let adapter: Adapter | undefined;
   // if not found, default to drizzle
   if (adapters.length === 0) {
-    const drizzleAdapterPlugin = await import('@elizaos/plugin-sql');
+    const drizzleAdapterPlugin = await import('@elizaos/plugin-drizzle');
     const drizzleAdapterPluginDefault = drizzleAdapterPlugin.default;
     adapter = drizzleAdapterPluginDefault.adapters[0];
     if (!adapter) {
-      throw new Error("Internal error: No database adapter found for default plugin-sql");
+      throw new Error("Internal error: No database adapter found for default plugin-drizzle");
     }
   } else if (adapters.length === 1) {
     adapter = adapters[0];
@@ -437,20 +425,17 @@ const startAgents = async () => {
   let serverPort = Number.parseInt(settings.SERVER_PORT || "3000");
   const args = parseArguments();
   const charactersArg = args.characters || args.character;
+  let characters = [];
 
   if (args.swarm) {
     try {
-        let members = [];
       for (const swarmMember of swarm) {
-        const runtime = await startAgent(
+        await startAgent(
           swarmMember.character,
           characterServer,
           swarmMember.init
         );
-        members.push(runtime);
-      }
-      if (args.scenario) {
-        startScenario(members);
+        characters.push(swarmMember.character);
       }
       logger.info("Loaded characters from swarm configuration");
     } catch (error) {
@@ -458,7 +443,6 @@ const startAgents = async () => {
       process.exit(1);
     }
   } else {
-    let characters = [];
     if (charactersArg || hasValidRemoteUrls()) {
       characters = await loadCharacters(charactersArg);
     } else {

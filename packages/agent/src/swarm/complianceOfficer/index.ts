@@ -2,10 +2,11 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../../.env" });
 
 import type { Character, IAgentRuntime } from "@elizaos/core";
-import { type Guild } from "discord.js";
+import { ChannelType, type Guild } from "discord.js";
 import { initializeOnboarding } from "../shared/onboarding/initialize";
 import type { OnboardingConfig } from "../shared/onboarding/types";
 import { initializeRole } from "../shared/role/initialize";
+import type { Message, Client } from "discord.js";
 const character: Character = {
   name: "Gary",
   plugins: [

@@ -22,6 +22,9 @@ import { createApiRouter } from "./api.ts";
 import { hyperfiHandlerTemplate, messageHandlerTemplate, upload } from "./helper.ts";
 import replyAction from "./reply.ts";
 
+
+
+
 export class CharacterServer {
     public app: express.Application;
     private agents: Map<string, IAgentRuntime>; // container management
@@ -119,13 +122,13 @@ export class CharacterServer {
                     return;
                 }
 
-                await runtime.ensureConnection({
+                await runtime.ensureConnection(
                     userId,
                     roomId,
-                    userName: req.body.userName,
-                    userScreenName: req.body.name,
-                    source: "direct",
-                });
+                    req.body.userName,
+                    req.body.name,
+                    "direct"
+                );
 
                 const text = req.body.text;
                 // if empty text, directly return
@@ -234,7 +237,7 @@ export class CharacterServer {
         );
 
         this.app.post(
-            "/agents/:agentIdOrName/hyperfy/v1",
+            "/agents/:agentIdOrName/hyperfi/v1",
             async (req: express.Request, res: express.Response) => {
                 // get runtime
                 const agentId = req.params.agentIdOrName;
@@ -252,14 +255,14 @@ export class CharacterServer {
                     return;
                 }
 
-                // can we be in more than one hyperfy world at once
+                // can we be in more than one hyperfi world at once
                 // but you may want the same context is multiple worlds
                 // this is more like an instanceId
-                const roomId = stringToUuid(req.body.roomId ?? "hyperfy");
+                const roomId = stringToUuid(req.body.roomId ?? "hyperfi");
 
                 const body = req.body;
 
-                // hyperfy specific parameters
+                // hyperfi specific parameters
                 let nearby = [];
                 let availableEmotes = [];
 
@@ -272,17 +275,17 @@ export class CharacterServer {
                     for (const msg of body.messages) {
                         const parts = msg.split(/:\s*/);
                         const mUserId = stringToUuid(parts[0]);
-                        await runtime.ensureConnection({
-                            userId: mUserId,
+                        await runtime.ensureConnection(
+                            mUserId,
                             roomId, // where
-                            userName: parts[0], // username
-                            userScreenName: parts[0], // userScreeName?
-                            source: "hyperfy",
-                        });
+                            parts[0], // username
+                            parts[0], // userScreeName?
+                            "hyperfi"
+                        );
                         const content: Content = {
                             text: parts[1] || "",
                             attachments: [],
-                            source: "hyperfy",
+                            source: "hyperfi",
                             inReplyTo: undefined,
                         };
                         const memory: Memory = {
@@ -303,11 +306,11 @@ export class CharacterServer {
                     // we need to compose who's near and what emotes are available
                     text: JSON.stringify(req.body),
                     attachments: [],
-                    source: "hyperfy",
+                    source: "hyperfi",
                     inReplyTo: undefined,
                 };
 
-                const userId = stringToUuid("hyperfy");
+                const userId = stringToUuid("hyperfi");
                 const userMessage = {
                     content,
                     userId,
@@ -529,7 +532,6 @@ export class CharacterServer {
                 }
             }
         );
-
         this.app.get(
             "/fine-tune/:assetId",
             async (req: express.Request, res: express.Response) => {
@@ -637,13 +639,13 @@ export class CharacterServer {
 
             try {
                 // Process message through agent (same as /message endpoint)
-                await runtime.ensureConnection({
+                await runtime.ensureConnection(
                     userId,
                     roomId,
-                    userName: req.body.userName,
-                    userScreenName: req.body.name,
-                    source: "direct",
-                });
+                    req.body.userName,
+                    req.body.name,
+                    "direct"
+                );
 
                 const messageId = stringToUuid(Date.now().toString());
 

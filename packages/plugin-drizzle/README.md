@@ -5,8 +5,11 @@ A PostgreSQL database adapter built with Drizzle ORM for the ElizaOS ecosystem.
 ## Installation
 
 ```bash
+# Using pnpm
+pnpm add @elizaos/plugin-drizzle
+
 # Using bun
-bun add @elizaos/plugin-sql
+bun add @elizaos/plugin-drizzle
 ```
 
 ## Database Schema
@@ -59,11 +62,11 @@ async function findDatabaseAdapter(runtime: IAgentRuntime) {
     let adapter: Adapter | undefined;
     
     if (adapters.length === 0) {
-        const drizzleAdapterPlugin = await import('@elizaos/plugin-sql');
+        const drizzleAdapterPlugin = await import('@elizaos/plugin-drizzle');
         const drizzleAdapterPluginDefault = drizzleAdapterPlugin.default;
         adapter = drizzleAdapterPluginDefault.adapters[0];
         if (!adapter) {
-            throw new Error("Internal error: No database adapter found for default plugin-sql");
+            throw new Error("Internal error: No database adapter found for default plugin-drizzle");
         }
     } else if (adapters.length === 1) {
         adapter = adapters[0];

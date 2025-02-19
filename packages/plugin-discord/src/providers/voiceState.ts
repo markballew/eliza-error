@@ -5,25 +5,19 @@ import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 const voiceStateProvider: Provider = {
     get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
         // Voice doesn't get a discord message, so we need to use the channel for guild data
-        const room = await runtime.getRoom(message.roomId);
-        if(!room) {
-            throw new Error("No room found");
-        }
-
-        const serverId = room.serverId;
-
-        if (!serverId) {
-            throw new Error("No server ID found");
-        }
-
-        const connection = getVoiceConnection(serverId);
+        const discordMessage = (state?.discordMessage ||
+            state.discordChannel) as DiscordMessage;
+        const connection = getVoiceConnection(
+            (discordMessage as DiscordMessage)?.guild?.id as string
+        );
         const agentName = state?.agentName || "The agent";
         if (!connection) {
             return agentName + " is not currently in a voice channel";
         }
 
         const channel = (
-            state?.discordMessage as DiscordMessage
+            (state?.discordMessage as DiscordMessage) ||
+            (state.discordChannel as DiscordMessage)
         )?.guild?.channels?.cache?.get(
             connection.joinConfig.channelId as string
         );

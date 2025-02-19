@@ -1,13 +1,12 @@
 import {
-    ChannelType,
     type IAgentRuntime,
     type Memory,
     type Provider,
     type State,
     logger,
-    stringToUuid,
 } from "@elizaos/core";
-import type { OnboardingConfig, OnboardingSetting, OnboardingState } from "./types";
+import { Message, ChannelType } from "discord.js";
+import type { OnboardingConfig, OnboardingState, OnboardingSetting } from "./types";
 
 const formatSettingValue = (setting: OnboardingSetting, isOnboarding: boolean): string => {
     if (setting.value === null) return "Not set";
@@ -25,14 +24,15 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
         message: Memory,
         state?: State
     ): Promise<string> => {
-        const room = await runtime.getRoom(message.roomId);
-        if(!room) {
-            throw new Error("No room found");
+        if(!state?.discordMessage) {
+            logger.error("No discord message in state");
+            return "Error: No discord message found";
         }
-        
-        const type = room.type;
-        const isOnboarding = type === ChannelType.DM;
-        
+
+        const discordMessage = state.discordMessage as Message;
+        const isOnboarding = discordMessage.channel.type === ChannelType.DM;
+        const userId = discordMessage.author.id;
+
         // Get serverId from ownership state
         const ownershipState = await runtime.cacheManager.get(
             'server_ownership_state'
@@ -44,7 +44,7 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
         }
 
         const serverEntry = Object.entries(ownershipState.servers)
-            .find(([_, info]) => stringToUuid(info.ownerId) === message.userId);
+            .find(([_, info]) => info.ownerId === userId);
 
         if (!serverEntry) {
             logger.error("User is not owner of any server");
