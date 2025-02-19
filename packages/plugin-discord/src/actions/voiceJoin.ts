@@ -32,7 +32,7 @@ export default {
         "JOIN_CALL",
     ],
     validate: async (
-        _runtime: IAgentRuntime,
+        runtime: IAgentRuntime,
         message: Memory,
         state: State
     ) => {
@@ -41,31 +41,10 @@ export default {
             return false;
         }
 
-        if (!state.discordClient) {
-            return;
-        }
+        const client = runtime.getClient("discord").client;
 
-        // did they say something about joining a voice channel? if not, don't validate
-        const keywords = [
-            "join",
-            "come to",
-            "come on",
-            "enter",
-            "voice",
-            "chat",
-            "talk",
-            "call",
-            "hop on",
-            "get on",
-            "vc",
-            "meeting",
-            "discussion",
-        ];
-        if (
-            !keywords.some((keyword) =>
-                message.content.text.toLowerCase().includes(keyword)
-            )
-        ) {
+        if (!client) {
+            logger.error("Discord client not found");
             return false;
         }
 
@@ -88,23 +67,29 @@ export default {
             await callback(response.content);
         }
 
-        // We normalize data in from voice channels
-        const discordMessage = (state.discordChannel ||
-            state.discordMessage) as DiscordMessage;
-
-        if (!discordMessage.content) {
-            discordMessage.content = message.content.text;
+        const room = await runtime.getRoom(message.roomId);
+        if(!room) {
+            throw new Error("No room found");
         }
 
-        const id = (discordMessage as DiscordMessage).guild?.id as string;
-        const client = state.discordClient as Client;
+        const serverId = room.serverId;
+
+        if (!serverId) {
+            throw new Error("No server ID found");
+        }
+
+        const client = runtime.getClient("discord").client;
+
+        if (!client) {
+            logger.error("Discord client not found");
+            return false;
+        }
+
         const voiceChannels = (
-            client.guilds.cache.get(id) as Guild
+            client.client.guilds.cache.get(serverId) as Guild
         ).channels.cache.filter(
             (channel: Channel) => channel.type === ChannelType.GuildVoice
         );
-
-        const messageContent = discordMessage.content;
 
         const targetChannel = voiceChannels.find((channel) => {
             const name = (channel as { name: string }).name.toLowerCase();
@@ -123,7 +108,7 @@ export default {
         if (targetChannel) {
             joinVoiceChannel({
                 channelId: targetChannel.id,
-                guildId: (discordMessage as DiscordMessage).guild?.id as string,
+                guildId: serverId as string,
                 adapterCreator: (client.guilds.cache.get(id) as Guild)
                     .voiceAdapterCreator,
                 selfDeaf: false,
@@ -137,8 +122,7 @@ export default {
             if (member?.voice?.channel) {
                 joinVoiceChannel({
                     channelId: member.voice.channel.id,
-                    guildId: (discordMessage as DiscordMessage).guild
-                        ?.id as string,
+                    guildId: serverId,
                     adapterCreator: (client.guilds.cache.get(id) as Guild)
                         .voiceAdapterCreator,
                     selfDeaf: false,
@@ -180,13 +164,6 @@ You should only respond with the name of the voice channel or none, no commentar
                 modelClass: ModelClass.TEXT_SMALL,
             });
 
-            runtime.databaseAdapter.log({
-                body: { message, context, response: responseContent },
-                userId: stringToUuid(message.userId),
-                roomId: message.roomId,
-                type: "joinVoice",
-            });
-
             if (responseContent && responseContent.trim().length > 0) {
                 // join the voice channel
                 const channelName = responseContent.toLowerCase();
@@ -210,8 +187,7 @@ You should only respond with the name of the voice channel or none, no commentar
                 if (targetChannel) {
                     joinVoiceChannel({
                         channelId: targetChannel.id,
-                        guildId: (discordMessage as DiscordMessage).guild
-                            ?.id as string,
+                        guildId: serverId,
                         adapterCreator: (client.guilds.cache.get(id) as Guild)
                             .voiceAdapterCreator,
                         selfDeaf: false,
@@ -222,9 +198,10 @@ You should only respond with the name of the voice channel or none, no commentar
                 }
             }
 
-            await (discordMessage as DiscordMessage).reply(
-                "I couldn't figure out which channel you wanted me to join."
-            );
+            await callback({
+                text: "I couldn't figure out which channel you wanted me to join.",
+                source: "discord",
+            });
             return false;
         }
     },

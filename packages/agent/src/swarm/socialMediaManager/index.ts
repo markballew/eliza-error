@@ -1,10 +1,10 @@
-import type { Character, Client, IAgentRuntime } from "@elizaos/core";
-import { ChannelType, type Guild, type Message } from 'discord.js';
+import type { Character, IAgentRuntime } from "@elizaos/core";
+import { type Guild } from 'discord.js';
 import dotenv from "dotenv";
 import { initializeOnboarding } from "../shared/onboarding/initialize";
 import type { OnboardingConfig } from "../shared/onboarding/types";
-import twitterPostAction from "./actions/post";
 import { initializeRole } from "../shared/role/initialize";
+import twitterPostAction from "./actions/post";
 dotenv.config({ path: '../../.env' });
 
 const character: Character = {

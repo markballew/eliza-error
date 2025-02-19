@@ -202,7 +202,7 @@ export class TwitterTestSuite implements TestSuite {
       await this.twitterClient.interaction.handleTweet({
         tweet: testTweet,
         message: {
-          content: { text: testTweet.text, source: "twitter"  },
+          content: { text: testTweet.text },
           agentId: runtime.agentId,
           userId: stringToUuid(testTweet.userId),
           roomId: stringToUuid(testTweet.conversationId),
