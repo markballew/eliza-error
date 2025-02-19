@@ -10,8 +10,7 @@ import {
     generateMessageResponse,
     generateObjectArray,
     logger,
-    messageCompletionFooter,
-    stringToUuid
+    messageCompletionFooter
 } from "@elizaos/core";
 import { ChannelType, type Message } from "discord.js";
 import { findServerForOwner } from "./ownership";
@@ -114,6 +113,8 @@ const onboardingAction: Action = {
             return false;
         }
     
+        const userId = discordMessage.author.id;
+
         try {
             // First check if there's an active onboarding session
             const ownershipState = await runtime.cacheManager.get<{ servers: { [key: string]: { ownerId: string } } }>(
@@ -126,7 +127,7 @@ const onboardingAction: Action = {
 
             // Find the server where this user is the owner
             const serverEntry = Object.entries(ownershipState.servers)
-                .find(([_, info]) => stringToUuid(info.ownerId) === message.userId);
+                .find(([_, info]) => info.ownerId === userId);
 
             if (!serverEntry) {
                 return false;
@@ -158,11 +159,13 @@ const onboardingAction: Action = {
         options: any,
         callback: HandlerCallback
     ): Promise<void> => {
-        if(!message.content.source || message.content.source !== "discord") {
+        if(!state?.discordMessage) {
             return;
         }
+        const discordMessage = state.discordMessage as Message;
+        const userId = discordMessage.author.id;
 
-        const serverOwnership = await findServerForOwner(runtime, state);
+        const serverOwnership = await findServerForOwner(runtime, userId, state);
 
         if (!serverOwnership) {
             return;
@@ -283,6 +286,21 @@ Don't include any other text in your response. Only return the array of objects.
                     action: "SAVE_SETTING_SUCCESS",
                     source: "discord"
                 });
+
+                // Log updates
+                for (const update of extractedSettings) {
+                    await runtime.databaseAdapter.log({
+                        body: {
+                            type: "setting_update",
+                            setting: update.key,
+                            serverId: serverId,
+                            updatedBy: userId
+                        },
+                        userId: runtime.agentId,
+                        roomId: message.roomId,
+                        type: "onboarding"
+                    });
+                }
             } else {
                 const responseContext = composeContext({
                     state: {

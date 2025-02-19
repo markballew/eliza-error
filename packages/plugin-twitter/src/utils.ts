@@ -65,13 +65,13 @@ export async function buildConversationThread(
             );
             const userId = stringToUuid(currentTweet.userId);
 
-            await client.runtime.ensureConnection({
+            await client.runtime.ensureConnection(
                 userId,
                 roomId,
-                userName: currentTweet.username,
-                userScreenName: currentTweet.name,
-                source: "twitter",
-            });
+                currentTweet.username,
+                currentTweet.name,
+                "twitter"
+            );
 
             await client.runtime.messageManager.createMemory({
                 id: stringToUuid(

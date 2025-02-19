@@ -6,14 +6,13 @@ import {
     type Client,
     type Message as DiscordMessage,
 } from "discord.js";
-import {
-    logger,
-    type Action,
-    type ActionExample,
-    type HandlerCallback,
-    type IAgentRuntime,
-    type Memory,
-    type State,
+import type {
+    Action,
+    ActionExample,
+    HandlerCallback,
+    IAgentRuntime,
+    Memory,
+    State,
 } from "@elizaos/core";
 
 export default {
@@ -32,12 +31,38 @@ export default {
             return false;
         }
 
-        const client = runtime.getClient("discord");
-
-        if (!client) {
-            logger.error("Discord client not found");
+        if (!state.discordClient) {
             return false;
         }
+
+        const keywords = [
+            "leave",
+            "exit",
+            "stop",
+            "quit",
+            "get off",
+            "get out",
+            "bye",
+            "cya",
+            "see you",
+            "hop off",
+            "get off",
+            "voice",
+            "vc",
+            "chat",
+            "call",
+            "meeting",
+            "discussion",
+        ];
+        if (
+            !keywords.some((keyword) =>
+                message.content.text.toLowerCase().includes(keyword)
+            )
+        ) {
+            return false;
+        }
+
+        const client = state.discordClient as Client;
 
         // Check if the client is connected to any voice channel
         const isConnectedToVoice = client.voice.adapters.size > 0;
@@ -53,6 +78,10 @@ export default {
         callback: HandlerCallback,
         responses: Memory[]
     ): Promise<boolean> => {
+        if (!state.discordClient) {
+            return;
+        }
+
         for (const response of responses) {
             await callback(response.content);
         }
@@ -63,15 +92,7 @@ export default {
         if (!discordMessage) {
             throw new Error("Discord message is not available in the state.");
         }
-
-        const client = runtime.getClient("discord");
-
-        if (!client) {
-            logger.error("Discord client not found");
-            return false;
-        }
-
-        const voiceChannels = client.client.guilds.cache
+        const voiceChannels = (state.discordClient as Client)?.guilds.cache
             .get((discordMessage as DiscordMessage).guild?.id as string)
             ?.channels.cache.filter(
                 (channel: Channel) => channel.type === ChannelType.GuildVoice

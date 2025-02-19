@@ -31,6 +31,7 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
 
         const discordMessage = state.discordMessage as Message;
         const isOnboarding = discordMessage.channel.type === ChannelType.DM;
+        const userId = discordMessage.author.id;
 
         // Get serverId from ownership state
         const ownershipState = await runtime.cacheManager.get(
@@ -43,7 +44,7 @@ export const createOnboardingProvider = (config: OnboardingConfig): Provider => 
         }
 
         const serverEntry = Object.entries(ownershipState.servers)
-            .find(([_, info]) => stringToUuid(info.ownerId) === message.userId);
+            .find(([_, info]) => info.ownerId === userId);
 
         if (!serverEntry) {
             logger.error("User is not owner of any server");

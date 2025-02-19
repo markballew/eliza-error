@@ -522,22 +522,6 @@ export type Media = {
   contentType?: string;
 };
 
-export enum ChannelType {
-  SELF = "SELF",
-  DM = "DM",
-  GROUP = "GROUP",
-  VOICE_DM = "VOICE_DM",
-  VOICE_GROUP = "VOICE_GROUP",
-  FEED = "FEED",
-  WORLD = "WORLD",
-  API = "API",
-  FORUM = "FORUM",
-}
-
-export type PostClient = {
-  getPost: (roomId: UUID) => Promise<string | UUID | null>;
-};
-
 /**
  * Client instance
  */
@@ -563,7 +547,7 @@ export type Client = {
 
 export type Adapter = {
   /** Initialize adapter */
-  init: (runtime: IAgentRuntime) => IDatabaseAdapter & IDatabaseCacheAdapter;
+  init: (runtime: IAgentRuntime) => Promise<IDatabaseAdapter & IDatabaseCacheAdapter>;
 };
 
 export type Route = {
@@ -818,9 +802,9 @@ export interface IDatabaseAdapter {
 
   removeAllGoals(roomId: UUID): Promise<void>;
 
-  getRoom(roomId: UUID): Promise<RoomData | null>;
+  getRoom(roomId: UUID): Promise<UUID | null>;
 
-  createRoom(roomId: UUID, source: string, type: ChannelType, channelId?: string, serverId?: string): Promise<UUID>;
+  createRoom(roomId?: UUID): Promise<UUID>;
 
   removeRoom(roomId: UUID): Promise<void>;
 
@@ -855,6 +839,18 @@ export interface IDatabaseAdapter {
   }): Promise<Relationship | null>;
 
   getRelationships(params: { userId: UUID }): Promise<Relationship[]>;
+
+  createCharacter(character: Character): Promise<void>;
+
+  listCharacters(): Promise<Character[]>;
+
+  getCharacter(name: string): Promise<Character | null>;
+
+  updateCharacter(name: string, updates: Partial<Character>): Promise<void>;
+  
+  removeCharacter(name: string): Promise<void>;
+
+  ensureEmbeddingDimension(dimension: number, agentId: UUID): void;
 }
 
 export interface IDatabaseCacheAdapter {
@@ -1012,6 +1008,8 @@ export interface IAgentRuntime {
     callback?: HandlerCallback
   ): Promise<string[] | null>;
 
+  ensureParticipantExists(userId: UUID, roomId: UUID): Promise<void>;
+
   ensureUserExists(
     userId: UUID,
     userName: string | null,
@@ -1023,29 +1021,17 @@ export interface IAgentRuntime {
 
   registerAction(action: Action): void;
 
-  ensureConnection({
-    userId,
-    roomId,
-    userName,
-    userScreenName,
-    source,
-    channelId,
-    serverId,
-  }: {
-    userId: UUID;
-    roomId: UUID;
-    userName?: string;
-    userScreenName?: string;
-    source?: string;
-    channelId?: string;
-    serverId?: string;
-  }): Promise<void>;
+  ensureConnection(
+    userId: UUID,
+    roomId: UUID,
+    userName?: string,
+    userScreenName?: string,
+    source?: string
+  ): Promise<void>;
 
   ensureParticipantInRoom(userId: UUID, roomId: UUID): Promise<void>;
 
-  getUserProfile(userId: UUID): Promise<Account | null>;
-
-  ensureRoomExists(roomId: UUID, source: string, type: ChannelType, channelId?: string, serverId?: string): Promise<void>;
+  ensureRoomExists(roomId: UUID): Promise<void>;
 
   composeState(
     message: Memory,
@@ -1065,7 +1051,7 @@ export interface IAgentRuntime {
 
   registerEvent(event: string, handler: (params: any) => void): void;
   getEvent(event: string): ((params: any) => void)[] | undefined;
-  emitEvent(event: string | string[], params: any): void;
+  emitEvent(event: string, params: any): void;
 
   registerTask(task: Task): UUID;
   getTasks({
@@ -1080,6 +1066,10 @@ export interface IAgentRuntime {
   deleteTask(id: UUID): void;
 
   stop(): Promise<void>;
+
+  ensureEmbeddingDimension(): Promise<void>;
+
+  ensureCharacterExists(character: Character): Promise<void>;
 }
 
 export enum LoggingLevel {
@@ -1314,12 +1304,4 @@ export interface Task {
   tags: string[];
   handler: (runtime: IAgentRuntime) => Promise<void>;
   validate?: (runtime: IAgentRuntime, message: Memory, state: State) => Promise<boolean>;
-}
-
-export type RoomData = {
-  id: UUID;
-  source: string;
-  type: ChannelType;
-  channelId?: string;
-  serverId?: string;
 }
