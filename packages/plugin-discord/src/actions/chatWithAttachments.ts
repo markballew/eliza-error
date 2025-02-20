@@ -220,10 +220,9 @@ ${currentSummary.trim()}
 `;
             await callback(callbackData);
         } else if (currentSummary.trim()) {
-            const summaryDir = "content";
-            const summaryFilename = `${summaryDir}/summary_${Date.now()}.md`;
+            const summaryFilename = `content/summary_${Date.now()}.md`;
+
             try {
-                await fs.promises.mkdir(summaryDir, { recursive: true });
                 // Debug: Log before file operations
                 console.log("Creating summary file:", {
                     filename: summaryFilename,
