@@ -7,7 +7,7 @@ import { TwitterInteractionClient } from "./interactions.ts";
 import { TwitterPostClient } from "./post.ts";
 import { TwitterSpaceClient } from "./spaces.ts";
 import type { ITwitterClient } from "./types.ts";
-import { TwitterTestSuite } from "./test-suite.ts";
+import { TwitterTestSuite } from "./tests.ts";
 
 /**
  * A manager that orchestrates all specialized Twitter logic:
@@ -137,8 +137,6 @@ const TwitterClientInterface: Client = {
             TWITTER_EMAIL: (runtime.getSetting("TWITTER_EMAIL") as string) || runtime.character.settings?.TWITTER_EMAIL || runtime.character.secrets?.TWITTER_EMAIL,
             TWITTER_2FA_SECRET: (runtime.getSetting("TWITTER_2FA_SECRET") as string) || runtime.character.settings?.TWITTER_2FA_SECRET || runtime.character.secrets?.TWITTER_2FA_SECRET,
         };
-
-        console.log("*** twitterConfig", twitterConfig);
 
         // Filter out undefined values
         const config = Object.fromEntries(

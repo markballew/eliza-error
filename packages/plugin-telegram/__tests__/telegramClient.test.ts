@@ -46,18 +46,18 @@ describe('TelegramClient', () => {
 
     describe('bot lifecycle', () => {
         it('should start the bot successfully', async () => {
-            const mockBot = client['bot'];
+            const mockBot = client.bot;
             const launchSpy = vi.spyOn(mockBot, 'launch');
             const getMeSpy = vi.spyOn(mockBot.telegram, 'getMe');
 
             await client.start();
 
-            expect(launchSpy).toHaveBeenCalledWith({ dropPendingUpdates: true });
+            expect(launchSpy).toHaveBeenCalledWith({ dropPendingUpdates: true, allowedUpdates: [ "message", "message_reaction" ] });
             expect(getMeSpy).toHaveBeenCalled();
         });
 
         it('should get bot info after launch', async () => {
-            const mockBot = client['bot'];
+            const mockBot = client.bot;
             const getMeSpy = vi.spyOn(mockBot.telegram, 'getMe');
 
             await client.start();

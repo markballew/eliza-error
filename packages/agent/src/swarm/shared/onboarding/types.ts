@@ -55,7 +55,7 @@ export function getPublicSettings(settings: OnboardingState): OnboardingState {
 }
 
 // Format settings list for display
-export function formatSettingsList(settings: OnboardingState, isOnboarding: boolean = false): string {
+export function formatSettingsList(settings: OnboardingState, isOnboarding = false): string {
     // If not in onboarding mode, only show public settings
     const displaySettings = isOnboarding ? settings : getPublicSettings(settings);
     const { configured, requiredUnconfigured, optionalUnconfigured } = categorizeSettings(displaySettings);
@@ -89,7 +89,7 @@ export function formatSettingsList(settings: OnboardingState, isOnboarding: bool
 }
 
 // Helper to categorize settings
-function categorizeSettings(onboardingState: OnboardingState) {
+export function categorizeSettings(onboardingState: OnboardingState) {
     const configured = [];
     const requiredUnconfigured = [];
     const optionalUnconfigured = [];

@@ -52,7 +52,7 @@ export async function initializeAllSystems(
 ): Promise<void> {
   try {
     // Ensure we always have valid guilds
-    const validGuilds = guilds.filter(guild => guild && guild.id && guild.ownerId);
+    const validGuilds = guilds.filter(guild => guild?.id && guild.ownerId);
     
     if (validGuilds.length === 0) {
       logger.warn('No valid guilds provided for initialization');
@@ -207,7 +207,7 @@ export async function initializeOnboarding(
     
     // Check if onboarding state already exists
     let onboardingState = await runtime.cacheManager.get<OnboardingState>(onboardingCacheKey);
-    console.log("*** ONBOARDING STATE ***", onboardingState);
+
     if (!onboardingState) {
       // Initialize state with config settings
       onboardingState = {};
@@ -216,7 +216,6 @@ export async function initializeOnboarding(
       }
 
       logger.info(`Created new onboarding state for server ${serverId}`);
-      console.log("*** CREATED ONBOARDING STATE ***", onboardingState);
 
       // Save with explicit cache key and verify it was saved
       await runtime.cacheManager.set(onboardingCacheKey, onboardingState);
@@ -252,7 +251,7 @@ export async function initializeOnboarding(
 async function startOnboardingDM(
   runtime: IAgentRuntime,
   guild: Guild,
-  onboardingState: OnboardingState
+  _onboardingState: OnboardingState
 ): Promise<void> {
   try {
     const owner = await guild.members.fetch(guild.ownerId);
@@ -269,11 +268,11 @@ async function startOnboardingDM(
     
     const randomMessage = onboardingMessages[Math.floor(Math.random() * onboardingMessages.length)];
     const msg = await owner.send(randomMessage);
-    const roomId = stringToUuid(msg.channel.id + "-" + runtime.agentId);
+    const roomId = stringToUuid(`${msg.channel.id}-${runtime.agentId}`);
     
     await runtime.ensureRoomExists({
       id: roomId, 
-      name: "Chat with " + owner.user.username, 
+      name: `Chat with ${owner.user.username}`, 
       source: "discord", 
       type: ChannelType.DM, 
       channelId: msg.channelId, 

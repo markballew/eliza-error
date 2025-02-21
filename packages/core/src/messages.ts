@@ -53,6 +53,13 @@ export function formatActors({ actors }: { actors: Actor[] }) {
   return finalActorStrings;
 }
 
+/**
+ * Format messages into a string
+ * @param {Object} params - The formatting parameters
+ * @param {Memory[]} params.messages - List of messages to format
+ * @param {Actor[]} params.actors - List of actors for name resolution
+ * @returns {string} Formatted message string with timestamps and user information
+ */
 export const formatMessages = ({
   messages,
   actors,
@@ -103,13 +110,12 @@ export const formatTimestamp = (messageDate: number) => {
 
   if (absDiff < 60000) {
     return "just now";
-  } else if (minutes < 60) {
+  }if (minutes < 60) {
     return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
-  } else if (hours < 24) {
+  }if (hours < 24) {
     return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
-  } else {
-    return `${days} day${days !== 1 ? "s" : ""} ago`;
   }
+    return `${days} day${days !== 1 ? "s" : ""} ago`;
 };
 
 export const shouldRespondTemplate =
@@ -122,7 +128,7 @@ About {{agentName}}:
 {{recentMessages}}
 
 # INSTRUCTIONS: Respond with the word RESPOND if {{agentName}} should respond to the message. Respond with STOP if a user asks {{agentName}} to be quiet. Respond with IGNORE if {{agentName}} should ignore the message.
-` + shouldRespondFooter;
+${shouldRespondFooter}`;
 
 const messageHandlerTemplate =
   // {{goals}}
@@ -155,7 +161,7 @@ Note that {{agentName}} is capable of reading/seeing/hearing various forms of me
 {{recentMessages}}
 
 # Instructions: Write the next message for {{agentName}}. Include the appropriate action from the list: {{actionNames}}
-` + messageCompletionFooter;
+${messageCompletionFooter}`;
 
 type MessageReceivedHandlerParams = {
   runtime: IAgentRuntime;
@@ -220,10 +226,9 @@ const checkShouldRespond = async (
 
   if (response.includes("STOP")) {
     return false;
-  } else {
+  }
     console.error("Invalid response from response generateText:", response);
     return false;
-  }
 };
 
 const messageReceivedHandler = async ({
@@ -248,8 +253,6 @@ const messageReceivedHandler = async ({
         runtime.character.templates?.messageHandlerTemplate ||
         messageHandlerTemplate,
     });
-
-    try {
       const responseContent = await generateMessageResponse({
         runtime: runtime,
         context,
@@ -258,7 +261,7 @@ const messageReceivedHandler = async ({
 
       responseContent.text = responseContent.text?.trim();
       responseContent.inReplyTo = stringToUuid(
-        message.id + "-" + runtime.agentId
+        `${message.id}-${runtime.agentId}`
       );
 
       const responseMessages: Memory[] = [
@@ -275,9 +278,6 @@ const messageReceivedHandler = async ({
       state = await runtime.updateRecentMessageState(state);
 
       await runtime.processActions(message, responseMessages, state, callback);
-    } catch (error) {
-      throw error;
-    }
   }
 
   await runtime.evaluate(message, state, shouldRespond);

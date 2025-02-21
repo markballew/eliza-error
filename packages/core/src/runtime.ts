@@ -15,7 +15,7 @@ import {
 } from "./evaluators.ts";
 import { generateText } from "./generation.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { handlePluginImporting, logger } from "./index.ts";
+import { elizaLogger, handlePluginImporting, logger } from "./index.ts";
 import knowledge from "./knowledge.ts";
 import { MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
@@ -49,8 +49,8 @@ import {
     type Route,
     type Task,
     ChannelType,
-    RoomData,
-    WorldData
+    type RoomData,
+    type WorldData
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { messageEvents } from "./messages.ts";
@@ -129,7 +129,7 @@ class MemoryManagerService {
         this.initializeDefaultManagers(knowledgeRoot);
     }
 
-    private initializeDefaultManagers(knowledgeRoot: string) {
+    private initializeDefaultManagers(_knowledgeRoot: string) {
         // Message manager for storing messages
         this.registerMemoryManager(new MemoryManager({
             runtime: this.runtime,
@@ -299,7 +299,10 @@ export class AgentRuntime implements IAgentRuntime {
         }
 
         for (const plugin of plugins) {
+            elizaLogger.info(`Initializing plugin: ${plugin.name}`);
+            elizaLogger.info(`Plugin actions: ${plugin.actions}`);
             for (const action of (plugin.actions ?? [])) {
+                elizaLogger.info(`Registering action: ${action.name}`);
                 this.registerAction(action);
             }
 
@@ -399,6 +402,8 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     async initialize() {
+        const clientsToStart: { client: Plugin["clients"][number]; pluginName: string }[] = [];
+
         // load the character plugins dymamically from string
         if(this.character.plugins){
             const plugins = await handlePluginImporting(this.character.plugins) as Plugin[];
@@ -407,17 +412,6 @@ export class AgentRuntime implements IAgentRuntime {
                     if(!plugin) {
                         continue;
                     }
-                    if (plugin.clients) {
-                        for (const client of plugin.clients) {
-                            const startedClient = await client.start(this);
-                            logger.debug(
-                                `Initializing client: ${client.name}`
-                            );
-                            this.registerClient(client.name, startedClient);
-                        }
-                    }
-
-                    logger.info("runtime initialize() plugin:", plugin);
 
                     if (plugin.actions) {
                         for (const action of plugin.actions) {
@@ -460,11 +454,16 @@ export class AgentRuntime implements IAgentRuntime {
                             }
                         }
                     }
-                    
+
+                    if (plugin.clients) {
+                        plugin.clients.forEach(client => clientsToStart.push({ client, pluginName: plugin.name }));
+                    }
                     this.plugins.push(plugin);
                 }
             }
         }
+
+        await this.ensureEmbeddingDimension();
 
         if (this.services) {
             for(const [_, service] of this.services.entries()) {
@@ -472,7 +471,13 @@ export class AgentRuntime implements IAgentRuntime {
             }
         }
 
-        await this.ensureEmbeddingDimension();
+        await Promise.all(
+            clientsToStart.map(async ({ client, pluginName }) => {
+                const startedClient = await client.start(this);
+                logger.debug(`Initializing client: ${client.name} from plugin ${pluginName}`);
+                this.registerClient(client.name, startedClient);
+            })
+        );
         
         await this.ensureUserExists(
             this.agentId,
@@ -560,7 +565,9 @@ export class AgentRuntime implements IAgentRuntime {
     /**
      * Process the actions of a message.
      * @param message The message to process.
-     * @param content The content of the message to process actions from.
+     * @param responses The array of response memories to process actions from.
+     * @param state Optional state object for the action processing.
+     * @param callback Optional callback handler for action results.
      */
     async processActions(
         message: Memory,
@@ -806,9 +813,6 @@ export class AgentRuntime implements IAgentRuntime {
 
     /**
      * Ensure the existence of a world.
-     * @param worldId - The world ID to ensure the existence of.
-     * @param name - The name of the world.
-     * @param serverId - The server ID of the world.
      */
     async ensureWorldExists({id, name, serverId}: WorldData) {
         const world = await this.databaseAdapter.getWorld(id);

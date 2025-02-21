@@ -1,8 +1,8 @@
 import { logger, type TestSuite, type IAgentRuntime } from "@elizaos/core";
-import { Telegraf } from "telegraf";
-import { MessageManager } from "./messageManager";
-import { Context } from "telegraf";
-import { TelegramClient } from "./telegramClient";
+import type { Telegraf } from "telegraf";
+import type { MessageManager } from "./messageManager";
+import type { Context } from "telegraf";
+import type { TelegramClient } from "./telegramClient";
 
 const TEST_IMAGE_URL =
   "https://github.com/elizaOS/awesome-eliza/blob/main/assets/eliza-logo.jpg?raw=true";
@@ -57,6 +57,18 @@ export class TelegramTestSuite implements TestSuite {
     return testChatId;
   }
 
+  async getChatInfo(runtime: IAgentRuntime): Promise<Context['chat']> {
+    try {
+      const chatId = this.validateChatId(runtime);
+      const chat = await this.bot.telegram.getChat(chatId);
+      logger.log(`Fetched real chat: ${JSON.stringify(chat)}`);
+      return chat;
+    } catch (error) {
+      throw new Error(`Error fetching real Telegram chat: ${error}`);
+    }
+  }
+  
+
   async testCreatingTelegramBot(runtime: IAgentRuntime) {
     this.telegramClient = runtime.getClient("telegram") as TelegramClient;
     this.bot = this.telegramClient.messageManager.bot;
@@ -81,9 +93,9 @@ export class TelegramTestSuite implements TestSuite {
       if (!this.messageManager)
         throw new Error("MessageManager not initialized.");
 
-      const chatId = this.validateChatId(runtime);
+      const chat = await this.getChatInfo(runtime);
       const mockContext: Partial<Context> = {
-        chat: { id: chatId, type: "private" } as any,
+        chat,
         from: { id: "mock-user-id", username: "TestUser" } as any,
         telegram: this.bot.telegram,
       };
@@ -114,14 +126,15 @@ export class TelegramTestSuite implements TestSuite {
 
   async testHandlingMessage(runtime: IAgentRuntime) {
     try {
-      const chatId = this.validateChatId(runtime);
+      const chat = await this.getChatInfo(runtime);
       const mockContext: Partial<Context> = {
-        chat: { id: chatId, type: "private" } as any,
+        chat,
         from: { id: "mock-user-id", username: "TestUser" } as any,
         message: {
           message_id: undefined,
           text: `@${this.bot.botInfo?.username}! Hello!`,
           date: Math.floor(Date.now() / 1000),
+          chat,
         } as any,
         telegram: this.bot.telegram,
       };
@@ -153,9 +166,8 @@ export class TelegramTestSuite implements TestSuite {
       );
       if (!description) {
         throw new Error("Error processing Telegram image");
-      } else {
-        logger.log(`Processing Telegram image successfully: ${description}`);
       }
+        logger.log(`Processing Telegram image successfully: ${description}`);
     } catch (error) {
       throw new Error(`Error processing Telegram image: ${error}`);
     }

@@ -973,7 +973,7 @@ export abstract class Service {
 
   public static getInstance<T extends Service>(): T {
     if (!Service.instance) {
-      Service.instance = new (this as any)();
+      Service.instance = new (Service as any)();
     }
     return Service.instance as T;
   }
@@ -1358,6 +1358,23 @@ export interface SgxAttestation {
 export enum TeeType {
   SGX_GRAMINE = "sgx_gramine",
   TDX_DSTACK = "tdx_dstack",
+}
+
+export enum TeeVendors {
+  PHALA = "phala",
+  MARLIN = "marlin",
+  FLEEK = "fleek",
+  SGX_GRAMINE = "sgx_gramine",
+}
+
+export interface TeeVendorConfig {
+  // Add vendor-specific configuration options here
+  [key: string]: unknown;
+}
+
+export interface TeePluginConfig {
+  vendor?: TeeVendors;
+  vendorConfig?: TeeVendorConfig;
 }
 
 export const CACHE_KEYS = {

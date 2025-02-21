@@ -425,7 +425,7 @@ export class CharacterServer {
                             }
                         }
                         if (hfOut.emote !== null) {
-                            contentObj.text = "emoted " + hfOut.emote;
+                            contentObj.text = `emoted ${hfOut.emote}`;
                         }
                     }
 
@@ -613,7 +613,7 @@ export class CharacterServer {
         this.app.post("/:agentId/speak", async (req, res) => {
             const agentId = req.params.agentId;
             const roomId = stringToUuid(
-                req.body.roomId ?? "default-room-" + agentId
+                req.body.roomId ?? `default-room-${agentId}`
             );
             const userId = stringToUuid(req.body.userId ?? "user");
             const text = req.body.text;
@@ -831,6 +831,16 @@ export class CharacterServer {
         // register any plugin endpoints?
         // but once and only once
         this.agents.set(runtime.agentId, runtime);
+        // TODO: This is a hack to register the tee plugin. Remove this once we have a better way to do it.
+        const teePlugin = runtime.plugins.find(p => p.name === "phala-tee-plugin");
+        if (teePlugin) {
+            for (const provider of teePlugin.providers) {
+                runtime.registerProvider(provider);
+            }
+            for (const action of teePlugin.actions) {
+                runtime.registerAction(action);
+            }
+        }
         runtime.registerAction(replyAction);
         // for each route on each plugin, add it to the router
         for (const route of runtime.routes) {

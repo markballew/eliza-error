@@ -1,54 +1,42 @@
 import {
   ChannelType,
-  HandlerCallback,
-  logger,
-  Memory,
-  stringToUuid,
-  UUID,
   type Character,
   type Client as ElizaClient,
+  type HandlerCallback,
   type IAgentRuntime,
+  logger,
+  type Memory,
   type Plugin,
+  stringToUuid
 } from "@elizaos/core";
 import {
   Client,
+  ChannelType as DiscordChannelType,
   Events,
   GatewayIntentBits,
-  Partials,
-  PermissionsBitField,
-  TextChannel,
   type Guild,
   type MessageReaction,
+  type OAuth2Guild,
+  Partials,
+  PermissionsBitField,
+  type TextChannel,
   type User,
-  ChannelType as DiscordChannelType,
-  OAuth2Guild,
 } from "discord.js";
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import chatWithAttachments from "./actions/chatWithAttachments.ts";
 import downloadMedia from "./actions/downloadMedia.ts";
-import joinVoice from "./actions/voiceJoin.ts";
-import leaveVoice from "./actions/voiceLeave.ts";
 import reply from "./actions/reply.ts";
 import summarize from "./actions/summarizeConversation.ts";
 import transcribe_media from "./actions/transcribeMedia.ts";
+import joinVoice from "./actions/voiceJoin.ts";
+import leaveVoice from "./actions/voiceLeave.ts";
 import { DISCORD_CLIENT_NAME } from "./constants.ts";
 import { MessageManager } from "./messages.ts";
 import channelStateProvider from "./providers/channelState.ts";
 import voiceStateProvider from "./providers/voiceState.ts";
-import { DiscordTestSuite } from "./test-suite.ts";
+import { DiscordTestSuite } from "./tests.ts";
 import type { IDiscordClient } from "./types.ts";
 import { VoiceManager } from "./voice.ts";
-
-interface RoomData {
-  channelId: string;
-  serverId: string;
-}
-
-interface AuthorData {
-  userId: string;
-  userName: string;
-  displayName: string;
-}
 
 export class DiscordClient extends EventEmitter implements IDiscordClient {
   apiToken: string;
@@ -109,13 +97,13 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
     const guildChannels = await guild.fetch();
     // for channel in channels
     for (const [, channel] of guildChannels.channels.cache) {
-      const roomId = stringToUuid(channel.id + "-" + runtime.agentId);
+      const roomId = stringToUuid(`${channel.id}-${runtime.agentId}`);
       const room = await runtime.getRoom(roomId);
       // if the room already exists, skip
       if (room) {
         continue;
       }
-      const worldId = stringToUuid(guild.id + "-" + runtime.agentId)
+      const worldId = stringToUuid(`${guild.id}-${runtime.agentId}`)
       await runtime.ensureWorldExists({id: worldId, name: guild.name, serverId: guild.id, agentId: runtime.agentId});
       await runtime.ensureRoomExists({id: roomId, name: channel.name, source: "discord", type: ChannelType.GROUP, channelId: channel.id, serverId: guild.id, worldId});
     }
@@ -374,13 +362,13 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
       const messageContent = reaction.message.content || "";
       const truncatedContent =
         messageContent.length > 50
-          ? messageContent.substring(0, 50) + "..."
+          ? `${messageContent.substring(0, 50)}...`
           : messageContent;
 
       const reactionMessage = `*Removed <${emoji}> from: "${truncatedContent}"*`;
 
       const roomId = stringToUuid(
-        reaction.message.channel.id + "-" + this.runtime.agentId
+        `${reaction.message.channel.id}-${this.runtime.agentId}`
       );
       const userIdUUID = stringToUuid(user.id);
       const reactionUUID = stringToUuid(
