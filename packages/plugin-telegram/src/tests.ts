@@ -57,18 +57,6 @@ export class TelegramTestSuite implements TestSuite {
     return testChatId;
   }
 
-  async getChatInfo(runtime: IAgentRuntime): Promise<Context['chat']> {
-    try {
-      const chatId = this.validateChatId(runtime);
-      const chat = await this.bot.telegram.getChat(chatId);
-      logger.log(`Fetched real chat: ${JSON.stringify(chat)}`);
-      return chat;
-    } catch (error) {
-      throw new Error(`Error fetching real Telegram chat: ${error}`);
-    }
-  }
-  
-
   async testCreatingTelegramBot(runtime: IAgentRuntime) {
     this.telegramClient = runtime.getClient("telegram") as TelegramClient;
     this.bot = this.telegramClient.messageManager.bot;
@@ -93,9 +81,9 @@ export class TelegramTestSuite implements TestSuite {
       if (!this.messageManager)
         throw new Error("MessageManager not initialized.");
 
-      const chat = await this.getChatInfo(runtime);
+      const chatId = this.validateChatId(runtime);
       const mockContext: Partial<Context> = {
-        chat,
+        chat: { id: chatId, type: "private" } as any,
         from: { id: "mock-user-id", username: "TestUser" } as any,
         telegram: this.bot.telegram,
       };
@@ -126,15 +114,14 @@ export class TelegramTestSuite implements TestSuite {
 
   async testHandlingMessage(runtime: IAgentRuntime) {
     try {
-      const chat = await this.getChatInfo(runtime);
+      const chatId = this.validateChatId(runtime);
       const mockContext: Partial<Context> = {
-        chat,
+        chat: { id: chatId, type: "private" } as any,
         from: { id: "mock-user-id", username: "TestUser" } as any,
         message: {
           message_id: undefined,
           text: `@${this.bot.botInfo?.username}! Hello!`,
           date: Math.floor(Date.now() / 1000),
-          chat,
         } as any,
         telegram: this.bot.telegram,
       };
