@@ -20,17 +20,16 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { z } from "zod";
 import { createApiRouter } from "./api.ts";
-import { hyperfiHandlerTemplate, messageHandlerTemplate } from "./helper.ts";
+import { hyperfiHandlerTemplate, messageHandlerTemplate, upload } from "./helper.ts";
 import replyAction from "./reply.ts";
-import { upload } from "./loader.ts";
 
-export class AgentServer {
+export class CharacterServer {
     public app: express.Application;
     private agents: Map<string, IAgentRuntime>; // container management
     private server: any; // Store server instance
     public startAgent: (character: Character) => Promise<IAgentRuntime>; // Store startAgent function
     public loadCharacterTryPath: (characterPath: string) => Promise<Character>; // Store loadCharacterTryPath function
-    public jsonToCharacter: (character: string | never) => Promise<Character>; // Store jsonToCharacter function
+    public jsonToCharacter: (filePath: string, character: string | never) => Promise<Character>; // Store jsonToCharacter function
 
     constructor() {
         logger.log("DirectClient constructor");

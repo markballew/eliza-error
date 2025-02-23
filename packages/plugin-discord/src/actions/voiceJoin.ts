@@ -125,14 +125,8 @@ export default {
             });
             return true;
         }
-            const guild = client.guilds.cache.get(serverId);
-            const members = guild?.members.cache;
-
-            // get the member who's stringTouuid(id) === message userId
-            const member = members?.find((member) => stringToUuid(member.id) === message.userId);
-
-            console.log("member", member);
-
+            const member = (discordMessage as DiscordMessage)
+                .member as GuildMember;
             if (member?.voice?.channel) {
                 joinVoiceChannel({
                     channelId: member.voice.channel.id,
