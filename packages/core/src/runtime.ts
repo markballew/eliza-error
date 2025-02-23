@@ -402,8 +402,6 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     async initialize() {
-        const clientsToStart: { client: Plugin["clients"][number] }[] = [];
-
         // load the character plugins dymamically from string
         if(this.character.plugins){
             const plugins = await handlePluginImporting(this.character.plugins) as Plugin[];
@@ -411,6 +409,15 @@ export class AgentRuntime implements IAgentRuntime {
                 for (const plugin of plugins) {
                     if(!plugin) {
                         continue;
+                    }
+                    if (plugin.clients) {
+                        for (const client of plugin.clients) {
+                            const startedClient = await client.start(this);
+                            logger.debug(
+                                `Initializing client: ${client.name}`
+                            );
+                            this.registerClient(client.name, startedClient);
+                        }
                     }
 
                     if (plugin.actions) {
@@ -454,16 +461,11 @@ export class AgentRuntime implements IAgentRuntime {
                             }
                         }
                     }
-
-                    if (plugin.clients) {
-                        plugin.clients.forEach(client => clientsToStart.push({ client }));
-                    }
+                    
                     this.plugins.push(plugin);
                 }
             }
         }
-
-        await this.ensureEmbeddingDimension();
 
         if (this.services) {
             for(const [_, service] of this.services.entries()) {
@@ -471,13 +473,7 @@ export class AgentRuntime implements IAgentRuntime {
             }
         }
 
-        await Promise.all(
-            clientsToStart.map(async ({ client }) => {
-                const startedClient = await client.start(this);
-                logger.debug(`Initializing client: ${client.name}`);
-                this.registerClient(client.name, startedClient);
-            })
-        );
+        await this.ensureEmbeddingDimension();
         
         await this.ensureUserExists(
             this.agentId,
@@ -789,6 +785,10 @@ export class AgentRuntime implements IAgentRuntime {
         channelId?: string,
         serverId?: string,
     }) {
+        if(userId === this.agentId) {
+            throw new Error("Agent should not connect to itself");
+        }
+
         await Promise.all([
             this.ensureUserExists(
                 this.agentId,
@@ -809,6 +809,15 @@ export class AgentRuntime implements IAgentRuntime {
             this.ensureParticipantInRoom(userId, roomId),
             this.ensureParticipantInRoom(this.agentId, roomId),
         ]);
+    }
+
+    /**
+     * Get a world by ID.
+     * @param worldId - The ID of the world to get.
+     * @returns The world.
+     */
+    async getWorld(worldId: UUID) {
+        return await this.databaseAdapter.getWorld(worldId);
     }
 
     /**
@@ -1443,12 +1452,16 @@ Text: ${attachment.text}
     async ensureCharacterExists(character: Character) {
         const characterExists = await this.databaseAdapter.getCharacter(character.name);
         if (!characterExists) {
-            await this.databaseAdapter.createCharacter(character);
+            logger.log(`[AgentRuntime][${this.character.name}] Creating character`);
+            return await this.databaseAdapter.createCharacter(character);
         }
+        logger.log(`[AgentRuntime][${this.character.name}] Updating character`);
+        // update the character with the latest character provided
+        await this.databaseAdapter.updateCharacter(character.name, character);
     }
 
     async ensureEmbeddingDimension() {
-        console.log(`[AgentRuntime][${this.character.name}] Starting ensureEmbeddingDimension`);
+        logger.log(`[AgentRuntime][${this.character.name}] Starting ensureEmbeddingDimension`);
         
         if (!this.databaseAdapter) {
             throw new Error(`[AgentRuntime][${this.character.name}] Database adapter not initialized before ensureEmbeddingDimension`);
