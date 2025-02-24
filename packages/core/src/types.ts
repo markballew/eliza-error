@@ -831,7 +831,7 @@ export interface IDatabaseAdapter {
 
   updateWorld(world: WorldData): Promise<void>;
 
-  getRoom(roomId: UUID, agentId: UUID): Promise<RoomData | null>;
+  getRoom(roomId: UUID): Promise<RoomData | null>;
 
   createRoom({
     id,
@@ -1011,7 +1011,6 @@ export interface IAgentRuntime {
   getClient(name: string): ClientInstance | null;
   getAllClients(): Map<string, ClientInstance>;
 
-  registerClientInterface(name: string, client: Client): void;
   registerClient(name: string, client: ClientInstance): void;
 
   unregisterClient(name: string): void;
@@ -1087,7 +1086,7 @@ export interface IAgentRuntime {
   getUserProfile(userId: UUID): Promise<Account | null>;
 
   getWorld(worldId: UUID): Promise<WorldData | null>;
-  
+
   ensureWorldExists({
     id,
     name,

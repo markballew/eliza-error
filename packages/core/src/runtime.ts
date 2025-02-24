@@ -50,8 +50,7 @@ import {
     type Task,
     ChannelType,
     type RoomData,
-    type WorldData,
-    type Client
+    type WorldData
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 import { messageEvents } from "./messages.ts";
@@ -229,7 +228,6 @@ export class AgentRuntime implements IAgentRuntime {
     readonly fetch = fetch;
     public cacheManager!: ICacheManager;
     private clients: Map<string, ClientInstance> = new Map();
-    private clientInterfaces: Map<string, Client> = new Map();
     services: Map<ServiceType, Service> = new Map();
 
     public adapters: Adapter[];
@@ -336,7 +334,12 @@ export class AgentRuntime implements IAgentRuntime {
             }
 
             for(const client of plugin.clients){
-                this.registerClientInterface(client.name, client);
+                client.start(this).then((startedClient) => {
+                    logger.debug(
+                        `Initializing client: ${client.name}`
+                    );
+                    this.registerClient(client.name, startedClient);
+                });
             }
         }
 
@@ -352,17 +355,6 @@ export class AgentRuntime implements IAgentRuntime {
                 }
             }
         }
-    }
-
-    registerClientInterface(clientName: string, client: Client): void {
-        if (this.clientInterfaces.has(clientName)) {
-            logger.warn(
-                `${this.character.name}(${this.agentId}) - Client ${clientName} is already registered. Skipping registration.`
-            );
-            return;
-        }
-        this.clientInterfaces.set(clientName, client);
-        logger.success(`${this.character.name}(${this.agentId}) - Client ${clientName} registered successfully`);
     }
     
     registerClient(clientName: string, client: ClientInstance): void {
@@ -420,7 +412,11 @@ export class AgentRuntime implements IAgentRuntime {
                     }
                     if (plugin.clients) {
                         for (const client of plugin.clients) {
-                            this.registerClientInterface(client.name, client);
+                            const startedClient = await client.start(this);
+                            logger.debug(
+                                `Initializing client: ${client.name}`
+                            );
+                            this.registerClient(client.name, startedClient);
                         }
                     }
 
@@ -465,13 +461,11 @@ export class AgentRuntime implements IAgentRuntime {
                             }
                         }
                     }
-
+                    
                     this.plugins.push(plugin);
                 }
             }
         }
-
-        await this.ensureEmbeddingDimension();
 
         if (this.services) {
             for(const [_, service] of this.services.entries()) {
@@ -479,12 +473,7 @@ export class AgentRuntime implements IAgentRuntime {
             }
         }
 
-        await Promise.all(
-            Array.from(this.clientInterfaces.values()).map(async (clientInterface) => {
-                const startedClient = await clientInterface.start(this);
-                this.registerClient(clientInterface.name, startedClient);
-            })
-        );
+        await this.ensureEmbeddingDimension();
         
         await this.ensureUserExists(
             this.agentId,
@@ -799,7 +788,7 @@ export class AgentRuntime implements IAgentRuntime {
         if(userId === this.agentId) {
             throw new Error("Agent should not connect to itself");
         }
-
+        
         await Promise.all([
             this.ensureUserExists(
                 this.agentId,
@@ -850,7 +839,7 @@ export class AgentRuntime implements IAgentRuntime {
      * @throws An error if the room cannot be created.
      */
     async ensureRoomExists({id, name, source, type, channelId, serverId, worldId}: RoomData) {
-        const room = await this.databaseAdapter.getRoom(id, this.agentId);
+        const room = await this.databaseAdapter.getRoom(id);
         if (!room) {
             await this.databaseAdapter.createRoom({id, name, agentId: this.agentId, source, type, channelId, serverId, worldId});
             logger.log(`Room ${id} created successfully.`);
@@ -863,7 +852,7 @@ export class AgentRuntime implements IAgentRuntime {
      * @returns The room ID of the room between the agent and the user.
      */
     async getRoom(userId: UUID) {
-        return await this.databaseAdapter.getRoom(userId, this.agentId);
+        return await this.databaseAdapter.getRoom(userId);
     }
 
     /**

@@ -27,7 +27,16 @@ const elizaOpenAIFirst: Character = {
     plugins: [
         "@elizaos/plugin-openai",  // OpenAI first, embedding size = 1536
         "@elizaos/plugin-elevenlabs",
-        "@elizaos/plugin-node",
+    ]
+};
+
+const elizaAnthropicFirst: Character = {
+    ...defaultCharacter,
+    name: "ElizaAnthropicFirst",
+    plugins: [
+        "@elizaos/plugin-anthropic", // No embedding from this plugin
+        "@elizaos/plugin-openai", // embedding size = 1536
+        "@elizaos/plugin-elevenlabs",
     ]
 };
 
@@ -96,7 +105,7 @@ async function initializeRuntime(character: Character): Promise<RuntimeConfig> {
 
 // Initialize the runtimes
 beforeAll(async () => {
-    const characters = [defaultCharacterTest, elizaOpenAIFirst];
+    const characters = [defaultCharacterTest, elizaOpenAIFirst, elizaAnthropicFirst];
     
     for (const character of characters) {
         const config = await initializeRuntime(character);
@@ -131,6 +140,14 @@ describe('Multi-Character Plugin Tests', () => {
     it('should run tests for ElizaOpenAIFirst (1536 dimension)', async () => {
         const config = runtimeConfigs.get('ElizaOpenAIFirst');
         if (!config) throw new Error('Runtime not found for ElizaOpenAIFirst');
+        
+        const testRunner = new TestRunner(config.runtime);
+        await testRunner.runPluginTests();
+    }, TEST_TIMEOUT);
+
+    it('should run tests for ElizaAnthropicFirst (384 dimension)', async () => {
+        const config = runtimeConfigs.get('ElizaAnthropicFirst');
+        if (!config) throw new Error('Runtime not found for ElizaAnthropicFirst');
         
         const testRunner = new TestRunner(config.runtime);
         await testRunner.runPluginTests();
