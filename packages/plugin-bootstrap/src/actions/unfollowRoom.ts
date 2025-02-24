@@ -1,4 +1,4 @@
-import { composeContext, type HandlerCallback } from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
 import { generateTrueOrFalse } from "@elizaos/core";
 import { booleanFooter } from "@elizaos/core";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@elizaos/core";
 
 const shouldUnfollowTemplate =
-    `# Task: Decide if {{agentName}} should stop closely following this previously followed room and only respond when mentioned.
+    `Based on the conversation so far:
 
 {{recentMessages}}
 
@@ -22,7 +22,7 @@ Respond with YES if:
 - The conversation has shifted to a topic where {{agentName}} has less to add
 
 Otherwise, respond with NO.
-${booleanFooter}`;
+` + booleanFooter;
 
 export const unfollowRoomAction: Action = {
     name: "UNFOLLOW_ROOM",
@@ -42,7 +42,7 @@ export const unfollowRoomAction: Action = {
         );
         return userState === "FOLLOWED";
     },
-    handler: async (runtime: IAgentRuntime, message: Memory, state?: State, _options?: { [key: string]: unknown; }, callback?: HandlerCallback, responses?: Memory[] ) => {
+    handler: async (runtime: IAgentRuntime, message: Memory) => {
         async function _shouldUnfollow(state: State): Promise<boolean> {
             const shouldUnfollowContext = composeContext({
                 state,
@@ -58,7 +58,7 @@ export const unfollowRoomAction: Action = {
             return response;
         }
 
-        state = await runtime.composeState(message);
+        const state = await runtime.composeState(message);
 
         if (await _shouldUnfollow(state)) {
             await runtime.databaseAdapter.setParticipantUserState(
@@ -66,10 +66,6 @@ export const unfollowRoomAction: Action = {
                 runtime.agentId,
                 null
             );
-        }
-
-        for (const response of responses) {
-            await callback?.({...response.content, action: "UNFOLLOW_ROOM"});
         }
     },
     examples: [

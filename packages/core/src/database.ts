@@ -1,17 +1,13 @@
 import type {
     Account,
     Actor,
-    ChannelType,
-    Character,
     Goal,
     GoalStatus,
     IDatabaseAdapter,
     Memory,
     Participant,
     Relationship,
-    RoomData,
     UUID,
-    WorldData,
 } from "./types.ts";
 
 /**
@@ -49,13 +45,6 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
      * @returns A Promise that resolves when the account creation is complete.
      */
     abstract createAccount(account: Account): Promise<boolean>;
-
-    /**
-     * Updates an existing account in the database.
-     * @param account The account object with updated properties.
-     * @returns A Promise that resolves when the account update is complete.
-     */
-    abstract updateAccount(account: Account): Promise<void>;
 
     /**
      * Retrieves memories based on the specified parameters.
@@ -244,53 +233,18 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
     abstract removeAllGoals(roomId: UUID): Promise<void>;
 
     /**
-     * Retrieves a world by its ID.
-     * @param id The UUID of the world to retrieve.
-     * @returns A Promise that resolves to the WorldData object or null if not found.
-     */
-    abstract getWorld(id: UUID): Promise<WorldData | null>;
-
-    /**
-     * Creates a new world in the database.
-     * @param world The world object to create.
-     * @returns A Promise that resolves to the UUID of the created world.
-     */
-    abstract createWorld(world: WorldData): Promise<UUID>;
-
-    /**
-     * Updates an existing world in the database.
-     * @param world The world object with updated properties.
-     * @returns A Promise that resolves when the world has been updated.
-     */
-    abstract updateWorld(world: WorldData): Promise<void>;
-
-    /**
-     * Removes a specific world from the database.
-     * @param id The UUID of the world to remove.
-     * @returns A Promise that resolves when the world has been removed.
-     */
-    abstract removeWorld(id: UUID): Promise<void>;
-
-    /**
      * Retrieves the room ID for a given room, if it exists.
      * @param roomId The UUID of the room to retrieve.
      * @returns A Promise that resolves to the room ID or null if not found.
      */
-    abstract getRoom(roomId: UUID): Promise<RoomData | null>;
+    abstract getRoom(roomId: UUID): Promise<UUID | null>;
 
     /**
      * Creates a new room with an optional specified ID.
      * @param roomId Optional UUID to assign to the new room.
      * @returns A Promise that resolves to the UUID of the created room.
      */
-    abstract createRoom({id, agentId, source, type, channelId, serverId, worldId}: RoomData): Promise<UUID>;
-
-    /**
-     * Updates a specific room in the database.
-     * @param room The room object with updated properties.
-     * @returns A Promise that resolves when the room has been updated.
-     */
-    abstract updateRoom(room: RoomData): Promise<void>;
+    abstract createRoom(roomId?: UUID): Promise<UUID>;
 
     /**
      * Removes a specific room from the database.
@@ -389,47 +343,4 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
     abstract getRelationships(params: {
         userId: UUID;
     }): Promise<Relationship[]>;
-
-
-    /**
-     * Creates a new character in the database.
-     * @param character The Character object to create.
-     * @returns A Promise that resolves when the character creation is complete.
-     */
-    abstract createCharacter(character: Character): Promise<void>;
-
-    /**
-     * Retrieves all characters from the database.
-     * @returns A Promise that resolves to an array of Character objects.
-     */
-    abstract listCharacters(): Promise<Character[]>;
-
-    /**
-     * Retrieves a character by their name.
-     * @param name The name of the character to retrieve.
-     * @returns A Promise that resolves to the Character object or null if not found.
-     */
-    abstract getCharacter(name: string): Promise<Character | null>;
-
-    /**
-     * Updates an existing character in the database.
-     * @param name The name of the character to update.
-     * @param updates Partial Character object containing the fields to update.
-     * @returns A Promise that resolves when the character update is complete.
-     */
-    abstract updateCharacter(name: string, updates: Partial<Character>): Promise<void>;
-
-    /**
-     * Removes a character from the database.
-     * @param name The name of the character to remove.
-     * @returns A Promise that resolves when the character removal is complete.
-     */
-    abstract removeCharacter(name: string): Promise<void>;
-
-    /**
-     * Ensures the embedding dimension is properly set for the database.
-     * @param dimension The dimension number to ensure.
-     * @returns void
-     */
-    abstract ensureEmbeddingDimension(dimension: number, agentId: UUID): void;
 }

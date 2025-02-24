@@ -1,4 +1,4 @@
-import { composeContext, type HandlerCallback } from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
 import { generateTrueOrFalse } from "@elizaos/core";
 import { booleanFooter } from "@elizaos/core";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@elizaos/core";
 
 export const shouldUnmuteTemplate =
-    `# Task: Decide if {{agentName}} should unmute this previously muted room and start considering it for responses again.
+    `Based on the conversation so far:
 
 {{recentMessages}}
 
@@ -22,7 +22,7 @@ Respond with YES if:
 - The tone of the conversation has improved and {{agentName}}'s input would be welcome
 
 Otherwise, respond with NO.
-${booleanFooter}`;
+` + booleanFooter;
 
 export const unmuteRoomAction: Action = {
     name: "UNMUTE_ROOM",
@@ -42,7 +42,7 @@ export const unmuteRoomAction: Action = {
         );
         return userState === "MUTED";
     },
-    handler: async (runtime: IAgentRuntime, message: Memory, state?: State, _options?: { [key: string]: unknown; }, callback?: HandlerCallback, responses?: Memory[] ) => {
+    handler: async (runtime: IAgentRuntime, message: Memory) => {
         async function _shouldUnmute(state: State): Promise<boolean> {
             const shouldUnmuteContext = composeContext({
                 state,
@@ -58,7 +58,7 @@ export const unmuteRoomAction: Action = {
             return response;
         }
 
-        state = await runtime.composeState(message);
+        const state = await runtime.composeState(message);
 
         if (await _shouldUnmute(state)) {
             await runtime.databaseAdapter.setParticipantUserState(
@@ -66,10 +66,6 @@ export const unmuteRoomAction: Action = {
                 runtime.agentId,
                 null
             );
-        }
-
-        for (const response of responses) {
-            await callback?.({...response.content, action: "UNMUTE_ROOM"});
         }
     },
     examples: [

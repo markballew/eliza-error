@@ -1,4 +1,3 @@
-import logger from "./logger.ts";
 import type { IAgentRuntime, State, Memory } from "./types.ts";
 
 /**
@@ -16,14 +15,10 @@ export async function getProviders(
     const providerResults = (
         await Promise.all(
             runtime.providers.map(async (provider) => {
-                const start = Date.now();
-                const result = await provider.get(runtime, message, state);
-                const duration = Date.now() - start;
-                logger.warn(`Provider took ${duration}ms to respond`);
-                return result;
+                return await provider.get(runtime, message, state);
             })
         )
     ).filter((result) => result != null && result !== "");
 
-    return providerResults.join("\n\n");
+    return providerResults.join("\n");
 }

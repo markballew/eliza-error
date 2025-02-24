@@ -6,8 +6,11 @@ import { stringArrayFooter } from "./parsing.ts";
  * Template used for the evaluation generateText.
  */
 export const evaluationTemplate =
-    `Task Examples:
+    `TASK: Based on the conversation and conditions, determine which evaluation functions are appropriate to call.
+Examples:
 {{evaluatorExamples}}
+
+INSTRUCTIONS: You are helping me to decide which appropriate functions to call based on the conversation between {{senderName}} and {{agentName}}.
 
 {{recentMessages}}
 
@@ -17,7 +20,7 @@ Evaluator Functions:
 TASK: Based on the most recent conversation, determine which evaluators functions are appropriate to call to call.
 Include the name of evaluators that are relevant and should be called in the array
 Available evaluator names to include are {{evaluatorNames}}
-${stringArrayFooter}`;
+` + stringArrayFooter;
 
 /**
  * Formats the names of evaluators into a comma-separated list, each enclosed in single quotes.

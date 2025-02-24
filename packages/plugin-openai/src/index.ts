@@ -78,7 +78,7 @@ export const openaiPlugin: Plugin = {
     }
   },
   models: {
-    [ModelClass.TEXT_EMBEDDING]: async (_runtime: IAgentRuntime, text: string | null) => {
+    [ModelClass.TEXT_EMBEDDING]: async (runtime: IAgentRuntime, text: string | null) => {
       if (!text) {
         // Return zero vector of appropriate length for model
         return new Array(1536).fill(0);
@@ -107,7 +107,7 @@ export const openaiPlugin: Plugin = {
       return data.data[0].embedding;
     },
     [ModelClass.TEXT_TOKENIZER_ENCODE]: async (
-      _runtime,
+      runtime,
       {
       context,
       modelClass = ModelClass.TEXT_LARGE,
@@ -115,7 +115,7 @@ export const openaiPlugin: Plugin = {
       return await tokenizeText(modelClass ?? ModelClass.TEXT_LARGE, context);
     },
     [ModelClass.TEXT_TOKENIZER_DECODE]: async (
-      _runtime,
+      runtime,
       {
       tokens,
       modelClass = ModelClass.TEXT_LARGE,
@@ -167,11 +167,12 @@ export const openaiPlugin: Plugin = {
       {
       context,
       stopSequences = [],
-      maxTokens = 8192,
-      temperature = 0.7,
-      frequencyPenalty = 0.7,
-      presencePenalty = 0.7,
     }: GenerateTextParams) => {
+      const temperature = 0.7;
+      const frequency_penalty = 0.7;
+      const presence_penalty = 0.7;
+      const max_response_length = 8192;
+
       const baseURL =
         runtime.getSetting("OPENAI_BASE_URL") ?? "https://api.openai.com/v1";
 
@@ -188,9 +189,9 @@ export const openaiPlugin: Plugin = {
         prompt: context,
         system: runtime.character.system ?? undefined,
         temperature: temperature,
-        maxTokens: maxTokens,
-        frequencyPenalty: frequencyPenalty,
-        presencePenalty: presencePenalty,
+        maxTokens: max_response_length,
+        frequencyPenalty: frequency_penalty,
+        presencePenalty: presence_penalty,
         stopSequences: stopSequences,
       });
 
@@ -436,7 +437,7 @@ export const openaiPlugin: Plugin = {
     {
       path: "/helloworld",
       type: "GET",
-      handler: async (_req: any, res: any) => {
+      handler: async (req: any, res: any) => {
         // send a response
         res.json({
           message: "Hello World"
