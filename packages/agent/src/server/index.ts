@@ -1,4 +1,5 @@
 import {
+    ChannelType,
     composeContext,
     generateMessageResponse,
     generateObject,
@@ -19,19 +20,17 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { z } from "zod";
 import { createApiRouter } from "./api.ts";
-import { hyperfiHandlerTemplate, messageHandlerTemplate, upload } from "./helper.ts";
+import { hyperfiHandlerTemplate, messageHandlerTemplate } from "./helper.ts";
 import replyAction from "./reply.ts";
+import { upload } from "./loader.ts";
 
-
-
-
-export class CharacterServer {
+export class AgentServer {
     public app: express.Application;
     private agents: Map<string, IAgentRuntime>; // container management
     private server: any; // Store server instance
     public startAgent: (character: Character) => Promise<IAgentRuntime>; // Store startAgent function
     public loadCharacterTryPath: (characterPath: string) => Promise<Character>; // Store loadCharacterTryPath function
-    public jsonToCharacter: (filePath: string, character: string | never) => Promise<Character>; // Store jsonToCharacter function
+    public jsonToCharacter: (character: string | never) => Promise<Character>; // Store jsonToCharacter function
 
     constructor() {
         logger.log("DirectClient constructor");
@@ -122,13 +121,14 @@ export class CharacterServer {
                     return;
                 }
 
-                await runtime.ensureConnection(
+                await runtime.ensureConnection({
                     userId,
                     roomId,
-                    req.body.userName,
-                    req.body.name,
-                    "direct"
-                );
+                    userName: req.body.userName,
+                    userScreenName: req.body.name,
+                    source: "direct",
+                    type: ChannelType.API,
+                });
 
                 const text = req.body.text;
                 // if empty text, directly return
@@ -237,7 +237,7 @@ export class CharacterServer {
         );
 
         this.app.post(
-            "/agents/:agentIdOrName/hyperfi/v1",
+            "/agents/:agentIdOrName/hyperfy/v1",
             async (req: express.Request, res: express.Response) => {
                 // get runtime
                 const agentId = req.params.agentIdOrName;
@@ -255,14 +255,14 @@ export class CharacterServer {
                     return;
                 }
 
-                // can we be in more than one hyperfi world at once
+                // can we be in more than one hyperfy world at once
                 // but you may want the same context is multiple worlds
                 // this is more like an instanceId
-                const roomId = stringToUuid(req.body.roomId ?? "hyperfi");
+                const roomId = stringToUuid(req.body.roomId ?? "hyperfy");
 
                 const body = req.body;
 
-                // hyperfi specific parameters
+                // hyperfy specific parameters
                 let nearby = [];
                 let availableEmotes = [];
 
@@ -275,17 +275,18 @@ export class CharacterServer {
                     for (const msg of body.messages) {
                         const parts = msg.split(/:\s*/);
                         const mUserId = stringToUuid(parts[0]);
-                        await runtime.ensureConnection(
-                            mUserId,
+                        await runtime.ensureConnection({
+                            userId: mUserId,
                             roomId, // where
-                            parts[0], // username
-                            parts[0], // userScreeName?
-                            "hyperfi"
-                        );
+                            userName: parts[0], // username
+                            userScreenName: parts[0], // userScreeName?
+                            source: "hyperfy",
+                            type: ChannelType.WORLD,
+                        });
                         const content: Content = {
                             text: parts[1] || "",
                             attachments: [],
-                            source: "hyperfi",
+                            source: "hyperfy",
                             inReplyTo: undefined,
                         };
                         const memory: Memory = {
@@ -306,11 +307,11 @@ export class CharacterServer {
                     // we need to compose who's near and what emotes are available
                     text: JSON.stringify(req.body),
                     attachments: [],
-                    source: "hyperfi",
+                    source: "hyperfy",
                     inReplyTo: undefined,
                 };
 
-                const userId = stringToUuid("hyperfi");
+                const userId = stringToUuid("hyperfy");
                 const userMessage = {
                     content,
                     userId,
@@ -425,7 +426,7 @@ export class CharacterServer {
                             }
                         }
                         if (hfOut.emote !== null) {
-                            contentObj.text = "emoted " + hfOut.emote;
+                            contentObj.text = `emoted ${hfOut.emote}`;
                         }
                     }
 
@@ -532,6 +533,7 @@ export class CharacterServer {
                 }
             }
         );
+
         this.app.get(
             "/fine-tune/:assetId",
             async (req: express.Request, res: express.Response) => {
@@ -612,7 +614,7 @@ export class CharacterServer {
         this.app.post("/:agentId/speak", async (req, res) => {
             const agentId = req.params.agentId;
             const roomId = stringToUuid(
-                req.body.roomId ?? "default-room-" + agentId
+                req.body.roomId ?? `default-room-${agentId}`
             );
             const userId = stringToUuid(req.body.userId ?? "user");
             const text = req.body.text;
@@ -639,13 +641,14 @@ export class CharacterServer {
 
             try {
                 // Process message through agent (same as /message endpoint)
-                await runtime.ensureConnection(
+                await runtime.ensureConnection({
                     userId,
                     roomId,
-                    req.body.userName,
-                    req.body.name,
-                    "direct"
-                );
+                    userName: req.body.userName,
+                    userScreenName: req.body.name,
+                    source: "direct",
+                    type: ChannelType.API,
+                });
 
                 const messageId = stringToUuid(Date.now().toString());
 
@@ -829,6 +832,16 @@ export class CharacterServer {
         // register any plugin endpoints?
         // but once and only once
         this.agents.set(runtime.agentId, runtime);
+        // TODO: This is a hack to register the tee plugin. Remove this once we have a better way to do it.
+        const teePlugin = runtime.plugins.find(p => p.name === "phala-tee-plugin");
+        if (teePlugin) {
+            for (const provider of teePlugin.providers) {
+                runtime.registerProvider(provider);
+            }
+            for (const action of teePlugin.actions) {
+                runtime.registerAction(action);
+            }
+        }
         runtime.registerAction(replyAction);
         // for each route on each plugin, add it to the router
         for (const route of runtime.routes) {

@@ -293,7 +293,7 @@ export interface Memory {
   userId: UUID;
 
   /** Associated agent ID */
-  agentId?: UUID;
+  agentId: UUID;
 
   /** Optional creation timestamp */
   createdAt?: number;
@@ -312,9 +312,6 @@ export interface Memory {
 
   /** Embedding similarity score */
   similarity?: number;
-
-  /** Metadata for the knowledge */
-  metadata?: KnowledgeMetadata;
 }
 
 /**
@@ -525,6 +522,22 @@ export type Media = {
   contentType?: string;
 };
 
+export enum ChannelType {
+  SELF = "SELF",
+  DM = "DM",
+  GROUP = "GROUP",
+  VOICE_DM = "VOICE_DM",
+  VOICE_GROUP = "VOICE_GROUP",
+  FEED = "FEED",
+  WORLD = "WORLD",
+  API = "API",
+  FORUM = "FORUM",
+}
+
+export type PostClient = {
+  getPost: (roomId: UUID) => Promise<string | UUID | null>;
+};
+
 /**
  * Client instance
  */
@@ -721,6 +734,8 @@ export interface IDatabaseAdapter {
   /** Create new account */
   createAccount(account: Account): Promise<boolean>;
 
+  updateAccount(account: Account): Promise<void>;
+
   /** Get memories matching criteria */
   getMemories(params: {
     roomId: UUID;
@@ -805,11 +820,33 @@ export interface IDatabaseAdapter {
 
   removeAllGoals(roomId: UUID): Promise<void>;
 
-  getRoom(roomId: UUID): Promise<UUID | null>;
+  createWorld({
+    id,
+    name,
+    agentId,
+    serverId,
+  }: WorldData): Promise<UUID>;
 
-  createRoom(roomId?: UUID): Promise<UUID>;
+  getWorld(id: UUID): Promise<WorldData | null>;
+
+  updateWorld(world: WorldData): Promise<void>;
+
+  getRoom(roomId: UUID, agentId: UUID): Promise<RoomData | null>;
+
+  createRoom({
+    id,
+    name,
+    agentId,
+    source,
+    type,
+    channelId,
+    serverId,
+    worldId,
+  }: RoomData): Promise<UUID>;
 
   removeRoom(roomId: UUID): Promise<void>;
+
+  updateRoom(room: RoomData): Promise<void>;
 
   getRoomsForParticipant(userId: UUID): Promise<UUID[]>;
 
@@ -936,7 +973,7 @@ export abstract class Service {
 
   public static getInstance<T extends Service>(): T {
     if (!Service.instance) {
-      Service.instance = new (this as any)();
+      Service.instance = new (Service as any)();
     }
     return Service.instance as T;
   }
@@ -960,6 +997,8 @@ export interface IAgentRuntime {
   evaluators: Evaluator[];
   plugins: Plugin[];
 
+  events: Map<string, ((params: any) => void)[]>;
+
   fetch?: typeof fetch | null;
   routes: Route[];
   messageManager: IMemoryManager;
@@ -972,6 +1011,7 @@ export interface IAgentRuntime {
   getClient(name: string): ClientInstance | null;
   getAllClients(): Map<string, ClientInstance>;
 
+  registerClientInterface(name: string, client: Client): void;
   registerClient(name: string, client: ClientInstance): void;
 
   unregisterClient(name: string): void;
@@ -1011,8 +1051,6 @@ export interface IAgentRuntime {
     callback?: HandlerCallback
   ): Promise<string[] | null>;
 
-  ensureParticipantExists(userId: UUID, roomId: UUID): Promise<void>;
-
   ensureUserExists(
     userId: UUID,
     userName: string | null,
@@ -1024,17 +1062,49 @@ export interface IAgentRuntime {
 
   registerAction(action: Action): void;
 
-  ensureConnection(
-    userId: UUID,
-    roomId: UUID,
-    userName?: string,
-    userScreenName?: string,
-    source?: string
-  ): Promise<void>;
+  ensureConnection({
+    userId,
+    roomId,
+    userName,
+    userScreenName,
+    source,
+    channelId,
+    serverId,
+    type,
+  }: {
+    userId: UUID;
+    roomId: UUID;
+    userName?: string;
+    userScreenName?: string;
+    source?: string;
+    channelId?: string;
+    serverId?: string;
+    type: ChannelType;
+  }): Promise<void>;
 
   ensureParticipantInRoom(userId: UUID, roomId: UUID): Promise<void>;
 
-  ensureRoomExists(roomId: UUID): Promise<void>;
+  getUserProfile(userId: UUID): Promise<Account | null>;
+
+  getWorld(worldId: UUID): Promise<WorldData | null>;
+  
+  ensureWorldExists({
+    id,
+    name,
+    serverId,
+  }: WorldData): Promise<void>;
+
+  ensureRoomExists({
+    id,
+    name,
+    source,
+    type,
+    channelId,
+    serverId,
+    worldId,
+  }: RoomData): Promise<void>;
+
+  getRoom(roomId: UUID): Promise<RoomData | null>;
 
   composeState(
     message: Memory,
@@ -1054,7 +1124,7 @@ export interface IAgentRuntime {
 
   registerEvent(event: string, handler: (params: any) => void): void;
   getEvent(event: string): ((params: any) => void)[] | undefined;
-  emitEvent(event: string, params: any): void;
+  emitEvent(event: string | string[], params: any): void;
 
   registerTask(task: Task): UUID;
   getTasks({
@@ -1293,6 +1363,23 @@ export enum TeeType {
   TDX_DSTACK = "tdx_dstack",
 }
 
+export enum TeeVendors {
+  PHALA = "phala",
+  MARLIN = "marlin",
+  FLEEK = "fleek",
+  SGX_GRAMINE = "sgx_gramine",
+}
+
+export interface TeeVendorConfig {
+  // Add vendor-specific configuration options here
+  [key: string]: unknown;
+}
+
+export interface TeePluginConfig {
+  vendor?: TeeVendors;
+  vendorConfig?: TeeVendorConfig;
+}
+
 export const CACHE_KEYS = {
   SERVER_SETTINGS: (serverId: string) => `server_${serverId}_settings`,
   SERVER_ROLES: (serverId: string) => `server_${serverId}_roles`,
@@ -1309,10 +1396,22 @@ export interface Task {
   validate?: (runtime: IAgentRuntime, message: Memory, state: State) => Promise<boolean>;
 }
 
-export interface KnowledgeMetadata {
-    source?: string;          // Source of the knowledge (e.g., "user", "file", "web")
-    sourceId?: UUID;          // ID of the source (e.g., file ID, message ID)
-    scope?: string;           // Scope of the knowledge (e.g., "public", "private", "room")
-    timestamp?: number;       // When the knowledge was created/updated
-    tags?: string[];         // Optional tags for categorization
+export type WorldData = {
+  id: UUID;
+  name: string;
+  agentId: UUID;
+  serverId: string;
+  metadata?: Record<string, unknown>;
+}
+
+export type RoomData = {
+  id: UUID;
+  name?: string;
+  agentId?: UUID;
+  source: string;
+  type: ChannelType;
+  channelId?: string;
+  serverId?: string;
+  worldId?: UUID;
+  metadata?: Record<string, unknown>;
 }

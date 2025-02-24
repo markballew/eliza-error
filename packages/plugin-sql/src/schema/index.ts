@@ -1,0 +1,11 @@
+export { accountTable } from "./account";
+export { cacheTable } from "./cache";
+export { characterTable } from "./character";
+export { embeddingTable } from "./embedding";
+export { goalTable } from "./goal";
+export { logTable } from "./log";
+export { memoryTable } from "./memory";
+export { participantTable } from "./participant";
+export { relationshipTable } from "./relationship";
+export { roomTable } from "./room";
+export { worldTable } from "./worldTable";

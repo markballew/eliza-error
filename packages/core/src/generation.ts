@@ -237,7 +237,7 @@ export const generateObject = async ({
     }
     
     return json;
-  } catch (error) {
+  } catch (_error) {
     logger.error(`Failed to parse JSON ${output}`);
     logger.error(jsonString);
     return null;

@@ -1,26 +1,21 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import knowledge from "../src/knowledge";
 import type { AgentRuntime } from "../src/runtime";
 import type { Memory } from "../src/types";
 
-// Mock modules
-const mockSplitChunks = mock(async (text: string) => [text]);
-const mockStringToUuid = mock((str: string) => str);
-
-// Mock the imports
-mock.module("../generation", () => ({
-    splitChunks: mockSplitChunks,
+vi.mock("../generation", () => ({
+    splitChunks: vi.fn().mockImplementation(async (text) => [text]),
 }));
 
-mock.module("../uuid", () => ({
-    stringToUuid: mockStringToUuid,
+vi.mock("../uuid", () => ({
+    stringToUuid: vi.fn().mockImplementation((str) => str),
 }));
 
 describe("Knowledge Module", () => {
     describe("preprocess", () => {
         it("should handle invalid inputs", () => {
-            expect(knowledge.preprocess(null as any)).toBe("");
-            expect(knowledge.preprocess(undefined as any)).toBe("");
+            expect(knowledge.preprocess(null)).toBe("");
+            expect(knowledge.preprocess(undefined)).toBe("");
             expect(knowledge.preprocess("")).toBe("");
         });
 
@@ -70,30 +65,26 @@ describe("Knowledge Module", () => {
             mockRuntime = {
                 agentId: "test-agent",
                 messageManager: {
-                    getCachedEmbeddings: mock(() => Promise.resolve([])),
+                    getCachedEmbeddings: vi.fn().mockResolvedValue([]),
                 },
                 knowledgeManager: {
-                    searchMemories: mock(() =>
-                        Promise.resolve([
-                            {
-                                content: {
-                                    text: "test fragment",
-                                    source: "source1",
-                                },
-                                similarity: 0.9,
+                    searchMemories: vi.fn().mockResolvedValue([
+                        {
+                            content: {
+                                text: "test fragment",
+                                source: "source1",
                             },
-                        ])
-                    ),
-                    createMemory: mock(() => Promise.resolve(undefined)),
+                            similarity: 0.9,
+                        },
+                    ]),
+                    createMemory: vi.fn().mockResolvedValue(undefined),
                 },
                 documentsManager: {
-                    getMemoryById: mock(() =>
-                        Promise.resolve({
-                            id: "source1",
-                            content: { text: "test document" },
-                        })
-                    ),
-                    createMemory: mock(() => Promise.resolve(undefined)),
+                    getMemoryById: vi.fn().mockResolvedValue({
+                        id: "source1",
+                        content: { text: "test document" },
+                    }),
+                    createMemory: vi.fn().mockResolvedValue(undefined),
                 },
             } as unknown as AgentRuntime;
         });
@@ -115,6 +106,6 @@ describe("Knowledge Module", () => {
                 expect(result).toEqual([]);
             });
         });
+        });
     });
-});
 
