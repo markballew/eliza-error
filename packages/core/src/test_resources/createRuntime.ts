@@ -1,4 +1,4 @@
-import { SqliteDatabaseAdapter, loadVecExtensions } from "@elizaos/plugin-sql";
+import { SqliteDatabaseAdapter, loadVecExtensions } from "@elizaos/plugin-sqlite";
 import type { DatabaseAdapter } from "../database.ts";
 import { AgentRuntime } from "../runtime.ts";
 import type { Action, Evaluator, Provider } from "../types.ts";

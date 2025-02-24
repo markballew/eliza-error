@@ -1,5 +1,4 @@
 import {
-    ChannelType,
     cleanJsonResponse,
     composeContext,
     extractAttributes,
@@ -77,7 +76,7 @@ export class TwitterPostClient {
         const generateNewTweetLoop = async () => {
             const lastPost = await this.runtime.cacheManager.get<{
                 timestamp: number;
-            }>(`twitter/${this.twitterUsername}/lastPost`);
+            }>("twitter/" + this.twitterUsername + "/lastPost");
 
             const lastPostTimestamp = lastPost?.timestamp ?? 0;
             const minMinutes = (this.state?.TWITTER_POST_INTERVAL_MIN || this.runtime.getSetting("TWITTER_POST_INTERVAL_MIN") as number) ?? 90;
@@ -159,12 +158,12 @@ export class TwitterPostClient {
         logger.log(`Tweet posted:\n ${tweet.permanentUrl}`);
 
         // Ensure the room and participant exist
-        await runtime.ensureRoomExists({id: roomId, name: "Twitter Feed", source: "twitter", type: ChannelType.FEED});
+        await runtime.ensureRoomExists(roomId);
         await runtime.ensureParticipantInRoom(runtime.agentId, roomId);
 
         // Create a memory for the tweet
         await runtime.messageManager.createMemory({
-            id: stringToUuid(`${tweet.id}-${runtime.agentId}`),
+            id: stringToUuid(tweet.id + "-" + runtime.agentId),
             userId: runtime.agentId,
             agentId: runtime.agentId,
             content: {
@@ -204,9 +203,10 @@ export class TwitterPostClient {
                     truncateContent,
                     tweetId
                 );
-            }
+            } else {
                 return noteTweetResult.data.notetweet_create.tweet_results
                     .result;
+            }
         } catch (error) {
             throw new Error(`Note Tweet failed: ${error}`);
         }
@@ -249,7 +249,7 @@ export class TwitterPostClient {
         mediaData?: MediaData[]
     ) {
         try {
-            logger.log("Posting new tweet:\n");
+            logger.log(`Posting new tweet:\n`);
 
             let result;
 
@@ -295,7 +295,7 @@ export class TwitterPostClient {
 
         try {
             const roomId = stringToUuid(
-                `twitter_generate_room-${this.client.profile.username}`
+                "twitter_generate_room-" + this.client.profile.username
             );
             await this.runtime.ensureUserExists(
                 this.runtime.agentId,
@@ -327,7 +327,7 @@ export class TwitterPostClient {
                     twitterPostTemplate,
             });
 
-            logger.debug(`generate post prompt:\n${context}`);
+            logger.debug("generate post prompt:\n" + context);
 
             const response = await generateText({
                 runtime: this.runtime,

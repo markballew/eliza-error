@@ -1,11 +1,11 @@
 import type { Tweet } from "./client";
 import type { Content, IAgentRuntime, Memory, ModelClass, UUID } from "@elizaos/core";
-import { ChannelType, generateText, stringToUuid } from "@elizaos/core";
+import { generateText, stringToUuid } from "@elizaos/core";
 import type { ClientBase } from "./base";
 import { logger } from "@elizaos/core";
 import type { Media } from "@elizaos/core";
-import fs from "node:fs";
-import path from "node:path";
+import fs from "fs";
+import path from "path";
 import type { ActionResponse, MediaData } from "./types";
 
 export const wait = (minTime = 1000, maxTime = 3000) => {
@@ -57,26 +57,25 @@ export async function buildConversationThread(
 
         // Handle memory storage
         const memory = await client.runtime.messageManager.getMemoryById(
-            stringToUuid(`${currentTweet.id}-${client.runtime.agentId}`)
+            stringToUuid(currentTweet.id + "-" + client.runtime.agentId)
         );
         if (!memory) {
             const roomId = stringToUuid(
-                `${currentTweet.conversationId}-${client.runtime.agentId}`
+                currentTweet.conversationId + "-" + client.runtime.agentId
             );
             const userId = stringToUuid(currentTweet.userId);
 
-            await client.runtime.ensureConnection({
+            await client.runtime.ensureConnection(
                 userId,
                 roomId,
-                userName: currentTweet.username,
-                userScreenName: currentTweet.name,
-                source: "twitter",
-                type: ChannelType.GROUP
-            });
+                currentTweet.username,
+                currentTweet.name,
+                "twitter"
+            );
 
             await client.runtime.messageManager.createMemory({
                 id: stringToUuid(
-                    `${currentTweet.id}-${client.runtime.agentId}`
+                    currentTweet.id + "-" + client.runtime.agentId
                 ),
                 agentId: client.runtime.agentId,
                 content: {
@@ -86,7 +85,9 @@ export async function buildConversationThread(
                     imageUrls: currentTweet.photos.map((p) => p.url) || [],
                     inReplyTo: currentTweet.inReplyToStatusId
                         ? stringToUuid(
-                              `${currentTweet.inReplyToStatusId}-${client.runtime.agentId}`
+                              currentTweet.inReplyToStatusId +
+                                  "-" +
+                                  client.runtime.agentId
                           )
                         : undefined,
                 },
@@ -177,17 +178,18 @@ export async function fetchMediaData(
                 const mediaBuffer = Buffer.from(await response.arrayBuffer());
                 const mediaType = attachment.contentType;
                 return { data: mediaBuffer, mediaType };
-            }if (fs.existsSync(attachment.url)) {
+            } else if (fs.existsSync(attachment.url)) {
                 // Handle local file paths
                 const mediaBuffer = await fs.promises.readFile(
                     path.resolve(attachment.url)
                 );
                 const mediaType = attachment.contentType;
                 return { data: mediaBuffer, mediaType };
-            }
+            } else {
                 throw new Error(
                     `File not found: ${attachment.url}. Make sure the path is correct.`
                 );
+            }
         })
     );
 }
@@ -266,7 +268,7 @@ export async function sendTweet(
     }
 
     const memories: Memory[] = sentTweets.map((tweet) => ({
-        id: stringToUuid(`${tweet.id}-${client.runtime.agentId}`),
+        id: stringToUuid(tweet.id + "-" + client.runtime.agentId),
         agentId: client.runtime.agentId,
         userId: client.runtime.agentId,
         content: {
@@ -277,7 +279,7 @@ export async function sendTweet(
             imageUrls: tweet.photos.map((p) => p.url) || [],
             inReplyTo: tweet.inReplyToStatusId
                 ? stringToUuid(
-                      `${tweet.inReplyToStatusId}-${client.runtime.agentId}`
+                      tweet.inReplyToStatusId + "-" + client.runtime.agentId
                   )
                 : undefined,
         },
@@ -296,9 +298,9 @@ function splitTweetContent(content: string, maxLength: number): string[] {
     for (const paragraph of paragraphs) {
         if (!paragraph) continue;
 
-        if ((`${currentTweet}\n\n${paragraph}`).trim().length <= maxLength) {
+        if ((currentTweet + "\n\n" + paragraph).trim().length <= maxLength) {
             if (currentTweet) {
-                currentTweet += `\n\n${paragraph}`;
+                currentTweet += "\n\n" + paragraph;
             } else {
                 currentTweet = paragraph;
             }
@@ -353,9 +355,9 @@ function splitSentencesAndWords(text: string, maxLength: number): string[] {
     let currentChunk = "";
 
     for (const sentence of sentences) {
-        if ((`${currentChunk} ${sentence}`).trim().length <= maxLength) {
+        if ((currentChunk + " " + sentence).trim().length <= maxLength) {
             if (currentChunk) {
-                currentChunk += ` ${sentence}`;
+                currentChunk += " " + sentence;
             } else {
                 currentChunk = sentence;
             }
@@ -374,10 +376,10 @@ function splitSentencesAndWords(text: string, maxLength: number): string[] {
                 currentChunk = "";
                 for (const word of words) {
                     if (
-                        (`${currentChunk} ${word}`).trim().length <= maxLength
+                        (currentChunk + " " + word).trim().length <= maxLength
                     ) {
                         if (currentChunk) {
-                            currentChunk += ` ${word}`;
+                            currentChunk += " " + word;
                         } else {
                             currentChunk = word;
                         }
@@ -424,7 +426,7 @@ function deduplicateMentions(paragraph: string) {
   const endOfMentions = paragraph.indexOf(matches[0]) + matches[0].length;
 
   // Construct the result by combining unique mentions with the rest of the string
-  return `${uniqueMentionsString} ${paragraph.slice(endOfMentions)}`;
+  return uniqueMentionsString + ' ' + paragraph.slice(endOfMentions);
 }
 
 function restoreUrls(
@@ -516,8 +518,9 @@ export async function generateTweetActions({
             if (actions) {
                 logger.debug("Parsed tweet actions:", actions);
                 return actions;
-            }
+            } else {
                 logger.debug("generateTweetActions no valid response");
+            }
         } catch (error) {
             logger.error("Error in generateTweetActions:", error);
             if (

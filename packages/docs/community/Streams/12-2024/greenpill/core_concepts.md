@@ -6,7 +6,7 @@ AI agents are transforming how we think about decentralized organizations and ca
 
 ## Key Topics
 
-### The Evolution of AI Agents
+### [The Evolution of AI Agents](./ai-agents/evolution.md)
 
 - From LLMs to Stateful Agents
 - AI Agent Architecture
@@ -18,7 +18,7 @@ AI agents are transforming how we think about decentralized organizations and ca
     - Inter-agent Communication
     - Emergent Behaviors
 
-### Capital Allocation
+### [Capital Allocation](./capital-allocation/index.md)
 
 - Continuous Retroactive Funding
 - Trust Marketplace
@@ -30,7 +30,7 @@ AI agents are transforming how we think about decentralized organizations and ca
     - Risk Management
     - Portfolio Optimization
 
-### DAO Infrastructure
+### [DAO Infrastructure](./dao-infrastructure/index.md)
 
 - Information Routing
     - Automated Summarization
@@ -45,7 +45,7 @@ AI agents are transforming how we think about decentralized organizations and ca
     - Continuous Feedback Loops
     - Alignment Mechanisms
 
-### Developer Resources
+### [Developer Resources](./developer-resources/index.md)
 
 - Getting Started
     - Environment Setup
@@ -60,7 +60,7 @@ AI agents are transforming how we think about decentralized organizations and ca
     - Chain Integrations
     - External Services
 
-### Community & Culture
+### [Community & Culture](./community/index.md)
 
 - Contributing Guidelines
 - Community Initiatives

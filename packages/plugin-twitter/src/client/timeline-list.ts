@@ -36,7 +36,7 @@ export function parseListTimelineTweets(
       if (entryContent.cursorType === 'Bottom') {
         bottomCursor = entryContent.value;
         continue;
-      }if (entryContent.cursorType === 'Top') {
+      } else if (entryContent.cursorType === 'Top') {
         topCursor = entryContent.value;
         continue;
       }
@@ -54,7 +54,8 @@ export function parseListTimelineTweets(
       } else if (entryContent.items) {
         for (const contentItem of entryContent.items) {
           if (
-            contentItem.item?.itemContent &&
+            contentItem.item &&
+            contentItem.item.itemContent &&
             contentItem.entryId
           ) {
             parseAndPush(

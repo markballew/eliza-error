@@ -15,7 +15,7 @@ import {
 } from "./evaluators.ts";
 import { generateText } from "./generation.ts";
 import { formatGoalsAsString, getGoals } from "./goals.ts";
-import { elizaLogger, handlePluginImporting, logger } from "./index.ts";
+import { handlePluginImporting, logger } from "./index.ts";
 import knowledge from "./knowledge.ts";
 import { MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
@@ -47,13 +47,19 @@ import {
     type ServiceType,
     type Service,
     type Route,
-    type Task,
-    ChannelType,
-    type RoomData,
-    type WorldData
+    type Task
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
-import { messageEvents } from "./messages.ts";
+
+// Utility functions
+function isDirectoryItem(item: any): item is DirectoryItem {
+    return (
+        typeof item === "object" &&
+        item !== null &&
+        "directory" in item &&
+        typeof item.directory === "string"
+    );
+}
 
 function formatKnowledge(knowledge: KnowledgeItem[]): string {
     return knowledge
@@ -129,7 +135,7 @@ class MemoryManagerService {
         this.initializeDefaultManagers(knowledgeRoot);
     }
 
-    private initializeDefaultManagers(_knowledgeRoot: string) {
+    private initializeDefaultManagers(knowledgeRoot: string) {
         // Message manager for storing messages
         this.registerMemoryManager(new MemoryManager({
             runtime: this.runtime,
@@ -247,7 +253,6 @@ export class AgentRuntime implements IAgentRuntime {
         databaseAdapter?: IDatabaseAdapter;
         cacheManager?: ICacheManager;
         adapters?: Adapter[];
-        events?: { [key: string]: ((params: any) => void)[] };
     }) {
         // use the character id if it exists, otherwise use the agentId if it is passed in, otherwise use the character name
         this.agentId =
@@ -290,19 +295,8 @@ export class AgentRuntime implements IAgentRuntime {
         this.memoryManagerService = new MemoryManagerService(this, this.knowledgeRoot);
         const plugins = opts?.plugins ?? [];
 
-        const events = opts?.events ?? messageEvents;
-
-        for (const [eventName, eventHandlers] of Object.entries(events)) {
-            for (const eventHandler of eventHandlers) {
-                this.registerEvent(eventName, eventHandler);
-            }
-        }
-
         for (const plugin of plugins) {
-            elizaLogger.info(`Initializing plugin: ${plugin.name}`);
-            elizaLogger.info(`Plugin actions: ${plugin.actions}`);
             for (const action of (plugin.actions ?? [])) {
-                elizaLogger.info(`Registering action: ${action.name}`);
                 this.registerAction(action);
             }
 
@@ -326,13 +320,6 @@ export class AgentRuntime implements IAgentRuntime {
                 this.routes.push(route);
             }
 
-            // plugin.events is an object with keys as event names and values as event handlers
-            for(const [eventName, eventHandlers] of Object.entries(plugin.events)){
-                for(const eventHandler of eventHandlers){
-                    this.registerEvent(eventName, eventHandler);
-                }
-            }
-
             for(const client of plugin.clients){
                 client.start(this).then((startedClient) => {
                     logger.debug(
@@ -347,16 +334,8 @@ export class AgentRuntime implements IAgentRuntime {
 
         // Initialize adapters from options or empty array if not provided
         this.adapters = opts.adapters ?? [];
-
-        for (const plugin of plugins) {
-            if (plugin.adapters) {
-                for (const adapter of plugin.adapters) {
-                    this.adapters.push(adapter);
-                }
-            }
-        }
     }
-    
+
     registerClient(clientName: string, client: ClientInstance): void {
         if (this.clients.has(clientName)) {
             logger.warn(
@@ -420,6 +399,8 @@ export class AgentRuntime implements IAgentRuntime {
                         }
                     }
 
+                    logger.info("runtime initialize() plugin:", plugin);
+
                     if (plugin.actions) {
                         for (const action of plugin.actions) {
                             this.registerAction(action);
@@ -442,6 +423,7 @@ export class AgentRuntime implements IAgentRuntime {
                         for (const [modelClass, handler] of Object.entries(plugin.models)) {
                             this.registerModel(modelClass as ModelClass, handler as (params: any) => Promise<any>);
                         }
+                        await this.ensureEmbeddingDimension();
                     }
                     if (plugin.services) {
                         for(const service of plugin.services){
@@ -453,15 +435,6 @@ export class AgentRuntime implements IAgentRuntime {
                             this.routes.push(route);
                         }
                     }
-
-                    if (plugin.events) {
-                        for(const [eventName, eventHandlers] of Object.entries(plugin.events)){
-                            for(const eventHandler of eventHandlers){
-                                this.registerEvent(eventName, eventHandler);
-                            }
-                        }
-                    }
-                    
                     this.plugins.push(plugin);
                 }
             }
@@ -472,16 +445,14 @@ export class AgentRuntime implements IAgentRuntime {
                 await service.initialize(this);
             }
         }
-
-        await this.ensureEmbeddingDimension();
         
+        await this.ensureRoomExists(this.agentId);
         await this.ensureUserExists(
             this.agentId,
             this.character.username || this.character.name,
             this.character.name,
         );
-        await this.ensureRoomExists({id: this.agentId, name: this.character.name, source: "self", type: ChannelType.SELF});
-        await this.ensureParticipantInRoom(this.agentId, this.agentId);
+        await this.ensureParticipantExists(this.agentId, this.agentId);
         await this.ensureCharacterExists(this.character);
 
         if (this.character?.knowledge && this.character.knowledge.length > 0) {
@@ -561,9 +532,7 @@ export class AgentRuntime implements IAgentRuntime {
     /**
      * Process the actions of a message.
      * @param message The message to process.
-     * @param responses The array of response memories to process actions from.
-     * @param state Optional state object for the action processing.
-     * @param callback Optional callback handler for action results.
+     * @param content The content of the message to process actions from.
      */
     async processActions(
         message: Memory,
@@ -715,6 +684,20 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     /**
+     * Ensure the existence of a participant in the room. If the participant does not exist, they are added to the room.
+     * @param userId - The user ID to ensure the existence of.
+     * @throws An error if the participant cannot be added.
+     */
+    async ensureParticipantExists(userId: UUID, roomId: UUID) {
+        const participants =
+            await this.databaseAdapter.getParticipantsForAccount(userId);
+
+        if (participants?.length === 0) {
+            await this.databaseAdapter.addParticipant(userId, roomId);
+        }
+    }
+
+    /**
      * Ensure the existence of a user in the database. If the user does not exist, they are added to the database.
      * @param userId - The user ID to ensure the existence of.
      * @param userName - The user name to ensure the existence of.
@@ -726,6 +709,7 @@ export class AgentRuntime implements IAgentRuntime {
         userName: string | null,
         name: string | null,
         email?: string | null,
+        source?: string | null,
     ) {
         const account = await this.databaseAdapter.getAccountById(userId);
         if (!account) {
@@ -737,16 +721,6 @@ export class AgentRuntime implements IAgentRuntime {
             });
             logger.success(`User ${userName} created successfully.`);
         }
-    }
-
-    /**
-     * Get the profile of a user.
-     * @param userId - The user ID to get the profile of.
-     * @returns The profile of the user.
-     */
-    async getUserProfile(userId: UUID) {
-        const account = await this.databaseAdapter.getAccountById(userId);
-        return account;
     }
 
     async ensureParticipantInRoom(userId: UUID, roomId: UUID) {
@@ -766,25 +740,13 @@ export class AgentRuntime implements IAgentRuntime {
         }
     }
 
-    async ensureConnection({
-        userId,
-        roomId,
-        userName,
-        userScreenName,
-        source,
-        channelId,
-        serverId,
-        type,
-    }: {
+    async ensureConnection(
         userId: UUID,
         roomId: UUID,
         userName?: string,
         userScreenName?: string,
         source?: string,
-        type?: ChannelType
-        channelId?: string,
-        serverId?: string,
-    }) {
+    ) {
         await Promise.all([
             this.ensureUserExists(
                 this.agentId,
@@ -798,7 +760,7 @@ export class AgentRuntime implements IAgentRuntime {
                 userScreenName ?? `User${userId}`,
                 source,
             ),
-            this.ensureRoomExists({id: roomId, source, type, channelId, serverId}),
+            this.ensureRoomExists(roomId),
         ]);
 
         await Promise.all([
@@ -808,38 +770,18 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     /**
-     * Ensure the existence of a world.
-     */
-    async ensureWorldExists({id, name, serverId}: WorldData) {
-        const world = await this.databaseAdapter.getWorld(id);
-        if (!world) {
-            await this.databaseAdapter.createWorld({id, name, agentId: this.agentId, serverId});
-            logger.log(`World ${id} created successfully.`);
-        }
-    }
-
-    /**
      * Ensure the existence of a room between the agent and a user. If no room exists, a new room is created and the user
      * and agent are added as participants. The room ID is returned.
      * @param userId - The user ID to create a room with.
      * @returns The room ID of the room between the agent and the user.
      * @throws An error if the room cannot be created.
      */
-    async ensureRoomExists({id, name, source, type, channelId, serverId, worldId}: RoomData) {
-        const room = await this.databaseAdapter.getRoom(id, this.agentId);
+    async ensureRoomExists(roomId: UUID) {
+        const room = await this.databaseAdapter.getRoom(roomId);
         if (!room) {
-            await this.databaseAdapter.createRoom({id, name, agentId: this.agentId, source, type, channelId, serverId, worldId});
-            logger.log(`Room ${id} created successfully.`);
+            await this.databaseAdapter.createRoom(roomId);
+            logger.log(`Room ${roomId} created successfully.`);
         }
-    }
-
-    /**
-     * Get the room ID of the room between the agent and a user.
-     * @param userId - The user ID to get the room ID of.
-     * @returns The room ID of the room between the agent and the user.
-     */
-    async getRoom(userId: UUID) {
-        return await this.databaseAdapter.getRoom(userId, this.agentId);
     }
 
     /**
@@ -1421,17 +1363,12 @@ Text: ${attachment.text}
         return this.events.get(event);
     }
 
-    emitEvent(event: string | string[], params: any) {
-        // Handle both single event string and array of event strings
-        const events = Array.isArray(event) ? event : [event];
-        
-        // Call handlers for each event
-        for (const eventName of events) {
-            const eventHandlers = this.events.get(eventName);
-            if (eventHandlers) {
-                for (const handler of eventHandlers) {
-                    handler(params);
-                }
+    emitEvent(event: string, params: any) {
+        // call the events associated with the event
+        const eventHandlers = this.events.get(event);
+        if (eventHandlers) {
+            for (const handler of eventHandlers) {
+                handler(params);
             }
         }
     }

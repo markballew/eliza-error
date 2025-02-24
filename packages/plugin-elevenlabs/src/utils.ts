@@ -1,4 +1,4 @@
-import { PassThrough } from "node:stream";
+import { PassThrough } from "stream";
 import type { Readable } from "node:stream";
 
 export function getWavHeader(

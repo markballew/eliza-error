@@ -107,7 +107,7 @@ const transcribeMediaAction = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: any,
+        options: any,
         callback: HandlerCallback,
         responses: Memory[]
     ) => {

@@ -160,10 +160,10 @@ const sampleGoal: Goal = {
 };
 
 describe("getGoals", () => {
-    let _runtime: IAgentRuntime;
+    let runtime: IAgentRuntime;
 
     beforeEach(() => {
-        _runtime = {
+        runtime = {
             agentId: "test-agent-id" as UUID,
             databaseAdapter: {
                 getGoals: vi.fn().mockResolvedValue([]),

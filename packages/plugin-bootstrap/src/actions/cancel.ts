@@ -16,7 +16,7 @@ export const cancelTaskAction: Action = {
   validate: async (
     runtime: IAgentRuntime,
     message: Memory,
-    _state: State
+    state: State
   ): Promise<boolean> => {
     const pendingTasks = runtime.getTasks({
       roomId: message.roomId,
@@ -30,8 +30,8 @@ export const cancelTaskAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    _state: State,
-    _options: any,
+    state: State,
+    options: any,
     callback: HandlerCallback,
     responses: Memory[]
   ): Promise<void> => {

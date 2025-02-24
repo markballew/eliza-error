@@ -1,6 +1,6 @@
 // src/core/SpaceParticipant.ts
 
-import { EventEmitter } from 'node:events';
+import { EventEmitter } from 'events';
 import { Logger } from '../logger';
 import { ChatClient } from './ChatClient';
 import { JanusClient } from './JanusClient';

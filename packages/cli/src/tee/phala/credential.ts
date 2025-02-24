@@ -1,9 +1,9 @@
-import * as path from "node:path";
-import fs from "node:fs";
-import * as crypto from "node:crypto";
+import * as path from "path";
+import fs from "fs";
+import * as crypto from "crypto";
 import { x25519 } from "@noble/curves/ed25519";
 import { hexToUint8Array, uint8ArrayToHex } from "./lib";
-import os from "node:os";
+import os from "os";
 
 const CONFIG_DIR = path.join(
     process.env.HOME || process.env.USERPROFILE || "~",

@@ -16,12 +16,8 @@ import {
   parseBooleanFromText,
   settings,
   stringToUuid,
-  TeeVendors,
   validateCharacterConfig,
-  type Plugin,
-  elizaLogger,
 } from "@elizaos/core";
-import { teePlugin } from "@elizaos/plugin-tee";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -29,8 +25,6 @@ import { fileURLToPath } from "node:url";
 import yargs from "yargs";
 import { defaultCharacter } from "./single-agent/character.ts";
 import { CharacterServer } from "./server/index.ts";
-import { startScenario } from "./swarm/scenario.ts";
-
 import swarm from "./swarm/index";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -53,7 +47,6 @@ export function parseArguments(): {
   character?: string;
   characters?: string;
   swarm?: boolean;
-  scenario?: boolean;
 } {
   try {
     return yargs(process.argv.slice(2))
@@ -69,15 +62,6 @@ export function parseArguments(): {
         type: "boolean",
         description: "Load characters from swarm",
       })
-      .option("scenario", {
-        type: "boolean",
-        description: "Run scenario tests",
-      })
-      // scenario filter
-      .option("scenario-filter", {
-        type: "string",
-        description: "Filter scenario tests (only tests which contain this string)",
-      })
       .parseSync();
   } catch (error) {
     logger.error("Error parsing arguments:", error);
@@ -88,7 +72,7 @@ export function parseArguments(): {
 export function tryLoadFile(filePath: string): string | null {
   try {
     return fs.readFileSync(filePath, "utf8");
-  } catch (_e) {
+  } catch (e) {
     return null;
   }
 }
@@ -142,7 +126,7 @@ async function loadCharactersFromUrl(url: string): Promise<Character[]> {
 }
 
 async function jsonToCharacter(
-  _filePath: string,
+  filePath: string,
   character: any
 ): Promise<Character> {
   validateCharacterConfig(character);
@@ -319,7 +303,7 @@ function initializeDbCache(character: Character, db: IDatabaseCacheAdapter) {
 function initializeCache(
   cacheStore: string,
   character: Character,
-  _baseDir?: string,
+  baseDir?: string,
   db?: IDatabaseCacheAdapter
 ) {
   switch (cacheStore) {
@@ -339,56 +323,16 @@ function initializeCache(
   }
 }
 
-async function initializeTEE(runtime: IAgentRuntime) {
-  if (runtime.getSetting("TEE_VENDOR")) {
-    const vendor = runtime.getSetting("TEE_VENDOR");
-    elizaLogger.info(`Initializing TEE with vendor: ${vendor}`);
-    let plugin: Plugin;
-    switch (vendor) {
-      case "phala":
-        plugin = teePlugin({
-          vendor: TeeVendors.PHALA,
-          vendorConfig: {
-            apiKey: runtime.getSetting("TEE_API_KEY"),
-          },
-        });
-        break;
-      case "marlin":
-        plugin = teePlugin({
-            vendor: TeeVendors.MARLIN,
-          }
-        );
-        break;
-      case "fleek":
-        plugin = teePlugin({
-            vendor: TeeVendors.FLEEK,
-          }
-        );
-        break;
-      case "sgx-gramine":
-        plugin = teePlugin({
-            vendor: TeeVendors.SGX_GRAMINE,
-          }
-        );
-        break;
-      default:
-        throw new Error(`Invalid TEE vendor: ${vendor}`);
-    }
-    elizaLogger.info(`Pushing plugin: ${plugin.name}`);
-    runtime.plugins.push(plugin);
-  }
-}
-
 async function findDatabaseAdapter(runtime: IAgentRuntime) {
   const { adapters } = runtime;
   let adapter: Adapter | undefined;
   // if not found, default to drizzle
   if (adapters.length === 0) {
-    const drizzleAdapterPlugin = await import('@elizaos/plugin-sql');
+    const drizzleAdapterPlugin = await import('@elizaos/plugin-drizzle');
     const drizzleAdapterPluginDefault = drizzleAdapterPlugin.default;
     adapter = drizzleAdapterPluginDefault.adapters[0];
     if (!adapter) {
-      throw new Error("Internal error: No database adapter found for default plugin-sql");
+      throw new Error("Internal error: No database adapter found for default plugin-drizzle");
     }
   } else if (adapters.length === 1) {
     adapter = adapters[0];
@@ -429,10 +373,7 @@ async function startAgent(
     ); // "" should be replaced with dir for file system caching. THOUGHTS: might probably make this into an env
     runtime.cacheManager = cache;
 
-    // initialize TEE, if specified
-    await initializeTEE(runtime);
-
-    // start services/plugins/process knowledge    
+    // start services/plugins/process knowledge
     await runtime.initialize();
 
     // add to container
@@ -484,20 +425,17 @@ const startAgents = async () => {
   let serverPort = Number.parseInt(settings.SERVER_PORT || "3000");
   const args = parseArguments();
   const charactersArg = args.characters || args.character;
+  let characters = [];
 
   if (args.swarm) {
     try {
-        const members = [];
       for (const swarmMember of swarm) {
-        const runtime = await startAgent(
+        await startAgent(
           swarmMember.character,
           characterServer,
           swarmMember.init
         );
-        members.push(runtime);
-      }
-      if (args.scenario) {
-        startScenario(members);
+        characters.push(swarmMember.character);
       }
       logger.info("Loaded characters from swarm configuration");
     } catch (error) {
@@ -505,7 +443,6 @@ const startAgents = async () => {
       process.exit(1);
     }
   } else {
-    let characters = [];
     if (charactersArg || hasValidRemoteUrls()) {
       characters = await loadCharacters(charactersArg);
     } else {

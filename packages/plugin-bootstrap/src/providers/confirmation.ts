@@ -10,7 +10,7 @@ export const confirmationTasksProvider: Provider = {
     get: async (
         runtime: IAgentRuntime,
         message: Memory,
-        _state?: State
+        state?: State
     ): Promise<string> => {
         try {
             // Get all pending tasks for this room

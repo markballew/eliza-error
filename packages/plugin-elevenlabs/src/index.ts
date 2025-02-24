@@ -54,7 +54,8 @@ async function fetchSpeech(runtime: IAgentRuntime, text: string) {
     }
     return Readable.fromWeb(response.body);
   } catch (error) {
-    throw new Error(error)
+    logger.error(error);
+    return new Readable({ read() {} });
   }
 }
 
@@ -63,14 +64,10 @@ export const elevenLabsPlugin: Plugin = {
   description: "ElevenLabs plugin",
   models: {
     [ModelClass.TEXT_TO_SPEECH]: async (runtime, text) => {
-      try {
-        const stream = await fetchSpeech(runtime, text);
-        return getVoiceSettings(runtime).outputFormat.startsWith("pcm_")
-          ? prependWavHeader(stream, 1024 * 1024 * 100, Number.parseInt(getVoiceSettings(runtime).outputFormat.slice(4)), 1, 16)
-          : stream;
-      } catch(error) {
-        throw new Error(`Failed to fetch speech from Eleven Labs API: ${error.message || "Unknown error occurred"}`);
-      }
+      const stream = await fetchSpeech(runtime, text);
+      return getVoiceSettings(runtime).outputFormat.startsWith("pcm_")
+        ? prependWavHeader(stream, 1024 * 1024 * 100, Number.parseInt(getVoiceSettings(runtime).outputFormat.slice(4)), 1, 16)
+        : stream;
     },
   },
   tests: [
