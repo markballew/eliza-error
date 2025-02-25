@@ -1,54 +1,58 @@
-import { ChannelType } from "@elizaos/core";
-import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
-import type {
-    TextChannel
+import {
+    ChannelType,
+    type Message as DiscordMessage,
+    type TextChannel,
 } from "discord.js";
+import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
 
 const channelStateProvider: Provider = {
     get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
-        const room = await runtime.getRoom(message.roomId);
-        if(!room) {
-            throw new Error("No room found");
+        const discordMessage =
+            (state?.discordMessage as DiscordMessage) ||
+            (state?.discordChannel as DiscordMessage);
+        if (!discordMessage) {
+            return "";
         }
 
-        // if message source is not discord, return
-        if(message.content.source !== "discord") {
-            return false;
-        }
-
+        const guild = discordMessage?.guild;
         const agentName = state?.agentName || "The agent";
         const senderName = state?.senderName || "someone";
 
-        if (room.type === ChannelType.DM) {
+        if (!guild) {
             return (
-                `${agentName} is currently in a direct message conversation with ${senderName}. ${agentName} should engage in conversation, should respond to messages that are addressed to them and only ignore messages that seem to not require a response.`
+                agentName +
+                " is currently in a direct message conversation with " +
+                senderName
             );
         }
 
-        const serverId = room.serverId;
+        const serverName = guild.name; // The name of the server
+        const guildId = guild.id; // The ID of the guild
+        const channel = discordMessage.channel;
 
-        if (!serverId) {
-            console.error("No server ID found");
-            // only handle in a group scenario for now
-            return false;
+        if (!channel) {
+            console.log("channel is null");
+            return "";
         }
-
-        const channelId = room.channelId;
-
-        const discordClient = runtime.getClient("discord");
-        if(!discordClient) {
-            console.warn("No discord client found");
-            return false;
-        }
-
-        const guild = discordClient.client.guilds.cache.get(serverId);
-
-        const serverName = guild.name;
 
         let response =
-            `${agentName} is currently having a conversation in the channel \`@${channelId} in the server \`${serverName}\` (@${serverId})`;
-
-        response += `\n${agentName} is in a room with other users and should be self-conscious and only participate when directly addressed or when the conversation is relevant to them.`;
+            agentName +
+            " is currently having a conversation in the channel `@" +
+            channel.id +
+            " in the server `" +
+            serverName +
+            "` (@" +
+            guildId +
+            ")";
+        if (
+            channel.type === ChannelType.GuildText &&
+            (channel as TextChannel).topic
+        ) {
+            // Check if the channel is a text channel
+            response +=
+                "\nThe topic of the channel is: " +
+                (channel as TextChannel).topic;
+        }
         return response;
     },
 };

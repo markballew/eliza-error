@@ -1,6 +1,6 @@
 // src/core/JanusAudio.ts
 
-import { EventEmitter } from 'node:events';
+import { EventEmitter } from 'events';
 import wrtc from '@roamhq/wrtc';
 const { nonstandard } = wrtc;
 const { RTCAudioSource, RTCAudioSink } = nonstandard;
@@ -108,7 +108,11 @@ export class JanusAudioSink extends EventEmitter {
 
       if (this.logger?.isDebugEnabled()) {
         this.logger?.debug(
-          `[JanusAudioSink] ondata => sampleRate=${frame.sampleRate}, bitsPerSample=${frame.bitsPerSample}, channelCount=${frame.channelCount}, frames=${frame.samples.length}`,
+          `[JanusAudioSink] ondata => ` +
+            `sampleRate=${frame.sampleRate}, ` +
+            `bitsPerSample=${frame.bitsPerSample}, ` +
+            `channelCount=${frame.channelCount}, ` +
+            `frames=${frame.samples.length}`,
         );
       }
 

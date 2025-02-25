@@ -63,22 +63,10 @@ export class CacheManager<CacheAdapter extends ICacheAdapter = ICacheAdapter>
         const data = await this.adapter.get(key);
 
         if (data) {
-            let parsed = JSON.parse(data) as {
+            const { value, expires } = JSON.parse(data) as {
                 value: T;
                 expires: number;
             };
-
-            // if parsed is a string, JSON.parse it
-            if (typeof parsed === 'string') {
-                try {
-                    parsed = JSON.parse(parsed);
-                } catch (e) {
-                    console.error("Error parsing cache data", e);
-                }
-            }
-
-            const value = parsed.value;
-            const expires = parsed.expires;
 
             if (!expires || expires > Date.now()) {
                 return value;
@@ -91,10 +79,9 @@ export class CacheManager<CacheAdapter extends ICacheAdapter = ICacheAdapter>
     }
 
     async set<T>(key: string, value: T, opts?: CacheOptions): Promise<void> {
-
         return this.adapter.set(
             key,
-            JSON.stringify({ ...(opts || {}), value })
+            JSON.stringify({ value })
         );
     }
 

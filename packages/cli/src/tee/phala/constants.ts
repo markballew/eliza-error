@@ -9,22 +9,16 @@ services:
   eliza:
     image: {{imageName}}:{{tag}}
     container_name: eliza
-    command: >
-      bash -c "turbo run build --filter=./packages/core 
-      && turbo run build --filter=./packages/*
-      && turbo run start --env-mode=loose --filter=@elizaos/agent"
+    command: bun run dev
     stdin_open: true
     tty: true
     volumes:
-      - /var/run/tappd.sock:/var/run/tappd.sock
-      - eliza:/app/packages/plugin-twitter/src/tweetcache
-      - eliza:/app/db.sqlite
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
 {{#each envVars}}      - {{{this}}}
 {{/each}}
     ports:
       - "3000:3000"
-      - "5173:5173"
     restart: always
 
 volumes:
@@ -44,7 +38,7 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - /var/run/tappd.sock:/var/run/tappd.sock
+      - /var/run/docker.sock:/var/run/docker.sock
       - eliza:/app/packages/plugin-twitter/src/tweetcache
       - eliza:/app/db.sqlite
     environment:

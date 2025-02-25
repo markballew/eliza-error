@@ -128,7 +128,7 @@ const Contributors: React.FC = () => {
                     },
                 );
                 setActivitySummaries(currentActivitySummaries);
-            } catch (_err) {
+            } catch (err) {
                 console.log("Unknown error while fetching summaries");
             }
         };

@@ -1,4 +1,4 @@
-import { composeContext, type HandlerCallback } from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
 import { generateTrueOrFalse } from "@elizaos/core";
 import { booleanFooter } from "@elizaos/core";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@elizaos/core";
 
 export const shouldFollowTemplate =
-    `# Task: Decide if {{agentName}} should start following this room, i.e. eagerly participating without explicit mentions.
+    `Based on the conversation so far:
 
 {{recentMessages}}
 
@@ -22,7 +22,7 @@ Respond with YES if:
 - {{agentName}} has unique insights to contribute and the users seem receptive
 
 Otherwise, respond with NO.
-${booleanFooter}`;
+` + booleanFooter;
 
 export const followRoomAction: Action = {
     name: "FOLLOW_ROOM",
@@ -51,14 +51,13 @@ export const followRoomAction: Action = {
             return false;
         }
         const roomId = message.roomId;
-        const roomState = await runtime.databaseAdapter.getParticipantUserState(
+        const userState = await runtime.databaseAdapter.getParticipantUserState(
             roomId,
-            runtime.agentId,
-            runtime.agentId,
+            runtime.agentId
         );
-        return roomState !== "FOLLOWED" && roomState !== "MUTED";
+        return userState !== "FOLLOWED" && userState !== "MUTED";
     },
-    handler: async (runtime: IAgentRuntime, message: Memory, state?: State, _options?: { [key: string]: unknown; }, callback?: HandlerCallback, responses?: Memory[] ) => {
+    handler: async (runtime: IAgentRuntime, message: Memory) => {
         async function _shouldFollow(state: State): Promise<boolean> {
             const shouldFollowContext = composeContext({
                 state,
@@ -74,19 +73,14 @@ export const followRoomAction: Action = {
             return response;
         }
 
-        state = await runtime.composeState(message);
+        const state = await runtime.composeState(message);
 
         if (await _shouldFollow(state)) {
             await runtime.databaseAdapter.setParticipantUserState(
                 message.roomId,
                 runtime.agentId,
-                runtime.agentId,
                 "FOLLOWED"
             );
-        }
-
-        for (const response of responses) {
-            await callback?.({...response.content, action: "FOLLOW_ROOM"});
         }
     },
     examples: [

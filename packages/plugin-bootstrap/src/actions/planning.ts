@@ -33,9 +33,9 @@ const planAction: Action = {
     description: "Plans and executes a sequence of actions",
 
     validate: async (
-        _runtime: IAgentRuntime,
-        _message: Memory,
-        _state: State
+        runtime: IAgentRuntime,
+        message: Memory,
+        state: State
     ): Promise<boolean> => {
         // Plan validation is complex - needs to validate multiple potential actions
         // We'll validate specific plans during handling instead
@@ -46,9 +46,9 @@ const planAction: Action = {
         runtime: IAgentRuntime,
         message: Memory,
         state: State,
-        _options: any,
+        options: any,
         callback: HandlerCallback,
-        _responses: Memory[]
+        responses: Memory[]
     ): Promise<void> => {
         try {
             // First, determine what actions are available based on current context
@@ -115,29 +115,25 @@ async function getValidActions(
 ): Promise<Action[]> {
     const validActions: Action[] = [];
 
-    const validationResults = await Promise.all(
-      runtime.actions.map(async (action) => {
+    for (const action of runtime.actions) {
         try {
-          const isValid = await action.validate(runtime, message, state);
-          return isValid ? action : null;
+            if (await action.validate(runtime, message, state)) {
+                validActions.push(action);
+            }
         } catch (error) {
-          logger.error(`Error validating action ${action.name}:`, error);
-          return null;
+            logger.error(`Error validating action ${action.name}:`, error);
         }
-      })
-    );
-
-    validActions.push(...validationResults.filter((action): action is Action => action !== null));
+    }
 
     return validActions;
 }
 
 async function createActionPlan(
     message: Memory,
-    _availableActions: Action[],
-    _state: State
+    availableActions: Action[],
+    state: State
 ): Promise<ActionPlan | null> {
-    const _intent = message.content.text.toLowerCase();
+    const intent = message.content.text.toLowerCase();
     const plan: ActionPlan = {
         steps: [],
         context: message.content.text

@@ -1,5 +1,4 @@
 import {
-    ChannelType,
     composeContext,
     generateMessageResponse,
     generateObject,
@@ -19,18 +18,20 @@ import express, { type Request as ExpressRequest } from "express";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { z } from "zod";
-import { createApiRouter } from "./api/index.ts";
-import { hyperfiHandlerTemplate, messageHandlerTemplate } from "./helper.ts";
+import { createApiRouter } from "./api.ts";
+import { hyperfiHandlerTemplate, messageHandlerTemplate, upload } from "./helper.ts";
 import replyAction from "./reply.ts";
-import { upload } from "./loader.ts";
 
-export class AgentServer {
+
+
+
+export class CharacterServer {
     public app: express.Application;
     private agents: Map<string, IAgentRuntime>; // container management
     private server: any; // Store server instance
     public startAgent: (character: Character) => Promise<IAgentRuntime>; // Store startAgent function
     public loadCharacterTryPath: (characterPath: string) => Promise<Character>; // Store loadCharacterTryPath function
-    public jsonToCharacter: (character: string | never) => Promise<Character>; // Store jsonToCharacter function
+    public jsonToCharacter: (filePath: string, character: string | never) => Promise<Character>; // Store jsonToCharacter function
 
     constructor() {
         logger.log("DirectClient constructor");
@@ -121,14 +122,13 @@ export class AgentServer {
                     return;
                 }
 
-                await runtime.ensureConnection({
+                await runtime.ensureConnection(
                     userId,
                     roomId,
-                    userName: req.body.userName,
-                    userScreenName: req.body.name,
-                    source: "direct",
-                    type: ChannelType.API,
-                });
+                    req.body.userName,
+                    req.body.name,
+                    "direct"
+                );
 
                 const text = req.body.text;
                 // if empty text, directly return
@@ -237,7 +237,7 @@ export class AgentServer {
         );
 
         this.app.post(
-            "/agents/:agentIdOrName/hyperfy/v1",
+            "/agents/:agentIdOrName/hyperfi/v1",
             async (req: express.Request, res: express.Response) => {
                 // get runtime
                 const agentId = req.params.agentIdOrName;
@@ -255,14 +255,14 @@ export class AgentServer {
                     return;
                 }
 
-                // can we be in more than one hyperfy world at once
+                // can we be in more than one hyperfi world at once
                 // but you may want the same context is multiple worlds
                 // this is more like an instanceId
-                const roomId = stringToUuid(req.body.roomId ?? "hyperfy");
+                const roomId = stringToUuid(req.body.roomId ?? "hyperfi");
 
                 const body = req.body;
 
-                // hyperfy specific parameters
+                // hyperfi specific parameters
                 let nearby = [];
                 let availableEmotes = [];
 
@@ -275,18 +275,17 @@ export class AgentServer {
                     for (const msg of body.messages) {
                         const parts = msg.split(/:\s*/);
                         const mUserId = stringToUuid(parts[0]);
-                        await runtime.ensureConnection({
-                            userId: mUserId,
+                        await runtime.ensureConnection(
+                            mUserId,
                             roomId, // where
-                            userName: parts[0], // username
-                            userScreenName: parts[0], // userScreeName?
-                            source: "hyperfy",
-                            type: ChannelType.WORLD,
-                        });
+                            parts[0], // username
+                            parts[0], // userScreeName?
+                            "hyperfi"
+                        );
                         const content: Content = {
                             text: parts[1] || "",
                             attachments: [],
-                            source: "hyperfy",
+                            source: "hyperfi",
                             inReplyTo: undefined,
                         };
                         const memory: Memory = {
@@ -307,11 +306,11 @@ export class AgentServer {
                     // we need to compose who's near and what emotes are available
                     text: JSON.stringify(req.body),
                     attachments: [],
-                    source: "hyperfy",
+                    source: "hyperfi",
                     inReplyTo: undefined,
                 };
 
-                const userId = stringToUuid("hyperfy");
+                const userId = stringToUuid("hyperfi");
                 const userMessage = {
                     content,
                     userId,
@@ -426,7 +425,7 @@ export class AgentServer {
                             }
                         }
                         if (hfOut.emote !== null) {
-                            contentObj.text = `emoted ${hfOut.emote}`;
+                            contentObj.text = "emoted " + hfOut.emote;
                         }
                     }
 
@@ -533,7 +532,6 @@ export class AgentServer {
                 }
             }
         );
-
         this.app.get(
             "/fine-tune/:assetId",
             async (req: express.Request, res: express.Response) => {
@@ -614,7 +612,7 @@ export class AgentServer {
         this.app.post("/:agentId/speak", async (req, res) => {
             const agentId = req.params.agentId;
             const roomId = stringToUuid(
-                req.body.roomId ?? `default-room-${agentId}`
+                req.body.roomId ?? "default-room-" + agentId
             );
             const userId = stringToUuid(req.body.userId ?? "user");
             const text = req.body.text;
@@ -641,14 +639,13 @@ export class AgentServer {
 
             try {
                 // Process message through agent (same as /message endpoint)
-                await runtime.ensureConnection({
+                await runtime.ensureConnection(
                     userId,
                     roomId,
-                    userName: req.body.userName,
-                    userScreenName: req.body.name,
-                    source: "direct",
-                    type: ChannelType.API,
-                });
+                    req.body.userName,
+                    req.body.name,
+                    "direct"
+                );
 
                 const messageId = stringToUuid(Date.now().toString());
 
@@ -832,16 +829,6 @@ export class AgentServer {
         // register any plugin endpoints?
         // but once and only once
         this.agents.set(runtime.agentId, runtime);
-        // TODO: This is a hack to register the tee plugin. Remove this once we have a better way to do it.
-        const teePlugin = runtime.plugins.find(p => p.name === "phala-tee-plugin");
-        if (teePlugin) {
-            for (const provider of teePlugin.providers) {
-                runtime.registerProvider(provider);
-            }
-            for (const action of teePlugin.actions) {
-                runtime.registerAction(action);
-            }
-        }
         runtime.registerAction(replyAction);
         // for each route on each plugin, add it to the router
         for (const route of runtime.routes) {

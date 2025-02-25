@@ -1,8 +1,14 @@
-import {
-    composeContext, generateObjectArray, MemoryManager, ModelClass, type ActionExample, type Evaluator, type IAgentRuntime,
-    type Memory
-} from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
+import { generateObjectArray } from "@elizaos/core";
+import { MemoryManager } from "@elizaos/core";
 import { z } from "zod";
+import {
+    type ActionExample,
+    type IAgentRuntime,
+    type Memory,
+    ModelClass,
+    type Evaluator,
+} from "@elizaos/core";
 
 export const formatFacts = (facts: Memory[]) => {
     const messageStrings = facts
@@ -14,7 +20,7 @@ export const formatFacts = (facts: Memory[]) => {
 
 const factsTemplate =
     // {{actors}}
-    `# Task: Extract Claims from the conversation
+    `TASK: Extract Claims from the conversation as an array of claims in JSON format.
 
 # START OF EXAMPLES
 These are examples of the expected output of this task:

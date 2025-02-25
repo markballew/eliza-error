@@ -1,4 +1,4 @@
-import { composeContext, type HandlerCallback } from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
 import { generateTrueOrFalse } from "@elizaos/core";
 import { booleanFooter } from "@elizaos/core";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@elizaos/core";
 
 export const shouldMuteTemplate =
-    `# Task: Decide if {{agentName}} should mute this room and stop responding unless explicitly mentioned.
+    `Based on the conversation so far:
 
 {{recentMessages}}
 
@@ -23,7 +23,7 @@ Respond with YES if:
 - {{agentName}}'s responses are not well-received or are annoying the user(s)
 
 Otherwise, respond with NO.
-${booleanFooter}`;
+` + booleanFooter;
 
 export const muteRoomAction: Action = {
     name: "MUTE_ROOM",
@@ -38,14 +38,13 @@ export const muteRoomAction: Action = {
         "Mutes a room, ignoring all messages unless explicitly mentioned. Only do this if explicitly asked to, or if you're annoying people.",
     validate: async (runtime: IAgentRuntime, message: Memory) => {
         const roomId = message.roomId;
-        const roomState = await runtime.databaseAdapter.getParticipantUserState(
+        const userState = await runtime.databaseAdapter.getParticipantUserState(
             roomId,
-            runtime.agentId,
             runtime.agentId
         );
-        return roomState !== "MUTED";
+        return userState !== "MUTED";
     },
-    handler: async (runtime: IAgentRuntime, message: Memory, state?: State, _options?: { [key: string]: unknown; }, callback?: HandlerCallback, responses?: Memory[] ) => {
+    handler: async (runtime: IAgentRuntime, message: Memory) => {
         async function _shouldMute(state: State): Promise<boolean> {
             const shouldMuteContext = composeContext({
                 state,
@@ -61,19 +60,14 @@ export const muteRoomAction: Action = {
             return response;
         }
 
-        state = await runtime.composeState(message);
+        const state = await runtime.composeState(message);
 
         if (await _shouldMute(state)) {
             await runtime.databaseAdapter.setParticipantUserState(
                 message.roomId,
                 runtime.agentId,
-                runtime.agentId,
                 "MUTED"
             );
-        }
-
-        for (const response of responses) {
-            await callback?.({...response.content, action: "MUTE_ROOM"});
         }
     },
     examples: [

@@ -10,31 +10,31 @@ About {{agentName}}:
 # RESPONSE EXAMPLES
 {{user1}}: I just saw a really great movie
 {{user2}}: Oh? Which movie?
-Response: IGNORE
+Result: IGNORE
 
 {{agentName}}: Oh, this is my favorite scene
 {{user1}}: sick
 {{user2}}: wait, why is it your favorite scene
-Response: RESPOND
+Result: RESPOND
 
 {{user1}}: stfu bot
-Response: STOP
+Result: STOP
 
-{{user1}}: Hey {{agentName}}, can you help me with something
-Response: RESPOND
+{{user1}}: Hey {{agent}}, can you help me with something
+Result: RESPOND
 
 {{user1}}: {{agentName}} stfu plz
-Response: STOP
+Result: STOP
 
 {{user1}}: i need help
 {{agentName}}: how can I help you?
 {{user1}}: no. i need help from someone else
-Response: IGNORE
+Result: IGNORE
 
-{{user1}}: Hey {{agentName}}, can I ask you a question
+{{user1}}: Hey {{agent}}, can I ask you a question
 {{agentName}}: Sure, what is it
 {{user1}}: can you ask claude to create a basic react module that demonstrates a counter
-Response: RESPOND
+Result: RESPOND
 
 {{user1}}: {{agentName}} can you tell me a story
 {{user1}}: about a girl named elara
@@ -42,20 +42,21 @@ Response: RESPOND
 {{agentName}}: Once upon a time, in a quaint little village, there was a curious girl named Elara.
 {{agentName}}: Elara was known for her adventurous spirit and her knack for finding beauty in the mundane.
 {{user1}}: I'm loving it, keep going
-Response: RESPOND
+Result: RESPOND
 
 {{user1}}: {{agentName}} stop responding plz
-Response: STOP
+Result: STOP
 
 {{user1}}: okay, i want to test something. can you say marco?
 {{agentName}}: marco
 {{user1}}: great. okay, now do it again
-Response: RESPOND
+Result: RESPOND
 
 Response options are RESPOND, IGNORE and STOP.
 
 {{agentName}} is in a room with other users and is very worried about being annoying and saying too much.
 Respond with RESPOND to messages that are directed at {{agentName}}, or participate in conversations that are interesting or relevant to their background.
+If a message is not interesting or relevant, respond with IGNORE
 Unless directly responding to a user, respond with IGNORE to messages that are very short or do not contain much information.
 If a user asks {{agentName}} to be quiet, respond with STOP
 If {{agentName}} concludes a conversation and isn't part of the conversation anymore, respond with STOP
@@ -65,8 +66,8 @@ If {{agentName}} is conversing with a user and they have not asked to stop, it i
 
 {{recentMessages}}
 
-# INSTRUCTIONS: Choose the option that best describes {{agentName}}'s response to the last message.
-${shouldRespondFooter}`;
+# INSTRUCTIONS: Choose the option that best describes {{agentName}}'s response to the last message. Ignore messages if they are addressed to someone else.
+` + shouldRespondFooter;
 
 export const twitterVoiceHandlerTemplate =
     `# Task: Generate conversational voice dialog for {{agentName}}.
@@ -86,26 +87,4 @@ export const twitterVoiceHandlerTemplate =
     {{recentMessages}}
 
     # Instructions: Write the next message for {{agentName}}. Include an optional action if appropriate. {{actionNames}}
-    ${messageCompletionFooter}`;
-
-
-export const twitterPostTemplate = `# Task: Create a post in the voice and style and perspective of {{agentName}} @{{twitterUserName}}.
-    {{system}}
-    
-    # Areas of Expertise
-    {{knowledge}}
-    
-    # About {{agentName}} (@{{twitterUserName}}):
-    {{bio}}
-    {{topics}}
-    
-    {{providers}}
-    
-    {{characterPostExamples}}
-    
-    {{postDirections}}
-    
-    Write a post that is {{adjective}} about {{topic}} (without mentioning {{topic}} directly), from the perspective of {{agentName}}. Do not add commentary or acknowledge this request, just write the post.
-    Your response should be 1, 2, or 3 sentences (choose the length at random).
-    Your response should not contain any questions. Brief, concise statements only. The total character count MUST be less than 280. No emojis. Use \\n\\n (double spaces) between statements if there are multiple statements in your response.`;
-    
+    ` + messageCompletionFooter;

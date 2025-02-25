@@ -1,11 +1,11 @@
 import { Events } from 'discord.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DiscordClient } from '../src';
+import { DiscordConfig } from '../src/environment';
 
 // Mock @elizaos/core
 vi.mock('@elizaos/core', () => ({
   logger: {
-    log: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
@@ -20,15 +20,11 @@ vi.mock('@elizaos/core', () => ({
 
 // Mock discord.js Client
 vi.mock('discord.js', () => {
-  const mockGuilds = {
-    fetch: vi.fn().mockResolvedValue(new Map()),
-  };
   const mockClient = {
     login: vi.fn().mockResolvedValue('token'),
     on: vi.fn(),
     once: vi.fn(),
     destroy: vi.fn().mockResolvedValue(undefined),
-    guilds: mockGuilds,
   };
   
   return {
@@ -61,15 +57,13 @@ vi.mock('discord.js', () => {
 });
 
 describe('DiscordClient', () => {
+  let mockConfig: DiscordConfig;
   let mockRuntime: any;
   let discordClient: DiscordClient;
 
   beforeEach(() => {
     mockRuntime = {
-      getSetting: vi.fn((key: string) => {
-        if (key === 'DISCORD_API_TOKEN') return 'mock-token';
-        return undefined;
-      }),
+      getSetting: vi.fn(),
       getState: vi.fn(),
       setState: vi.fn(),
       getMemory: vi.fn(),
@@ -86,7 +80,11 @@ describe('DiscordClient', () => {
       }
     };
 
-    discordClient = new DiscordClient(mockRuntime);
+    mockConfig = {
+      DISCORD_API_TOKEN: "mock-token",
+    }
+
+    discordClient = new DiscordClient(mockRuntime, mockConfig);
   });
 
   it('should initialize with correct configuration', () => {

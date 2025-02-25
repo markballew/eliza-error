@@ -1,7 +1,10 @@
 {
     "version": "1.0.0-alpha.0",
     "packages": [
-        "packages/*"
+        "packages/*",
+        "docs",
+        "agent",
+        "client"
     ],
     "npmClient": "bun"
 }
