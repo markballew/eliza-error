@@ -102,6 +102,7 @@ class MockDatabaseAdapter extends DatabaseAdapter {
         throw new Error("Method not implemented.");
     }
     getParticipantsForAccount(userId: UUID): Promise<Participant[]>;
+    getParticipantsForAccount(userId: UUID): Promise<Participant[]>;
     getParticipantsForAccount(
         _userId: unknown
     ): Promise<import("../src/types.ts").Participant[]> {

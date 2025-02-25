@@ -15,7 +15,6 @@ import {
   Events,
   GatewayIntentBits,
   type Guild,
-  GuildMember,
   type MessageReaction,
   type OAuth2Guild,
   Partials,
@@ -123,11 +122,6 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
       this.handleReactionRemove.bind(this)
     );
 
-    this.client.on(
-      Events.GuildMemberAdd,
-      this.handleGuildMemberAdd.bind(this)
-    );
-
     // Handle voice events with the voice manager
     this.client.on(
       "voiceStateUpdate",
@@ -149,44 +143,6 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
       Events.InteractionCreate,
       this.handleInteractionCreate.bind(this)
     );
-  }
-
-  private async handleGuildMemberAdd(member: GuildMember) {
-    logger.log(`New member joined: ${member.user.username}`);
-    
-    const guild = member.guild;
-    
-    // Emit standardized USER_JOINED event
-    this.runtime.emitEvent(["DISCORD_USER_JOINED", "USER_JOINED"], {
-      runtime: this.runtime,
-      user: {
-        id: member.id,
-        username: member.user.username,
-        displayName: member.displayName || member.user.username
-      },
-      serverId: guild.id,
-      channelId: null, // No specific channel for server joins
-      source: "discord"
-    });
-    
-    // Optionally sync this user to all channels they have access to
-    for (const [channelId, channel] of guild.channels.cache) {
-      // Check if the user has access to this channel (text channels only)
-      if (channel.type === DiscordChannelType.GuildText && 
-          channel.permissionsFor(member)?.has(PermissionsBitField.Flags.ViewChannel)) {
-        this.runtime.emitEvent(["DISCORD_USER_JOINED_CHANNEL", "USER_JOINED"], {
-          runtime: this.runtime,
-          user: {
-            id: member.id,
-            username: member.user.username,
-            displayName: member.displayName || member.user.username
-          },
-          serverId: guild.id,
-          channelId: channelId,
-          source: "discord"
-        });
-      }
-    }
   }
 
   async stop() {
@@ -474,12 +430,9 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
     logger.log(`Joined guild ${guild.name}`);
     const fullGuild = await guild.fetch();
     this.voiceManager.scanGuild(guild);
-    
-    // Emit both Discord-specific and standardized events
-    this.runtime.emitEvent(["DISCORD_SERVER_JOINED", "SERVER_JOINED"], {
+    this.runtime.emitEvent("DISCORD_JOIN_SERVER", {
       runtime: this.runtime,
-      server: fullGuild,
-      source: "discord"
+      guild: fullGuild,
     });
   }
 
@@ -502,19 +455,15 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
     for (const [, guild] of guilds) {
       const fullGuild = await guild.fetch();
       await this.voiceManager.scanGuild(fullGuild);
-      
-      // Send after a brief delay
+      // send in 1 second
       setTimeout(async () => {
-        // For each server the client is in, fire a connected event
-        const fullGuild = await guild.fetch();
-        logger.log("DISCORD SERVER CONNECTED", fullGuild);
-        
-        // Emit both Discord-specific and standardized events
-        this.runtime.emitEvent(["DISCORD_SERVER_CONNECTED", "SERVER_CONNECTED"], { 
-          runtime: this.runtime, 
-          server: fullGuild,
-          source: "discord"
-        });
+        // for each server the client is in, fire a connected event
+        for (const [, guild] of guilds) {
+          const fullGuild = await guild.fetch();
+
+          logger.log("DISCORD SERVER CONNECTED", fullGuild);
+          this.runtime.emitEvent("DISCORD_SERVER_CONNECTED", { runtime: this.runtime, guild: fullGuild });
+        }
       }, 1000);
     }
 

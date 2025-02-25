@@ -1,5 +1,12 @@
-import { logger } from "../logger";
-import { Action, ActionExample, HandlerCallback, IAgentRuntime, Memory, State } from "../types";
+import {
+  type Action,
+  type ActionExample,
+  type HandlerCallback,
+  type IAgentRuntime,
+  type Memory,
+  type State,
+  logger,
+} from "@elizaos/core";
 
 export const confirmTaskAction: Action = {
   name: "CONFIRM_TASK",

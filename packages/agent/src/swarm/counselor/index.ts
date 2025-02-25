@@ -13,6 +13,7 @@ const character: Character = {
     "@elizaos/plugin-openai",
     "@elizaos/plugin-discord",
     "@elizaos/plugin-node",
+    "@elizaos/plugin-bootstrap",
   ],
   secrets: {
     DISCORD_APPLICATION_ID: process.env.COUNSELOR_DISCORD_APPLICATION_ID,
@@ -250,18 +251,18 @@ export default {
   character,
   init: async (runtime: IAgentRuntime) => {
     runtime.registerEvent(
-      "DISCORD_SERVER_JOINED",
-      async (params: { server: Guild }) => {
+      "DISCORD_JOIN_SERVER",
+      async (params: { guild: Guild }) => {
         console.log("Counselor joined server");
-        await initializeAllSystems(runtime, [params.server], config);
+        await initializeAllSystems(runtime, [params.guild], config);
       }
     );
 
     runtime.registerEvent(
       "DISCORD_SERVER_CONNECTED",
-      async (params: { server: Guild }) => {
+      async (params: { guild: Guild }) => {
         console.log("Counselor connected to server");
-        await initializeAllSystems(runtime, [params.server], config);
+        await initializeAllSystems(runtime, [params.guild], config);
       }
     );
   },

@@ -1,4 +1,9 @@
-import { Action, ActionExample, IAgentRuntime, Memory } from "../types";
+import type {
+    ActionExample,
+    IAgentRuntime,
+    Memory,
+    Action,
+} from "@elizaos/core";
 
 export const ignoreAction: Action = {
     name: "IGNORE",

@@ -14,6 +14,7 @@ const character: Character = {
     "@elizaos/plugin-discord",
     "@elizaos/plugin-twitter",
     "@elizaos/plugin-node",
+    "@elizaos/plugin-bootstrap",
   ],
   secrets: {
     "DISCORD_APPLICATION_ID": process.env.SOCIAL_MEDIA_MANAGER_DISCORD_APPLICATION_ID,
@@ -255,14 +256,14 @@ export default {
     runtime.registerAction(twitterPostAction);
 
     // Register runtime events
-    runtime.registerEvent("DISCORD_SERVER_JOINED", async (params: { server: Guild }) => {
+    runtime.registerEvent("DISCORD_JOIN_SERVER", async (params: { guild: Guild }) => {
       // TODO: Save onboarding config to runtime
-      await initializeAllSystems(runtime, [params.server], socialMediaManagerConfig);
+      await initializeAllSystems(runtime, [params.guild], socialMediaManagerConfig);
     });
 
     // when booting up into a server we're in, fire a connected event
-    runtime.registerEvent("DISCORD_SERVER_CONNECTED", async (params: { server: Guild }) => {
-      await initializeAllSystems(runtime, [params.server], socialMediaManagerConfig);
+    runtime.registerEvent("DISCORD_SERVER_CONNECTED", async (params: { guild: Guild }) => {
+      await initializeAllSystems(runtime, [params.guild], socialMediaManagerConfig);
     });
   }
 };
