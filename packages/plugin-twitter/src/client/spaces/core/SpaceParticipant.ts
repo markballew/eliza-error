@@ -1,6 +1,6 @@
 // src/core/SpaceParticipant.ts
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { Logger } from '../logger';
 import { ChatClient } from './ChatClient';
 import { JanusClient } from './JanusClient';
@@ -90,6 +90,11 @@ export class SpaceParticipant extends EventEmitter {
     // Call the plugin's onAttach if it exists
     plugin.onAttach?.({ space: this, pluginConfig: config });
 
+
+    if (plugin.init) {
+      plugin.init({ space: this, pluginConfig: config });
+    }
+
     return this;
   }
 
@@ -142,11 +147,6 @@ export class SpaceParticipant extends EventEmitter {
     this.watchSession = await startWatching(this.lifecycleToken!, this.cookie!);
 
     this.logger.info('[SpaceParticipant] Joined as listener.');
-
-    // Call plugin.init(...) now that we have basic "listener" mode set up
-    for (const { plugin, config } of this.plugins) {
-      plugin.init?.({ space: this, pluginConfig: config });
-    }
   }
 
   /**
