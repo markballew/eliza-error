@@ -10,12 +10,12 @@ import {
     type State,
 } from "@elizaos/core";
 import {
-    BaseGuildVoiceChannel
+    ChannelType as DiscordChannelType,
+    type Channel
 } from "discord.js";
 
 import { DiscordClient } from "../index.ts";
-import { VoiceManager } from "../voice.ts";
-
+import { getVoiceConnection } from "@discordjs/voice";
 
 export default {
     name: "LEAVE_VOICE",
@@ -73,42 +73,28 @@ export default {
         if (!serverId) {
             throw new Error("No server ID found 9");
         }
-        const discordClient = runtime.getClient("discord") as DiscordClient;
-        const voiceManager = discordClient.voiceManager as VoiceManager;
-        const client = discordClient.client;
+
+        const client = runtime.getClient("discord").client;
 
         if (!client) {
             logger.error("Discord client not found");
             return false;
         }
 
-        if (!voiceManager) {
-            logger.error("voiceManager is not available.");
-            return false;
-        }
+        const voiceChannels = client.client.guilds.cache
+            .get(serverId)
+            ?.channels.cache.filter(
+                (channel: Channel) => channel.type === DiscordChannelType.GuildVoice
+            );
 
-        const guild = client.guilds.cache.get(serverId);
-
-        if (!guild) {
-            console.warn("Bot is not in any voice channel.");
-            return false;
-        }
-
-        const voiceChannel = guild.members.me?.voice.channel;
-
-        if (!voiceChannel || !(voiceChannel instanceof BaseGuildVoiceChannel)) {
-            console.warn("Could not retrieve the voice channel.");
-            return false;
-        }
-
-        const connection = voiceManager.getVoiceConnection(guild.id);
-        if (!connection) {
-            console.warn("No active voice connection found for the bot.");
-            return false;
-        }
-
-        voiceManager.leaveChannel(voiceChannel);
-
+        voiceChannels?.forEach((_channel: Channel) => {
+            const connection = getVoiceConnection(
+                serverId
+            );
+            if (connection) {
+                connection.destroy();
+            }
+        });
         return true;
     },
     examples: [

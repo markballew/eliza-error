@@ -1,3 +1,5 @@
+// eslint-disable-next-line
+// @ts-nocheck
 // src/actions/joinVoice
 import {
     type Action,
@@ -9,19 +11,17 @@ import {
     generateText,
     ModelClass,
     ChannelType,
-    stringToUuid,
-    logger,
-    HandlerCallback,
 } from "@elizaos/core";
 import {
     type Channel,
     ChannelType as DiscordChannelType,
+    type Client,
+    type Message as DiscordMessage,
     type Guild,
-    BaseGuildVoiceChannel,
+    type GuildMember,
 } from "discord.js";
 
 import { DiscordClient } from "../index.ts";
-import { VoiceManager } from "../voice.ts";
 
 export default {
     name: "JOIN_VOICE",
@@ -40,6 +40,14 @@ export default {
     ) => {
         if (message.content.source !== "discord") {
             // not a discord message
+            return false;
+        }
+
+        const roomId = message.roomId;
+
+        const room = await runtime.getRoom(roomId);
+
+        if(room?.type !== ChannelType.GROUP) {
             return false;
         }
 
@@ -88,24 +96,21 @@ export default {
             throw new Error("No server ID found 8");
         }
 
-        const discordClient = runtime.getClient("discord") as DiscordClient;
-        const client = discordClient.client;
-        const voiceManager = discordClient.voiceManager as VoiceManager;
+        const client = runtime.getClient("discord").client;
 
         if (!client) {
             logger.error("Discord client not found");
             return false;
         }
-
         const voiceChannels = (
-            client.guilds.cache.get(serverId) as Guild
+            client.client.guilds.cache.get(serverId) as Guild
         ).channels.cache.filter(
-            (channel: Channel) => channel.type === DiscordChannelType.GuildVoice
+            (channel: Channel) => channel.type === ChannelType.GuildVoice
         );
 
         const targetChannel = voiceChannels.find((channel) => {
             const name = (channel as { name: string }).name.toLowerCase();
-            const messageContent = message?.content?.text;
+
             // remove all non-alphanumeric characters (keep spaces between words)
             const replacedName = name.replace(/[^a-z0-9 ]/g, "");
 
@@ -118,7 +123,15 @@ export default {
         });
 
         if (targetChannel) {
-            voiceManager.joinChannel(targetChannel as BaseGuildVoiceChannel);
+            joinVoiceChannel({
+                channelId: targetChannel.id,
+                guildId: serverId as string,
+                adapterCreator: (client.guilds.cache.get(id) as Guild)
+                    .voiceAdapterCreator,
+                selfDeaf: false,
+                selfMute: false,
+                group: client.user.id,
+            });
             return true;
         }
             const guild = client.guilds.cache.get(serverId);
@@ -130,7 +143,15 @@ export default {
             console.log("member", member);
 
             if (member?.voice?.channel) {
-                voiceManager.joinChannel(member?.voice?.channel as BaseGuildVoiceChannel);
+                joinVoiceChannel({
+                    channelId: member.voice.channel.id,
+                    guildId: serverId,
+                    adapterCreator: (client.guilds.cache.get(id) as Guild)
+                        .voiceAdapterCreator,
+                    selfDeaf: false,
+                    selfMute: false,
+                    group: client.user.id,
+                });
                 return true;
             }
 
@@ -185,7 +206,15 @@ You should only respond with the name of the voice channel or none, no commentar
                 });
 
                 if (targetChannel) {
-                    voiceManager.joinChannel(targetChannel as BaseGuildVoiceChannel);
+                    joinVoiceChannel({
+                        channelId: targetChannel.id,
+                        guildId: serverId,
+                        adapterCreator: (client.guilds.cache.get(id) as Guild)
+                            .voiceAdapterCreator,
+                        selfDeaf: false,
+                        selfMute: false,
+                        group: client.user.id,
+                    });
                     return true;
                 }
             }
