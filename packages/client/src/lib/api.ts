@@ -165,7 +165,7 @@ export const apiClient = {
             body: character,
         }),
     
-    removeCharacter: (characterName: string): Promise<{ success: boolean }> =>
+    deleteCharacter: (characterName: string): Promise<{ success: boolean }> =>
         fetcher({
             url: `/characters/${characterName}`,
             method: "DELETE",

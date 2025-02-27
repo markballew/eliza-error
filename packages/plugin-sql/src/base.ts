@@ -60,6 +60,7 @@ import {
     relationshipTable,
     roomTable,
     worldTable,
+    componentTable,
 } from "./schema/index";
 import { DrizzleOperations } from "./types";
 
@@ -215,6 +216,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
             const result = await this.db
                 .select()
                 .from(entityTable)
+                .leftJoin(componentTable, eq(entityTable.id, componentTable.entityId))
                 .where(and(eq(entityTable.id, userId), eq(entityTable.agentId, agentId)))
                 .limit(1);
 
@@ -223,6 +225,26 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
             const account = result[0];
 
             return account;
+        });
+    }
+
+    async getEntitiesForRoom(roomId: UUID, agentId: UUID): Promise<Entity[]> {
+        return this.withDatabase(async () => {
+            const result = await this.db
+                .select({
+                    entity: entityTable
+                })
+                .from(participantTable)
+                .leftJoin(
+                    entityTable,
+                    and(
+                        eq(participantTable.userId, entityTable.id),
+                        eq(entityTable.agentId, agentId)
+                    )
+                )
+                .where(eq(participantTable.roomId, roomId));
+
+            return result.map(row => row.entity).filter(Boolean);
         });
     }
 
@@ -1267,11 +1289,11 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
     }
 
     async createRelationship(params: {
-        userA: UUID;
-        userB: UUID;
+        entityA: UUID;
+        entityB: UUID;
     }): Promise<boolean> {
-        if (!params.userA || !params.userB) {
-            throw new Error("userA and userB are required");
+        if (!params.entityA || !params.entityB) {
+            throw new Error("entityA and entityB are required");
         }
     
         return this.withDatabase(async () => {
@@ -1280,15 +1302,15 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                     const relationshipId = v4();
                     await tx.insert(relationshipTable).values({
                         id: relationshipId,
-                        userA: params.userA,
-                        userB: params.userB,
-                        userId: params.userA,
+                        entityA: params.entityA,
+                        entityB: params.entityB,
+                        userId: params.entityA,
                     });
     
                     logger.debug("Relationship created successfully:", {
                         relationshipId,
-                        userA: params.userA,
-                        userB: params.userB,
+                        entityA: params.entityA,
+                        entityB: params.entityB,
                     });
     
                     return true;
@@ -1296,8 +1318,8 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
             } catch (error) {
                 if ((error as { code?: string }).code === "23505") {
                     logger.warn("Relationship already exists:", {
-                        userA: params.userA,
-                        userB: params.userB,
+                        entityA: params.entityA,
+                        entityB: params.entityB,
                         error:
                             error instanceof Error
                                 ? error.message
@@ -1305,8 +1327,8 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                     });
                 } else {
                     logger.error("Failed to create relationship:", {
-                        userA: params.userA,
-                        userB: params.userB,
+                        entityA: params.entityA,
+                        entityB: params.entityB,
                         error:
                             error instanceof Error
                                 ? error.message
@@ -1319,11 +1341,11 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
     }
 
     async getRelationship(params: {
-        userA: UUID;
-        userB: UUID;
+        entityA: UUID;
+        entityB: UUID;
     }): Promise<Relationship | null> {
-        if (!params.userA || !params.userB) {
-            throw new Error("userA and userB are required");
+        if (!params.entityA || !params.entityB) {
+            throw new Error("entityA and entityB are required");
         }
 
         return this.withDatabase(async () => {
@@ -1334,12 +1356,12 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                     .where(
                         or(
                             and(
-                                eq(relationshipTable.userA, params.userA),
-                                eq(relationshipTable.userB, params.userB)
+                                eq(relationshipTable.entityA, params.entityA),
+                                eq(relationshipTable.entityB, params.entityB)
                             ),
                             and(
-                                eq(relationshipTable.userA, params.userB),
-                                eq(relationshipTable.userB, params.userA)
+                                eq(relationshipTable.entityA, params.entityB),
+                                eq(relationshipTable.entityB, params.entityA)
                             )
                         )
                     )
@@ -1350,14 +1372,14 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                 }
 
                 logger.debug("No relationship found between users:", {
-                    userA: params.userA,
-                    userB: params.userB,
+                    entityA: params.entityA,
+                    entityB: params.entityB,
                 });
                 return null;
             } catch (error) {
                 logger.error("Error fetching relationship:", {
-                    userA: params.userA,
-                    userB: params.userB,
+                    entityA: params.entityA,
+                    entityB: params.entityB,
                     error:
                         error instanceof Error ? error.message : String(error),
                 });
@@ -1377,8 +1399,8 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                     .from(relationshipTable)
                     .where(
                         or(
-                            eq(relationshipTable.userA, params.userId),
-                            eq(relationshipTable.userB, params.userId)
+                            eq(relationshipTable.entityA, params.userId),
+                            eq(relationshipTable.entityB, params.userId)
                         )
                     )
                     .orderBy(desc(relationshipTable.createdAt));

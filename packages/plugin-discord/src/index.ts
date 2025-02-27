@@ -635,16 +635,22 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
             users.push({
               id: stringToUuid(`${member.id}-${this.runtime.agentId}`),
               names: Array.from(
-                new Set([member.user.username, member.displayName])
+                new Set([member.user.username, member.displayName, member.user.globalName])
               ),
               metadata: {
                 default: {
                   username: tag,
                   name: member.displayName || member.user.username,
                 },
-                discord: {
+                discord: member.user.globalName ? {
                   username: tag,
                   displayName: member.displayName || member.user.username,
+                  globalName: member.user.globalName,
+                  userId: member.id,
+                } : {
+                  username: tag,
+                  displayName: member.displayName || member.user.username,
+                  userId: member.id,
                 },
               },
             });
@@ -671,16 +677,22 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
                 users.push({
                   id: userId,
                   names: Array.from(
-                    new Set([member.user.username, member.displayName])
+                    new Set([member.user.username, member.displayName, member.user.globalName])
                   ),
                   metadata: {
-                    discord: {
-                      username: tag,
-                      displayName: member.displayName || member.user.username,
-                    },
                     default: {
                       username: tag,
                       name: member.displayName || member.user.username,
+                    },
+                    discord: member.user.globalName ? {
+                      username: tag,
+                      displayName: member.displayName || member.user.username,
+                      globalName: member.user.globalName,
+                      userId: member.id,
+                    } : {
+                      username: tag,
+                      displayName: member.displayName || member.user.username,
+                      userId: member.id,
                     },
                   },
                 });
@@ -708,16 +720,22 @@ export class DiscordClient extends EventEmitter implements IDiscordClient {
             users.push({
               id: stringToUuid(`${member.id}-${this.runtime.agentId}`),
               names: Array.from(
-                new Set([member.user.username, member.displayName])
+                new Set([member.user.username, member.displayName, member.user.globalName])
               ),
               metadata: {
                 default: {
                   username: tag,
                   name: member.displayName || member.user.username,
                 },
-                discord: {
+                discord: member.user.globalName ? {
                   username: tag,
                   displayName: member.displayName || member.user.username,
+                  globalName: member.user.globalName,
+                  userId: member.id,
+                } : {
+                  username: tag,
+                  displayName: member.displayName || member.user.username,
+                  userId: member.id,
                 },
               },
             });

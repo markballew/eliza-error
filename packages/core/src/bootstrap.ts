@@ -1,7 +1,7 @@
 import { UUID } from "crypto";
 import { v4 } from "uuid";
 import { cancelTaskAction } from "./actions/cancel.ts";
-import { confirmTaskAction } from "./actions/confirm.ts";
+import { selectOptionAction } from "./actions/options.ts";
 import { followRoomAction } from "./actions/followRoom.ts";
 import { ignoreAction } from "./actions/ignore.ts";
 import { muteRoomAction } from "./actions/muteRoom.ts";
@@ -22,7 +22,7 @@ import {
 } from "./index.ts";
 import { logger } from "./logger.ts";
 import { messageCompletionFooter, shouldRespondFooter } from "./parsing.ts";
-import { confirmationTasksProvider } from "./providers/confirmation.ts";
+import { optionsProvider } from "./providers/options.ts";
 import { factsProvider } from "./providers/facts.ts";
 import { roleProvider } from "./providers/roles.ts";
 import { settingsProvider } from "./providers/settings.ts";
@@ -69,6 +69,8 @@ type UserJoinedParams = {
 export const shouldRespondTemplate = `{{system}}
 # Task: Decide on behalf of {{agentName}} whether they should respond to the message, ignore it or stop the conversation.
 
+{{actors}}
+
 About {{agentName}}:
 {{bio}}
 
@@ -77,14 +79,15 @@ About {{agentName}}:
 # INSTRUCTIONS: Respond with the word RESPOND if {{agentName}} should respond to the message. Respond with STOP if a user asks {{agentName}} to be quiet. Respond with IGNORE if {{agentName}} should ignore the message.
 ${shouldRespondFooter}`;
 
-const messageHandlerTemplate = `# Task: Generate dialog and actions for the character {{agentName}}.
+export const messageHandlerTemplate = `# Task: Generate dialog and actions for the character {{agentName}}.
 {{system}}
 
 {{actionExamples}}
 (Action examples are for reference only. Do not use the information from them in your response.)
 
-# Knowledge
 {{knowledge}}
+
+{{actors}}
 
 About {{agentName}}:
 {{bio}}
@@ -686,10 +689,9 @@ const handleServerSync = async ({
                   userId: user.id,
                   roomId: defaultRoom.id,
                   userName:
-                    user.metadata[source].username ||
-                    user.metadata.default.username,
+                    user.metadata[source].username,
                   userScreenName:
-                    user.metadata[source].name || user.metadata.default.name,
+                    user.metadata[source].name,
                   source: source,
                   channelId: defaultRoom.channelId,
                   serverId: world.serverId,
@@ -849,7 +851,7 @@ export const bootstrapPlugin: Plugin = {
     muteRoomAction,
     unmuteRoomAction,
     cancelTaskAction,
-    confirmTaskAction,
+    selectOptionAction,
     updateRoleAction,
     updateSettingsAction,
   ],
@@ -858,7 +860,7 @@ export const bootstrapPlugin: Plugin = {
   providers: [
     timeProvider,
     factsProvider,
-    confirmationTasksProvider,
+    optionsProvider,
     roleProvider,
     settingsProvider,
   ],
