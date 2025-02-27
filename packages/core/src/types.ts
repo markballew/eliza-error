@@ -55,14 +55,14 @@ export interface ConversationExample {
  * Represents an actor/participant in a conversation
  */
 export interface Actor {
-  /** Unique identifier */
-  id: UUID;
-
   /** Display name */
   name: string;
 
-  /** All names for the actor */
-  names: string[];
+  /** Username/handle */
+  username: string;
+
+  /** Unique identifier */
+  id: UUID;
 }
 
 /**
@@ -476,33 +476,22 @@ export interface Relationship {
   id: UUID;
 
   /** First user ID */
-  entityA: UUID;
+  userA: UUID;
 
   /** Second user ID */
-  entityB: UUID;
+  userB: UUID;
 
   /** Primary user ID */
-  agentId: UUID;
+  userId: UUID;
 
-  /** Any tags (no structured ontology) */
-  tags: string[];
+  /** Associated room ID */
+  roomId: UUID;
 
-  /** Any metadata you might want to add */
-  metadata: {
-    [key: string]: any
-  }
+  /** Relationship status */
+  status: string;
 
   /** Optional creation timestamp */
   createdAt?: string;
-}
-
-export interface Component {
-  id: UUID;
-  entityId: UUID;
-  name: string;
-  data: {
-    [key: string]: any;
-  };
 }
 
 /**
@@ -769,16 +758,12 @@ export interface IDatabaseAdapter {
 
   updateAgent(agent: Agent): Promise<boolean>;
 
-  /** Get entity by ID */
+  /** Get account by ID */
   getEntityById(userId: UUID, agentId: UUID): Promise<Entity | null>;
 
-  /** Get entities for room */
-  getEntitiesForRoom(roomId: UUID, agentId: UUID): Promise<Entity[]>;
-
-  /** Create new entity */
+  /** Create new account */
   createEntity(entity: Entity): Promise<boolean>;
 
-  /** Update entity */
   updateEntity(entity: Entity): Promise<void>;
 
   /** Get memories matching criteria */
@@ -921,11 +906,11 @@ export interface IDatabaseAdapter {
     state: "FOLLOWED" | "MUTED" | null
   ): Promise<void>;
 
-  createRelationship(params: { entityA: UUID; entityB: UUID; agentId: UUID }): Promise<boolean>;
+  createRelationship(params: { userA: UUID; userB: UUID; agentId: UUID }): Promise<boolean>;
 
   getRelationship(params: {
-    entityA: UUID;
-    entityB: UUID;
+    userA: UUID;
+    userB: UUID;
     agentId: UUID;
   }): Promise<Relationship | null>;
 
@@ -1441,16 +1426,10 @@ export interface TeePluginConfig {
 export interface Task {
   id?: UUID;
   name: string;
-  metadata?: {
-    options?: {
-      name: string;
-      description: string;
-    }[];
-  };
   description: string;
   roomId: UUID;
   tags: string[];
-  handler: (runtime: IAgentRuntime, options: { [key: string]: unknown }) => Promise<void>;
+  handler: (runtime: IAgentRuntime) => Promise<void>;
   validate?: (runtime: IAgentRuntime, message: Memory, state: State) => Promise<boolean>;
 }
 

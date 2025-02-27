@@ -1219,10 +1219,6 @@ export class AgentRuntime implements IAgentRuntime {
 
     const actors = formatActors({ actors: actorsData ?? [] });
 
-    console.log('**** ACTOR STATE')
-    console.log(actorsData)
-    console.log(actors)
-
     const recentMessages = formatMessages({
       messages: recentMessagesData,
       actors: actorsData,
@@ -1321,16 +1317,16 @@ export class AgentRuntime implements IAgentRuntime {
           .join("\n\n");
 
     const getRecentInteractions = async (
-      entityA: UUID,
-      entityB: UUID
+      userA: UUID,
+      userB: UUID
     ): Promise<Memory[]> => {
       // Convert to tenant-specific ID if needed
       const tenantUserA =
-        entityA === this.agentId ? entityA : this.generateTenantUserId(entityA);
+        userA === this.agentId ? userA : this.generateTenantUserId(userA);
 
-      // Find all rooms where entityA and entityB are participants
+      // Find all rooms where userA and userB are participants
       const rooms = await this.databaseAdapter.getRoomsForParticipants(
-        [tenantUserA, entityB],
+        [tenantUserA, userB],
         this.agentId
       );
 
@@ -1424,7 +1420,7 @@ export class AgentRuntime implements IAgentRuntime {
               Math.floor(Math.random() * this.character.adjectives.length)
             ]
           : "",
-      knowledge: addHeader("# Knowledge", formattedKnowledge),
+      knowledge: formattedKnowledge,
       knowledgeData: knowledgeData,
       // Recent interactions between the sender and receiver, formatted as messages
       recentMessageInteractions: formattedMessageInteractions,
@@ -1500,7 +1496,7 @@ export class AgentRuntime implements IAgentRuntime {
 
       // Agent runtime stuff
       senderName,
-      actors: actors && actors.length > 0 ? addHeader("# Actors in the Room", actors) : "",
+      actors: actors && actors.length > 0 ? addHeader("# Actors", actors) : "",
       actorsData,
       roomId,
       recentMessages:

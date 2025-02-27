@@ -13,7 +13,7 @@ export const cancelTaskAction: Action = {
   ): Promise<boolean> => {
     const pendingTasks = runtime.getTasks({
       roomId: message.roomId,
-      tags: ["AWAITING_CHOICE"],
+      tags: ["AWAITING_CONFIRMATION"],
   });
 
   // Only validate if there are pending tasks
@@ -37,7 +37,7 @@ export const cancelTaskAction: Action = {
       // Get pending tasks for this room
       const pendingTasks = runtime.getTasks({
         roomId: message.roomId,
-        tags: ["AWAITING_CHOICE"],
+        tags: ["AWAITING_CONFIRMATION"],
       });
 
       if (!pendingTasks || pendingTasks.length === 0) {

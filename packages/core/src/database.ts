@@ -44,8 +44,6 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
      */
     abstract getEntityById(userId: UUID, agentId: UUID): Promise<Entity | null>;
 
-    abstract getEntitiesForRoom(roomId: UUID, agentId: UUID): Promise<Entity[]>;
-
     abstract getAgent(agentId: UUID): Promise<Agent | null>;
 
     abstract createAgent(agent: Agent): Promise<boolean>;
@@ -374,22 +372,22 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
 
     /**
      * Creates a new relationship between two users.
-     * @param params An object containing the UUIDs of the two users (entityA and entityB).
+     * @param params An object containing the UUIDs of the two users (userA and userB).
      * @returns A Promise that resolves to a boolean indicating success or failure of the creation.
      */
     abstract createRelationship(params: {
-        entityA: UUID;
-        entityB: UUID;
+        userA: UUID;
+        userB: UUID;
     }): Promise<boolean>;
 
     /**
      * Retrieves a relationship between two users if it exists.
-     * @param params An object containing the UUIDs of the two users (entityA and entityB).
+     * @param params An object containing the UUIDs of the two users (userA and userB).
      * @returns A Promise that resolves to the Relationship object or null if not found.
      */
     abstract getRelationship(params: {
-        entityA: UUID;
-        entityB: UUID;
+        userA: UUID;
+        userB: UUID;
     }): Promise<Relationship | null>;
 
     /**
