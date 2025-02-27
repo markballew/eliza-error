@@ -4,7 +4,7 @@ import { Headers } from 'headers-polyfill';
 import type { BroadcastCreated, TurnServersInfo } from './types';
 import type { ChatClient } from './core/ChatClient';
 import type { Logger } from './logger';
-import type { EventEmitter } from 'node:events';
+import type { EventEmitter } from 'events';
 
 /**
  * Authorizes a token for guest access, using the provided Periscope cookie.
@@ -523,10 +523,5 @@ export function setupCommonChatEvents(
   chatClient.on('newSpeakerAccepted', (info) => {
     logger.debug('[ChatEvents] newSpeakerAccepted =>', info);
     emitter.emit('newSpeakerAccepted', info);
-  });
-
-  chatClient.on('newSpeakerRemoved', (info) => {
-    logger.debug('[ChatEvents] newSpeakerRemoved =>', info);
-    emitter.emit('newSpeakerRemoved', info);
   });
 }

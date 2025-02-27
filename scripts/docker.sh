@@ -30,7 +30,10 @@ case "$1" in
 
         # Define package directories to mount
         PACKAGES=(
+            "plugin-sqlite"
+            "client-direct"
             "core"
+            "plugin-bootstrap"
         )
 
         # Start building the docker run command

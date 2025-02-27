@@ -12,7 +12,6 @@ export async function createRelationship({
     return runtime.databaseAdapter.createRelationship({
         userA,
         userB,
-        agentId: runtime.agentId,
     });
 }
 
@@ -28,7 +27,6 @@ export async function getRelationship({
     return runtime.databaseAdapter.getRelationship({
         userA,
         userB,
-        agentId: runtime.agentId,
     });
 }
 
@@ -39,7 +37,7 @@ export async function getRelationships({
     runtime: IAgentRuntime;
     userId: UUID;
 }) {
-    return runtime.databaseAdapter.getRelationships({ userId, agentId: runtime.agentId });
+    return runtime.databaseAdapter.getRelationships({ userId });
 }
 
 export async function formatRelationships({
