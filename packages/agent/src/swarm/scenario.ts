@@ -5,7 +5,7 @@ import {
   IAgentRuntime,
   Memory,
   UUID,
-  createUniqueUuid
+  stringToUuid,
 } from "@elizaos/core";
 import { v4 as uuidv4 } from "uuid";
 
@@ -49,13 +49,13 @@ export class ScenarioClient implements Client {
   ) {
     
     for (const receiver of receivers) {
+      const participantId = stringToUuid(sender.agentId + "-" + receiver.agentId);
       const roomData = this.rooms.get(receiver.agentId);
       if (!roomData) continue;
-      const userId = createUniqueUuid(receiver, sender.agentId)
-      
+
         // Ensure connection exists
         await receiver.ensureConnection({
-          userId,
+          userId: participantId,
           roomId: roomData.roomId,
           userName: sender.character.name,
           userScreenName: sender.character.name,
@@ -64,7 +64,7 @@ export class ScenarioClient implements Client {
         });
 
       const memory: Memory = {
-        userId,
+        userId: participantId,
         agentId: receiver.agentId,
         roomId: roomData.roomId,
         content: {
@@ -87,15 +87,14 @@ export class ScenarioClient implements Client {
   ) {
     
     for (const receiver of receivers) {
+      const participantId = stringToUuid(sender.agentId + "-" + receiver.agentId);
       const roomData = this.rooms.get(receiver.agentId);
       if (!roomData) continue;
-      
-      const userId = createUniqueUuid(receiver, sender.agentId);
 
       if (receiver.agentId !== sender.agentId) {
         // Ensure connection exists
         await receiver.ensureConnection({
-          userId,
+          userId: participantId,
           roomId: roomData.roomId,
           userName: sender.character.name,
           userScreenName: sender.character.name,
@@ -114,7 +113,7 @@ export class ScenarioClient implements Client {
       }
 
       const memory: Memory = {
-        userId: receiver.agentId !== sender.agentId ? userId : sender.agentId,
+        userId: receiver.agentId !== sender.agentId ? participantId : sender.agentId,
         agentId: receiver.agentId,
         roomId: roomData.roomId,
         content: {
@@ -129,7 +128,7 @@ export class ScenarioClient implements Client {
         runtime: receiver,
         message: memory,
         roomId: roomData.roomId,
-        userId: receiver.agentId !== sender.agentId ? userId : sender.agentId,
+        userId: receiver.agentId !== sender.agentId ? participantId : sender.agentId,
         source: "scenario",
         type: ChannelType.GROUP,
       });

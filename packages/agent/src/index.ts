@@ -152,6 +152,7 @@ async function startAgent(
   let db: IDatabaseAdapter & IDatabaseCacheAdapter;
   try {
     character.id ??= stringToUuid(character.name);
+    character.username ??= character.name;
 
     const runtime: IAgentRuntime = await createAgent(character);
 
@@ -184,6 +185,7 @@ async function startAgent(
 
     // add to container
     server.registerAgent(runtime);
+    
 
     // report to console
     logger.debug(`Started ${character.name} as ${runtime.agentId}`);

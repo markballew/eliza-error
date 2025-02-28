@@ -1,5 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import info from "@/lib/info.json";
 import {
     Sidebar,
     SidebarContent,
@@ -13,21 +11,22 @@ import {
     SidebarMenuItem,
     SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
-import { apiClient } from "@/lib/api";
-import { NavLink, useLocation } from "react-router";
+import { useAgents, useCharacters } from "@/hooks/use-query-hooks";
+import info from "@/lib/info.json";
 import type { UUID } from "@elizaos/core";
-import { Book, Cog, User } from "lucide-react";
+import { Book, Cog, User, Users } from "lucide-react";
+import { NavLink, useLocation } from "react-router";
 import ConnectionStatus from "./connection-status";
 
 export function AppSidebar() {
     const location = useLocation();
-    const query = useQuery({
-        queryKey: ["agents"],
-        queryFn: () => apiClient.getAgents(),
-        refetchInterval: 5_000,
-    });
 
-    const agents = query?.data?.agents;
+    const { data: agentsData, isPending: isAgentsPending  } = useAgents();
+
+    const { data: charactersData } = useCharacters();
+    const characterCount = charactersData?.characters?.length || 0;
+
+
 
     return (
         <Sidebar>
@@ -57,10 +56,35 @@ export function AppSidebar() {
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
+                    <SidebarGroupLabel>
+                        Library
+                    </SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <NavLink to="/characters">
+                                    <SidebarMenuButton
+                                        isActive={location.pathname === "/characters"}
+                                    >
+                                        <Users />
+                                        <span>Characters
+                                        {characterCount > 0 && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                                ({characterCount})
+                            </span>
+                        )}
+                                        </span>
+                                    </SidebarMenuButton>
+                                </NavLink>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+                <SidebarGroup>
                     <SidebarGroupLabel>Agents</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {query?.isPending ? (
+                            {isAgentsPending ? (
                                 <div>
                                     {Array.from({ length: 5 }).map(
                                         (_, _index) => (
@@ -72,7 +96,7 @@ export function AppSidebar() {
                                 </div>
                             ) : (
                                 <div>
-                                    {agents?.map(
+                                    {agentsData?.agents?.map(
                                         (agent: { id: UUID; name: string }) => (
                                             <SidebarMenuItem key={agent.id}>
                                                 <NavLink

@@ -4,7 +4,6 @@ import {
     text,
     index,
     foreignKey,
-    jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { numberTimestamp } from "./types";
@@ -18,28 +17,35 @@ export const relationshipTable = pgTable(
         createdAt: numberTimestamp("createdAt")
             .default(sql`now()`)
             .notNull(),
-        sourceEntityId: uuid("sourceEntityId")
+        userA: uuid("userA")
             .notNull()
             .references(() => entityTable.id),
-        targetEntityId: uuid("targetEntityId")
+        userB: uuid("userB")
             .notNull()
             .references(() => entityTable.id),
         agentId: uuid("agentId")
             .notNull()
             .references(() => agentTable.id),
-        tags: text("tags").array(),
-        metadata: jsonb("metadata"),
+        status: text("status"),
+        userId: uuid("userId")
+            .notNull()
+            .references(() => entityTable.id),
     },
     (table) => [
-        index("idx_relationships_users").on(table.sourceEntityId, table.targetEntityId),
+        index("idx_relationships_users").on(table.userA, table.userB),
         foreignKey({
             name: "fk_user_a",
-            columns: [table.sourceEntityId],
+            columns: [table.userA],
             foreignColumns: [entityTable.id],
         }).onDelete("cascade"),
         foreignKey({
             name: "fk_user_b",
-            columns: [table.targetEntityId],
+            columns: [table.userB],
+            foreignColumns: [entityTable.id],
+        }).onDelete("cascade"),
+        foreignKey({
+            name: "fk_user",
+            columns: [table.userId],
             foreignColumns: [entityTable.id],
         }).onDelete("cascade"),
     ]

@@ -1,7 +1,6 @@
 import {
   Action,
   ChannelType,
-  createUniqueUuid,
   Evaluator,
   type IAgentRuntime,
   initializeOnboardingConfig,
@@ -9,6 +8,7 @@ import {
   type OnboardingConfig,
   Provider,
   RoleName,
+  stringToUuid,
   type UUID
 } from "@elizaos/core";
 import type { Guild } from "discord.js";
@@ -77,8 +77,13 @@ export async function initializeAllSystems(
 
   try {
     for (const server of servers) {
-      const worldId = createUniqueUuid(runtime, server.id);
-      const ownerId = createUniqueUuid(runtime, server.ownerId);
+      const worldId = stringToUuid(`${server.id}-${runtime.agentId}`);
+
+      const ownerId = stringToUuid(
+        `${server.ownerId}-${runtime.agentId}`
+      );
+
+      const tenantSpecificOwnerId = runtime.generateTenantUserId(ownerId);
 
       await runtime.ensureWorldExists({
         id: worldId,
@@ -88,7 +93,7 @@ export async function initializeAllSystems(
         metadata: {
           ownership: server.ownerId ? { ownerId } : undefined,
           roles: {
-            [ownerId]: RoleName.OWNER,
+            [tenantSpecificOwnerId]: RoleName.OWNER,
           },
         }
       });
@@ -146,7 +151,7 @@ export async function startOnboardingDM(
     const randomMessage =
       onboardingMessages[Math.floor(Math.random() * onboardingMessages.length)];
     const msg = await owner.send(randomMessage);
-    const roomId = createUniqueUuid(runtime, msg.channel.id);
+    const roomId = stringToUuid(`${msg.channel.id}-${runtime.agentId}`);
 
     await runtime.ensureRoomExists({
       id: roomId,
@@ -160,13 +165,9 @@ export async function startOnboardingDM(
 
     await runtime.getOrCreateUser(
       runtime.agentId,
-      [runtime.character.name],
-      {
-        default: {
-          name: runtime.character.name,
-          userName: runtime.character.name,
-        },
-      },
+      runtime.character.name,
+      runtime.character.name,
+      "discord"
     );
 
     // Create memory of the initial message

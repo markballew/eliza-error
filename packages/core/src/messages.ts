@@ -1,4 +1,10 @@
-import { type Actor, type Content, type IAgentRuntime, type Memory, type UUID } from "./types.ts";
+import { v4 } from "uuid";
+import { composeContext } from "./context.ts";
+import { generateMessageResponse, generateShouldRespond } from "./generation.ts";
+import { logger } from "./logger.ts";
+import { messageCompletionFooter, shouldRespondFooter } from "./parsing.ts";
+import { ModelClass, type Actor, type Content, type HandlerCallback, type IAgentRuntime, type Memory, type State, type UUID } from "./types.ts";
+import { stringToUuid } from "./uuid.ts";
 export * as actions from "./actions";
 export * as evaluators from "./evaluators";
 export * as providers from "./providers";
@@ -13,33 +19,25 @@ export async function getActorDetails({
   runtime: IAgentRuntime;
   roomId: UUID;
 }) {
-  const room = await runtime.getRoom(roomId);
-  const entities = await runtime.databaseAdapter.getEntitiesForRoom(roomId, runtime.agentId, true);
-  const actors = entities.map(entity => {
-    // join all fields of all component.data together
-    const allData = entity.components.reduce((acc, component) => {
-      return { ...acc, ...component.data };
-    }, {});
-
-    // combine arrays and merge the values of objects
-    const mergedData = Object.entries(allData).reduce((acc, [key, value]) => {
-      if (!acc[key]) {
-        acc[key] = value;
-      } else if (Array.isArray(acc[key]) && Array.isArray(value)) {
-        acc[key] = [...new Set([...acc[key], ...value])];
-      } else if (typeof acc[key] === 'object' && typeof value === 'object') {
-        acc[key] = { ...acc[key], ...value };
+  const participantIds = await runtime.databaseAdapter.getParticipantsForRoom(
+    roomId,
+    runtime.agentId
+  );
+  
+  // Fetch all actor details
+  const actors = await Promise.all(
+    participantIds.map(async (userId) => {
+      const account = await runtime.databaseAdapter.getEntityById(userId, runtime.agentId);
+      if (account) {
+        return {
+          id: account.id,
+          name: account.metadata.name,
+          username: account.metadata.username,
+        };
       }
-      return acc;
-    }, {});
-
-    return {
-      id: entity.id,
-      name: entity.metadata[room.source]?.name || entity.names[0],
-      names: entity.names,
-      data: JSON.stringify(mergedData)
-    };
-  });
+      return null;
+    })
+  );
 
   // Filter out nulls and ensure uniqueness by ID
   const uniqueActors = new Map();
@@ -61,34 +59,11 @@ export async function getActorDetails({
  */
 export function formatActors({ actors }: { actors: Actor[] }) {
   const actorStrings = actors.map((actor: Actor) => {
-    const header = `${actor.name} (${actor.names.join(" aka ")})` + (actor.data && Object.entries(actor.data).length > 0) ? `\nData: ${actor.data}` : "";
+    const header = `${actor.name}`;
     return header;
   });
   const finalActorStrings = actorStrings.join("\n");
   return finalActorStrings;
-}
-
-/**
- * Resolve an actor name to their UUID
- * @param name - Name to resolve
- * @param actors - List of actors to search through
- * @returns UUID if found, throws error if not found or if input is not a valid UUID
- */
-export function resolveActorId(name: string, actors: Actor[]): UUID {
-  // If the name is already a valid UUID, return it
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(name)) {
-    return name as UUID;
-  }
-
-  const actor = actors.find(a => 
-    a.names.some(n => n.toLowerCase() === name.toLowerCase())
-  );
-  
-  if (!actor) {
-    throw new Error(`Could not resolve name "${name}" to a valid UUID`);
-  }
-  
-  return actor.id;
 }
 
 /**

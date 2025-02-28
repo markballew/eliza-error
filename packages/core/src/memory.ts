@@ -70,7 +70,7 @@ export class MemoryManager implements IMemoryManager {
     private transformUserIdIfNeeded(memory: Memory): Memory {
         return {
           ...memory,
-          userId: memory.userId
+          userId: this.runtime.generateTenantUserId(memory.userId)
         };
       }
 
@@ -204,7 +204,7 @@ export class MemoryManager implements IMemoryManager {
      * @param unique Whether to check for similarity before insertion.
      * @returns A Promise that resolves when the operation completes.
      */
-    async createMemory(memory: Memory, unique = false): Promise<UUID> {
+    async createMemory(memory: Memory, unique = false): Promise<void> {
         memory = this.transformUserIdIfNeeded(memory);
 
         if (memory.metadata) {
@@ -248,13 +248,11 @@ export class MemoryManager implements IMemoryManager {
             memory.embedding = await this.runtime.useModel(ModelClass.TEXT_EMBEDDING, null);
         }
 
-        const memoryId = await this.runtime.databaseAdapter.createMemory(
+        await this.runtime.databaseAdapter.createMemory(
             memory,
             this.tableName,
             unique
         );
-
-        return memoryId;
     }
 
     async getMemoriesByRoomIds(params: { roomIds: UUID[], limit?: number; agentId?: UUID }): Promise<Memory[]> {

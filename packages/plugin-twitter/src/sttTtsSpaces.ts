@@ -1,24 +1,24 @@
 // src/plugins/SttTtsPlugin.ts
 
 import {
-    ChannelType,
     type Content,
-    HandlerCallback,
     type IAgentRuntime,
     type Memory,
-    ModelClass,
     type Plugin,
-    createUniqueUuid,
-    logger
+    logger,
+    ModelClass,
+    stringToUuid,
+    ChannelType,
+    HandlerCallback
 } from "@elizaos/core";
-import { spawn } from "node:child_process";
-import { Readable } from "node:stream";
-import type { ClientBase } from "./base";
 import type {
     AudioDataWithUser,
     JanusClient,
     Space,
 } from "./client";
+import { spawn } from "node:child_process";
+import type { ClientBase } from "./base";
+import { Readable } from "node:stream";
 
 interface PluginConfig {
     runtime: IAgentRuntime;
@@ -345,21 +345,17 @@ export class SttTtsPlugin implements Plugin {
 
         // Extract the numeric ID part
         const numericId = userId.replace("tw-", "");
-        const roomId = createUniqueUuid(this.runtime, `twitter_generate_room-${this.spaceId}`);
+        const roomId = stringToUuid(`twitter_generate_room-${this.spaceId}`);
 
         // Create consistent UUID for the user
-        const userUuid = createUniqueUuid(this.runtime, numericId);
+        const userUuid = stringToUuid(`twitter-user-${numericId}`);
 
         // Ensure the user exists in the accounts table
         await this.runtime.getOrCreateUser(
             userUuid,
-            [userId],
-            {
-                twitter: {
-                    name: userId,
-                    userName: userId,
-                },
-            },
+            userId, // Use full Twitter ID as username
+            `Twitter User ${numericId}`,
+            "twitter",
         );
 
         // Ensure room exists and user is in it
@@ -367,7 +363,7 @@ export class SttTtsPlugin implements Plugin {
         await this.runtime.ensureParticipantInRoom(userUuid, roomId);
 
         const memory = {
-            id: createUniqueUuid(this.runtime, `${roomId}-voice-message-${Date.now()}`),
+            id: stringToUuid(`${roomId}-voice-message-${Date.now()}`),
             agentId: this.runtime.agentId,
             content: {
                 text: userText,
@@ -381,7 +377,7 @@ export class SttTtsPlugin implements Plugin {
         const callback: HandlerCallback = async (content: Content, _files: any[] = []) => {
             try {
                 const responseMemory: Memory = {
-                    id: createUniqueUuid(this.runtime, `${memory.id}-voice-response-${Date.now()}`),
+                    id: stringToUuid(`${memory.id}-voice-response-${Date.now()}`),
                     userId: this.runtime.agentId,
                     agentId: this.runtime.agentId,
                     content: {

@@ -6,16 +6,17 @@ dotenv.config({
 
 export const defaultCharacter: Character = {
   name: "Eliza",
+  username: "eliza",
   plugins: [
     "@elizaos/plugin-anthropic",
     "@elizaos/plugin-openai",
     // "@elizaos/plugin-local-ai",
     // "@elizaos/plugin-elevenlabs",
-    // "@elizaos/plugin-discord",
+    "@elizaos/plugin-discord",
     "@elizaos/plugin-node",
     "@elizaos/plugin-sql",
     // "@elizaos/plugin-telegram",
-    "@elizaos/plugin-twitter",
+    // "@elizaos/plugin-twitter",
     // "@elizaos/plugin-evm",
     // "@elizaos/plugin-solana",
   ],

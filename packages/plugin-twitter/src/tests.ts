@@ -4,7 +4,6 @@ import {
   type IAgentRuntime,
   ModelClass,
   stringToUuid,
-  createUniqueUuid,
 } from "@elizaos/core";
 import type { TwitterClient } from "./index.ts";
 import { SearchMode } from "./client/index.ts";
@@ -132,8 +131,9 @@ export class TwitterTestSuite implements TestSuite {
 
   async testPostTweet(runtime: IAgentRuntime) {
     try {
-      const roomId = createUniqueUuid(runtime, 'twitter_mock_room');
-
+      const roomId = stringToUuid(
+        `twitter_mock_room-${this.twitterClient.client.profile.username}`
+      );
       const postClient = this.twitterClient.post;
       const tweetText = await this.generateRandomTweetContent(runtime);
       await postClient.postTweet(
@@ -152,8 +152,9 @@ export class TwitterTestSuite implements TestSuite {
 
   async testPostImageTweet(runtime: IAgentRuntime) {
     try {
-      const roomId = createUniqueUuid(runtime, 'twitter_mock_room');
-
+      const roomId = stringToUuid(
+        `twitter_mock_room-${this.twitterClient.client.profile.username}`
+      );
       const postClient = this.twitterClient.post;
       const tweetText = await this.generateRandomTweetContent(
         runtime,
@@ -208,8 +209,8 @@ export class TwitterTestSuite implements TestSuite {
         message: {
           content: { text: testTweet.text, source: "twitter"  },
           agentId: runtime.agentId,
-          userId: createUniqueUuid(runtime, testTweet.userId),
-          roomId: createUniqueUuid(runtime, testTweet.conversationId),
+          userId: stringToUuid(testTweet.userId),
+          roomId: stringToUuid(testTweet.conversationId),
         },
         thread: [],
       });

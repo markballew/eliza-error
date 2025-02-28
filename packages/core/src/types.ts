@@ -55,17 +55,14 @@ export interface ConversationExample {
  * Represents an actor/participant in a conversation
  */
 export interface Actor {
-  /** Unique identifier */
-  id: UUID;
-
   /** Display name */
   name: string;
 
-  /** All names for the actor */
-  names: string[];
+  /** Username/handle */
+  username: string;
 
-  /** Arbitrary data which can be displayed */
-  data: any;
+  /** Unique identifier */
+  id: UUID;
 }
 
 /**
@@ -479,37 +476,22 @@ export interface Relationship {
   id: UUID;
 
   /** First user ID */
-  sourceEntityId: UUID;
+  userA: UUID;
 
   /** Second user ID */
-  targetEntityId: UUID;
+  userB: UUID;
 
-  /** Agent ID */
-  agentId: UUID;
+  /** Primary user ID */
+  userId: UUID;
 
-  /** Tags for filtering/categorizing relationships */
-  tags: string[];
+  /** Associated room ID */
+  roomId: UUID;
 
-  /** Additional metadata about the relationship */
-  metadata: {
-    [key: string]: any
-  }
+  /** Relationship status */
+  status: string;
 
   /** Optional creation timestamp */
   createdAt?: string;
-}
-
-export interface Component {
-  id: UUID;
-  entityId: UUID;
-  agentId: UUID;
-  roomId: UUID;
-  worldId: UUID;
-  sourceEntityId: UUID;
-  type: string;
-  data: {
-    [key: string]: any;
-  };
 }
 
 /**
@@ -527,9 +509,6 @@ export interface Entity {
 
   /** Agent ID this account is related to, for agents should be themselves */
   agentId: UUID;
-
-  /** Optional array of components */
-  components?: Component[];
 }
 
 /**
@@ -549,9 +528,6 @@ export interface Participant {
 export interface Room {
   /** Unique identifier */
   id: UUID;
-
-  /** Room name */
-  name: string;
 
   /** Room participants */
   participants: Participant[];
@@ -782,32 +758,13 @@ export interface IDatabaseAdapter {
 
   updateAgent(agent: Agent): Promise<boolean>;
 
-  /** Get entity by ID */
+  /** Get account by ID */
   getEntityById(userId: UUID, agentId: UUID): Promise<Entity | null>;
 
-  /** Get entities for room */
-  getEntitiesForRoom(roomId: UUID, agentId: UUID, includeComponents?: boolean): Promise<Entity[]>;
-
-  /** Create new entity */
+  /** Create new account */
   createEntity(entity: Entity): Promise<boolean>;
 
-  /** Update entity */
   updateEntity(entity: Entity): Promise<void>;
-
-  /** Get component by ID */
-  getComponent(entityId: UUID, type: string, worldId?: UUID, sourceEntityId?: UUID): Promise<Component | null>;
-
-  /** Get all components for an entity */
-  getComponents(entityId: UUID, worldId?: UUID, sourceEntityId?: UUID): Promise<Component[]>;
-
-  /** Create component */
-  createComponent(component: Component): Promise<boolean>;
-  
-  /** Update component */
-  updateComponent(component: Component): Promise<void>;
-
-  /** Delete component */
-  deleteComponent(componentId: UUID): Promise<void>;
 
   /** Get memories matching criteria */
   getMemories(params: {
@@ -847,6 +804,8 @@ export interface IDatabaseAdapter {
     type: string;
   }): Promise<void>;
 
+  getActorDetails(params: { roomId: UUID }): Promise<Actor[]>;
+
   updateGoalStatus(params: { goalId: UUID; status: GoalStatus }): Promise<void>;
 
   searchMemories(params: {
@@ -863,7 +822,7 @@ export interface IDatabaseAdapter {
     memory: Memory,
     tableName: string,
     unique?: boolean
-  ): Promise<UUID>;
+  ): Promise<void>;
 
   removeMemory(memoryId: UUID, tableName: string): Promise<void>;
 
@@ -926,8 +885,6 @@ export interface IDatabaseAdapter {
 
   getRoomsForParticipants(userIds: UUID[], agentId: UUID): Promise<UUID[]>;
 
-  getRooms(worldId: UUID): Promise<RoomData[]>;
-  
   addParticipant(userId: UUID, roomId: UUID, agentId: UUID): Promise<boolean>;
 
   removeParticipant(userId: UUID, roomId: UUID, agentId: UUID): Promise<boolean>;
@@ -949,47 +906,15 @@ export interface IDatabaseAdapter {
     state: "FOLLOWED" | "MUTED" | null
   ): Promise<void>;
 
-  /**
-   * Creates a new relationship between two entities.
-   * @param params Object containing the relationship details
-   * @returns Promise resolving to boolean indicating success
-   */
-  createRelationship(params: {
-    sourceEntityId: UUID;
-    targetEntityId: UUID;
-    agentId: UUID;
-    tags?: string[];
-    metadata?: { [key: string]: any };
-  }): Promise<boolean>;
+  createRelationship(params: { userA: UUID; userB: UUID; agentId: UUID }): Promise<boolean>;
 
-  /**
-   * Updates an existing relationship between two entities.
-   * @param relationship The relationship object with updated data
-   * @returns Promise resolving to void
-   */
-  updateRelationship(relationship: Relationship): Promise<void>;
-
-  /**
-   * Retrieves a relationship between two entities if it exists.
-   * @param params Object containing the entity IDs and agent ID
-   * @returns Promise resolving to the Relationship object or null if not found
-   */
   getRelationship(params: {
-    sourceEntityId: UUID;
-    targetEntityId: UUID;
+    userA: UUID;
+    userB: UUID;
     agentId: UUID;
   }): Promise<Relationship | null>;
 
-  /**
-   * Retrieves all relationships for a specific entity.
-   * @param params Object containing the user ID, agent ID and optional tags to filter by
-   * @returns Promise resolving to an array of Relationship objects
-   */
-  getRelationships(params: {
-    userId: UUID;
-    agentId: UUID;
-    tags?: string[];
-  }): Promise<Relationship[]>;
+  getRelationships(params: { userId: UUID; agentId: UUID }): Promise<Relationship[]>;
 
   createCharacter(character: Character): Promise<UUID | void>;
 
@@ -1051,7 +976,7 @@ export interface IMemoryManager {
     limit?: number;
   }): Promise<Memory[]>;
 
-  createMemory(memory: Memory, unique?: boolean): Promise<UUID>;
+  createMemory(memory: Memory, unique?: boolean): Promise<void>;
 
   removeMemory(memoryId: UUID): Promise<void>;
 
@@ -1123,6 +1048,8 @@ export interface IAgentRuntime {
   getClient(name: string): ClientInstance | null;
   getAllClients(): Map<string, ClientInstance>;
 
+  generateTenantUserId(userId: UUID): UUID;
+
   registerClientInterface(name: string, client: Client): void;
   registerClient(name: string, client: ClientInstance): void;
 
@@ -1165,14 +1092,9 @@ export interface IAgentRuntime {
 
   getOrCreateUser(
     userId: UUID,
-    names: string[],
-    metadata: {
-      [source: string]: {
-        name: string;
-        userName: string;
-        [key: string]: unknown;
-      };
-    }
+    userName: string | null,
+    name: string | null,
+    source: string | null
   ): Promise<UUID>;
 
   registerProvider(provider: Provider): void;
@@ -1504,16 +1426,10 @@ export interface TeePluginConfig {
 export interface Task {
   id?: UUID;
   name: string;
-  metadata?: {
-    options?: {
-      name: string;
-      description: string;
-    }[];
-  };
   description: string;
   roomId: UUID;
   tags: string[];
-  handler: (runtime: IAgentRuntime, options: { [key: string]: unknown }) => Promise<void>;
+  handler: (runtime: IAgentRuntime) => Promise<void>;
   validate?: (runtime: IAgentRuntime, message: Memory, state: State) => Promise<boolean>;
 }
 
@@ -1573,50 +1489,4 @@ export interface OnboardingConfig {
   settings: { 
       [key: string]: Omit<OnboardingSetting, 'value'>; 
   };
-}
-
-/**
- * Send a direct message to a user
- * @param runtime The agent runtime instance
- * @param targetEntityId The ID of the user to send the message to
- * @param source The platform/source to send on (e.g. telegram, discord)
- * @param message The message content to send
- * @param worldId The world ID context
- */
-export async function sendDirectMessage(
-  runtime: IAgentRuntime,
-  targetEntityId: UUID,
-  source: string,
-  message: string,
-  worldId: UUID
-): Promise<void> {
-  const client = runtime.getClient(source);
-  if (!client) {
-    throw new Error(`No client found for source: ${source}`);
-  }
-  
-  await client.sendDirectMessage?.(targetEntityId, message, worldId);
-}
-
-/**
- * Send a message to a room
- * @param runtime The agent runtime instance
- * @param roomId The ID of the room to send to
- * @param source The platform/source to send on (e.g. telegram, discord)
- * @param message The message content to send
- * @param worldId The world ID context
- */
-export async function sendRoomMessage(
-  runtime: IAgentRuntime,
-  roomId: UUID,
-  source: string,
-  message: string,
-  worldId: UUID
-): Promise<void> {
-  const client = runtime.getClient(source);
-  if (!client) {
-    throw new Error(`No client found for source: ${source}`);
-  }
-  
-  await client.sendRoomMessage?.(roomId, message, worldId);
 }

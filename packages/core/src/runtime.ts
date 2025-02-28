@@ -16,7 +16,7 @@ import {
   formatEvaluators,
 } from "./evaluators.ts";
 import { generateText } from "./generation.ts";
-import { createUniqueUuid, handlePluginImporting, logger } from "./index.ts";
+import { handlePluginImporting, logger } from "./index.ts";
 import knowledge from "./knowledge.ts";
 import { MemoryManager } from "./memory.ts";
 import { formatActors, formatMessages, getActorDetails } from "./messages.ts";
@@ -49,7 +49,7 @@ import {
   type State,
   type Task,
   type UUID,
-  type WorldData
+  type WorldData,
 } from "./types.ts";
 import { stringToUuid } from "./uuid.ts";
 
@@ -85,7 +85,7 @@ class KnowledgeManager {
   async processCharacterKnowledge(items: string[]) {
     for (const item of items) {
       try {
-        const knowledgeId = createUniqueUuid(this.runtime, item);
+        const knowledgeId = stringToUuid(item);
         if (await this.checkExistingKnowledge(knowledgeId)) {
           continue;
         }
@@ -419,24 +419,28 @@ export class AgentRuntime implements IAgentRuntime {
   async initialize() {
     // First create the agent entity directly
     try {
-      await this.ensureAgentExists();
-
       // No need to transform agent's own ID
       const agentEntity = await this.databaseAdapter.getEntityById(
         this.agentId,
         this.agentId
       );
-
       if (!agentEntity) {
         const created = await this.databaseAdapter.createEntity({
           id: this.agentId,
           agentId: this.agentId,
           names: Array.from(
             new Set(
-              [this.character.name].filter(Boolean)
+              [this.character.name, this.character.username].filter(Boolean)
             )
           ) as string[],
-          metadata: {},
+          metadata: {
+            originalUserId: this.agentId,
+            default: {
+              name: this.character.name || "Agent",
+              username:
+                this.character.username || this.character.name || "Agent",
+            },
+          },
         });
 
         if (!created) {
@@ -455,6 +459,9 @@ export class AgentRuntime implements IAgentRuntime {
       );
       throw error;
     }
+
+    // Continue with agent setup
+    await this.ensureAgentExists();
 
     // Load plugins before trying to access models or services
     if (this.character.plugins) {
@@ -534,7 +541,7 @@ export class AgentRuntime implements IAgentRuntime {
     // Create room for the agent
     try {
       await this.ensureRoomExists({
-        id: this.agentId,
+        id: this.generateTenantUserId(this.agentId),
         name: this.character.name,
         source: "self",
         type: ChannelType.SELF,
@@ -617,6 +624,20 @@ export class AgentRuntime implements IAgentRuntime {
         }
       )
     );
+  }
+
+  generateTenantUserId(baseUserId: UUID): UUID {
+    // If the base user ID is the agent ID, return it directly
+    if (baseUserId === this.agentId) {
+      return this.agentId;
+    }
+
+    // Use a deterministic approach to generate a new UUID based on both IDs
+    // This creates a unique ID for each user+agent combination while still being deterministic
+    const combinedString = `${baseUserId}:${this.agentId}`;
+
+    // Create a namespace UUID (version 5) from the combined string
+    return stringToUuid(combinedString);
   }
 
   async ensureAgentExists() {
@@ -874,50 +895,97 @@ export class AgentRuntime implements IAgentRuntime {
    */
   async getOrCreateUser(
     userId: UUID,
-    names: string[],
-    metadata: {
-      [source: string]: {
-        name: string;
-        userName: string;
-      };
-    }
+    userName: string | null,
+    name: string | null,
+    source: string | null
   ) {
+    // Generate tenant-specific user ID - apply the transformation
+    const tenantSpecificUserId = this.generateTenantUserId(userId);
+
     const account = await this.databaseAdapter.getEntityById(
-      userId,
+      tenantSpecificUserId,
       this.agentId
     );
     if (!account) {
       const created = await this.databaseAdapter.createEntity({
-        id: userId,
+        id: tenantSpecificUserId,
         agentId: this.agentId,
-        names,
-        metadata,
+        names: Array.from(
+          new Set([name, userName].filter(Boolean))
+        ) as string[],
+        metadata: {
+          default: {
+            name: name || "Unknown User",
+            username: userName || "Unknown",
+          },
+          [source]: {
+            name: name || "Unknown User",
+            username: userName || "Unknown",
+          },
+          originalUserId: userId, // Store original ID for reference
+        },
       });
 
       if (!created) {
         logger.error(
-          `Failed to create user ${name} for agent ${this.agentId}.`
+          `Failed to create user ${userName} for agent ${this.agentId}.`
         );
         return null;
       }
 
       logger.success(
-        `User ${name} created successfully for agent ${this.agentId}.`
+        `User ${userName} created successfully for agent ${this.agentId}.`
       );
     }
 
-    return userId;
+    return tenantSpecificUserId;
   }
 
   async ensureParticipantInRoom(userId: UUID, roomId: UUID) {
+    // Always get the tenant-specific user ID using our helper method
+    const tenantSpecificUserId = this.generateTenantUserId(userId);
+
     // Make sure entity exists in database before adding as participant
     const entity = await this.databaseAdapter.getEntityById(
-      userId,
+      tenantSpecificUserId,
       this.agentId
     );
-    if(!entity) {
-      throw new Error(`User ${userId} not found`);
+    if (!entity) {
+      // get the room by room id
+      const room = await this.databaseAdapter.getRoom(roomId, this.agentId);
+      if (!room) {
+        throw new Error(`Room ${roomId} does not exist`);
+      }
+
+      // get the source of the room
+      const source = room.source;
+
+      // Create entity if it doesn't exist
+      const createdUserId = await this.getOrCreateUser(
+        userId, // Original ID will be transformed inside getOrCreateUser
+        userId === this.agentId
+          ? this.character.username || "Agent"
+          : `User${userId.substring(0, 8)}`,
+        userId === this.agentId
+          ? this.character.name || "Agent"
+          : `User${userId.substring(0, 8)}`,
+        source
+      );
+
+      if (!createdUserId) {
+        throw new Error(`Failed to create entity for user ${userId}`);
+      }
+
+      // Verify the entity was created
+      const createdEntity = await this.databaseAdapter.getEntityById(
+        tenantSpecificUserId,
+        this.agentId
+      );
+      if (!createdEntity) {
+        throw new Error(`Failed to create entity for user ${userId}`);
+      }
     }
+
     // Get current participants
     const participants = await this.databaseAdapter.getParticipantsForRoom(
       roomId,
@@ -925,17 +993,17 @@ export class AgentRuntime implements IAgentRuntime {
     );
 
     // Only add if not already a participant
-    if (!participants.includes(userId)) {
+    if (!participants.includes(tenantSpecificUserId)) {
       // Add participant using the tenant-specific ID that now exists in the entities table
       const added = await this.databaseAdapter.addParticipant(
-        userId,
+        tenantSpecificUserId,
         roomId,
         this.agentId
       );
 
       if (!added) {
         throw new Error(
-          `Failed to add participant ${userId} to room ${roomId}`
+          `Failed to add participant ${tenantSpecificUserId} to room ${roomId}`
         );
       }
 
@@ -945,7 +1013,7 @@ export class AgentRuntime implements IAgentRuntime {
         );
       } else {
         logger.log(
-          `User ${userId} linked to room ${roomId} successfully.`
+          `User ${tenantSpecificUserId} linked to room ${roomId} successfully.`
         );
       }
     }
@@ -977,22 +1045,15 @@ export class AgentRuntime implements IAgentRuntime {
     }
 
     if (!worldId && serverId) {
-      worldId = createUniqueUuid(this, serverId);
+      worldId = stringToUuid(`${serverId}-${this.agentId}`);
     }
-
-    const names = [userScreenName, userName]
-    const metadata = {
-      [source]: {
-        name: userScreenName,
-        userName: userName,
-      },
-    };
 
     // Get tenant-specific user ID and ensure the user exists
     const tenantSpecificUserId = await this.getOrCreateUser(
       userId,
-      names,
-      metadata,
+      userName ?? `User${userId}`,
+      userScreenName ?? `User${userId}`,
+      source
     );
 
     if (!tenantSpecificUserId) {
@@ -1137,6 +1198,12 @@ export class AgentRuntime implements IAgentRuntime {
     message: Memory,
     additionalKeys: { [key: string]: unknown } = {}
   ) {
+    // Convert user ID to tenant-specific ID if needed
+    const tenantSpecificUserId =
+      message.userId === this.agentId
+        ? message.userId
+        : this.generateTenantUserId(message.userId);
+
     const { roomId } = message;
 
     const conversationLength = this.getConversationLength();
@@ -1164,7 +1231,7 @@ export class AgentRuntime implements IAgentRuntime {
     });
 
     const senderName = actorsData?.find(
-      (actor: Actor) => actor.id === message.userId
+      (actor: Actor) => actor.id === tenantSpecificUserId
     )?.name;
 
     // TODO: We may wish to consolidate and just accept character.name here instead of the actor name
@@ -1250,12 +1317,16 @@ export class AgentRuntime implements IAgentRuntime {
           .join("\n\n");
 
     const getRecentInteractions = async (
-      sourceEntityId: UUID,
-      targetEntityId: UUID
+      userA: UUID,
+      userB: UUID
     ): Promise<Memory[]> => {
-      // Find all rooms where sourceEntityId and targetEntityId are participants
+      // Convert to tenant-specific ID if needed
+      const tenantUserA =
+        userA === this.agentId ? userA : this.generateTenantUserId(userA);
+
+      // Find all rooms where userA and userB are participants
       const rooms = await this.databaseAdapter.getRoomsForParticipants(
-        [sourceEntityId, targetEntityId],
+        [tenantUserA, userB],
         this.agentId
       );
 
@@ -1349,7 +1420,7 @@ export class AgentRuntime implements IAgentRuntime {
               Math.floor(Math.random() * this.character.adjectives.length)
             ]
           : "",
-      knowledge: addHeader("# Knowledge", formattedKnowledge),
+      knowledge: formattedKnowledge,
       knowledgeData: knowledgeData,
       // Recent interactions between the sender and receiver, formatted as messages
       recentMessageInteractions: formattedMessageInteractions,
@@ -1425,7 +1496,7 @@ export class AgentRuntime implements IAgentRuntime {
 
       // Agent runtime stuff
       senderName,
-      actors: actors && actors.length > 0 ? addHeader("# Actors in the Room", actors) : "",
+      actors: actors && actors.length > 0 ? addHeader("# Actors", actors) : "",
       actorsData,
       roomId,
       recentMessages:
@@ -1639,9 +1710,7 @@ export class AgentRuntime implements IAgentRuntime {
     if (!model) {
       throw new Error(`No handler found for delegate type: ${modelClass}`);
     }
-
-    const response = await model(this, params);
-    return response;
+    return await model(this, params);
   }
 
   registerEvent(event: string, handler: (params: any) => void) {

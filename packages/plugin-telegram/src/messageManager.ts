@@ -1,7 +1,6 @@
 import {
     ChannelType,
     type Content,
-    createUniqueUuid,
     type HandlerCallback,
     type IAgentRuntime,
     logger,
@@ -9,6 +8,7 @@ import {
     type Memory,
     ModelClass,
     RoleName,
+    stringToUuid,
     type UUID
 } from "@elizaos/core";
 import type { Chat, Message, ReactionType, Update } from "@telegraf/types";
@@ -226,13 +226,15 @@ export class MessageManager {
 
         try {
             // Convert IDs to UUIDs
-            const userId = createUniqueUuid(this.runtime, ctx.from.id.toString()) as UUID;
+            const userId = stringToUuid(ctx.from.id.toString()) as UUID;
             const userName = ctx.from.username || ctx.from.first_name || "Unknown User";
-            const chatId = createUniqueUuid(this.runtime, ctx.chat?.id.toString());
+            const chatId = stringToUuid(`${ctx.chat?.id.toString()}-${this.runtime.agentId}`) as UUID;
             const roomId = chatId;
 
             // Get message ID
-            const messageId = createUniqueUuid(this.runtime, message?.message_id?.toString());
+            const messageId = stringToUuid(
+                `${roomId}-${message?.message_id?.toString()}`
+            ) as UUID;
 
             // Handle images
             const imageInfo = await this.processImage(message);
@@ -262,7 +264,7 @@ export class MessageManager {
                     userName: userName,
                     // Safely access reply_to_message with type guard
                     inReplyTo: 'reply_to_message' in message && message.reply_to_message ? 
-                    createUniqueUuid(this.runtime, message.reply_to_message.message_id.toString()) : 
+                        stringToUuid(`${message.reply_to_message.message_id.toString()}-${this.runtime.agentId}`) : 
                         undefined
                 },
                 createdAt: message.date * 1000
@@ -310,10 +312,10 @@ export class MessageManager {
 
             // TODO: chat.id is probably used incorrectly here and needs to be fixed
             const channelType = getChannelType(chat);
-            const worldId = createUniqueUuid(this.runtime, chat.id.toString());
+            const worldId = stringToUuid(`${chat.id.toString()}-${this.runtime.agentId}`) as UUID;
             const room = {id: roomId, name: roomName, source: "telegram", type: channelType, channelId: ctx.chat.id.toString(), serverId: ctx.chat.id.toString(), worldId: worldId}
             // TODO: chat.id is probably used incorrectly here and needs to be fixed
-              const ownerId = chat.id; // this might be wrong
+            const tenantSpecificOwnerId = this.runtime.generateTenantUserId(stringToUuid(chat.id.toString()));
             if (channelType === ChannelType.GROUP) {
                 // if the type is a group, we need to get the world id from the supergroup/channel id
                 await this.runtime.ensureWorldExists({
@@ -325,7 +327,7 @@ export class MessageManager {
                         ownership: chat.type === 'supergroup' ? { ownerId: chat.id.toString() } : undefined,
                         roles: {
                             // TODO: chat.id is probably wrong key for this
-                            [ownerId]: RoleName.OWNER,
+                            [tenantSpecificOwnerId]: RoleName.OWNER,
                         },
                     }
                 });
@@ -347,7 +349,7 @@ export class MessageManager {
                         const isLastMessage = i === sentMessages.length - 1;
 
                         const responseMemory: Memory = {
-                            id: createUniqueUuid(this.runtime, sentMessage.message_id.toString()),
+                            id: stringToUuid(`${roomId}-${sentMessage.message_id.toString()}`),
                             userId: this.runtime.agentId,
                             agentId: this.runtime.agentId,
                             roomId,
@@ -394,10 +396,9 @@ export class MessageManager {
         const reactionEmoji = (reaction.new_reaction[0] as ReactionType).type;
 
         try {
-            const userId = createUniqueUuid(this.runtime, ctx.from.id.toString()) as UUID;
-            const roomId = createUniqueUuid(this.runtime, ctx.chat.id.toString());
-
-            const reactionId = createUniqueUuid(this.runtime, `${reaction.message_id}-${ctx.from.id}-${Date.now()}`);
+            const userId = stringToUuid(ctx.from.id.toString());
+            const roomId = stringToUuid(`${ctx.chat.id.toString()}-${this.runtime.agentId}`);
+            const reactionId = stringToUuid(`${reaction.message_id}-${ctx.from.id}-${Date.now()}-${this.runtime.agentId}`);
             
             // Create reaction memory
             const memory: Memory = {
@@ -410,7 +411,7 @@ export class MessageManager {
                     source: "telegram",
                     name: ctx.from.first_name,
                     userName: ctx.from.username,
-                    inReplyTo: createUniqueUuid(this.runtime, reaction.message_id.toString())
+                    inReplyTo: stringToUuid(`${reaction.message_id.toString()}-${this.runtime.agentId}`)
                 },
                 createdAt: Date.now()
             };
@@ -421,7 +422,7 @@ export class MessageManager {
                 try {
                     const sentMessage = await ctx.reply(content.text);
                     const responseMemory: Memory = {
-                        id: createUniqueUuid(this.runtime, sentMessage.message_id.toString()),
+                        id: stringToUuid(`${roomId}-${sentMessage.message_id.toString()}`),
                         userId: this.runtime.agentId,
                         agentId: this.runtime.agentId,
                         roomId,

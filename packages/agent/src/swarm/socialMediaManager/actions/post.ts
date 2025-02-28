@@ -9,10 +9,11 @@ import {
   RoleName,
   type State,
   composeContext,
-  createUniqueUuid,
   generateText,
   getWorldSettings,
-  logger
+  logger,
+  normalizeUserId,
+  stringToUuid
 } from "@elizaos/core";
 
 /**
@@ -24,15 +25,18 @@ export async function getUserServerRole(
   serverId: string
 ): Promise<RoleName> {
   try {
-    const worldId = createUniqueUuid(this.runtime, serverId);
+    const worldId = stringToUuid(`${serverId}-${runtime.agentId}`);
     const world = await runtime.getWorld(worldId);
 
     if (!world || !world.metadata?.roles) {
       return RoleName.NONE;
     }
 
-    if (world.metadata.roles[userId]?.role) {
-      return world.metadata.roles[userId].role as RoleName;
+    // Check both formats (UUID and original ID)
+    const normalizedUserId = normalizeUserId(userId);
+
+    if (world.metadata.roles[normalizedUserId]?.role) {
+      return world.metadata.roles[normalizedUserId].role as RoleName;
     }
 
     // Also check original ID format
@@ -241,7 +245,7 @@ const twitterPostAction: Action = {
       // Check if there are any pending Twitter posts awaiting confirmation
       const pendingTasks = runtime.getTasks({
         roomId: message.roomId,
-        tags: ["TWITTER_POST"],
+        tags: ["AWAITING_CONFIRMATION", "TWITTER_POST"],
       });
 
       if (pendingTasks && pendingTasks.length > 0) {
@@ -262,38 +266,8 @@ const twitterPostAction: Action = {
         roomId: message.roomId,
         name: "Confirm Twitter Post",
         description: "Confirm the tweet to be posted.",
-        tags: ["TWITTER_POST", "AWAITING_CHOICE"],
-        metadata: {
-          options: [
-            {
-              name: "post",
-              description: "Post the tweet to Twitter",
-            },
-            {
-              name: "cancel",
-              description: "Cancel the tweet and don't post it",
-            },
-          ],
-        },
-        handler: async (runtime: IAgentRuntime, options: { option: string }) => {
-          if (options.option === "cancel") {
-            await callback({
-              ...responseContent,
-              text: "Tweet cancelled. I won't post it.",
-              action: "TWITTER_POST_CANCELLED"
-            });
-            return;
-          }
-
-          if(options.option !== "post") {
-            await callback({
-              ...responseContent,
-              text: "Invalid option. Should be 'post' or 'cancel'.",
-              action: "TWITTER_POST_INVALID_OPTION"
-            });
-            return;
-          }
-          
+        tags: ["TWITTER_POST", "AWAITING_CONFIRMATION"],
+        handler: async (runtime: IAgentRuntime) => {
           const vals = {
             TWITTER_USERNAME: worldSettings.TWITTER_USERNAME.value,
             TWITTER_EMAIL: worldSettings.TWITTER_EMAIL.value,

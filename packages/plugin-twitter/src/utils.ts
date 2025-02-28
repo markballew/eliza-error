@@ -1,11 +1,13 @@
+import type { Tweet } from "./client";
+import { Content, IAgentRuntime, Memory, ModelClass, UUID, composeContext } from "@elizaos/core";
+import { ChannelType, generateText, stringToUuid } from "@elizaos/core";
+import type { ClientBase } from "./base";
+import { logger } from "@elizaos/core";
 import type { Media, State } from "@elizaos/core";
-import { ChannelType, Content, IAgentRuntime, Memory, ModelClass, UUID, composeContext, createUniqueUuid, generateText, logger } from "@elizaos/core";
 import fs from "node:fs";
 import path from "node:path";
-import type { ClientBase } from "./base";
-import type { Tweet } from "./client";
-import { SttTtsPlugin } from "./sttTtsSpaces";
 import type { ActionResponse, MediaData } from "./types";
+import { SttTtsPlugin } from "./sttTtsSpaces";
 
 export const wait = (minTime = 1000, maxTime = 3000) => {
     const waitTime =
@@ -56,11 +58,13 @@ export async function buildConversationThread(
 
         // Handle memory storage
         const memory = await client.runtime.messageManager.getMemoryById(
-            createUniqueUuid(this.runtime, currentTweet.id)
+            stringToUuid(`${currentTweet.id}-${client.runtime.agentId}`)
         );
         if (!memory) {
-            const roomId = createUniqueUuid(this.runtime, currentTweet.conversationId);
-            const userId = createUniqueUuid(this.runtime, currentTweet.userId);
+            const roomId = stringToUuid(
+                `${currentTweet.conversationId}-${client.runtime.agentId}`
+            );
+            const userId = stringToUuid(currentTweet.userId);
 
             await client.runtime.ensureConnection({
                 userId,
@@ -72,7 +76,9 @@ export async function buildConversationThread(
             });
 
             await client.runtime.messageManager.createMemory({
-                id: createUniqueUuid(this.runtime, currentTweet.id),
+                id: stringToUuid(
+                    `${currentTweet.id}-${client.runtime.agentId}`
+                ),
                 agentId: client.runtime.agentId,
                 content: {
                     text: currentTweet.text,
@@ -80,7 +86,9 @@ export async function buildConversationThread(
                     url: currentTweet.permanentUrl,
                     imageUrls: currentTweet.photos.map((p) => p.url) || [],
                     inReplyTo: currentTweet.inReplyToStatusId
-                        ? createUniqueUuid(this.runtime, currentTweet.inReplyToStatusId)
+                        ? stringToUuid(
+                              `${currentTweet.inReplyToStatusId}-${client.runtime.agentId}`
+                          )
                         : undefined,
                 },
                 createdAt: currentTweet.timestamp * 1000,
@@ -88,7 +96,7 @@ export async function buildConversationThread(
                 userId:
                     currentTweet.userId === client.profile.id
                         ? client.runtime.agentId
-                        : createUniqueUuid(this.runtime, currentTweet.userId),
+                        : stringToUuid(currentTweet.userId),
             });
         }
 
@@ -259,7 +267,7 @@ export async function sendTweet(
     }
 
     const memories: Memory[] = sentTweets.map((tweet) => ({
-        id: createUniqueUuid(client.runtime, tweet.id),
+        id: stringToUuid(`${tweet.id}-${client.runtime.agentId}`),
         agentId: client.runtime.agentId,
         userId: client.runtime.agentId,
         content: {
@@ -269,7 +277,9 @@ export async function sendTweet(
             url: tweet.permanentUrl,
             imageUrls: tweet.photos.map((p) => p.url) || [],
             inReplyTo: tweet.inReplyToStatusId
-                ? createUniqueUuid(client.runtime, tweet.inReplyToStatusId)
+                ? stringToUuid(
+                      `${tweet.inReplyToStatusId}-${client.runtime.agentId}`
+                  )
                 : undefined,
         },
         roomId,

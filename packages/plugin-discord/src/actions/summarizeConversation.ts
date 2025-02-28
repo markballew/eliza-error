@@ -219,6 +219,8 @@ const summarizeAction = {
             return;
         }
 
+        console.log("dateRange", dateRange);
+
         const { objective, start, end } = dateRange;
 
         // 2. get these memories from the database
