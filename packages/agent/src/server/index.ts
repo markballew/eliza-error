@@ -1,9 +1,8 @@
 import {
-  logger,
-  type Character,
-  type IAgentRuntime
+    logger,
+    type Character,
+    type IAgentRuntime
 } from "@elizaos/core";
-import { count } from "drizzle-orm";
 import bodyParser from "body-parser";
 import cors from "cors";
 import express from "express";
@@ -11,6 +10,7 @@ import express from "express";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createApiRouter } from "./api/index.ts";
+import { adapter } from "./database.ts";
 import replyAction from "./reply.ts";
 
 export type ServerMiddleware = (
@@ -26,7 +26,10 @@ export interface ServerOptions {
 export class AgentServer {
     public app: express.Application;
     private agents: Map<string, IAgentRuntime>;
-    private server: any; 
+    public server: any; 
+
+
+    public database: any;
     public startAgent!: (character: Character) => Promise<IAgentRuntime>; 
     public loadCharacterTryPath!: (characterPath: string) => Promise<Character>;
     public jsonToCharacter!: (character: unknown) => Promise<Character>;
@@ -36,7 +39,32 @@ export class AgentServer {
             logger.log("Initializing AgentServer...");
             this.app = express();
             this.agents = new Map();
+            this.database = adapter;
 
+            // Initialize the database
+            this.database.init();
+
+            // Initialize server components - will handle agent disabling
+            this.initializeServer(options);
+        } catch (error) {
+            logger.error("Failed to initialize AgentServer:", error);
+            throw error;
+        }
+    }
+
+    private async initializeServer(options?: ServerOptions) {
+        try {
+            // disable un-registered agents
+            const agents = await this.database.getAgents();
+            for (const agent of agents) {
+                if (!this.agents.has(agent.id)) {
+                    await this.database.updateAgent({
+                        ...agent,
+                        enabled: false
+                    });
+                }
+            }
+            
             // Core middleware setup
             this.app.use(cors());
             this.app.use(bodyParser.json());
@@ -64,7 +92,7 @@ export class AgentServer {
 
             logger.success("AgentServer initialization complete");
         } catch (error) {
-            logger.error("Failed to initialize AgentServer:", error);
+            logger.error("Failed to complete server initialization:", error);
             throw error;
         }
     }
@@ -230,6 +258,7 @@ export class AgentServer {
     public async stop() {
         if (this.server) {
             this.server.close(() => {
+                this.database.stop();
                 logger.success("Server stopped");
             });
         }

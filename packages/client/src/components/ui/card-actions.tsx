@@ -1,6 +1,5 @@
-import React from "react";
-import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
 export type CardActionProps = {
@@ -15,7 +14,7 @@ export type CardActionProps = {
   /**
    * Primary action variant
    */
-  primaryVariant?: "default" | "outline";
+  primaryVariant?: "default" | "outline" | "ghost" | "secondary" ;
   /**
    * Primary action click handler
    */
