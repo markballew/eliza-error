@@ -1,5 +1,5 @@
 import type { Character, Content, IAgentRuntime, Media, Memory } from '@elizaos/core';
-import { ChannelType, composeContext, createUniqueUuid, generateMessageResponse, logger, messageHandlerTemplate, ModelClass, stringToUuid, validateCharacterConfig, validateUuid } from '@elizaos/core';
+import { ChannelType, composeContext, createUniqueUuid, logger, messageHandlerTemplate, ModelClass, parseJSONObjectFromText, stringToUuid, validateCharacterConfig, validateUuid } from '@elizaos/core';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -223,19 +223,20 @@ export function agentRouter(
                 template: messageHandlerTemplate,
             });
 
-            logger.info("[MESSAGE ENDPOINT] Before generateMessageResponse");
+            logger.info("[MESSAGE ENDPOINT] Before useModel");
 
-            const response = await generateMessageResponse({
-                runtime: runtime,
+            const responseText = await runtime.useModel(ModelClass.TEXT_LARGE, {
                 context,
-                modelClass: ModelClass.TEXT_LARGE,
-            });
+              });
+          
+            const response = parseJSONObjectFromText(responseText) as Content;
+              
 
-            logger.info(`[MESSAGE ENDPOINT] After generateMessageResponse, response: ${JSON.stringify(response)}`);
+            logger.info(`[MESSAGE ENDPOINT] After useModel, response: ${JSON.stringify(response)}`);
 
             if (!response) {
                 res.status(500).json({
-                    error: "No response from generateMessageResponse"
+                    error: "No response from useModel"
                 });
                 return;
             }
@@ -717,7 +718,7 @@ export function agentRouter(
             if (!response) {
                 logger.error("[SPEAK] No response received from LLM");
                 res.status(500).send(
-                    "No response from generateMessageResponse"
+                    "No response from useModel"
                 );
                 return;
             }
@@ -845,13 +846,13 @@ export function agentRouter(
             const worldId = req.body.worldId || req.query.worldId as string;
             
             // Get rooms where this agent is a participant
-            const rooms = await runtime.databaseAdapter.getRoomsForParticipant(agentId, runtime.agentId);
+            const rooms = await runtime.databaseAdapter.getRoomsForParticipant(agentId);
             
             // Get details for each room
             const roomDetails = await Promise.all(
                 rooms.map(async (roomId) => {
                     try {
-                        const roomData = await runtime.databaseAdapter.getRoom(roomId, runtime.agentId);
+                        const roomData = await runtime.databaseAdapter.getRoom(roomId);
                         if (!roomData) return null;
                         
                         // Filter by worldId if provided

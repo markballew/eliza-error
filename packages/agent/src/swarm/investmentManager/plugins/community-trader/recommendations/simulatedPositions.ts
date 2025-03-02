@@ -1,22 +1,14 @@
 import {
     Action,
-    composeContext,
-    elizaLogger,
-    generateText,
-    ModelClass,
-    ServiceType,
-    UUID,
     IAgentRuntime,
-    Memory,
-    State,
-    HandlerCallback,
+    logger,
+    Memory
 } from "@elizaos/core";
 import { TrustScoreDatabase } from "../db";
+import { formatFullReport } from "../reports";
 import { TrustScoreManager } from "../scoreManager";
 import { TrustTokenProvider } from "../tokenProvider";
 import { TokenPerformance } from "../types";
-import { formatFullReport } from "../reports";
-import { db as trustDb } from "@ai16z/db";
 
 export const getSimulatedPositions: Action = {
     name: "TRUST_GET_SIMULATED_POSITIONS",
@@ -72,7 +64,7 @@ export const getSimulatedPositions: Action = {
             ]);
 
             if (!user) {
-                elizaLogger.error(
+                logger.error(
                     "No User Found, no recommender score can be generated"
                 );
                 return;
