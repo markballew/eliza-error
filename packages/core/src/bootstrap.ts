@@ -4,7 +4,7 @@ import { followRoomAction } from "./actions/followRoom.ts";
 import { ignoreAction } from "./actions/ignore.ts";
 import { muteRoomAction } from "./actions/muteRoom.ts";
 import { noneAction } from "./actions/none.ts";
-import { selectOptionAction } from "./actions/options.ts";
+import { choiceAction } from "./actions/choice.ts";
 import updateRoleAction from "./actions/roles.ts";
 import { sendMessageAction } from "./actions/sendMessage.ts";
 import updateSettingsAction from "./actions/settings.ts";
@@ -237,13 +237,12 @@ const messageReceivedHandler = async ({
         runtime.character.templates?.messageHandlerTemplate ||
         messageHandlerTemplate,
     });
-    console.log('*** context', context)
+
     const responseContent = await generateMessageResponse({
       runtime: runtime,
       context,
       modelClass: ModelClass.TEXT_LARGE,
     });
-    console.log('*** responseContent', responseContent)
 
     // Check if this is still the latest response ID for this agent+room
     const currentResponseId = agentResponses.get(message.roomId);
@@ -846,7 +845,7 @@ export const bootstrapPlugin: Plugin = {
     unmuteRoomAction,
     sendMessageAction,
     updateEntityAction,
-    selectOptionAction,
+    choiceAction,
     updateRoleAction,
     updateSettingsAction,
   ],
