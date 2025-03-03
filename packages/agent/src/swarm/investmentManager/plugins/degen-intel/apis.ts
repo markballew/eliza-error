@@ -1,6 +1,6 @@
 // TODO: Replace with cache adapter
 
-import { Route, IAgentRuntime, createUniqueUuid, Memory } from "@elizaos/core";
+import { type Route, type IAgentRuntime, createUniqueUuid, type Memory } from "@elizaos/core";
 
 import {
   SentimentArraySchema,
@@ -10,17 +10,17 @@ import {
 import type { IToken } from "./types";
 import type { TransactionHistory, Portfolio, SentimentContent } from "./providers/birdeye";
 
-export const createRoutes = (runtime: IAgentRuntime): Route[] => [
+export const routes: Route[] = [
   {
     type: "POST",
     path: "/trending",
-    handler: async (_req: any, res: any) => {
+    handler: async (_req: any, res: any, runtime) => {
       try {
         const cachedTokens = await runtime.databaseAdapter.getCache<IToken[]>("tokens_solana");
         const tokens: IToken[] = cachedTokens ? cachedTokens : [];
         const sortedTokens = tokens.sort((a, b) => (a.rank || 0) - (b.rank || 0));
         res.json(sortedTokens);
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ error: "Internal server error" });
       }
     },
@@ -28,7 +28,7 @@ export const createRoutes = (runtime: IAgentRuntime): Route[] => [
   {
     type: "POST",
     path: "/wallet",
-    handler: async (_req: any, res: any) => {
+    handler: async (_req: any, res: any, runtime: IAgentRuntime) => {
       try {
         // Get transaction history
         const cachedTxs = await runtime.databaseAdapter.getCache<TransactionHistory[]>("transaction_history");
@@ -43,7 +43,7 @@ export const createRoutes = (runtime: IAgentRuntime): Route[] => [
         const portfolio: Portfolio = cachedPortfolio ? cachedPortfolio : { key: "PORTFOLIO", data: null };
 
         res.json({ history, portfolio: portfolio.data });
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ error: "Internal server error" });
       }
     },
@@ -51,7 +51,7 @@ export const createRoutes = (runtime: IAgentRuntime): Route[] => [
   {
     type: "GET",
     path: "/tweets",
-    handler: async (_req: any, res: any) => {
+    handler: async (_req: any, res: any, runtime: IAgentRuntime) => {
       try {
         const memories = await runtime.messageManager.getMemories({
           roomId: createUniqueUuid(runtime, "twitter-feed"),
@@ -70,7 +70,7 @@ export const createRoutes = (runtime: IAgentRuntime): Route[] => [
 
         const validatedData = TweetArraySchema.parse(tweets);
         res.json(validatedData);
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ error: "Internal server error" });
       }
     },
@@ -78,7 +78,7 @@ export const createRoutes = (runtime: IAgentRuntime): Route[] => [
   {
     type: "GET",
     path: "/sentiment",
-    handler: async (_req: any, res: any) => {
+    handler: async (_req: any, res: any, runtime: IAgentRuntime) => {
       try {
         const memories = await runtime.messageManager.getMemories({
           roomId: createUniqueUuid(runtime, "sentiment-analysis"),
@@ -110,7 +110,7 @@ export const createRoutes = (runtime: IAgentRuntime): Route[] => [
 
         const validatedData = SentimentArraySchema.parse(sentiments);
         res.json(validatedData);
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ error: "Internal server error" });
       }
     },
@@ -118,16 +118,16 @@ export const createRoutes = (runtime: IAgentRuntime): Route[] => [
   {
     type: "POST",
     path: "/signal",
-    handler: async (_req: any, res: any) => {
+    handler: async (_req: any, res: any, runtime: IAgentRuntime) => {
       try {
         const cachedSignal = await runtime.databaseAdapter.getCache<any>("BUY_SIGNAL");
         const signal = cachedSignal ? cachedSignal : {};
         res.json(signal?.data || {});
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({ error: "Internal server error" });
       }
     },
   }
 ];
 
-export default createRoutes;
+export default routes;

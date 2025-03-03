@@ -426,6 +426,8 @@ export interface Evaluator {
  * Provider for external data/services
  */
 export interface Provider {
+  /** Provider name */
+  name: string;
   /** Data retrieval function */
   get: (runtime: IAgentRuntime, message: Memory, state?: State) => Promise<any>;
 }
@@ -586,7 +588,7 @@ export type Route = {
   type: "GET" | "POST" | "PUT" | "DELETE";
   path: string;
   // TODO: give me strong types
-  handler: (req: any, res: any) => Promise<void>;
+  handler: (req: any, res: any, runtime: IAgentRuntime) => Promise<void>;
 };
 
 /**
@@ -727,8 +729,6 @@ export interface IDatabaseAdapter {
   createAgent(agent: Partial<Agent>): Promise<boolean>;
 
   updateAgent(agentId: UUID, agent: Partial<Agent>): Promise<boolean>;
-
-  toggleAgent(agentId: UUID, enabled: boolean): Promise<boolean>;
 
   deleteAgent(agentId: UUID): Promise<boolean>;
 
