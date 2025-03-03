@@ -705,10 +705,10 @@ export interface Character {
   };
 }
 
-export interface Agent {
-  id: UUID;
-  characterId: UUID;
+export interface Agent extends Character {
   enabled: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /**
@@ -729,13 +729,17 @@ export interface IDatabaseAdapter {
   /** Get all agents */
   getAgents(): Promise<Agent[]>;
 
-  createAgent(agent: Agent): Promise<boolean>;
+  createAgent(agent: Partial<Agent>): Promise<boolean>;
 
-  updateAgent(agent: Agent): Promise<boolean>;
+  updateAgent(agentId: UUID, agent: Partial<Agent>): Promise<boolean>;
 
   toggleAgent(agentId: UUID, enabled: boolean): Promise<boolean>;
 
   deleteAgent(agentId: UUID): Promise<boolean>;
+
+  ensureAgentExists(agent: Partial<Agent>): Promise<void>;
+
+  ensureEmbeddingDimension(dimension: number): Promise<void>;
 
   /** Get entity by ID */
   getEntityById(userId: UUID): Promise<Entity | null>;
@@ -1157,11 +1161,7 @@ export interface IAgentRuntime {
 
   stop(): Promise<void>;
 
-  ensureAgentExists(): Promise<void>;
-
   ensureEmbeddingDimension(): Promise<void>;
-
-  ensureCharacterExists(character: Character): Promise<void>;
 }
 
 export enum LoggingLevel {
