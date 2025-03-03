@@ -478,6 +478,13 @@ export abstract class DatabaseAdapter<DB = unknown> implements IDatabaseAdapter 
      */
     abstract deleteAgent(agentId: UUID): Promise<boolean>;
 
+    /**
+     * Toggle an agent's enabled status
+     * @param agentId UUID of the agent to toggle
+     * @param enabled New enabled status
+     * @returns Promise resolving to true if successful
+     */
+    abstract toggleAgent(agentId: UUID, enabled: boolean): Promise<boolean>;
     
     /**
      * Ensures an agent exists in the database.
@@ -498,7 +505,7 @@ export abstract class DatabaseAdapter<DB = unknown> implements IDatabaseAdapter 
      * @param key The key to look up in the cache
      * @returns Promise resolving to the cached string value
      */
-    abstract getCache(key: string): Promise<string | undefined>;
+    abstract getCache<T>(key: string): Promise<T | undefined>;
 
     /**
      * Sets a value in the cache with the given key.
@@ -507,7 +514,7 @@ export abstract class DatabaseAdapter<DB = unknown> implements IDatabaseAdapter 
      * @param value The string value to cache
      * @returns Promise resolving to true if the cache was set successfully
      */
-    abstract setCache(key: string, value: string): Promise<boolean>;
+    abstract setCache<T>(key: string, value: T): Promise<boolean>;
 
     /**
      * Deletes a value from the cache by key.

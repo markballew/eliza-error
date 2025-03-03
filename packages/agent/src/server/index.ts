@@ -1,6 +1,5 @@
 import {
     logger,
-    type UUID,
     type Character,
     type IAgentRuntime
 } from "@elizaos/core";
@@ -26,7 +25,7 @@ export interface ServerOptions {
 
 export class AgentServer {
     public app: express.Application;
-    private agents: Map<UUID, IAgentRuntime>;
+    private agents: Map<string, IAgentRuntime>;
     public server: any; 
 
 
@@ -55,8 +54,14 @@ export class AgentServer {
 
     private async initializeServer(options?: ServerOptions) {
         try {
+            // disable un-registered agents
+            const agents = await this.database.getAgents();
+            for (const agent of agents) {
+                if (!this.agents.has(agent.id)) {
+                    await this.database.toggleAgent(agent.id, false);
+                }
+            }
             
-        
             // Core middleware setup
             this.app.use(cors());
             this.app.use(bodyParser.json());
@@ -161,18 +166,28 @@ export class AgentServer {
         }
     }
 
-    public unregisterAgent(agentId: UUID) {
-        if (!agentId) {
+    public unregisterAgent(runtime: IAgentRuntime) {
+        if (!runtime || !runtime.agentId) {
             logger.warn("[AGENT UNREGISTER] Attempted to unregister undefined or invalid agent runtime");
             return;
         }
 
-        try {
-            this.agents.delete(agentId);
-            logger.debug(`Agent ${agentId} removed from agents map`);
-        } catch (error) {
-            logger.error(`Error removing agent ${agentId}:`, error);
+        const agentName = runtime.character?.name || 'Unknown';
+        const agentId = runtime.agentId;
+        
+        logger.debug(`[AGENT UNREGISTER] Removing agent ${agentName} (${agentId}) from agents map`);
+        const removed = this.agents.delete(runtime.agentId);
+        
+        if (removed) {
+            logger.debug(`[AGENT UNREGISTER] Successfully removed agent ${agentName} (${agentId}) from registry`);
+            logger.debug(`[AGENT UNREGISTER] Updated agent count: ${this.agents.size}`);
+        } else {
+            logger.warn(`[AGENT UNREGISTER] Agent ${agentName} (${agentId}) was not found in the registry`);
         }
+        
+        logger.debug('Agent unregistered', {
+            agent: runtime.agentId,
+        });
     }
 
     public registerMiddleware(middleware: ServerMiddleware) {

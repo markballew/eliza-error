@@ -5,7 +5,6 @@ import {
     DatabaseAdapter,
     type Entity,
     type Goal,
-    type GoalStatus,
     logger,
     type Memory,
     type Participant,
@@ -16,19 +15,6 @@ import {
     type UUID,
     type WorldData
 } from "@elizaos/core";
-
-// Define the metadata type inline since we can't import it
-type KnowledgeMetadata = {
-    type: string;
-    source?: string;
-    sourceId?: UUID;
-    scope?: string;
-    timestamp?: number;
-    tags?: string[];
-    documentId?: UUID;
-    position?: number;
-};
-
 import {
     and,
     cosineDistance,
@@ -58,6 +44,18 @@ import {
     worldTable
 } from "./schema/index";
 import type { DrizzleOperations } from "./types";
+
+// Define the metadata type inline since we can't import it
+type MemoryMetadata = {
+    type: string;
+    source?: string;
+    sourceId?: UUID;
+    scope?: string;
+    timestamp?: number;
+    tags?: string[];
+    documentId?: UUID;
+    position?: number;
+};
 
 export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations> 
     extends DatabaseAdapter<TDatabase>
@@ -223,6 +221,26 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                 await tx.delete(agentTable).where(eq(agentTable.id, agentId));
             });
             return true;
+        });
+    }
+
+    async toggleAgent(agentId: UUID, enabled: boolean): Promise<boolean> {
+        return this.withDatabase(async () => {
+            try {
+                await this.db
+                    .update(agentTable)
+                    .set({
+                        enabled
+                    })
+                    .where(eq(agentTable.id, agentId));
+                return true;
+            } catch (error) {
+                logger.error("Error updating agent:", {
+                    error: error instanceof Error ? error.message : String(error),
+                    agentId
+                });
+                return false;
+            }
         });
     }
 
@@ -394,7 +412,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
     async updateEntity(entity: Entity): Promise<void> {
         return this.withDatabase(async () => {
             await this.db.update(entityTable).set(entity)
-            .where(and(eq(entityTable.id, entity.id),
+            .where(and(eq(entityTable.id, entity.id as UUID),
              eq(entityTable.agentId, entity.agentId)));
         });
     }
@@ -890,7 +908,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
         });
     }
 
-    async createMemory(memory: Memory & { metadata?: KnowledgeMetadata }, tableName: string): Promise<UUID> {
+    async createMemory(memory: Memory & { metadata?: MemoryMetadata }, tableName: string): Promise<UUID> {
         logger.debug("DrizzleAdapter createMemory:", {
             memoryId: memory.id,
             embeddingLength: memory.embedding?.length,
@@ -1540,7 +1558,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
         });
     }
 
-    async getCache(key: string): Promise<string | undefined> {
+    async getCache<T>(key: string): Promise<T | undefined> {
         return this.withDatabase(async () => {
             try {
                 const result = await this.db
@@ -1553,7 +1571,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                         )
                     );
 
-                return result[0]?.value || undefined;
+                return result[0]?.value as T | undefined;
             } catch (error) {
                 logger.error("Error fetching cache", {
                     error:
@@ -1566,7 +1584,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
         });
     }
 
-    async setCache(key: string, value: string): Promise<boolean> {
+    async setCache<T>(key: string, value: T): Promise<boolean> {
         return this.withDatabase(async () => {
             try {
                 await this.db.transaction(async (tx) => {
@@ -1575,7 +1593,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                         .values({
                             key: key,
                             agentId: this.agentId,
-                            value: sql`${value}::jsonb`,
+                            value: value,
                         })
                         .onConflictDoUpdate({
                             target: [cacheTable.key, cacheTable.agentId],
