@@ -33,22 +33,17 @@ export function agentRouter(
             const allAgents = await db.getAgents();
 
             // find running agents
-            const runtimes = Array.from(agents.keys());
+            const runningAgents = Array.from(agents.keys());
 
             // returns minimal agent data
-            const response = allAgents.map((agent : Agent) => ({
+            const response = allAgents.map((agent) => ({
                 id: agent.id,
                 name: agent.name,
-                status: runtimes.includes(agent.id) ? "active" : "inactive",
+                status: runningAgents.includes(agent.id) ? "active" : "inactive",
                 bio: agent.bio[0],
                 createdAt: agent.createdAt,
                 updatedAt: agent.updatedAt,
-            })).sort((a: Agent, b: Agent) => {
-                if (a.status === b.status) {
-                    return a.name.localeCompare(b.name);
-                }
-                return a.status === "active" ? -1 : 1;
-            });
+            })).sort((a, b) => a.enabled - b.enabled);
 
             res.json({
                 success: true,
@@ -83,8 +78,16 @@ export function agentRouter(
             return;
         }
 
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
+
+
         try {
-            const agent = await db.getAgent(agentId);
+            const agent = await runtime.databaseAdapter.getAgent(agentId);
             if (!agent) {
                 logger.warn("[AGENT GET] Agent not found");
                 res.status(404).json({
@@ -96,8 +99,6 @@ export function agentRouter(
                 });
                 return;
             }
-
-            const runtime = agents.get(agentId);
 
             // check if agent is running
             const status = runtime ? "active" : "inactive";
@@ -178,28 +179,33 @@ export function agentRouter(
             return;
         }
 
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
+
         const updates = req.body;
 
         try {
             // Handle other updates if any
             if (Object.keys(updates).length > 0) {
-                await db.updateAgent(agentId, updates);
+                await runtime.databaseAdapter.updateAgent(agentId, updates);
             }
 
-            const updatedAgent = await db.getAgent(agentId);
+            const updatedAgent = await runtime.databaseAdapter.getAgent(agentId);
                 
-
-            const isActive = !!agents.get(agentId);
-            if (isActive) {
+            if (runtime) {
                 // stop existing runtime
                 server?.unregisterAgent(agentId);
                 // start new runtime
-                await server?.startAgent(updatedAgent);
+                server?.startAgent(updatedAgent);
             }
         
             // check if agent got started successfully
-            const runtime = agents.get(agentId);
-            const status = runtime ? "active" : "inactive";
+            const newRuntime = agents.get(agentId);
+            const status = newRuntime ? "active" : "inactive";
 
             res.json({
                 success: true,
@@ -272,10 +278,16 @@ export function agentRouter(
             return;
         }
 
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
+
         try {
             // Check if agent exists
-            const agent = await db.getAgent(agentId);
-            
+            const agent = await runtime.databaseAdapter.getAgent(agentId);
             if (!agent) {
                 logger.warn("[AGENT START] Agent not found");
                 res.status(404).json({
@@ -288,10 +300,8 @@ export function agentRouter(
                 return;
             }
 
-            const isActive = !!agents.get(agentId);
-
             // Check if agent is already running
-            if (isActive) {
+            if (runtime) {
                 logger.info(`[AGENT START] Agent ${agentId} is already running`);
                 res.json({
                     success: true,
@@ -308,8 +318,8 @@ export function agentRouter(
             await server?.startAgent(agent);
             
             // Verify agent started successfully
-            const runtime = agents.get(agentId);
-            if (!runtime) {
+            const newRuntime = agents.get(agentId);
+            if (!newRuntime) {
                 throw new Error("Failed to start agent");
             }
 
@@ -349,10 +359,14 @@ export function agentRouter(
             return;
         }
 
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
         try {
-            await db.deleteAgent(agentId);
-
-            const runtime = agents.get(agentId);
+            await runtime.databaseAdapter.deleteAgent(agentId);
 
             // if agent is running, stop it
             if (runtime) {
@@ -591,7 +605,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
 
         if (!runtime) {
             res.status(404).json({
@@ -658,7 +677,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
 
         if (!runtime) {
             res.status(404).json({
@@ -722,7 +746,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
 
         if (!runtime) {
             res.status(404).json({
@@ -786,7 +815,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
 
         if (!runtime) {
             res.status(404).json({
@@ -941,8 +975,13 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
-        
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
+
         if (!runtime) {
             res.status(404).json({
                 success: false,
@@ -1014,7 +1053,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
 
         if (!runtime) {
             res.status(404).json({
@@ -1089,8 +1133,13 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
-        
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
+
         if (!runtime) {
             res.status(404).json({
                 success: false,
@@ -1154,7 +1203,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
         
         const roomId = validateUuid(req.params.roomId);
 
@@ -1220,7 +1274,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
         
         const roomId = validateUuid(req.params.roomId);
 
@@ -1282,8 +1341,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
-        
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
         const roomId = validateUuid(req.params.roomId);
 
         if (!agentId || !roomId) {
@@ -1329,7 +1392,12 @@ export function agentRouter(
             return;
         }
 
-        const runtime = agents.get(agentId);
+        let runtime = agents.get(agentId);
+        if (!runtime) {
+            runtime = Array.from(agents.values()).find(
+                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
+            );
+        }
 
         if (!runtime) {
             res.status(404).json({

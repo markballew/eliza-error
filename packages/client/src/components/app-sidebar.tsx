@@ -48,9 +48,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="px-6 py-2 text-sm font-medium text-muted-foreground">
-            <NavLink to={`/`}>
-              AGENTS
-            </NavLink>
+            AGENTS
           </SidebarGroupLabel>
           <SidebarGroupContent className="px-2">
             <SidebarMenu>
