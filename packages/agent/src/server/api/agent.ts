@@ -1,21 +1,15 @@
-import type { Character, Agent, Content, IAgentRuntime, Media, Memory, UUID } from '@elizaos/core';
-import { ChannelType, composeContext, createUniqueUuid, logger, messageHandlerTemplate, ModelClass, parseJSONObjectFromText, stringToUuid, validateCharacterConfig, validateUuid } from '@elizaos/core';
+import type { Agent, Character, Content, IAgentRuntime, Media, Memory, UUID } from '@elizaos/core';
+import { ChannelType, composeContext, createUniqueUuid, logger, messageHandlerTemplate, ModelTypes, parseJSONObjectFromText, validateUuid } from '@elizaos/core';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AgentServer } from '..';
-import { jsonToCharacter, loadCharacter, upload } from '../loader';
+import { upload } from '../loader';
 
 interface ApiError {
     code: string;
     message: string;
     details?: unknown;
-}
-
-interface ApiResponse<T> {
-    success: boolean;
-    data?: T;
-    error?: ApiError;
 }
 
 interface CustomRequest extends express.Request {
@@ -39,17 +33,22 @@ export function agentRouter(
             const allAgents = await db.getAgents();
 
             // find running agents
-            const runningAgents = Array.from(agents.keys());
+            const runtimes = Array.from(agents.keys());
 
             // returns minimal agent data
-            const response = allAgents.map((agent) => ({
+            const response = allAgents.map((agent : Agent) => ({
                 id: agent.id,
                 name: agent.name,
-                status: runningAgents.includes(agent.id) ? "active" : "inactive",
+                status: runtimes.includes(agent.id) ? "active" : "inactive",
                 bio: agent.bio[0],
                 createdAt: agent.createdAt,
                 updatedAt: agent.updatedAt,
-            })).sort((a, b) => a.enabled - b.enabled);
+            })).sort((a: Agent, b: Agent) => {
+                if (a.status === b.status) {
+                    return a.name.localeCompare(b.name);
+                }
+                return a.status === "active" ? -1 : 1;
+            });
 
             res.json({
                 success: true,
@@ -69,11 +68,11 @@ export function agentRouter(
     });
 
 
+
     // Get specific agent details
     router.get('/:agentId', async (req, res) => {
         const agentId = validateUuid(req.params.agentId);
         if (!agentId) {
-            logger.warn("[AGENT GET] Invalid agent ID format");
             res.status(400).json({
                 success: false,
                 error: {
@@ -83,7 +82,6 @@ export function agentRouter(
             });
             return;
         }
-
 
         try {
             const agent = await db.getAgent(agentId);
@@ -99,8 +97,9 @@ export function agentRouter(
                 return;
             }
 
-            // check if agent is running
             const runtime = agents.get(agentId);
+
+            // check if agent is running
             const status = runtime ? "active" : "inactive";
 
             res.json({
@@ -169,7 +168,6 @@ export function agentRouter(
     router.patch('/:agentId', async (req, res) => {
         const agentId = validateUuid(req.params.agentId);
         if (!agentId) {
-            logger.warn("[AGENT UPDATE] Invalid agent ID format");
             res.status(400).json({
                 success: false,
                 error: {
@@ -189,20 +187,19 @@ export function agentRouter(
             }
 
             const updatedAgent = await db.getAgent(agentId);
-            
-            // check if agent is running
-            const runtime = agents.get(agentId);
                 
-            if (runtime) {
+
+            const isActive = !!agents.get(agentId);
+            if (isActive) {
                 // stop existing runtime
                 server?.unregisterAgent(agentId);
                 // start new runtime
-                server?.startAgent(updatedAgent);
+                await server?.startAgent(updatedAgent);
             }
         
             // check if agent got started successfully
-            const newRuntime = agents.get(agentId);
-            const status = newRuntime ? "active" : "inactive";
+            const runtime = agents.get(agentId);
+            const status = runtime ? "active" : "inactive";
 
             res.json({
                 success: true,
@@ -265,7 +262,6 @@ export function agentRouter(
     router.post('/:agentId', async (req, res) => {
         const agentId = validateUuid(req.params.agentId);
         if (!agentId) {
-            logger.warn("[AGENT START] Invalid agent ID format");
             res.status(400).json({
                 success: false,
                 error: {
@@ -279,6 +275,7 @@ export function agentRouter(
         try {
             // Check if agent exists
             const agent = await db.getAgent(agentId);
+            
             if (!agent) {
                 logger.warn("[AGENT START] Agent not found");
                 res.status(404).json({
@@ -291,9 +288,10 @@ export function agentRouter(
                 return;
             }
 
+            const isActive = !!agents.get(agentId);
+
             // Check if agent is already running
-            const runtime = agents.get(agentId);
-            if (runtime) {
+            if (isActive) {
                 logger.info(`[AGENT START] Agent ${agentId} is already running`);
                 res.json({
                     success: true,
@@ -310,8 +308,8 @@ export function agentRouter(
             await server?.startAgent(agent);
             
             // Verify agent started successfully
-            const newRuntime = agents.get(agentId);
-            if (!newRuntime) {
+            const runtime = agents.get(agentId);
+            if (!runtime) {
                 throw new Error("Failed to start agent");
             }
 
@@ -341,7 +339,6 @@ export function agentRouter(
     router.delete('/:agentId', async (req, res) => {
         const agentId = validateUuid(req.params.agentId);
         if (!agentId) {
-            logger.warn("[AGENT DELETE] Invalid agent ID format");
             res.status(400).json({
                 success: false,
                 error: {
@@ -351,11 +348,13 @@ export function agentRouter(
             });
             return;
         }
+
         try {
             await db.deleteAgent(agentId);
 
-            // if agent is running, stop it
             const runtime = agents.get(agentId);
+
+            // if agent is running, stop it
             if (runtime) {
                 server?.unregisterAgent(agentId);
             }
@@ -428,16 +427,22 @@ export function agentRouter(
                 worldId,
             });
 
-            await db.createRelationship({
+            const existingRelationship = await runtime.databaseAdapter.getRelationship({
                 sourceEntityId: userId,
                 targetEntityId: runtime.agentId,
-                agentId: runtime.agentId,
-                tags: ["message_interaction"],
-                metadata: {
+            });
+            
+            if (!existingRelationship && userId !== runtime.agentId) {
+                await runtime.databaseAdapter.createRelationship({
+                    sourceEntityId: userId,
+                    targetEntityId: runtime.agentId,
+                    tags: ["message_interaction"],
+                    metadata: {
                     lastInteraction: Date.now(),
                     channel: "direct"
-                }
-            });
+                    }
+                });
+            }
 
             const messageId = createUniqueUuid(runtime, Date.now().toString());
             const attachments: Media[] = [];
@@ -496,7 +501,7 @@ export function agentRouter(
                 template: messageHandlerTemplate,
             });
 
-            const responseText = await runtime.useModel(ModelClass.TEXT_LARGE, {
+            const responseText = await runtime.useModel(ModelTypes.TEXT_LARGE, {
                 context,
             });
           
@@ -586,12 +591,7 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
+        const runtime = agents.get(agentId);
 
         if (!runtime) {
             res.status(404).json({
@@ -606,7 +606,7 @@ export function agentRouter(
 
         try {
             const audioBuffer = fs.readFileSync(audioFile.path);
-            const transcription = await runtime.useModel(ModelClass.TRANSCRIPTION, audioBuffer);
+            const transcription = await runtime.useModel(ModelTypes.TRANSCRIPTION, audioBuffer);
             
             // Process the transcribed text as a message
             const messageRequest = {
@@ -658,12 +658,7 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
+        const runtime = agents.get(agentId);
 
         if (!runtime) {
             res.status(404).json({
@@ -677,7 +672,7 @@ export function agentRouter(
         }
 
         try {
-            const speechResponse = await runtime.useModel(ModelClass.TEXT_TO_SPEECH, text);
+            const speechResponse = await runtime.useModel(ModelTypes.TEXT_TO_SPEECH, text);
             const audioBuffer = await speechResponse.arrayBuffer();
 
             res.set({
@@ -727,12 +722,7 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
+        const runtime = agents.get(agentId);
 
         if (!runtime) {
             res.status(404).json({
@@ -747,7 +737,7 @@ export function agentRouter(
 
         try {
             logger.info("[SPEECH GENERATE] Using text-to-speech model");
-            const speechResponse = await runtime.useModel(ModelClass.TEXT_TO_SPEECH, text);
+            const speechResponse = await runtime.useModel(ModelTypes.TEXT_TO_SPEECH, text);
             const audioBuffer = await speechResponse.arrayBuffer();
 
             logger.debug("[SPEECH GENERATE] Setting response headers");
@@ -796,12 +786,7 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
+        const runtime = agents.get(agentId);
 
         if (!runtime) {
             res.status(404).json({
@@ -867,7 +852,7 @@ export function agentRouter(
             });
 
             logger.info("[SPEECH CONVERSATION] Using LLM for response");
-            const response = await runtime.useModel(ModelClass.TEXT_LARGE, {
+            const response = await runtime.useModel(ModelTypes.TEXT_LARGE, {
                 messages: [{
                     role: 'system',
                     content: messageHandlerTemplate
@@ -906,7 +891,7 @@ export function agentRouter(
             );
 
             logger.info("[SPEECH CONVERSATION] Generating speech response");
-            const speechResponse = await runtime.useModel(ModelClass.TEXT_TO_SPEECH, response.text);
+            const speechResponse = await runtime.useModel(ModelTypes.TEXT_TO_SPEECH, response.text);
             const audioBuffer = await speechResponse.arrayBuffer();
 
             logger.debug("[SPEECH CONVERSATION] Setting response headers");
@@ -956,13 +941,8 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
-
+        const runtime = agents.get(agentId);
+        
         if (!runtime) {
             res.status(404).json({
                 success: false,
@@ -979,7 +959,7 @@ export function agentRouter(
             const audioBuffer = fs.readFileSync(audioFile.path);
             
             logger.info("[TRANSCRIPTION] Transcribing audio");
-            const transcription = await runtime.useModel(ModelClass.TRANSCRIPTION, audioBuffer);
+            const transcription = await runtime.useModel(ModelTypes.TRANSCRIPTION, audioBuffer);
             
             // Clean up the temporary file
             fs.unlinkSync(audioFile.path);
@@ -1034,12 +1014,7 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
+        const runtime = agents.get(agentId);
 
         if (!runtime) {
             res.status(404).json({
@@ -1054,19 +1029,19 @@ export function agentRouter(
 
         try {
             const worldId = req.query.worldId as string;
-            const rooms = await db.getRoomsForParticipant(agentId);
+            const rooms = await runtime.databaseAdapter.getRoomsForParticipant(agentId);
             
             const roomDetails = await Promise.all(
                 rooms.map(async (roomId) => {
                     try {
-                        const roomData = await db.getRoom(roomId);
+                        const roomData = await runtime.databaseAdapter.getRoom(roomId);
                         if (!roomData) return null;
                         
                         if (worldId && roomData.worldId !== worldId) {
                             return null;
                         }
                         
-                        const entities = await db.getEntitiesForRoom(roomId, agentId, true);
+                        const entities = await runtime.databaseAdapter.getEntitiesForRoom(roomId, true);
                         
                         return {
                             id: roomId,
@@ -1114,13 +1089,8 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
-
+        const runtime = agents.get(agentId);
+        
         if (!runtime) {
             res.status(404).json({
                 success: false,
@@ -1144,9 +1114,9 @@ export function agentRouter(
                 worldId,
             });
             
-            await db.addParticipant(runtime.agentId, roomName);
+            await runtime.databaseAdapter.addParticipant(runtime.agentId, roomName);
             await runtime.ensureParticipantInRoom(userId, roomId);
-            await db.setParticipantUserState(roomId, userId, agentId, "FOLLOWED");
+            await runtime.databaseAdapter.setParticipantUserState(roomId, userId, "FOLLOWED");
             
             res.status(201).json({
                 success: true,
@@ -1173,6 +1143,19 @@ export function agentRouter(
 
     router.get('/:agentId/rooms/:roomId', async (req, res) => {
         const agentId = validateUuid(req.params.agentId);
+        if (!agentId) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_ID',
+                    message: 'Invalid agent ID format'
+                }
+            });
+            return;
+        }
+
+        const runtime = agents.get(agentId);
+        
         const roomId = validateUuid(req.params.roomId);
 
         if (!agentId || !roomId) {
@@ -1187,7 +1170,7 @@ export function agentRouter(
         }
 
         try {
-            const room = await db.getRoom(roomId);
+            const room = await runtime.databaseAdapter.getRoom(roomId);
             if (!room) {
                 res.status(404).json({
                     success: false,
@@ -1199,7 +1182,7 @@ export function agentRouter(
                 return;
             }
 
-            const entities = await db.getEntitiesForRoom(roomId, agentId, true);
+            const entities = await runtime.databaseAdapter.getEntitiesForRoom(roomId, true);
             
             res.json({
                 success: true,
@@ -1226,6 +1209,19 @@ export function agentRouter(
 
     router.patch('/:agentId/rooms/:roomId', async (req, res) => {
         const agentId = validateUuid(req.params.agentId);
+        if (!agentId) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_ID',
+                    message: 'Invalid agent ID format'
+                }
+            });
+            return;
+        }
+
+        const runtime = agents.get(agentId);
+        
         const roomId = validateUuid(req.params.roomId);
 
         if (!agentId || !roomId) {
@@ -1240,7 +1236,7 @@ export function agentRouter(
         }
 
         try {
-            const room = await db.getRoom(roomId);
+            const room = await runtime.databaseAdapter.getRoom(roomId);
             if (!room) {
                 res.status(404).json({
                     success: false,
@@ -1253,9 +1249,9 @@ export function agentRouter(
             }
 
             const updates = req.body;
-            await db.updateRoom(roomId, updates);
+            await runtime.databaseAdapter.updateRoom({...updates, roomId});
 
-            const updatedRoom = await db.getRoom(roomId);
+            const updatedRoom = await runtime.databaseAdapter.getRoom(roomId);
             res.json({
                 success: true,
                 data: updatedRoom
@@ -1275,6 +1271,19 @@ export function agentRouter(
 
     router.delete('/:agentId/rooms/:roomId', async (req, res) => {
         const agentId = validateUuid(req.params.agentId);
+        if (!agentId) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    code: 'INVALID_ID',
+                    message: 'Invalid agent ID format'
+                }
+            });
+            return;
+        }
+
+        const runtime = agents.get(agentId);
+        
         const roomId = validateUuid(req.params.roomId);
 
         if (!agentId || !roomId) {
@@ -1289,7 +1298,7 @@ export function agentRouter(
         }
 
         try {
-            await db.deleteRoom(roomId);
+            await runtime.databaseAdapter.deleteRoom(roomId);
             res.status(204).send();
         } catch (error) {
             logger.error(`[ROOM DELETE] Error deleting room ${roomId}:`, error);
@@ -1320,12 +1329,7 @@ export function agentRouter(
             return;
         }
 
-        let runtime = agents.get(agentId);
-        if (!runtime) {
-            runtime = Array.from(agents.values()).find(
-                (a) => a.character.name.toLowerCase() === agentId.toLowerCase()
-            );
-        }
+        const runtime = agents.get(agentId);
 
         if (!runtime) {
             res.status(404).json({
@@ -1341,7 +1345,7 @@ export function agentRouter(
         try {
             const limit = req.query.limit ? Number.parseInt(req.query.limit as string, 10) : 20;
             const before = req.query.before ? Number.parseInt(req.query.before as string, 10) : Date.now();
-            const worldId = req.query.worldId as string;
+            const _worldId = req.query.worldId as string;
 
             const memories = await runtime.messageManager.getMemories({
                 roomId,
