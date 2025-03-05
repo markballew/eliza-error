@@ -145,7 +145,7 @@ export const init = new Command()
           title: db,
           value: db
         })),
-        initial: availableDatabases.indexOf("postgres")
+        initial: availableDatabases.indexOf("sqlite")
       })
 
       if (!database) {
@@ -164,15 +164,15 @@ export const init = new Command()
         $schema: "https://elizaos.com/schema.json",
         database: {
           type: database,
-          config: database === "postgres" ? {
-            url: process.env.POSTGRES_URL || ""
+          config: database === "sqlite" ? {
+            path: "./eliza.db"
           } : {
-            path: "../../pglite"
+            url: process.env.DATABASE_URL || ""
           }
         },
         plugins: {
           registry: "https://raw.githubusercontent.com/elizaos-plugins/registry/refs/heads/main/index.json",
-          installed: [`@elizaos/plugin-${database}`, ...selectedPlugins]
+          installed: [`@elizaos/adapter-${database}`, ...selectedPlugins]
         },
         paths: {
           knowledge: "./knowledge"
@@ -214,7 +214,7 @@ export const init = new Command()
       logger.success("Project initialized successfully!")
 
       // Show next steps
-      if (database !== "postgres") {
+      if (database !== "sqlite") {
         logger.info(`\nNext steps:
 1. Update ${chalk.cyan(".env")} with your database credentials
 2. Run ${chalk.cyan("eliza plugins add")} to install additional plugins

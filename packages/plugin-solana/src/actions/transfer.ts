@@ -1,7 +1,7 @@
 import {
     type Action,
     type ActionExample,
-    composeContext,
+    composePrompt,
     type Content,
     type HandlerCallback,
     type IAgentRuntime,
@@ -115,16 +115,16 @@ export default {
         if (!currentState) {
             currentState = (await runtime.composeState(message)) as State;
         } else {
-            currentState = await runtime.updateRecentMessageState(currentState);
+            state = await runtime.composeState(message, {}, ["RECENT_MEMORIES"]);
         }
 
-        const transferContext = composeContext({
+        const transferPrompt = composePrompt({
             state: currentState,
             template: transferTemplate,
         });
 
         const result = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-            context: transferContext,
+            prompt: transferPrompt,
         });
 
         const content = parseJSONObjectFromText(result);
@@ -259,31 +259,31 @@ export default {
     examples: [
         [
             {
-                user: '{{user1}}',
+                user: "{{user1}}",
                 content: {
                     text: 'Send 1.5 SOL to 9jW8FPr6BSSsemWPV22UUCzSqkVdTp6HTyPqeqyuBbCa',
                 },
             },
             {
-                user: '{{user2}}',
+                user: "{{user2}}",
                 content: {
                     text: 'Sending SOL now...',
-                    action: 'TRANSFER_SOLANA',
+                    actions: ["TRANSFER_SOLANA"],
                 },
             },
         ],
         [
             {
-                user: '{{user1}}',
+                user: "{{user1}}",
                 content: {
                     text: 'Send 69 $DEGENAI BieefG47jAHCGZBxi2q87RDuHyGZyYC3vAzxpyu8pump to 9jW8FPr6BSSsemWPV22UUCzSqkVdTp6HTyPqeqyuBbCa',
                 },
             },
             {
-                user: '{{user2}}',
+                user: "{{user2}}",
                 content: {
                     text: 'Sending the tokens now...',
-                    action: 'TRANSFER_SOLANA',
+                    actions: ["TRANSFER_SOLANA"],
                 },
             },
         ],

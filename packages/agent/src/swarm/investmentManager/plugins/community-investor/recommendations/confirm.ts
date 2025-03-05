@@ -40,7 +40,7 @@ export const confirmRecommendation: Action = {
                 user: "{{user1}}",
                 content: {
                     text: "<NONE>",
-                    action: "TRUST_CONFIRM_RECOMMENDATION",
+                    actions: ["TRUST_CONFIRM_RECOMMENDATION"],
                 },
             },
         ],
@@ -61,7 +61,7 @@ export const confirmRecommendation: Action = {
                 user: "{{user1}}",
                 content: {
                     text: "<NONE>",
-                    action: "TRUST_CONFIRM_RECOMMENDATION",
+                    actions: ["TRUST_CONFIRM_RECOMMENDATION"],
                 },
             },
         ],
@@ -90,7 +90,7 @@ export const confirmRecommendation: Action = {
                     inReplyTo: message.id
                         ? message.id
                         : undefined,
-                    action: "TRUST_CONFIRM_RECOMMENDATION",
+                    actions: ["TRUST_CONFIRM_RECOMMENDATION"],
                 },
                 userId: message.userId,
                 agentId: message.agentId,
@@ -109,16 +109,7 @@ export const confirmRecommendation: Action = {
             console.log("no registered solana wallet in trading service");
             return;
         }
-
-        ///     if (state) {
-        ///         state = await runtime.updateRecentMessageState(state);
-        ///     } else {
-        ///         console.log(
-        ///             "no state, composing new state, this is very expensive"
-        ///         );
-        ///         state = await runtime.composeState(message);
-        ///     }
-
+        
         const recommendationsManager =
             runtime.getMemoryManager("recommendations")!;
 
@@ -138,7 +129,7 @@ export const confirmRecommendation: Action = {
             JSON.stringify(newUserRecommendations)
         );
 
-        //     const context = composeContext({
+        //     const prompt = composePrompt({
         //         state: {
         //             ...state,
         //             recommendations: formatRecommendations(newUserRecommendations),
@@ -149,7 +140,7 @@ export const confirmRecommendation: Action = {
 
         //     const text = await generateText({
         //         runtime,
-        //         context: context,
+        //         prompt,
         //         modelType: ModelTypes.TEXT_SMALL,
         //         stop: [],
         //     });
@@ -257,7 +248,7 @@ export const confirmRecommendation: Action = {
                                     inReplyTo: message.id
                                         ? message.id
                                         : undefined,
-                                    action: "TRUST_CONFIRM_RECOMMENDATION",
+                                    actions: ["TRUST_CONFIRM_RECOMMENDATION"],
                                 },
                                 userId: user.id,
                                 agentId: message.agentId,

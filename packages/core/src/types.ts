@@ -1,5 +1,3 @@
-import EventEmitter from "node:events";
-
 /**
  * Represents a UUID string in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
  */
@@ -9,11 +7,16 @@ export type UUID = `${string}-${string}-${string}-${string}-${string}`;
  * Represents the content of a message or communication
  */
 export interface Content {
+  thought?: string;
+
   /** The main text content */
   text?: string;
 
   /** Optional action associated with the message */
-  action?: string;
+  actions?: string[];
+
+  /** Optional providers associated with the message */
+  providers?: string[];
 
   /** Optional source/origin of the content */
   source?: string;
@@ -51,23 +54,6 @@ export interface ConversationExample {
 
   /** Content of the conversation */
   content: Content;
-}
-
-/**
- * Represents an actor/participant in a conversation
- */
-export interface Actor {
-  /** Unique identifier */
-  id: UUID;
-
-  /** Display name */
-  name: string;
-
-  /** All names for the actor */
-  names: string[];
-
-  /** Arbitrary data which can be displayed */
-  data: any;
 }
 
 /**
@@ -158,85 +144,15 @@ export const ServiceTypes = {
  * Represents the current state/context of a conversation
  */
 export interface State {
-  /** ID of user who sent current message */
-  userId?: UUID;
-
-  /** ID of agent in conversation */
-  agentId?: UUID;
-
-  /** System prompt */
-  system?: string;
-
-  /** Agent's biography */
-  bio: string;
-
-  /** Message handling directions */
-  messageDirections: string;
-
-  /** Post handling directions */
-  postDirections: string;
-
-  /** Current room/conversation ID */
-  roomId: UUID;
-
-  /** Optional agent name */
-  agentName?: string;
-
-  /** Optional message sender name */
-  senderName?: string;
-
-  /** String representation of conversation actors */
-  actors: string;
-
-  /** Optional array of actor objects */
-  actorsData?: Actor[];
-
-  /** Optional string representation of goals */
-  goals?: string;
-
-  /** Optional array of goal objects */
-  goalsData?: Goal[];
-
-  /** Recent message history as string */
-  recentMessages: string;
-
-  /** Recent message objects */
-  recentMessagesData: Memory[];
-
-  /** Optional valid action names */
-  actionNames?: string;
-
-  /** Optional action descriptions */
-  actions?: string;
-
-  /** Optional action objects */
-  actionsData?: Action[];
-
-  /** Optional action examples */
-  actionExamples?: string;
-
-  /** Optional provider descriptions */
-  providers?: string;
-
-  /** Optional response content */
-  responseData?: Content;
-
-  /** Optional recent interaction objects */
-  recentInteractionsData?: Memory[];
-
-  /** Optional recent interactions string */
-  recentInteractions?: string;
-
-  /** Optional formatted conversation */
-  formattedConversation?: string;
-
-  /** Optional formatted knowledge */
-  knowledge?: string;
-  /** Optional knowledge data */
-  knowledgeData?: KnowledgeItem[];
-
   /** Additional dynamic properties */
-  [key: string]: unknown;
+  [key: string]: any;
+  values?: {
+    [key: string]: any;
+  };
+  data?: {
+    [key: string]: any;
+  };
+  providers?: string;
 }
 
 export type MemoryTypeAlias = string
@@ -391,7 +307,7 @@ export interface Action {
  */
 export interface EvaluationExample {
   /** Evaluation context */
-  context: string;
+  prompt: string;
 
   /** Example messages */
   messages: Array<ActionExample>;
@@ -426,14 +342,38 @@ export interface Evaluator {
   validate: Validator;
 }
 
+export interface ProviderResult {
+  values?: {
+    [key: string]: any;
+  };
+  data?: {
+    [key: string]: any;
+  };
+  text?: string;
+}
+
 /**
  * Provider for external data/services
  */
 export interface Provider {
   /** Provider name */
   name: string;
+  
+  /** Description of the provider */
+  description?: string;
+
+  /** Whether the provider is dynamic */
+  dynamic?: boolean;
+
+  /**
+   * Whether the provider is private
+   * 
+   * Private providers are not displayed in the regular provider list, they have to be called explicitly
+   */
+  private?: boolean;
+
   /** Data retrieval function */
-  get: (runtime: IAgentRuntime, message: Memory, state?: State) => Promise<any>;
+  get: (runtime: IAgentRuntime, message: Memory) => Promise<ProviderResult>;
 }
 
 /**
@@ -555,6 +495,7 @@ export enum ChannelType {
   VOICE_DM = "VOICE_DM",
   VOICE_GROUP = "VOICE_GROUP",
   FEED = "FEED",
+  THREAD = "THREAD",
   WORLD = "WORLD",
   API = "API",
   FORUM = "FORUM",
@@ -563,12 +504,11 @@ export enum ChannelType {
 /**
  * Client instance
  */
-export abstract class Service extends EventEmitter {
+export abstract class Service {
   /** Runtime instance */
   protected runtime!: IAgentRuntime;
 
   constructor(runtime?: IAgentRuntime) {
-    super();
     if (runtime) {
       this.runtime = runtime;
     }
@@ -1017,14 +957,15 @@ export interface IAgentRuntime {
   events: Map<string, ((params: any) => void)[]>;
   fetch?: typeof fetch | null;
   routes: Route[];
-  messageManager: IMemoryManager;
-  descriptionManager: IMemoryManager;
-  documentsManager: IMemoryManager;
-  knowledgeManager: IMemoryManager;
 
   initialize(): Promise<void>;
 
-  registerMemoryManager(manager: IMemoryManager): void;
+  getKnowledge(message: Memory): Promise<KnowledgeItem[]>;
+  addKnowledge(item: KnowledgeItem, options: {
+    targetTokens: number,
+    overlap: number,
+    modelContextSize: number
+}): Promise<void>;
 
   getMemoryManager(tableName: string): IMemoryManager | null;
 
@@ -1063,7 +1004,7 @@ export interface IAgentRuntime {
     state?: State,
     didRespond?: boolean,
     callback?: HandlerCallback
-  ): Promise<string[] | null>;
+  ): Promise<Evaluator[] | null>;
 
   registerProvider(provider: Provider): void;
 
@@ -1114,10 +1055,10 @@ export interface IAgentRuntime {
 
   composeState(
     message: Memory,
-    additionalKeys?: { [key: string]: unknown }
+    additionalKeys?: { [key: string]: unknown },
+    filterList?: string[],
+    includeList?: string[]
   ): Promise<State>;
-
-  updateRecentMessageState(state: State): Promise<State>;
 
   useModel<T = any>(modelType: ModelType | string, params: T): Promise<any>;
   registerModel(
@@ -1173,7 +1114,7 @@ export interface ChunkRow {
 
 export type GenerateTextParams = {
   runtime: IAgentRuntime;
-  context: string;
+  prompt: string;
   modelType: ModelType;
   maxTokens?: number;
   temperature?: number;
@@ -1183,7 +1124,7 @@ export type GenerateTextParams = {
 };
 
 export interface TokenizeTextParams {
-  context: string;
+  prompt: string;
   modelType: ModelType;
 }
 
@@ -1375,8 +1316,8 @@ export interface TaskWorker {
 export interface Task {
   id?: UUID;
   name: string;
+  updatedAt?: number;
   metadata?: {
-    updatedAt?: number;
     updateInterval?: number;
     options?: {
       name: string;

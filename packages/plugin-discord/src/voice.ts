@@ -642,7 +642,7 @@ export class VoiceManager extends EventEmitter {
     ) {
         try {
             if (!message || message.trim() === "" || message.length < 3) {
-                return { text: "", action: "IGNORE" };
+                return { text: "", actions: ["IGNORE"] };
             }
 
             const roomId = createUniqueUuid(this.runtime, channelId);
@@ -694,7 +694,7 @@ export class VoiceManager extends EventEmitter {
                     };
 
                     if (responseMemory.content.text?.trim()) {
-                        await this.runtime.messageManager.createMemory(responseMemory);
+                        await this.runtime.getMemoryManager("messages").createMemory(responseMemory);
 
                         const responseStream = await this.runtime.useModel(ModelTypes.TEXT_TO_SPEECH, content.text);
                         if (responseStream) {

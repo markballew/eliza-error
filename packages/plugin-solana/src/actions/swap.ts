@@ -1,8 +1,8 @@
 import {
     type Action,
     type ActionExample,
-    type Client,
-    composeContext,
+    type Service,
+    composePrompt,
     type HandlerCallback,
     type IAgentRuntime,
     logger,
@@ -17,6 +17,7 @@ import BigNumber from 'bignumber.js';
 import { SOLANA_SERVICE_NAME } from '../constants';
 import { getWalletKey } from '../keypairUtils';
 import type { Item } from '../types';
+import { SolanaService } from '../service';
 
 async function getTokenDecimals(connection: Connection, mintAddress: string): Promise<number> {
     const mintPublicKey = new PublicKey(mintAddress);
@@ -111,7 +112,7 @@ async function getTokenFromWallet(
     tokenSymbol: string,
 ): Promise<string | null> {
     try {
-        const solanaClient = runtime.getService(SOLANA_SERVICE_NAME) as Client;
+        const solanaClient = runtime.getService(SOLANA_SERVICE_NAME) as SolanaService;
         if (!solanaClient) {
             throw new Error('SolanaService not initialized');
         }
@@ -186,10 +187,10 @@ export const executeSwap: Action = {
             if (!state) {
                 state = await runtime.composeState(message);
             } else {
-                state = await runtime.updateRecentMessageState(state);
+                state = await runtime.composeState(message, {}, ["RECENT_MEMORIES"]);
             }
 
-            const solanaClient = runtime.getService(SOLANA_SERVICE_NAME) as Client;
+            const solanaClient = runtime.getService(SOLANA_SERVICE_NAME) as SolanaService;
             if (!solanaClient) {
                 throw new Error('SolanaService not initialized');
             }
@@ -197,13 +198,13 @@ export const executeSwap: Action = {
             const walletData = await solanaClient.getCachedData();
             state.walletInfo = walletData;
 
-            const swapContext = composeContext({
+            const swapPrompt = composePrompt({
                 state,
                 template: swapTemplate,
             });
 
             const result = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-                context: swapContext,
+                prompt: swapPrompt,
             });
 
             const response = parseJSONObjectFromText(result);
@@ -305,16 +306,16 @@ export const executeSwap: Action = {
     examples: [
         [
             {
-                user: '{{user1}}',
+                user: "{{user1}}",
                 content: {
                     text: 'Swap 0.1 SOL for USDC',
                 },
             },
             {
-                user: '{{user2}}',
+                user: "{{user2}}",
                 content: {
                     text: "I'll help you swap 0.1 SOL for USDC",
-                    action: 'SWAP_SOLANA',
+                    actions: ["SWAP_SOLANA"],
                 },
             },
         ],

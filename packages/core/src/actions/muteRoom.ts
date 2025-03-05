@@ -1,6 +1,6 @@
-import { composeContext } from "../context";
+import { composePrompt } from "../prompts";
 import logger from "../logger";
-import { booleanFooter } from "../parsing";
+import { booleanFooter } from "../prompts";
 import { type Action, type ActionExample, type HandlerCallback, type IAgentRuntime, type Memory, ModelTypes, type State } from "../types";
 
 export const shouldMuteTemplate =
@@ -39,14 +39,14 @@ export const muteRoomAction: Action = {
     },
     handler: async (runtime: IAgentRuntime, message: Memory, state?: State, _options?: { [key: string]: unknown; }, callback?: HandlerCallback, responses?: Memory[] ) => {
         async function _shouldMute(state: State): Promise<boolean> {
-            const shouldMuteContext = composeContext({
+            const shouldMutePrompt = composePrompt({
                 state,
                 template: shouldMuteTemplate, // Define this template separately
             });
 
             const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
                 runtime,
-                context: shouldMuteContext,
+                prompt: shouldMutePrompt,
                 stopSequences: ["\n"],
             });
             
@@ -81,13 +81,12 @@ export const muteRoomAction: Action = {
             await runtime.databaseAdapter.setParticipantUserState(
                 message.roomId,
                 runtime.agentId,
-                runtime.agentId,
                 "MUTED"
             );
         }
 
         for (const response of responses) {
-            await callback?.({...response.content, action: "MUTE_ROOM"});
+            await callback?.({...response.content, actions: ["MUTE_ROOM"]});
         }
     },
     examples: [
@@ -102,7 +101,7 @@ export const muteRoomAction: Action = {
                 user: "{{user3}}",
                 content: {
                     text: "Got it",
-                    action: "MUTE_ROOM",
+                    actions: ["MUTE_ROOM"],
                 },
             },
             {
@@ -123,7 +122,7 @@ export const muteRoomAction: Action = {
                 user: "{{user3}}",
                 content: {
                     text: "Understood",
-                    action: "MUTE_ROOM",
+                    actions: ["MUTE_ROOM"],
                 },
             },
             {
@@ -136,7 +135,7 @@ export const muteRoomAction: Action = {
                 user: "{{user3}}",
                 content: {
                     text: "",
-                    action: "IGNORE",
+                    actions: ["IGNORE"],
                 },
             },
         ],
@@ -151,7 +150,7 @@ export const muteRoomAction: Action = {
                 user: "{{user2}}",
                 content: {
                     text: "np going silent",
-                    action: "MUTE_ROOM",
+                    actions: ["MUTE_ROOM"],
                 },
             },
             {
@@ -164,7 +163,7 @@ export const muteRoomAction: Action = {
                 user: "{{user2}}",
                 content: {
                     text: "",
-                    action: "IGNORE",
+                    actions: ["IGNORE"],
                 },
             },
         ],
@@ -179,7 +178,7 @@ export const muteRoomAction: Action = {
                 user: "{{user1}}",
                 content: {
                     text: "my bad ill mute",
-                    action: "MUTE_ROOM",
+                    actions: ["MUTE_ROOM"],
                 },
             },
         ],
@@ -194,7 +193,7 @@ export const muteRoomAction: Action = {
                 user: "{{user2}}",
                 content: {
                     text: "sry",
-                    action: "MUTE_ROOM",
+                    actions: ["MUTE_ROOM"],
                 },
             },
         ],

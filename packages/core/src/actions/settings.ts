@@ -1,8 +1,7 @@
 import type { z, ZodSchema } from "zod";
-import { composeContext } from "../context";
 import { createUniqueUuid } from "../entities";
 import { logger } from "../logger";
-import { messageCompletionFooter, parseJSONObjectFromText } from "../parsing";
+import { composePrompt, parseJSONObjectFromText } from "../prompts";
 import { findWorldForOwner } from "../roles";
 import {
   type Action,
@@ -23,6 +22,15 @@ interface SettingUpdate {
   key: string;
   value: string | boolean;
 }
+
+const messageCompletionFooter = `\n# Instructions: Write the next message for {{agentName}}. Include the appropriate action from the list: {{actionNames}}
+Response format should be formatted in a valid JSON block like this:
+\`\`\`json
+{ "user": "{{agentName}}", "text": "<string>", "action": "<string>" }
+\`\`\`
+
+The "action" field should be one of the options in [Available Actions] and the "text" field should be the response you want to send. Do not including any thinking or internal reflection in the "text" field. "thought" should be a short description of what the agent is thinking about before responding, inlcuding a brief justification for the response.`;
+
 // Enhanced extraction template that explicitly handles multiple settings
 const extractionTemplate = `# Task: Extract setting values from the conversation
 
@@ -59,15 +67,15 @@ IMPORTANT: Only include settings from the Available Settings list above. Ignore 
 
 const generateObject = async ({
   runtime,
-  context,
+  prompt,
   modelType = ModelTypes.TEXT_LARGE as ModelType,
   stopSequences = [],
   output = "object",
   enumValues = [],
   schema,
 }): Promise<any> => {
-  if (!context) {
-    const errorMessage = "generateObject context is empty";
+  if (!prompt) {
+    const errorMessage = "generateObject prompt is empty";
     console.error(errorMessage);
     throw new Error(errorMessage);
   }
@@ -76,7 +84,7 @@ const generateObject = async ({
   if (output === "enum" && enumValues) {
     const response = await runtime.useModel(modelType, {
       runtime,
-      context,
+      prompt,
       modelType,
       stopSequences,
       maxTokens: 8,
@@ -108,7 +116,7 @@ const generateObject = async ({
   // Regular object/array generation
   const response = await runtime.useModel(modelType, {
     runtime,
-    context,
+    prompt,
     modelType,
     stopSequences,
     object: true,
@@ -151,27 +159,27 @@ const generateObject = async ({
 
 async function generateObjectArray({
   runtime,
-  context,
+  prompt,
   modelType = ModelTypes.TEXT_SMALL,
   schema,
   schemaName,
   schemaDescription,
 }: {
   runtime: IAgentRuntime;
-  context: string;
+  prompt: string;
   modelType: ModelType;
   schema?: ZodSchema;
   schemaName?: string;
   schemaDescription?: string;
 }): Promise<z.infer<typeof schema>[]> {
-  if (!context) {
-    logger.error("generateObjectArray context is empty");
+  if (!prompt) {
+    logger.error("generateObjectArray prompt is empty");
     return [];
   }
   
   const result = await generateObject({
     runtime,
-    context,
+    prompt,
     modelType,
     output: "array",
     schema,
@@ -299,8 +307,8 @@ async function extractSettingValues(
   worldSettings: WorldSettings
 ): Promise<SettingUpdate[]> {
   try {
-    // Create context with current settings status for better extraction
-    const context = composeContext({
+    // Create prompt with current settings status for better extraction
+    const prompt = composePrompt({
       state: {
         ...state,
         settings: Object.entries(worldSettings)
@@ -317,7 +325,7 @@ async function extractSettingValues(
     // Generate extractions using larger model for better comprehension
     const extractions = (await generateObjectArray({
       runtime,
-      context,
+      prompt,
       modelType: ModelTypes.TEXT_LARGE,
     })) as SettingUpdate[];
 
@@ -434,20 +442,12 @@ async function processSettingUpdates(
 
 // Template for success responses when settings are updated
 const successTemplate = `# Task: Generate a response for successful setting updates
-
-# About {{agentName}}:
-{{bio}}
-
-# Current Settings Status:
-{{settingsStatus}}
+{{providers}}
 
 # Update Information:
 - Updated Settings: {{updateMessages}}
 - Next Required Setting: {{nextSetting.name}}
 - Remaining Required Settings: {{remainingRequired}}
-
-# Recent Conversation:
-{{recentMessages}}
 
 # Instructions:
 1. Acknowledge the successful update of settings
@@ -543,7 +543,7 @@ async function handleOnboardingComplete(
 ): Promise<void> {
   try {
     // Generate completion message
-    const context = composeContext({
+    const prompt = composePrompt({
       state: {
         ...state,
         settingsStatus: formatSettingsList(worldSettings),
@@ -552,21 +552,21 @@ async function handleOnboardingComplete(
     });
 
     const response = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-      context,
+      prompt,
     });
 
     const responseContent = parseJSONObjectFromText(response) as Content;
 
     await callback({
       text: responseContent.text,
-      action: "ONBOARDING_COMPLETE",
+      actions: ["ONBOARDING_COMPLETE"],
       source: "discord",
     });
   } catch (error) {
     logger.error(`Error handling settings completion: ${error}`);
     await callback({
       text: "Great! All required settings have been configured. Your server is now fully set up and ready to use.",
-      action: "ONBOARDING_COMPLETE",
+      actions: ["ONBOARDING_COMPLETE"],
       source: "discord",
     });
   }
@@ -593,7 +593,7 @@ async function generateSuccessResponse(
     }
 
     // Generate success message
-    const context = composeContext({
+    const prompt = composePrompt({
       state: {
         ...state,
         updateMessages: messages.join("\n"),
@@ -604,21 +604,21 @@ async function generateSuccessResponse(
     });
 
     const response = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-      context,
+      prompt,
     });
 
     const responseContent = parseJSONObjectFromText(response) as Content;
 
     await callback({
       text: responseContent.text,
-      action: "SETTING_UPDATED",
+      actions: ["SETTING_UPDATED"],
       source: "discord",
     });
   } catch (error) {
     logger.error(`Error generating success response: ${error}`);
     await callback({
       text: "Settings updated successfully. Please continue with the remaining configuration.",
-      action: "SETTING_UPDATED",
+      actions: ["SETTING_UPDATED"],
       source: "discord",
     });
   }
@@ -644,7 +644,7 @@ async function generateFailureResponse(
     }
 
     // Generate failure message
-    const context = composeContext({
+    const prompt = composePrompt({
       state: {
         ...state,
         nextSetting: requiredUnconfigured[0][1],
@@ -654,21 +654,21 @@ async function generateFailureResponse(
     });
 
     const response = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-      context,
+      prompt,
     });
 
     const responseContent = parseJSONObjectFromText(response) as Content;
 
     await callback({
       text: responseContent.text,
-      action: "SETTING_UPDATE_FAILED",
+      actions: ["SETTING_UPDATE_FAILED"],
       source: "discord",
     });
   } catch (error) {
     logger.error(`Error generating failure response: ${error}`);
     await callback({
       text: "I couldn't understand your settings update. Please try again with a clearer format.",
-      action: "SETTING_UPDATE_FAILED",
+      actions: ["SETTING_UPDATE_FAILED"],
       source: "discord",
     });
   }
@@ -683,27 +683,27 @@ async function generateErrorResponse(
   callback: HandlerCallback
 ): Promise<void> {
   try {
-    const context = composeContext({
+    const prompt = composePrompt({
       state,
       template: errorTemplate,
     });
 
     const response = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-      context,
+      prompt,
     });
 
     const responseContent = parseJSONObjectFromText(response) as Content;
 
     await callback({
       text: responseContent.text,
-      action: "SETTING_UPDATE_ERROR",
+      actions: ["SETTING_UPDATE_ERROR"],
       source: "discord",
     });
   } catch (error) {
     logger.error(`Error generating error response: ${error}`);
     await callback({
       text: "I'm sorry, but I encountered an error while processing your request. Please try again or contact support if the issue persists.",
-      action: "SETTING_UPDATE_ERROR",
+      actions: ["SETTING_UPDATE_ERROR"],
       source: "discord",
     });
   }
@@ -894,7 +894,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "Perfect! I've updated your welcome channel to #general. Next, we should configure the automated greeting message that new members will receive.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -911,7 +911,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "Great choice! I've set the command prefix to '!'. Now you can use commands like !help, !info, etc.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -928,7 +928,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "Auto-moderation for inappropriate language has been enabled. I'll now filter messages containing offensive content.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -945,7 +945,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "I've configured #server-logs as your logging channel. All server events like joins, leaves, and moderation actions will be recorded there.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -962,7 +962,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "Role self-assignment has been set up in the #roles channel. Members can now assign themselves roles by interacting with messages there.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -979,7 +979,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "I've updated your music command settings - they'll now only work in voice-text channels. This helps keep other channels clear of music spam.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -996,7 +996,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "Server timezone has been set to Eastern Standard Time (EST). All scheduled events and timestamps will now display in this timezone.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -1013,7 +1013,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "I've updated the verification requirement to email verified accounts only. This adds an extra layer of security to your server.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -1030,7 +1030,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "Level-up notifications have been disabled. Members will still earn experience and level up, but there won't be any automatic announcements. You can still view levels with the appropriate commands.",
-          action: "SETTING_UPDATED",
+          actions: ["SETTING_UPDATED"],
           source: "discord",
         },
       },
@@ -1047,7 +1047,7 @@ const updateSettingsAction: Action = {
         user: "{{user2}}",
         content: {
           text: "Great! I've saved 'Gaming Lounge' as your server name. This helps me personalize responses and know how to refer to your community. We've completed all the required settings! Your server is now fully configured and ready to use. You can always adjust these settings later if needed.",
-          action: "ONBOARDING_COMPLETE",
+          actions: ["ONBOARDING_COMPLETE"],
           source: "discord",
         },
       },

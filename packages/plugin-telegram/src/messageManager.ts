@@ -258,8 +258,8 @@ export class MessageManager {
                 content: {
                     text: fullText,
                     source: "telegram",
-                    name: userName,
-                    userName: userName,
+                    // name: userName,
+                    // userName: userName,
                     // Safely access reply_to_message with type guard
                     inReplyTo: 'reply_to_message' in message && message.reply_to_message ? 
                     createUniqueUuid(this.runtime, message.reply_to_message.message_id.toString()) : 
@@ -359,7 +359,7 @@ export class MessageManager {
                             createdAt: sentMessage.date * 1000
                         };
 
-                        await this.runtime.messageManager.createMemory(responseMemory);
+                        await this.runtime.getMemoryManager("messages").createMemory(responseMemory);
                         memories.push(responseMemory);
                     }
 
@@ -407,13 +407,13 @@ export class MessageManager {
                 content: {
                     text: `Reacted with: ${reactionType === 'emoji' ? reactionEmoji : reactionType}`,
                     source: "telegram",
-                    name: ctx.from.first_name,
-                    userName: ctx.from.username,
+                    // name: ctx.from.first_name,
+                    // userName: ctx.from.username,
                     inReplyTo: createUniqueUuid(this.runtime, reaction.message_id.toString())
                 },
                 createdAt: Date.now()
             };
-            await this.runtime.messageManager.createMemory(memory);
+            await this.runtime.getMemoryManager("messages").createMemory(memory);
 
             // Create callback for handling reaction responses
             const callback: HandlerCallback = async (content: Content) => {

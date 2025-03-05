@@ -1,6 +1,6 @@
 import {
     type Action,
-    type ActionExample, composeContext, type Content,
+    type ActionExample, composePrompt, type Content,
     type HandlerCallback,
     type IAgentRuntime,
     type Memory,
@@ -10,7 +10,7 @@ import {
 export const transcriptionTemplate = `# Transcription of media file
 {{mediaTranscript}}
 
-# Instructions: Return only the full transcript of the media file without any additional context or commentary.`;
+# Instructions: Return only the full transcript of the media file without any additional prompt or commentary.`;
 
 export const mediaAttachmentIdTemplate = `# Messages we are transcribing
 {{recentMessages}}
@@ -33,14 +33,14 @@ const getMediaAttachmentId = async (
 ): Promise<string | null> => {
     state = (await runtime.composeState(message)) as State;
 
-    const context = composeContext({
+    const prompt = composePrompt({
         state,
         template: mediaAttachmentIdTemplate,
     });
 
     for (let i = 0; i < 5; i++) {
         const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            context,
+            prompt,
         });
         console.log("response", response);
 
@@ -112,7 +112,7 @@ const transcribeMediaAction = {
 
         const callbackData: Content = {
             text: "", // fill in later
-            action: "TRANSCRIBE_MEDIA_RESPONSE",
+            actions: ["TRANSCRIBE_MEDIA_RESPONSE"],
             source: message.content.source,
             attachments: [],
         };
@@ -127,7 +127,7 @@ const transcribeMediaAction = {
             return;
         }
 
-        const attachment = state.recentMessagesData
+        const attachment = state.data.recentMessages
             .filter(
                 (msg) =>
                     msg.content.attachments &&
@@ -198,7 +198,7 @@ ${mediaTranscript.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "Sure, I'll transcribe the full audio for you.",
-                    action: "TRANSCRIBE_MEDIA",
+                    actions: ["TRANSCRIBE_MEDIA"],
                 },
             },
         ],
@@ -213,7 +213,7 @@ ${mediaTranscript.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "Absolutely, give me a moment to generate the full transcript of the video.",
-                    action: "TRANSCRIBE_MEDIA",
+                    actions: ["TRANSCRIBE_MEDIA"],
                 },
             },
         ],

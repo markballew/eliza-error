@@ -1,6 +1,6 @@
-import { composeContext } from "../context";
+import { composePrompt } from "../prompts";
 import logger from "../logger";
-import { booleanFooter } from "../parsing";
+import { booleanFooter } from "../prompts";
 import { type Action, type ActionExample, type HandlerCallback, type IAgentRuntime, type Memory, ModelTypes, type State } from "../types";
 
 export const shouldUnmuteTemplate =
@@ -37,14 +37,14 @@ export const unmuteRoomAction: Action = {
     },
     handler: async (runtime: IAgentRuntime, message: Memory, state?: State, _options?: { [key: string]: unknown; }, callback?: HandlerCallback, responses?: Memory[] ) => {
         async function _shouldUnmute(state: State): Promise<boolean> {
-            const shouldUnmuteContext = composeContext({
+            const shouldUnmutePrompt = composePrompt({
                 state,
                 template: shouldUnmuteTemplate, // Define this template separately
             });
 
             const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
                 runtime,
-                context: shouldUnmuteContext,
+                prompt: shouldUnmutePrompt,
                 stopSequences: ["\n"],
             });
             
@@ -84,7 +84,7 @@ export const unmuteRoomAction: Action = {
         }
 
         for (const response of responses) {
-            await callback?.({...response.content, action: "UNMUTE_ROOM"});
+            await callback?.({...response.content, actions: ["UNMUTE_ROOM"]});
         }
     },
     examples: [
@@ -99,7 +99,7 @@ export const unmuteRoomAction: Action = {
                 user: "{{user3}}",
                 content: {
                     text: "Done",
-                    action: "UNMUTE_ROOM",
+                    actions: ["UNMUTE_ROOM"],
                 },
             },
             {
@@ -126,7 +126,7 @@ export const unmuteRoomAction: Action = {
                 user: "{{user2}}",
                 content: {
                     text: "Sounds good",
-                    action: "UNMUTE_ROOM",
+                    actions: ["UNMUTE_ROOM"],
                 },
             },
         ],
@@ -141,7 +141,7 @@ export const unmuteRoomAction: Action = {
                 user: "{{user2}}",
                 content: {
                     text: "im back",
-                    action: "UNMUTE_ROOM",
+                    actions: ["UNMUTE_ROOM"],
                 },
             },
         ],
@@ -156,7 +156,7 @@ export const unmuteRoomAction: Action = {
                 user: "{{user2}}",
                 content: {
                     text: "unmuted",
-                    action: "UNMUTE_ROOM",
+                    actions: ["UNMUTE_ROOM"],
                 },
             },
         ],
@@ -171,7 +171,7 @@ export const unmuteRoomAction: Action = {
                 user: "{{user2}}",
                 content: {
                     text: "sup yall",
-                    action: "UNMUTE_ROOM",
+                    actions: ["UNMUTE_ROOM"],
                 },
             },
         ],

@@ -1,5 +1,5 @@
 import {
-    composeContext,
+    composePrompt,
     type IAgentRuntime,
     logger,
     type Memory,
@@ -168,7 +168,7 @@ export const getTokenDetails: any = {
                 user: "{{user1}}",
                 content: {
                     text: "Ok, here are the details...",
-                    action: "GET_TOKEN_DETAILS",
+                    actions: ["GET_TOKEN_DETAILS"],
                 },
             },
         ],
@@ -188,7 +188,7 @@ export const getTokenDetails: any = {
         }
 
         // Get a users most recent message containing a token
-        const rawMessages = await runtime.messageManager.getMemories({
+        const rawMessages = await runtime.getMemoryManager("messages").getMemories({
             roomId: message.roomId,
             count: 10,
             unique: true,
@@ -211,7 +211,7 @@ export const getTokenDetails: any = {
             </message>`;
         });
 
-        const context = composeContext({
+        const prompt = composePrompt({
             state: {
                 messages: messages,
             } as unknown as State,
@@ -220,7 +220,7 @@ export const getTokenDetails: any = {
         
 
         const text = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            context,
+            prompt,
         });
 
         const extractXML = extractXMLFromResponse(text, "token");
@@ -251,7 +251,7 @@ export const getTokenDetails: any = {
             return v;
         });
 
-        const tokenDetailsContext = composeContext({
+        const tokenDetailsPrompt = composePrompt({
             state: {
                 ticker: results.ticker,
                 tokenOverview: tokenOverviewString,
@@ -260,7 +260,7 @@ export const getTokenDetails: any = {
         });
 
         const tokenDetails = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-            context: tokenDetailsContext,
+            prompt: tokenDetailsPrompt,
         });
 
         // Do we want to store memory here?
@@ -277,7 +277,7 @@ export const getTokenDetails: any = {
                     inReplyTo: message.id
                         ? message.id
                         : undefined,
-                        action: "GET_TOKEN_DETAILS",
+                        actions: ["GET_TOKEN_DETAILS"],
                 },
                 userId: message.userId,
                 agentId: message.agentId,

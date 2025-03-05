@@ -1,6 +1,6 @@
 import {
     type Action,
-    type ActionExample, composeContext, type Content, getActorDetails, type HandlerCallback,
+    type ActionExample, composePrompt, type Content, getEntityDetails, type HandlerCallback,
     type IAgentRuntime,
     type Media,
     type Memory,
@@ -43,14 +43,14 @@ const getDateRange = async (
 ) => {
     state = (await runtime.composeState(message)) as State;
 
-    const context = composeContext({
+    const prompt = composePrompt({
         state,
         template: dateRangeTemplate,
     });
 
     for (let i = 0; i < 5; i++) {
         const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            context,
+            prompt,
         });
         console.log("response", response);
         // try parsing to a json object
@@ -197,7 +197,7 @@ const summarizeAction = {
 
         const callbackData: Content = {
             text: "", // fill in later
-            action: "SUMMARIZATION_RESPONSE",
+            actions: ["SUMMARIZATION_RESPONSE"],
             source: message.content.source,
             attachments: [],
         };
@@ -213,7 +213,7 @@ const summarizeAction = {
         const { objective, start, end } = dateRange;
 
         // 2. get these memories from the database
-        const memories = await runtime.messageManager.getMemories({
+        const memories = await runtime.getMemoryManager("messages").getMemories({
             roomId,
             // subtract start from current time
             start: Number.parseInt(start as string),
@@ -222,7 +222,7 @@ const summarizeAction = {
             unique: false,
         });
 
-        const actors = await getActorDetails({
+        const actors = await getEntityDetails({
             runtime: runtime as IAgentRuntime,
             roomId,
         });
@@ -260,14 +260,14 @@ const summarizeAction = {
                 chunkSize + 500,
                 runtime
             );
-            const context = composeContext({
+            const prompt = composePrompt({
                 state,
                 // make sure it fits, we can pad the tokens a bit
                 template,
             });
 
             const summary = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-                context,
+                prompt,
             });
 
             currentSummary = `${currentSummary}\n${summary}`;
@@ -335,7 +335,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "sure, no problem, give me a minute to get that together for you",
-                    action: "SUMMARIZE",
+                    actions: ["SUMMARIZE"],
                 },
             },
         ],
@@ -350,7 +350,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "sure, give me a sec",
-                    action: "SUMMARIZE",
+                    actions: ["SUMMARIZE"],
                 },
             },
         ],
@@ -365,7 +365,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "Yeah, just hold on a second while I get that together for you...",
-                    action: "SUMMARIZE",
+                    actions: ["SUMMARIZE"],
                 },
             },
         ],
@@ -380,7 +380,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "no problem, give me a few minutes to read through everything",
-                    action: "SUMMARIZE",
+                    actions: ["SUMMARIZE"],
                 },
             },
         ],

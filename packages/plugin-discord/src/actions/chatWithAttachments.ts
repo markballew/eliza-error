@@ -1,6 +1,6 @@
 import {
     type Action,
-    type ActionExample, composeContext, type Content, type HandlerCallback,
+    type ActionExample, composePrompt, type Content, type HandlerCallback,
     type IAgentRuntime,
     type Memory,
     ModelTypes, parseJSONObjectFromText, type State, trimTokens
@@ -40,14 +40,14 @@ const getAttachmentIds = async (
 ): Promise<{ objective: string; attachmentIds: string[] } | null> => {
     state = (await runtime.composeState(message)) as State;
 
-    const context = composeContext({
+    const prompt = composePrompt({
         state,
         template: attachmentIdsTemplate,
     });
 
     for (let i = 0; i < 5; i++) {
         const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            context,
+            prompt,
         });
         console.log("response", response);
         // try parsing to a json object
@@ -133,7 +133,7 @@ const summarizeAction = {
 
         const callbackData: Content = {
             text: "", // fill in later
-            action: "CHAT_WITH_ATTACHMENTS_RESPONSE",
+            actions: ["CHAT_WITH_ATTACHMENTS_RESPONSE"],
             source: message.content.source,
             attachments: [],
         };
@@ -148,7 +148,7 @@ const summarizeAction = {
         const { objective, attachmentIds } = attachmentData;
 
         // This is pretty gross but it can catch cases where the returned generated UUID is stupidly wrong for some reason
-        const attachments = state.recentMessagesData
+        const attachments = state.data.recentMessages
             .filter(
                 (msg) =>
                     msg.content.attachments &&
@@ -185,7 +185,7 @@ const summarizeAction = {
             chunkSize,
             runtime
         );
-        const context = composeContext({
+        const prompt = composePrompt({
             state,
             // make sure it fits, we can pad the tokens a bit
             // Get the model's tokenizer based on the current model being used
@@ -193,7 +193,7 @@ const summarizeAction = {
         });
 
         const summary = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            context,
+            prompt,
         });
 
         currentSummary = `${currentSummary}\n${summary}`;
@@ -270,7 +270,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "Sure thing! I'll pull up those specific attachments and provide a summary of their content.",
-                    action: "CHAT_WITH_ATTACHMENTS",
+                    actions: ["CHAT_WITH_ATTACHMENTS"],
                 },
             },
         ],
@@ -285,7 +285,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "I'll take a look at those specific PDF attachments and put together a technical summary for you. Give me a few minutes to review them.",
-                    action: "CHAT_WITH_ATTACHMENTS",
+                    actions: ["CHAT_WITH_ATTACHMENTS"],
                 },
             },
         ],
@@ -300,7 +300,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "sure, no problem.",
-                    action: "CHAT_WITH_ATTACHMENTS",
+                    actions: ["CHAT_WITH_ATTACHMENTS"],
                 },
             },
         ],
@@ -315,7 +315,7 @@ ${currentSummary.trim()}
                 user: "{{user2}}",
                 content: {
                     text: "great idea, give me a minute",
-                    action: "CHAT_WITH_ATTACHMENTS",
+                    actions: ["CHAT_WITH_ATTACHMENTS"],
                 },
             },
         ],

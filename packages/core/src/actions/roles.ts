@@ -1,20 +1,20 @@
 import type { ZodSchema, z } from "zod";
 import { createUniqueUuid } from "..";
-import { composeContext } from "../context";
+import { composePrompt } from "../prompts";
 import { logger } from "../logger";
-import { type Action, type ActionExample, ChannelType, type HandlerCallback, type IAgentRuntime, type Memory, ModelTypes, RoleName, type State, type UUID } from "../types";
+import { type Action, type ActionExample, ChannelType, type HandlerCallback, type IAgentRuntime, type Memory, ModelType, ModelTypes, RoleName, type State, type UUID } from "../types";
 
 export const generateObject = async ({
   runtime,
-  context,
-  modelType = ModelTypes.TEXT_LARGE,
+  prompt,
+  modelType,
   stopSequences = [],
   output = "object",
   enumValues = [],
   schema,
 }): Promise<any> => {
-  if (!context) {
-    const errorMessage = "generateObject context is empty";
+  if (!prompt) {
+    const errorMessage = "generateObject prompt is empty";
     console.error(errorMessage);
     throw new Error(errorMessage);
   }
@@ -23,7 +23,7 @@ export const generateObject = async ({
   if (output === "enum" && enumValues) {
     const response = await runtime.useModel(modelType, {
       runtime,
-      context,
+      prompt,
       modelType,
       stopSequences,
       maxTokens: 8,
@@ -55,7 +55,7 @@ export const generateObject = async ({
   // Regular object/array generation
   const response = await runtime.useModel(modelType, {
     runtime,
-    context,
+    prompt,
     modelType,
     stopSequences,
     object: true,
@@ -154,27 +154,27 @@ If no valid role assignments are found, return an empty array.`;
 
 async function generateObjectArray({
   runtime,
-  context,
+  prompt,
   modelType = ModelTypes.TEXT_SMALL,
   schema,
   schemaName,
   schemaDescription,
 }: {
   runtime: IAgentRuntime;
-  context: string;
+  prompt: string;
   modelType: ModelType;
   schema?: ZodSchema;
   schemaName?: string;
   schemaDescription?: string;
 }): Promise<z.infer<typeof schema>[]> {
-  if (!context) {
-    logger.error("generateObjectArray context is empty");
+  if (!prompt) {
+    logger.error("generateObjectArray prompt is empty");
     return [];
   }
   
   const result = await generateObject({
     runtime,
-    context,
+    prompt,
     modelType,
     output: "array",
     schema,
@@ -292,7 +292,7 @@ const updateRoleAction: Action = {
       logger.error(`No world or metadata found for server ${serverId}`);
       await callback({
         text: "Unable to process role changes due to missing server data.",
-        action: "UPDATE_ROLE",
+        actions: ["UPDATE_ROLE"],
         source: "discord",
       });
       return;
@@ -310,7 +310,7 @@ const updateRoleAction: Action = {
     // Get all entities in the room
     const entities = await runtime.databaseAdapter.getEntitiesForRoom(room.id, true);
 
-    // Build server members context from entities
+    // Build server members prompt from entities
     const serverMembersContext = entities
       .map(entity => {
         const discordData = entity.components?.find(c => c.type === 'discord')?.data;
@@ -320,8 +320,8 @@ const updateRoleAction: Action = {
       })
       .join("\n");
 
-    // Create extraction context
-    const extractionContext = composeContext({
+    // Create extraction prompt
+    const extractionPrompt = composePrompt({
       state: {
         ...state,
         serverMembers: serverMembersContext,
@@ -333,14 +333,14 @@ const updateRoleAction: Action = {
     // Extract role assignments
     const result = (await generateObjectArray({
       runtime,
-      context: extractionContext,
+      prompt: extractionPrompt,
       modelType: ModelTypes.TEXT_SMALL,
     })) as RoleAssignment[];
 
     if (!result?.length) {
       await callback({
         text: "No valid role assignments found in the request.",
-        action: "UPDATE_ROLE",
+        actions: ["UPDATE_ROLE"],
         source: "discord",
       });
       return;
@@ -365,7 +365,7 @@ const updateRoleAction: Action = {
       if (!canModifyRole(requesterRole, currentRole, assignment.newRole)) {
         await callback({
           text: `You don't have permission to change ${targetEntity.names[0]}'s role to ${assignment.newRole}.`,
-          action: "UPDATE_ROLE",
+          actions: ["UPDATE_ROLE"],
           source: "discord",
         });
         continue;
@@ -378,7 +378,7 @@ const updateRoleAction: Action = {
 
       await callback({
         text: `Updated ${targetEntity.names[0]}'s role to ${assignment.newRole}.`,
-        action: "UPDATE_ROLE",
+        actions: ["UPDATE_ROLE"],
         source: "discord",
       });
     }
@@ -403,7 +403,7 @@ const updateRoleAction: Action = {
         user: "{{user3}}",
         content: {
           text: "Updated {{user2}}'s role to ADMIN.",
-          action: "UPDATE_ROLE",
+          actions: ["UPDATE_ROLE"],
         },
       },
     ],
@@ -419,7 +419,7 @@ const updateRoleAction: Action = {
         user: "{{user3}}",
         content: {
           text: "Updated alice's role to ADMIN.\nUpdated bob's role to ADMIN.",
-          action: "UPDATE_ROLE",
+          actions: ["UPDATE_ROLE"],
         },
       },
     ],
@@ -435,7 +435,7 @@ const updateRoleAction: Action = {
         user: "{{user3}}",
         content: {
           text: "I cannot ban users.",
-          action: "REPLY",
+          actions: ["REPLY"],
         }
       }
     ]
