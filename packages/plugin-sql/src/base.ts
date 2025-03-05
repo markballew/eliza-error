@@ -1558,7 +1558,12 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
 
                 // Filter by tags if provided
                 if (params.tags && params.tags.length > 0) {
-                    query = query.where(sql`${relationshipTable.tags} && ARRAY[${sql.join(params.tags, ', ')}]::text[]`);
+                    // Filter by tags - find tasks that have ALL of the specified tags
+                    // Using @> operator which checks if left array contains all elements from right array
+                    const tagParams = params.tags.map(tag => `'${tag.replace(/'/g, "''")}'`).join(', ');
+                    query = query.where(
+                        sql`${relationshipTable.tags} @> ARRAY[${sql.raw(tagParams)}]::text[]`
+                    );
                 }
 
                 const results = await query;
@@ -1757,14 +1762,47 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
                 }
                 
                 if (params.tags && params.tags.length > 0) {
-                    // Filter by tags - tasks that have all of the specified tags
+                    // Filter by tags - find tasks that have ALL of the specified tags
+                    // Using @> operator which checks if left array contains all elements from right array
+                    const tagParams = params.tags.map(tag => `'${tag.replace(/'/g, "''")}'`).join(', ');
                     query = query.where(
-                        sql`${taskTable.tags} && array[${params.tags.map(tag => sql`${tag}`).join(', ')}]::text[]`
+                        sql`${taskTable.tags} @> ARRAY[${sql.raw(tagParams)}]::text[]`
                     );
                 }
                 
-                const results = await query;
-                return results.map(row => ({
+                const result = await query;
+                
+                return result.map(row => ({
+                    id: row.id,
+                    name: row.name,
+                    description: row.description,
+                    roomId: row.roomId,
+                    worldId: row.worldId,
+                    tags: row.tags,
+                    metadata: row.metadata
+                }));
+            });
+        });
+    }
+
+    /**
+     * Retrieves a specific task by its name.
+     * @param name The name of the task to retrieve
+     * @returns Promise resolving to the Task object if found, null otherwise
+     */
+    async getTasksByName(name: string): Promise<Task[]> {
+        return this.withRetry(async () => {
+            return this.withDatabase(async () => {
+                const result = await this.db.select()
+                    .from(taskTable)
+                    .where(
+                        and(
+                            eq(taskTable.name, name),
+                            eq(taskTable.agentId, this.agentId)
+                        )
+                    )
+                
+                return result.map(row => ({
                     id: row.id,
                     name: row.name,
                     description: row.description,
@@ -1776,6 +1814,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
             });
         });
     }
+    
 
     /**
      * Retrieves a specific task by its ID.
@@ -1822,6 +1861,7 @@ export abstract class BaseDrizzleAdapter<TDatabase extends DrizzleOperations>
     async updateTask(id: UUID, task: Partial<Task>): Promise<void> {
         await this.withRetry(async () => {
             await this.withDatabase(async () => {
+                console.log("updating task", id, task);
                 const updateValues : Partial<Task> & { updatedAt?: number } = {
                     updatedAt: Date.now()
                 };

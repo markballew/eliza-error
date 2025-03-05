@@ -29,6 +29,7 @@ import {
     RecommendationType,
     type RecommenderMetrics,
     type RecommenderMetricsHistory,
+    ServiceTypes,
     type TokenMarketData,
     type TokenMetadata,
     type TokenPerformance,
@@ -51,7 +52,8 @@ export type TradingEvent =
  * Unified Trading Service that centralizes all trading operations
  */
 export class TrustTradingService extends Service {
-    static serviceType = "trading";
+    static serviceType = ServiceTypes.TRUST_TRADING;
+    capabilityDescription = "The agent is able to trade on the Solana blockchain";
 
     // Memory managers
     private tokenMemoryManager: IMemoryManager;
@@ -153,6 +155,7 @@ export class TrustTradingService extends Service {
      * Remove an event listener
      */
     removeEventListener(eventId: string): void {
+        logger.debug("removing event listener", eventId);
         this.eventListeners.delete(eventId);
     }
 
@@ -160,6 +163,7 @@ export class TrustTradingService extends Service {
      * Emit a trading event to all listeners
      */
     private emitEvent(event: TradingEvent): void {
+        logger.debug("emitting event", event);
         for (const listeners of this.eventListeners.values()) {
             for (const listener of listeners) {
                 try {
@@ -178,6 +182,7 @@ export class TrustTradingService extends Service {
         buySignal: BuySignalMessage,
         entity: Entity
     ): Promise<Position | null> {
+        logger.debug("processing buy signal", buySignal, entity);
         try {
             // Validate the token
             const tokenPerformance = await this.getOrFetchTokenPerformance(
@@ -260,6 +265,7 @@ export class TrustTradingService extends Service {
         _sellRecommenderId: UUID
     ): Promise<boolean> {
         try {
+            logger.debug("processing sell signal", positionId, _sellRecommenderId);
             // Get position
             const position = await this.getPosition(positionId);
             if (!position) {
@@ -337,6 +343,7 @@ export class TrustTradingService extends Service {
         }
     ): Promise<Position | null> {
         try {
+            logger.debug("handling recommendation", entity, recommendation);
             // Get token performance
             const tokenPerformance = await this.getOrFetchTokenPerformance(
                 recommendation.tokenAddress,
@@ -411,6 +418,7 @@ export class TrustTradingService extends Service {
      * Check if a wallet is registered for a chain
      */
     hasWallet(chain: string): boolean {
+        logger.debug("hasWallet", chain);
         // This implementation would check if a wallet config exists for the specified chain
         return chain.toLowerCase() === "solana"; // Assuming Solana is always supported
     }
@@ -426,6 +434,7 @@ export class TrustTradingService extends Service {
         forceRefresh = false
     ): Promise<TokenMetadata & TokenMarketData> {
         try {
+            logger.debug("getting token overview", chain, tokenAddress, forceRefresh);
             // Check cache first unless force refresh is requested
             if (!forceRefresh) {
                 const cacheKey = `token:${chain}:${tokenAddress}:overview`;
@@ -516,6 +525,7 @@ export class TrustTradingService extends Service {
      * Resolve a ticker to a token address
      */
     async resolveTicker(chain: string, ticker: string): Promise<string | null> {
+        logger.debug("resolving ticker", chain, ticker);
         // Check cache first
         const cacheKey = `ticker:${chain}:${ticker}`;
         const cachedAddress = await this.runtime.databaseAdapter.getCache<string>(cacheKey);
@@ -545,6 +555,7 @@ export class TrustTradingService extends Service {
      * Get current price for a token
      */
     async getCurrentPrice(chain: string, tokenAddress: string): Promise<number> {
+        logger.debug("getting current price", chain, tokenAddress);
         try {
             // Check cache first
             const cacheKey = `token:${chain}:${tokenAddress}:price`;
@@ -584,6 +595,7 @@ export class TrustTradingService extends Service {
      * Determine if a token should be traded
      */
     async shouldTradeToken(chain: string, tokenAddress: string): Promise<boolean> {
+        logger.debug("shouldTradeToken", chain, tokenAddress);
         try {
             const tokenData = await this.getProcessedTokenData(chain, tokenAddress);
             
@@ -629,6 +641,7 @@ export class TrustTradingService extends Service {
      * Get processed token data with security and trade information
      */
     async getProcessedTokenData(chain: string, tokenAddress: string): Promise<ProcessedTokenData | null> {
+        logger.debug("getting processed token data", chain, tokenAddress);
         try {
             // Check cache first
             const cacheKey = `token:${chain}:${tokenAddress}:processed`;
@@ -748,6 +761,7 @@ export class TrustTradingService extends Service {
      * Analyze holder distribution trend
      */
     private async analyzeHolderDistribution(tradeData: TokenTradeData): Promise<string> {
+        logger.debug("analyzing holder distribution", tradeData);
         // Define the time intervals to consider
         const intervals = [
             {
@@ -799,6 +813,7 @@ export class TrustTradingService extends Service {
         chain: string,
         tokenAddress: string
     ): Promise<TokenPerformance> {
+        logger.debug("updating token performance", chain, tokenAddress);
         try {
             const tokenData = await this.getTokenOverview(chain, tokenAddress, true);
             
@@ -840,6 +855,7 @@ export class TrustTradingService extends Service {
      * Calculate risk score for a token
      */
     calculateRiskScore(token: TokenPerformance): number {
+        logger.debug("calculating risk score", token);
         let score = 50; // Base score
         
         // Adjust based on liquidity
@@ -868,6 +884,7 @@ export class TrustTradingService extends Service {
      * Update entity metrics based on their recommendation performance
      */
     async updateRecommenderMetrics(entityId: UUID, performance = 0): Promise<void> {
+        logger.debug("updating recommender metrics", entityId, performance);
         const metrics = await this.getRecommenderMetrics(entityId);
         
         if (!metrics) {
@@ -902,6 +919,7 @@ export class TrustTradingService extends Service {
      * Calculate trust score based on metrics and new performance
      */
     private calculateTrustScore(metrics: RecommenderMetrics, newPerformance: number): number {
+        logger.debug("calculating trust score", metrics, newPerformance);
         // Weight factors
         const HISTORY_WEIGHT = 0.7;
         const NEW_PERFORMANCE_WEIGHT = 0.3;
@@ -937,6 +955,7 @@ export class TrustTradingService extends Service {
         tokenAddress: string,
         chain: string
     ): Promise<TokenPerformance | null> {
+        logger.debug("getting or fetching token performance", tokenAddress, chain);
         try {
             // Try to get from memory first
             let tokenPerformance = await this.getTokenPerformance(tokenAddress, chain);
@@ -1012,6 +1031,7 @@ export class TrustTradingService extends Service {
         conviction: Conviction = Conviction.MEDIUM,
         type: RecommendationType = RecommendationType.BUY
     ): Promise<TokenRecommendation | null> {
+        logger.debug("creating token recommendation", entityId, token, conviction, type);
         try {
             const recommendation: TokenRecommendation = {
                 id: uuidv4() as UUID,
@@ -1060,6 +1080,7 @@ export class TrustTradingService extends Service {
         conviction: Conviction,
         token: TokenPerformance
     ): bigint {
+        logger.debug("calculating buy amount", entity, conviction, token);
         // Get entity trust score from metrics
         let trustScore = 50; // Default value
         
@@ -1108,6 +1129,7 @@ export class TrustTradingService extends Service {
         price: string,
         isSimulation: boolean
     ): Promise<Position | null> {
+        logger.debug("creating position", recommendationId, entityId, tokenAddress, walletAddress, amount, price, isSimulation);
         try {
             const position: Position = {
                 id: uuidv4() as UUID,
@@ -1145,6 +1167,7 @@ export class TrustTradingService extends Service {
         price: number,
         isSimulation: boolean
     ): Promise<boolean> {
+        logger.debug("recording transaction", positionId, tokenAddress, type, amount, price, isSimulation);
         try {
             const transaction: Transaction = {
                 id: uuidv4() as UUID,
@@ -1175,6 +1198,7 @@ export class TrustTradingService extends Service {
      * Get all positions for an entity
      */
     async getPositionsByRecommender(entityId: UUID): Promise<Position[]> {
+        logger.debug("getting positions by recommender", entityId);
         try {
             const recommendations = await this.getRecommendationsByRecommender(entityId);
             const positions: Position[] = [];
@@ -1201,6 +1225,7 @@ export class TrustTradingService extends Service {
      * Get all positions for a token
      */
     private async getPositionsByToken(tokenAddress: string): Promise<Position[]> {
+        logger.debug("getting positions by token", tokenAddress);
         try {
             // This is a simplified implementation
             // In a real-world scenario, you'd query the database
@@ -1216,6 +1241,7 @@ export class TrustTradingService extends Service {
      * Get all transactions for a position
      */
     async getTransactionsByPosition(positionId: UUID): Promise<Transaction[]> {
+        logger.debug("getting transactions by position", positionId);
         try {
             // Search for transactions with this position ID
             const query = `transactions for position ${positionId}`;
@@ -1247,6 +1273,7 @@ export class TrustTradingService extends Service {
      * Get all transactions for a token
      */
     async getTransactionsByToken(tokenAddress: string): Promise<Transaction[]> {
+        logger.debug("getting transactions by token", tokenAddress);
         try {
             // Search for transactions with this token address
             const query = `transactions for token ${tokenAddress}`;
@@ -1278,6 +1305,7 @@ export class TrustTradingService extends Service {
      * Get a position by ID
      */
     async getPosition(positionId: UUID): Promise<Position | null> {
+        logger.debug("getting position", positionId);
         try {
             // Check cache first
             const cacheKey = `position:${positionId}`;
@@ -1317,6 +1345,7 @@ export class TrustTradingService extends Service {
      * Get all recommendations by a entity
      */
     async getRecommendationsByRecommender(entityId: UUID): Promise<TokenRecommendation[]> {
+        logger.debug("getting recommendations by recommender", entityId);
         try {
             // Search for recommendations by this entity
             const query = `recommendations by entity ${entityId}`;
@@ -1348,6 +1377,7 @@ export class TrustTradingService extends Service {
      * Close a position and update metrics
      */
     async closePosition(positionId: UUID): Promise<boolean> {
+        logger.debug("closing position", positionId);
         try {
             const position = await this.getPosition(positionId);
             if (!position) {
@@ -1383,6 +1413,7 @@ export class TrustTradingService extends Service {
      * Calculate position performance
      */
     private async calculatePositionPerformance(position: Position, transactions: Transaction[]): Promise<number> {
+        logger.debug("calculating position performance", position, transactions);
         if (!transactions.length) return 0;
 
         const buyTxs = transactions.filter(t => t.type === TransactionType.BUY);
@@ -1407,6 +1438,7 @@ export class TrustTradingService extends Service {
      * Store token performance data
      */
     private async storeTokenPerformance(token: TokenPerformance): Promise<void> {
+        logger.debug("storing token performance", token);
         try {
             // Create memory object
             const memory: Memory = {
@@ -1439,6 +1471,7 @@ export class TrustTradingService extends Service {
      * Store position data
      */
     private async storePosition(position: Position): Promise<void> {
+        logger.debug("storing position", position);
         try {
             // Create memory object
             const memory: Memory = {
@@ -1471,6 +1504,7 @@ export class TrustTradingService extends Service {
      * Store transaction data
      */
     private async storeTransaction(transaction: Transaction): Promise<void> {
+        logger.debug("storing transaction", transaction);
         try {
             // Create memory object
             const memory: Memory = {
@@ -1511,6 +1545,7 @@ export class TrustTradingService extends Service {
      * Store token recommendation data
      */
     private async storeTokenRecommendation(recommendation: TokenRecommendation): Promise<void> {
+        logger.debug("storing token recommendation", recommendation);
         try {
             // Create memory object
             const memory: Memory = {
@@ -1543,6 +1578,7 @@ export class TrustTradingService extends Service {
      * Store entity metrics
      */
     private async storeRecommenderMetrics(metrics: RecommenderMetrics): Promise<void> {
+        logger.debug("storing recommender metrics", metrics);
         try {
             // Create memory object
             const memory: Memory = {
@@ -1575,6 +1611,7 @@ export class TrustTradingService extends Service {
      * Store entity metrics history
      */
     private async storeRecommenderMetricsHistory(history: RecommenderMetricsHistory): Promise<void> {
+        logger.debug("storing recommender metrics history", history);
         try {
             // Create memory object
             const memory: Memory = {
@@ -1619,6 +1656,7 @@ export class TrustTradingService extends Service {
      * Get entity metrics
      */
     async getRecommenderMetrics(entityId: UUID): Promise<RecommenderMetrics | null> {
+        logger.debug("getting recommender metrics", entityId);
         try {
             // Check cache first
             const cacheKey = `entity:${entityId}:metrics`;
@@ -1658,6 +1696,7 @@ export class TrustTradingService extends Service {
      * Get entity metrics history
      */
     async getRecommenderMetricsHistory(entityId: UUID): Promise<RecommenderMetricsHistory[]> {
+        logger.debug("getting recommender metrics history", entityId);
         try {
             // Check cache first
             const cacheKey = `entity:${entityId}:history`;
@@ -1705,6 +1744,7 @@ export class TrustTradingService extends Service {
      * Initialize entity metrics
      */
     async initializeRecommenderMetrics(entityId: UUID, platform: string): Promise<void> {
+        logger.debug("initializing recommender metrics", entityId, platform);
         try {
             const initialMetrics: RecommenderMetrics = {
                 entityId,
@@ -1739,6 +1779,7 @@ export class TrustTradingService extends Service {
      * Get token performance
      */
     async getTokenPerformance(tokenAddress: string, chain: string): Promise<TokenPerformance | null> {
+        logger.debug("getting token performance", tokenAddress, chain);
         try {
             // Check cache first
             const cacheKey = `token:${chain}:${tokenAddress}:performance`;
@@ -1778,6 +1819,7 @@ export class TrustTradingService extends Service {
      * Get open positions with balance
      */
     async getOpenPositionsWithBalance(): Promise<PositionWithBalance[]> {
+        logger.debug("getting open positions with balance");
         try {
             // Check cache first
             const cacheKey = "positions:open:with-balance";
@@ -1828,6 +1870,7 @@ export class TrustTradingService extends Service {
      * Get positions transactions
      */
     async getPositionsTransactions(positionIds: UUID[]): Promise<Transaction[]> {
+        logger.debug("getting positions transactions", positionIds);
         try {
             const allTransactions: Transaction[] = [];
             
@@ -1847,6 +1890,7 @@ export class TrustTradingService extends Service {
      * Get formatted portfolio report
      */
     async getFormattedPortfolioReport(entityId?: UUID): Promise<string> {
+        logger.debug("getting formatted portfolio report", entityId);
         try {
             // Get positions
             const positions = await this.getOpenPositionsWithBalance();

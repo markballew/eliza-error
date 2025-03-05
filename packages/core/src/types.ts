@@ -579,6 +579,9 @@ export abstract class Service extends EventEmitter {
   /** Service type */
   static serviceType: string;
 
+  /** Service name */
+  abstract capabilityDescription: string;
+
   /** Service configuration */
   config?: { [key: string]: any };
 
@@ -949,6 +952,7 @@ export interface IDatabaseAdapter {
   createTask(task: Task): Promise<UUID>;
   getTasks(params: { roomId?: UUID; tags?: string[]; }): Promise<Task[]>;
   getTask(id: UUID): Promise<Task | null>;
+  getTasksByName(name: string): Promise<Task[]>;
   updateTask(id: UUID, task: Partial<Task>): Promise<void>;
   deleteTask(id: UUID): Promise<void>;
 }
