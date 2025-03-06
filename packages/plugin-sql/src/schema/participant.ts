@@ -19,14 +19,14 @@ export const participantTable = pgTable(
         createdAt: numberTimestamp("createdAt")
             .default(sql`now()`)
             .notNull(),
-            entityId: uuid("entityId").references(() => entityTable.id, { onDelete: "cascade" }),
+        userId: uuid("userId").references(() => entityTable.id, { onDelete: "cascade" }),
         roomId: uuid("roomId").references(() => roomTable.id, { onDelete: "cascade" }),
         agentId: uuid("agentId").references(() => agentTable.id, { onDelete: "cascade" }),
         roomState: text("roomState"),
     },
     (table) => [
-        // unique("participants_user_room_agent_unique").on(table.entityId, table.roomId, table.agentId),
-        index("idx_participants_user").on(table.entityId),
+        // unique("participants_user_room_agent_unique").on(table.userId, table.roomId, table.agentId),
+        index("idx_participants_user").on(table.userId),
         index("idx_participants_room").on(table.roomId),
         foreignKey({
             name: "fk_room",
@@ -35,7 +35,7 @@ export const participantTable = pgTable(
         }).onDelete("cascade"),
         foreignKey({
             name: "fk_user",
-            columns: [table.entityId],
+            columns: [table.userId],
             foreignColumns: [entityTable.id],
         }).onDelete("cascade"),
     ]

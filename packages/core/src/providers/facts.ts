@@ -1,6 +1,6 @@
 
 import { MemoryManager } from "../memory.ts";
-import { formatMessages } from "../prompts.ts";
+import { formatMessages } from "../messages.ts";
 import { type IAgentRuntime, type Memory, ModelTypes, type Provider, type State } from "../types.ts";
 
 function formatFacts(facts: Memory[]) {
@@ -11,15 +11,13 @@ function formatFacts(facts: Memory[]) {
 }
 
 const factsProvider: Provider = {
-    name: "FACTS",
-    description: "Key facts that {{agentName}} knows",
-    dynamic: true,
+    name: "facts",
     get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
-        const recentMessagesData = state?.values?.recentMessagesData?.slice(-10);
+        const recentMessagesData = state?.recentMessagesData?.slice(-10);
 
         const recentMessages = formatMessages({
             messages: recentMessagesData,
-            actors: state?.entitiesData,
+            actors: state?.actorsData,
         });
 
         const embedding = await runtime.useModel(ModelTypes.TEXT_EMBEDDING, recentMessages);
@@ -51,32 +49,14 @@ const factsProvider: Provider = {
         );
 
         if (allFacts.length === 0) {
-            return {
-                values: {
-                    facts: "",
-                },
-                data: {
-                    facts: allFacts,
-                },
-                text: "",
-            };
+            return "";
         }
 
         const formattedFacts = formatFacts(allFacts);
 
-        const text = "Key facts that {{agentName}} knows:\n{{formattedFacts}}"
+        return "Key facts that {{agentName}} knows:\n{{formattedFacts}}"
             .replace("{{agentName}}", runtime.character.name)
             .replace("{{formattedFacts}}", formattedFacts);
-
-        return {
-            values: {
-                facts: formattedFacts,
-            },
-            data: {
-                facts: allFacts,
-            },
-            text,
-        };
     },
 };
 

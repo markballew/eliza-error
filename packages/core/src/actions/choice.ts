@@ -1,6 +1,6 @@
-import { composePrompt } from "../prompts";
+import { composeContext } from "../context";
 import { logger } from "../logger";
-import { parseJSONObjectFromText } from "../prompts";
+import { parseJSONObjectFromText } from "../parsing";
 import { getUserServerRole } from "../roles";
 import {
   type Action,
@@ -64,7 +64,7 @@ export const choiceAction: Action = {
 
     const userRole = await getUserServerRole(
       runtime,
-      message.entityId,
+      message.userId,
       room.serverId
     );
 
@@ -100,7 +100,12 @@ export const choiceAction: Action = {
       });
 
       if (!pendingTasks?.length) {
-        throw new Error("No pending tasks with options found");
+        await callback({
+          text: "No tasks currently awaiting options selection.",
+          action: "CHOOSE_OPTION",
+          source: message.content.source,
+        });
+        return;
       }
 
       const tasksWithOptions = pendingTasks.filter(
@@ -108,7 +113,12 @@ export const choiceAction: Action = {
       );
 
       if (!tasksWithOptions.length) {
-        throw new Error("No tasks currently have options to select from.");
+        await callback({
+          text: "No tasks currently have options to select from.",
+          action: "CHOOSE_OPTION",
+          source: message.content.source,
+        });
+        return;
       }
 
       // Format tasks with their options for the LLM
@@ -121,7 +131,7 @@ export const choiceAction: Action = {
         }))
       }));
 
-      const prompt = composePrompt({
+      const context = composeContext({
         state: {
           ...state,
           tasks: formattedTasks,
@@ -131,7 +141,7 @@ export const choiceAction: Action = {
       });
 
       const result = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-        prompt,
+        context,
         stopSequences: []
       });
 
@@ -145,7 +155,7 @@ export const choiceAction: Action = {
           await runtime.databaseAdapter.deleteTask(selectedTask.id);
           await callback({
             text: `Task "${selectedTask.name}" has been cancelled.`,
-            actions: ["CHOOSE_OPTION"],
+            action: "CHOOSE_OPTION",
             source: message.content.source,
           });
           return;
@@ -157,7 +167,7 @@ export const choiceAction: Action = {
           await runtime.databaseAdapter.deleteTask(selectedTask.id);
           await callback({
             text: `Selected option: ${selectedOption} for task: ${selectedTask.name}`,
-            actions: ["CHOOSE_OPTION"],
+            action: "CHOOSE_OPTION",
             source: message.content.source,
           });
           return;
@@ -165,7 +175,7 @@ export const choiceAction: Action = {
           logger.error("Error executing task with option:", error);
           await callback({
             text: "There was an error processing your selection.",
-            actions: ["SELECT_OPTION_ERROR"],
+            action: "SELECT_OPTION_ERROR",
             source: message.content.source,
           });
           return;
@@ -186,7 +196,7 @@ export const choiceAction: Action = {
 
       await callback({
         text: optionsText,
-        actions: ["SELECT_OPTION_INVALID"],
+        action: "SELECT_OPTION_INVALID",
         source: message.content.source,
       });
 
@@ -194,7 +204,7 @@ export const choiceAction: Action = {
       logger.error("Error in select option handler:", error);
       await callback({
         text: "There was an error processing the option selection.",
-        actions: ["SELECT_OPTION_ERROR"],
+        action: "SELECT_OPTION_ERROR",
         source: message.content.source,
       });
     }
@@ -203,31 +213,31 @@ export const choiceAction: Action = {
   examples: [
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "post",
         },
       },
       {
-        name: "{{name2}}",
+        user: "{{user2}}",
         content: {
           text: "Selected option: post for task: Confirm Twitter Post",
-          actions: ["CHOOSE_OPTION"],
+          action: "CHOOSE_OPTION",
         },
       },
     ],
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "I choose cancel",
         },
       },
       {
-        name: "{{name2}}",
+        user: "{{user2}}",
         content: {
           text: "Selected option: cancel for task: Confirm Twitter Post",
-          actions: ["CHOOSE_OPTION"],
+          action: "CHOOSE_OPTION",
         },
       },
     ],

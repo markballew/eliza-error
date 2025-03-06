@@ -27,6 +27,16 @@ async function initializeTEE(config: Record<string, string>, runtime: IAgentRunt
                     },
                 });
                 break;
+            case 'marlin':
+                plugin = teePlugin({
+                    vendor: TeeVendorNames.MARLIN,
+                });
+                break;
+            case 'fleek':
+                plugin = teePlugin({
+                    vendor: TeeVendorNames.FLEEK,
+                });
+                break;
             case 'sgx-gramine':
                 plugin = teePlugin({
                     vendor: TeeVendorNames.SGX_GRAMINE,
@@ -43,14 +53,16 @@ async function initializeTEE(config: Record<string, string>, runtime: IAgentRunt
 export const teePlugin = (config?: TeePluginConfig): Plugin => {
     const vendorType = config?.vendor || TeeVendorNames.PHALA;
     const vendor = getVendor(vendorType);
-    config = {
-        ...config,
-        vendor: vendorType,
-    };
     return {
         name: vendor.getName(),
         init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
-            return await initializeTEE(config, runtime);
+            return await initializeTEE(
+                {
+                    ...config,
+                    vendor: vendorType,
+                },
+                runtime,
+            );
         },
         description: vendor.getDescription(),
         actions: vendor.getActions(),

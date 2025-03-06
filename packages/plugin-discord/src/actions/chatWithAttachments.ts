@@ -1,6 +1,6 @@
 import {
     type Action,
-    type ActionExample, ChannelType, composePrompt, type Content, type HandlerCallback,
+    type ActionExample, composeContext, type Content, type HandlerCallback,
     type IAgentRuntime,
     type Memory,
     ModelTypes, parseJSONObjectFromText, type State, trimTokens
@@ -38,14 +38,16 @@ const getAttachmentIds = async (
     message: Memory,
     state: State
 ): Promise<{ objective: string; attachmentIds: string[] } | null> => {
-    const prompt = composePrompt({
+    state = (await runtime.composeState(message)) as State;
+
+    const context = composeContext({
         state,
         template: attachmentIdsTemplate,
     });
 
     for (let i = 0; i < 5; i++) {
         const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            prompt,
+            context,
         });
         console.log("response", response);
         // try parsing to a json object
@@ -87,8 +89,7 @@ const summarizeAction = {
         message: Memory,
         _state: State
     ) => {
-        const room = await _runtime.databaseAdapter.getRoom(message.roomId);
-        if (room?.type !== ChannelType.GROUP) {
+        if (message.content.source !== "discord") {
             return false;
         }
         // only show if one of the keywords are in the message
@@ -128,9 +129,11 @@ const summarizeAction = {
         _options: any,
         callback: HandlerCallback,
     ) => {
+        state = (await runtime.composeState(message)) as State;
+
         const callbackData: Content = {
             text: "", // fill in later
-            actions: ["CHAT_WITH_ATTACHMENTS_RESPONSE"],
+            action: "CHAT_WITH_ATTACHMENTS_RESPONSE",
             source: message.content.source,
             attachments: [],
         };
@@ -139,26 +142,13 @@ const summarizeAction = {
         const attachmentData = await getAttachmentIds(runtime, message, state);
         if (!attachmentData) {
             console.error("Couldn't get attachment IDs from message");
-            await runtime.getMemoryManager("messages").createMemory({
-                entityId: message.entityId,
-                agentId: message.agentId,
-                roomId: message.roomId,
-                content: {
-                  source: message.content.source,
-                  thought: "I tried to chat with attachments but I couldn't get attachment IDs",
-                  actions: ["CHAT_WITH_ATTACHMENTS_FAILED"],
-                },
-                metadata: {
-                  type: "CHAT_WITH_ATTACHMENTS",
-                },
-              });
             return;
         }
 
         const { objective, attachmentIds } = attachmentData;
 
         // This is pretty gross but it can catch cases where the returned generated UUID is stupidly wrong for some reason
-        const attachments = state.data.recentMessages
+        const attachments = state.recentMessagesData
             .filter(
                 (msg) =>
                     msg.content.attachments &&
@@ -188,14 +178,14 @@ const summarizeAction = {
 
         const chunkSize = 8192;
 
-        state.values.attachmentsWithText = attachmentsWithText;
-        state.values.objective = objective;
+        state.attachmentsWithText = attachmentsWithText;
+        state.objective = objective;
         const template = await trimTokens(
             summarizationTemplate,
             chunkSize,
             runtime
         );
-        const prompt = composePrompt({
+        const context = composeContext({
             state,
             // make sure it fits, we can pad the tokens a bit
             // Get the model's tokenizer based on the current model being used
@@ -203,26 +193,13 @@ const summarizeAction = {
         });
 
         const summary = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            prompt,
+            context,
         });
 
         currentSummary = `${currentSummary}\n${summary}`;
 
         if (!currentSummary) {
             console.error("No summary found, that's not good!");
-            await runtime.getMemoryManager("messages").createMemory({
-                entityId: message.entityId,
-                agentId: message.agentId,
-                roomId: message.roomId,
-                content: {
-                  source: message.content.source,
-                  thought: "I tried to chat with attachments but I couldn't get a summary",
-                  actions: ["CHAT_WITH_ATTACHMENTS_FAILED"],
-                },
-                metadata: {
-                  type: "CHAT_WITH_ATTACHMENTS",
-                },
-              });
             return;
         }
 
@@ -284,61 +261,61 @@ ${currentSummary.trim()}
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Can you summarize the attachments b3e23, c4f67, and d5a89?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Sure thing! I'll pull up those specific attachments and provide a summary of their content.",
-                    actions: ["CHAT_WITH_ATTACHMENTS"],
+                    action: "CHAT_WITH_ATTACHMENTS",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "I need a technical summary of the PDFs I sent earlier - a1b2c3.pdf, d4e5f6.pdf, and g7h8i9.pdf",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "I'll take a look at those specific PDF attachments and put together a technical summary for you. Give me a few minutes to review them.",
-                    actions: ["CHAT_WITH_ATTACHMENTS"],
+                    action: "CHAT_WITH_ATTACHMENTS",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Can you watch this video for me and tell me which parts you think are most relevant to the report I'm writing? (the one I attached in my last message)",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "sure, no problem.",
-                    actions: ["CHAT_WITH_ATTACHMENTS"],
+                    action: "CHAT_WITH_ATTACHMENTS",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "can you read my blog post and give me a detailed breakdown of the key points I made, and then suggest a handful of tweets to promote it?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "great idea, give me a minute",
-                    actions: ["CHAT_WITH_ATTACHMENTS"],
+                    action: "CHAT_WITH_ATTACHMENTS",
                 },
             },
         ],

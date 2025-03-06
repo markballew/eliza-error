@@ -6,7 +6,7 @@ import {
 } from "@elizaos/core";
 import { v4 as uuidv4 } from 'uuid';
 import { formatRecommenderReport } from "../reports";
-import type { CommunityInvestorService } from "../tradingService";
+import type { TrustTradingService } from "../tradingService";
 import { ServiceTypes } from "../types";
 
 export const getRecommenderReport: Action = {
@@ -15,31 +15,31 @@ export const getRecommenderReport: Action = {
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "what is my entity score?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "<NONE>",
-                    actions: ["GET_RECOMMENDER_REPORT"],
+                    action: "GET_RECOMMENDER_REPORT",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "please provide my entity report",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "<NONE>",
-                    actions: ["GET_RECOMMENDER_REPORT"],
+                    action: "GET_RECOMMENDER_REPORT",
                 },
             },
         ],
@@ -54,15 +54,24 @@ export const getRecommenderReport: Action = {
             return;
         }
 
-        const entity = await runtime.databaseAdapter.getEntityById(
-            message.entityId
+        const user = await runtime.databaseAdapter.getEntityById(
+            message.userId
         );
+
+        if (!user) {
+            logger.error(
+                "No User Found, no entity score can be generated"
+            );
+            return;
+        }
+
+        const entity = await runtime.databaseAdapter.getEntityById(user.id);
 
         if (!entity) {
             logger.error("No entity found, no entity score can be generated");
             return;
         }
-        const tradingService = runtime.getService<CommunityInvestorService>(ServiceTypes.COMMUNITY_INVESTOR);
+        const tradingService = runtime.getService<TrustTradingService>(ServiceTypes.TRUST_TRADING);
 
         const metrics = entity
             ? await tradingService.getRecommenderMetrics(entity.id)
@@ -79,9 +88,9 @@ export const getRecommenderReport: Action = {
                     inReplyTo: message.id
                         ? message.id
                         : undefined,
-                    actions: ["GET_RECOMMENDER_REPORT"]
+                    action: "GET_RECOMMENDER_REPORT"
                 },
-                entityId: message.entityId,
+                userId: message.userId,
                 agentId: message.agentId,
                 roomId: message.roomId,
                 metadata: message.metadata,
@@ -119,9 +128,9 @@ export const getRecommenderReport: Action = {
         const responseMemory: Memory = {
             content: {
                 text: recommenderReport,
-                actions: ["GET_RECOMMENDER_REPORT"]
+                action: "GET_RECOMMENDER_REPORT"
             },
-            entityId: message.entityId,
+            userId: message.userId,
             agentId: message.agentId,
             roomId: message.roomId,
             metadata: message.metadata,
@@ -131,7 +140,7 @@ export const getRecommenderReport: Action = {
         return true;
     },
     async validate(_, message) {
-        if (message.agentId === message.entityId) return false;
+        if (message.agentId === message.userId) return false;
         return true;
     },
 };

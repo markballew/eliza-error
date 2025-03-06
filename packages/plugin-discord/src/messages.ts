@@ -60,7 +60,7 @@ export class MessageManager {
       return;
     }
 
-    const entityId = createUniqueUuid(this.runtime, message.author.id);
+    const userIdUUID = createUniqueUuid(this.runtime, message.author.id);
 
     const userName = message.author.bot
       ? `${message.author.username}#${message.author.discriminator}`
@@ -82,10 +82,10 @@ export class MessageManager {
     }
 
     await this.runtime.ensureConnection({
-      entityId: entityId,
+      userId: userIdUUID,
       roomId,
       userName,
-      name: name,
+      userScreenName: name,
       source: "discord",
       channelId: message.channel.id,
       serverId,
@@ -120,18 +120,18 @@ export class MessageManager {
         return;
       }
 
-      const entityId = createUniqueUuid(this.runtime, message.author.id);
+      const userIdUUID = createUniqueUuid(this.runtime, message.author.id);
 
       const messageId = createUniqueUuid(this.runtime, message.id);
 
       const newMessage: Memory = {
         id: messageId,
-        entityId: entityId,
+        userId: userIdUUID,
         agentId: this.runtime.agentId,
         roomId: roomId,
         content: {
-          // name: name,
-          // userName: userName,
+          name: name,
+          userName: userName,
           text: processedContent || " ",
           attachments: attachments,
           source: "discord",
@@ -160,15 +160,15 @@ export class MessageManager {
 
           const memories: Memory[] = [];
           for (const m of messages) {
-            const actions = content.actions;
+            const action = content.action;
 
             const memory: Memory = {
               id: createUniqueUuid(this.runtime, m.id),
-              entityId: this.runtime.agentId,
+              userId: this.runtime.agentId,
               agentId: this.runtime.agentId,
               content: {
                 ...content,
-                actions,
+                action,
                 inReplyTo: messageId,
                 url: m.url,
               },
@@ -179,7 +179,7 @@ export class MessageManager {
           }
 
           for (const m of memories) {
-            await this.runtime.getMemoryManager("messages").createMemory(m);
+            await this.runtime.messageManager.createMemory(m);
           }
           return memories;
         } catch (error) {
@@ -207,10 +207,10 @@ export class MessageManager {
     const mentionRegex = /<@!?(\d+)>/g;
     processedContent = processedContent.replace(
       mentionRegex,
-      (match, entityId) => {
-        const user = message.mentions.users.get(entityId);
+      (match, userId) => {
+        const user = message.mentions.users.get(userId);
         if (user) {
-          return `${user.username} (@${entityId})`;
+          return `${user.username} (@${userId})`;
         }
         return match;
       }

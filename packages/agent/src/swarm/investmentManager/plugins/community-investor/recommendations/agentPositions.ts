@@ -6,37 +6,37 @@ import { formatFullReport } from "../reports";
 import { ServiceTypes, type TokenPerformance, type Transaction } from "../types";
 
 export const getAgentPositions: any = {
-    name: "GET_AGENT_POSITIONS",
+    name: "TRUST_GET_AGENT_POSITIONS",
     description:
         "Retrieves and formats position data for the agent's portfolio",
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "{{agentName}} show me agent positions",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "<NONE>",
-                    actions: ["GET_AGENT_POSITIONS"],
+                    action: "TRUST_GET_AGENT_POSITIONS",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "{{agentName}} show me all positions",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "<NONE>",
-                    actions: ["GET_AGENT_POSITIONS"],
+                    action: "TRUST_GET_AGENT_POSITIONS",
                 },
             },
         ],
@@ -52,7 +52,7 @@ export const getAgentPositions: any = {
     ) {
         console.log("getAgentPositions is running");
 
-        const tradingService = runtime.getService(ServiceTypes.COMMUNITY_INVESTOR);
+        const tradingService = runtime.getService(ServiceTypes.TRUST_TRADING);
 
         try {
             const positions = await tradingService.getOpenPositionsWithBalance();
@@ -69,12 +69,12 @@ export const getAgentPositions: any = {
                             ? message.id
                             : undefined,
                     },
-                    entityId: message.entityId,
+                    userId: message.userId,
                     agentId: message.agentId,
                     roomId: message.roomId,
                     metadata: {
                         ...message.metadata,
-                        actions: ["GET_AGENT_POSITIONS"],
+                        action: "TRUST_GET_AGENT_POSITIONS",
                     },
                     createdAt: Date.now() * 1000,
                 };
@@ -155,12 +155,12 @@ export const getAgentPositions: any = {
                             ? message.id
                             : undefined,
                     },
-                    entityId: message.entityId,
+                    userId: message.userId,
                     agentId: message.agentId,
                     roomId: message.roomId,
                     metadata: {
                         ...message.metadata,
-                        actions: ["GET_AGENT_POSITIONS"],
+                        action: "TRUST_GET_AGENT_POSITIONS",
                     },
                     createdAt: Date.now() * 1000,
                 });
@@ -172,7 +172,7 @@ export const getAgentPositions: any = {
     },
 
     async validate(_runtime: IAgentRuntime, message: Memory) {
-        if (message.agentId === message.entityId) return false;
+        if (message.agentId === message.userId) return false;
         return true;
     },
 };

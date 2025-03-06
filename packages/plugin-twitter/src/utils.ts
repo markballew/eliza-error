@@ -1,5 +1,5 @@
-import type { Media, ModelType, State } from "@elizaos/core";
-import { ChannelType, type Content, type IAgentRuntime, type Memory, ModelTypes, type UUID, composePrompt, createUniqueUuid, logger } from "@elizaos/core";
+import type { Media, State } from "@elizaos/core";
+import { ChannelType, type Content, type IAgentRuntime, type Memory, ModelTypes, type UUID, composeContext, createUniqueUuid, logger } from "@elizaos/core";
 import fs from "node:fs";
 import path from "node:path";
 import type { ClientBase } from "./base";
@@ -55,23 +55,23 @@ export async function buildConversationThread(
         }
 
         // Handle memory storage
-        const memory = await client.runtime.getMemoryManager("messages").getMemoryById(
+        const memory = await client.runtime.messageManager.getMemoryById(
             createUniqueUuid(this.runtime, currentTweet.id)
         );
         if (!memory) {
             const roomId = createUniqueUuid(this.runtime, currentTweet.conversationId);
-            const entityId = createUniqueUuid(this.runtime, currentTweet.userId);
+            const userId = createUniqueUuid(this.runtime, currentTweet.userId);
 
             await client.runtime.ensureConnection({
-                entityId,
+                userId,
                 roomId,
                 userName: currentTweet.username,
-                name: currentTweet.name,
+                userScreenName: currentTweet.name,
                 source: "twitter",
                 type: ChannelType.GROUP
             });
 
-            await client.runtime.getMemoryManager("messages").createMemory({
+            await client.runtime.messageManager.createMemory({
                 id: createUniqueUuid(this.runtime, currentTweet.id),
                 agentId: client.runtime.agentId,
                 content: {
@@ -85,7 +85,7 @@ export async function buildConversationThread(
                 },
                 createdAt: currentTweet.timestamp * 1000,
                 roomId,
-                entityId:
+                userId:
                     currentTweet.userId === client.profile.id
                         ? client.runtime.agentId
                         : createUniqueUuid(this.runtime, currentTweet.userId),
@@ -261,7 +261,7 @@ export async function sendTweet(
     const memories: Memory[] = sentTweets.map((tweet) => ({
         id: createUniqueUuid(client.runtime, tweet.id),
         agentId: client.runtime.agentId,
-        entityId: client.runtime.agentId,
+        userId: client.runtime.agentId,
         content: {
             tweetId: tweet.id,
             text: tweet.text,
@@ -484,18 +484,18 @@ export const parseActionResponseFromText = (
 
 export async function generateTweetActions({
     runtime,
-    prompt,
+    context,
     modelType,
 }: {
     runtime: IAgentRuntime;
-    prompt: string;
+    context: string;
     modelType: ModelType;
 }): Promise<ActionResponse | null> {
     let retryDelay = 1000;
     while (true) {
         try {
             const response = await runtime.useModel(modelType, {
-                prompt,
+                context,
             });
             logger.debug(
                 "Received response from generateText for tweet actions:",
@@ -534,7 +534,7 @@ export async function generateFiller(
     fillerType: string
 ): Promise<string> {
     try {
-        const prompt = composePrompt({
+        const context = composeContext({
             state: { fillerType } as any as State,
             template: `
 # INSTRUCTIONS:
@@ -546,7 +546,7 @@ Only return the text, no additional formatting.
 `,
         });
         const output = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            prompt,
+            context,
         });
         return output.trim();
     } catch (err) {
@@ -583,7 +583,7 @@ export async function generateTopicsIfEmpty(
     runtime: IAgentRuntime
 ): Promise<string[]> {
     try {
-        const prompt = composePrompt({
+        const context = composeContext({
             state: {} as any,
             template: `
 # INSTRUCTIONS:
@@ -596,7 +596,7 @@ Example:
 `,
         });
         const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            prompt,
+            context,
         });
         const topics = response
             .split(",")

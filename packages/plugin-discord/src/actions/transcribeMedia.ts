@@ -1,7 +1,6 @@
 import {
     type Action,
-    type ActionExample, composePrompt, type Content,
-    createUniqueUuid,
+    type ActionExample, composeContext, type Content,
     type HandlerCallback,
     type IAgentRuntime,
     type Memory,
@@ -11,7 +10,7 @@ import {
 export const transcriptionTemplate = `# Transcription of media file
 {{mediaTranscript}}
 
-# Instructions: Return only the full transcript of the media file without any additional prompt or commentary.`;
+# Instructions: Return only the full transcript of the media file without any additional context or commentary.`;
 
 export const mediaAttachmentIdTemplate = `# Messages we are transcribing
 {{recentMessages}}
@@ -32,14 +31,16 @@ const getMediaAttachmentId = async (
     message: Memory,
     state: State
 ): Promise<string | null> => {
-    const prompt = composePrompt({
+    state = (await runtime.composeState(message)) as State;
+
+    const context = composeContext({
         state,
         template: mediaAttachmentIdTemplate,
     });
 
     for (let i = 0; i < 5; i++) {
         const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            prompt,
+            context,
         });
         console.log("response", response);
 
@@ -101,10 +102,17 @@ const transcribeMediaAction = {
         state: State,
         _options: any,
         callback: HandlerCallback,
+        responses: Memory[]
     ) => {
+        for (const response of responses) {
+            await callback(response.content);
+        }
+
+        state = (await runtime.composeState(message)) as State;
+
         const callbackData: Content = {
             text: "", // fill in later
-            actions: ["TRANSCRIBE_MEDIA_RESPONSE"],
+            action: "TRANSCRIBE_MEDIA_RESPONSE",
             source: message.content.source,
             attachments: [],
         };
@@ -116,23 +124,10 @@ const transcribeMediaAction = {
         );
         if (!attachmentId) {
             console.error("Couldn't get media attachment ID from message");
-            await runtime.getMemoryManager("messages").createMemory({
-                entityId: message.entityId,
-                agentId: message.agentId,
-                roomId: message.roomId,
-                content: {
-                    source: "discord",
-                    thought: `I couldn't find the media attachment ID in the message`,
-                    actions: ["TRANSCRIBE_MEDIA_FAILED"],
-                },
-                metadata: {
-                    type: "TRANSCRIBE_MEDIA",
-                },
-            });
             return;
         }
 
-        const attachment = state.data.recentMessages
+        const attachment = state.recentMessagesData
             .filter(
                 (msg) =>
                     msg.content.attachments &&
@@ -146,19 +141,6 @@ const transcribeMediaAction = {
 
         if (!attachment) {
             console.error(`Couldn't find attachment with ID ${attachmentId}`);
-            await runtime.getMemoryManager("messages").createMemory({
-                entityId: message.entityId,
-                agentId: message.agentId,
-                roomId: message.roomId,
-                content: {
-                    source: "discord",
-                    thought: `I couldn't find the media attachment with ID ${attachmentId}`,
-                    actions: ["TRANSCRIBE_MEDIA_FAILED"],
-                },
-                metadata: {
-                    type: "TRANSCRIBE_MEDIA",
-                },
-            });
             return;
         }
 
@@ -207,31 +189,31 @@ ${mediaTranscript.trim()}
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Please transcribe the audio file I just sent.",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Sure, I'll transcribe the full audio for you.",
-                    actions: ["TRANSCRIBE_MEDIA"],
+                    action: "TRANSCRIBE_MEDIA",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Can I get a transcript of that video recording?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Absolutely, give me a moment to generate the full transcript of the video.",
-                    actions: ["TRANSCRIBE_MEDIA"],
+                    action: "TRANSCRIBE_MEDIA",
                 },
             },
         ],

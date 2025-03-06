@@ -8,7 +8,7 @@ export interface TeeLog {
     id: string;
     agentId: string;
     roomId: string;
-    entityId: string;
+    userId: string;
     type: string;
     content: string;
     timestamp: number;
@@ -18,7 +18,7 @@ export interface TeeLog {
 export interface TeeLogQuery {
     agentId?: string;
     roomId?: string;
-    entityId?: string;
+    userId?: string;
     type?: string;
     containsContent?: string;
     startTimestamp?: number;
@@ -38,14 +38,14 @@ export interface TeeAgent {
     attestation: string;
 }
 
-export interface TeePageQuery<Result = any> {
+export interface TeePageQuery<Result> {
     page: number;
     pageSize: number;
     total?: number;
     data?: Result;
 }
 
-export abstract class TeeLogDAO<DB = any> {
+export abstract class TeeLogDAO<DB> {
     db: DB;
 
     abstract initialize(): Promise<void>;

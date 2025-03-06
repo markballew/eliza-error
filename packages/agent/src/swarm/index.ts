@@ -11,12 +11,12 @@ import projectManager from "./projectManager";
 import socialMediaManager from "./socialMediaManager";
 
 export const swarm: {character: Character, init: (runtime: IAgentRuntime) => void, plugins?: Plugin[]}[] = [
+  investmentManager,
+  communityManager,
+  socialMediaManager,
+  liaison,
+  projectManager,
   devRel,
-  // communityManager,
-  // investmentManager,
-  // liaison,
-  // projectManager,
-  // socialMediaManager,
 ];
 
 export default swarm;

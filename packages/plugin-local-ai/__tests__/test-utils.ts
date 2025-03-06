@@ -32,6 +32,7 @@ export const TEST_PATHS = {
 export const createMockRuntime = (): IAgentRuntime => ({
   agentId: '12345678-1234-1234-1234-123456789012',
   databaseAdapter: {} as IDatabaseAdapter,
+  adapters: [],
   character: {} as Character,
   providers: [],
   actions: [],
@@ -39,9 +40,14 @@ export const createMockRuntime = (): IAgentRuntime => ({
   plugins: [],
   fetch: null,
   routes: [],
+  messageManager: {} as IMemoryManager,
+  descriptionManager: {} as IMemoryManager,
+  documentsManager: {} as IMemoryManager,
+  knowledgeManager: {} as IMemoryManager,
   getService: () => null,
   getAllServices: () => new Map(),
   initialize: async () => {},
+  registerMemoryManager: () => {},
   getMemoryManager: () => null,
   registerService: () => {},
   setSetting: () => {},
@@ -55,6 +61,7 @@ export const createMockRuntime = (): IAgentRuntime => ({
   ensureParticipantInRoom: async () => {},
   ensureRoomExists: async () => {},
   composeState: async () => ({} as State),
+  updateRecentMessageState: async (state) => state,
   useModel: async <T>(modelType: ModelType, params: T): Promise<string | Readable> => {
     // Check if there are any pending mock rejections
     const mockCalls = downloadModelMock.mock.calls;

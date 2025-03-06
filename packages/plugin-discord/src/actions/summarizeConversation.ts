@@ -1,6 +1,6 @@
 import {
     type Action,
-    type ActionExample, composePrompt, type Content, getEntityDetails, type HandlerCallback,
+    type ActionExample, composeContext, type Content, getActorDetails, type HandlerCallback,
     type IAgentRuntime,
     type Media,
     type Memory,
@@ -41,14 +41,16 @@ const getDateRange = async (
     message: Memory,
     state: State
 ) => {
-    const prompt = composePrompt({
+    state = (await runtime.composeState(message)) as State;
+
+    const context = composeContext({
         state,
         template: dateRangeTemplate,
     });
 
     for (let i = 0; i < 5; i++) {
         const response = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            prompt,
+            context,
         });
         console.log("response", response);
         // try parsing to a json object
@@ -184,10 +186,18 @@ const summarizeAction = {
         state: State,
         _options: any,
         callback: HandlerCallback,
+        responses: Memory[]
     ) => {
+
+        for (const response of responses) {
+            await callback(response.content);
+        }
+
+        state = (await runtime.composeState(message)) as State;
+
         const callbackData: Content = {
             text: "", // fill in later
-            actions: ["SUMMARIZATION_RESPONSE"],
+            action: "SUMMARIZATION_RESPONSE",
             source: message.content.source,
             attachments: [],
         };
@@ -197,26 +207,13 @@ const summarizeAction = {
         const dateRange = await getDateRange(runtime, message, state);
         if (!dateRange) {
             console.error("Couldn't get date range from message");
-            await runtime.getMemoryManager("messages").createMemory({
-                entityId: message.entityId,
-                agentId: message.agentId,
-                roomId: message.roomId,
-                content: {
-                    source: "discord",
-                    thought: `I couldn't get the date range from the message`,
-                    actions: ["SUMMARIZE_CONVERSATION_FAILED"],
-                },
-                metadata: {
-                    type: "SUMMARIZE_CONVERSATION",
-                },
-            });
             return;
         }
 
         const { objective, start, end } = dateRange;
 
         // 2. get these memories from the database
-        const memories = await runtime.getMemoryManager("messages").getMemories({
+        const memories = await runtime.messageManager.getMemories({
             roomId,
             // subtract start from current time
             start: Number.parseInt(start as string),
@@ -225,7 +222,7 @@ const summarizeAction = {
             unique: false,
         });
 
-        const actors = await getEntityDetails({
+        const actors = await getActorDetails({
             runtime: runtime as IAgentRuntime,
             roomId,
         });
@@ -239,7 +236,7 @@ const summarizeAction = {
                         return `---\nAttachment: ${attachment.id}\n${attachment.description}\n${attachment.text}\n---`;
                     })
                     .join("\n");
-                return `${actorMap.get(memory.entityId)?.name ?? "Unknown User"} (${actorMap.get(memory.entityId)?.username ?? ""}): ${memory.content.text}\n${attachments}`;
+                return `${actorMap.get(memory.userId)?.name ?? "Unknown User"} (${actorMap.get(memory.userId)?.username ?? ""}): ${memory.content.text}\n${attachments}`;
             })
             .join("\n");
 
@@ -251,26 +248,26 @@ const summarizeAction = {
 
         const _datestr = new Date().toUTCString().replace(/:/g, "-");
 
-        state.values.memoriesWithAttachments = formattedMemories;
-        state.values.objective = objective;
+        state.memoriesWithAttachments = formattedMemories;
+        state.objective = objective;
 
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
-            state.values.currentSummary = currentSummary;
-            state.values.currentChunk = chunk;
+            state.currentSummary = currentSummary;
+            state.currentChunk = chunk;
             const template = await trimTokens(
                 summarizationTemplate,
                 chunkSize + 500,
                 runtime
             );
-            const prompt = composePrompt({
+            const context = composeContext({
                 state,
                 // make sure it fits, we can pad the tokens a bit
                 template,
             });
 
             const summary = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-                prompt,
+                context,
             });
 
             currentSummary = `${currentSummary}\n${summary}`;
@@ -278,19 +275,6 @@ const summarizeAction = {
 
         if (!currentSummary) {
             console.error("No summary found, that's not good!");
-            await runtime.getMemoryManager("messages").createMemory({
-                entityId: message.entityId,
-                agentId: message.agentId,
-                roomId: message.roomId,
-                content: {
-                    source: "discord",
-                    thought: `I couldn't summarize the conversation`,
-                    actions: ["SUMMARIZE_CONVERSATION_FAILED"],
-                },
-                metadata: {
-                    type: "SUMMARIZE_CONVERSATION",
-                },
-            });
             return;
         }
 
@@ -336,67 +320,67 @@ ${currentSummary.trim()}
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "```js\nconst x = 10\n```",
                 },
             },
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "can you give me a detailed report on what we're talking about?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "sure, no problem, give me a minute to get that together for you",
-                    actions: ["SUMMARIZE"],
+                    action: "SUMMARIZE",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "please summarize the conversation we just had and include this blogpost i'm linking (Attachment: b3e12)",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "sure, give me a sec",
-                    actions: ["SUMMARIZE"],
+                    action: "SUMMARIZE",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Can you summarize what moon and avf are talking about?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Yeah, just hold on a second while I get that together for you...",
-                    actions: ["SUMMARIZE"],
+                    action: "SUMMARIZE",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "i need to write a blog post about farming, can you summarize the discussion from a few hours ago?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "no problem, give me a few minutes to read through everything",
-                    actions: ["SUMMARIZE"],
+                    action: "SUMMARIZE",
                 },
             },
         ],

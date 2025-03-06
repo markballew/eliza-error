@@ -8,7 +8,7 @@ import {
 } from '../types.ts';
 import { sqliteTables } from './sqliteTables.ts';
 
-export class SqliteTeeLogDAO extends TeeLogDAO {
+export class SqliteTeeLogDAO extends TeeLogDAO<Database> {
     constructor(db: Database) {
         super();
         this.db = db;
@@ -20,14 +20,14 @@ export class SqliteTeeLogDAO extends TeeLogDAO {
 
     async addLog(log: TeeLog): Promise<boolean> {
         const stmt = this.db.prepare(
-            'INSERT INTO tee_logs (id, agentId, roomId, entityId, type, content, timestamp, signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO tee_logs (id, agentId, roomId, userId, type, content, timestamp, signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         );
         try {
             stmt.run(
                 log.id,
                 log.agentId,
                 log.roomId,
-                log.entityId,
+                log.userId,
                 log.type,
                 log.content,
                 log.timestamp,
@@ -60,9 +60,9 @@ export class SqliteTeeLogDAO extends TeeLogDAO {
             whereConditions.push('roomId = ?');
             params.push(query.roomId);
         }
-        if (query.entityId && query.entityId !== '') {
-            whereConditions.push('entityId = ?');
-            params.push(query.entityId);
+        if (query.userId && query.userId !== '') {
+            whereConditions.push('userId = ?');
+            params.push(query.userId);
         }
         if (query.type && query.type !== '') {
             whereConditions.push('type = ?');

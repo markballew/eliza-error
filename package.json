@@ -2,13 +2,14 @@
   "name": "eliza",
   "scripts": {
     "format": "biome format .",
+    "clean": "rm -rf **/node_modules **/dist **/.turbo ",
     "cli": "bun --filter=@elizaos/cli cli",
     "lint": "turbo run lint:fix --filter=./packages/*",
     "check": "biome check . --fix --unsafe --verbose",
     "preinstall": "npx only-allow bun",
     "migrate": "turbo run migrate --filter=./packages/plugin-sql",
     "migrate:generate": "turbo run migrate:generate --filter=./packages/plugin-sql",
-    "swarm": "LOG_LEVEL=trace turbo run build --filter=./packages/core && LOG_LEVEL=trace concurrently \"turbo run start --filter=@elizaos/agent -- --swarm \" \"turbo run start --filter=!@elizaos/agent --filter=!@elizaos/docs --filter=!@elizaos/core\"",
+    "swarm": "turbo run build --filter=./packages/core && concurrently \"turbo run start --filter=@elizaos/agent -- --swarm \" \"turbo run start --filter=!@elizaos/agent --filter=!@elizaos/docs --filter=!@elizaos/core\"",
     "swarm:scenario": "turbo run build --filter=./packages/core && concurrently \"turbo run start --filter=@elizaos/agent -- --swarm --scenario \" \"turbo run start --filter=!@elizaos/agent --filter=!@elizaos/docs --filter=!@elizaos/core\"",
     "build": "turbo run build --filter=./packages/core && turbo run build --filter=./packages/*",
     "build:core": "turbo run build --filter=./packages/core",
@@ -27,6 +28,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@types/bun": "latest",
+    "@types/node": "^22.13.9",
     "@vitest/eslint-plugin": "1.0.1",
     "bun": "1.2.2",
     "concurrently": "9.1.0",
@@ -38,8 +41,7 @@
     "typedoc": "0.26.11",
     "typescript": "5.8.2",
     "vite": "5.4.12",
-    "vitest": "3.0.5",
-    "@types/bun": "latest"
+    "vitest": "3.0.5"
   },
   "bun": {
     "overrides": {

@@ -64,7 +64,7 @@ export class TwitterService extends Service {
         }
         try {
             // Check if client already exists
-            const existingClient = this.getClient(clientId, runtime.agentId);
+            const existingClient = this.getService(clientId, runtime.agentId);
             if (existingClient) {
                 logger.info(`Twitter client already exists for ${clientId}`);
                 return existingClient;
@@ -100,7 +100,7 @@ export class TwitterService extends Service {
         }
     }
 
-    getClient(clientId: string, agentId: UUID): TwitterClientInstance | undefined {
+    getService(clientId: string, agentId: UUID): TwitterClientInstance | undefined {
         return this.clients.get(this.getClientKey(clientId, agentId));
     }
 

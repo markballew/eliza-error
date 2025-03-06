@@ -437,7 +437,7 @@ export class ClientBase extends EventEmitter {
 
       // Get the existing memories from the database
       const existingMemories =
-        await this.runtime.getMemoryManager("messages").getMemoriesByRoomIds({
+        await this.runtime.messageManager.getMemoriesByRoomIds({
           roomIds: cachedTimeline.map((tweet) =>
             createUniqueUuid(this.runtime, tweet.conversationId)
           ),
@@ -471,22 +471,21 @@ export class ClientBase extends EventEmitter {
         for (const tweet of tweetsToSave) {
           logger.log("Saving Tweet", tweet.id);
 
-          if (tweet.userId === this.profile.id) {
-            continue;
-          }
-          
           const roomId = createUniqueUuid(this.runtime, tweet.conversationId);
 
-          const entityId = createUniqueUuid(this.runtime, 
+          const userId = createUniqueUuid(this.runtime, 
             tweet.userId === this.profile.id
               ? this.runtime.agentId
               : tweet.userId);
 
+          if (tweet.userId === this.profile.id) {
+            continue;
+          }
             await this.runtime.ensureConnection({
-              entityId,
+              userId,
               roomId,
               userName: tweet.username,
-              name: tweet.name,
+              userScreenName: tweet.name,
               source: "twitter",
               type: ChannelType.FEED
             });
@@ -503,7 +502,7 @@ export class ClientBase extends EventEmitter {
           logger.log("Creating memory for tweet", tweet.id);
 
           // check if it already exists
-          const memory = await this.runtime.getMemoryManager("messages").getMemoryById(
+          const memory = await this.runtime.messageManager.getMemoryById(
             createUniqueUuid(this.runtime, tweet.id)
           );
 
@@ -512,9 +511,9 @@ export class ClientBase extends EventEmitter {
             break;
           }
 
-          await this.runtime.getMemoryManager("messages").createMemory({
+          await this.runtime.messageManager.createMemory({
             id: createUniqueUuid(this.runtime, tweet.id),
-            entityId,
+            userId,
             content: content,
             agentId: this.runtime.agentId,
             roomId,
@@ -558,7 +557,7 @@ export class ClientBase extends EventEmitter {
 
     // Check the existing memories in the database
     const existingMemories =
-      await this.runtime.getMemoryManager("messages").getMemoriesByRoomIds({
+      await this.runtime.messageManager.getMemoriesByRoomIds({
         roomIds: Array.from(roomIds),
       });
 
@@ -584,22 +583,21 @@ export class ClientBase extends EventEmitter {
     for (const tweet of tweetsToSave) {
       logger.log("Saving Tweet", tweet.id);
 
-      if (tweet.userId === this.profile.id) {
-        continue;
-      }
-
       const roomId = createUniqueUuid(this.runtime, tweet.conversationId);
 
-      const entityId =
+      const userId =
         tweet.userId === this.profile.id
           ? this.runtime.agentId
           : createUniqueUuid(this.runtime, tweet.userId);
 
+      if (tweet.userId === this.profile.id) {
+        continue;
+      }
         await this.runtime.ensureConnection({
-          entityId,
+          userId,
           roomId,
           userName: tweet.username,
-          name: tweet.name,
+          userScreenName: tweet.name,
           source: "twitter",
           type: ChannelType.FEED
         });
@@ -613,9 +611,9 @@ export class ClientBase extends EventEmitter {
           : undefined,
       } as Content;
 
-      await this.runtime.getMemoryManager("messages").createMemory({
+      await this.runtime.messageManager.createMemory({
         id: createUniqueUuid(this.runtime, tweet.id),
-        entityId,
+        userId,
         content: content,
         agentId: this.runtime.agentId,
         roomId,
@@ -644,7 +642,7 @@ export class ClientBase extends EventEmitter {
 
   async saveRequestMessage(message: Memory, state: State) {
     if (message.content.text) {
-      const recentMessage = await this.runtime.getMemoryManager("messages").getMemories({
+      const recentMessage = await this.runtime.messageManager.getMemories({
         roomId: message.roomId,
         count: 1,
         unique: false,
@@ -656,7 +654,7 @@ export class ClientBase extends EventEmitter {
       ) {
         logger.debug("Message already saved", recentMessage[0].id);
       } else {
-        await this.runtime.getMemoryManager("messages").createMemory(message);
+        await this.runtime.messageManager.createMemory(message);
       }
 
       await this.runtime.evaluate(message, {

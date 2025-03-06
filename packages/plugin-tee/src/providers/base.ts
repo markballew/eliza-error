@@ -1,6 +1,3 @@
-import type { RemoteAttestationQuote } from '@elizaos/core';
-import type { TdxQuoteHashAlgorithms } from '@phala/dstack-sdk';
-
 /**
  * Abstract class for deriving keys from the TEE.
  * You can implement your own logic for deriving keys from the TEE.
@@ -21,13 +18,4 @@ import type { TdxQuoteHashAlgorithms } from '@phala/dstack-sdk';
  * ```
  */
 export abstract class DeriveKeyProvider {}
-
-/**
- * Abstract class for remote attestation provider.
- */
-export abstract class RemoteAttestationProvider {
-    abstract generateAttestation(
-        reportData: string,
-        hashAlgorithm?: TdxQuoteHashAlgorithms,
-    ): Promise<RemoteAttestationQuote>;
-}
+export abstract class RemoteAttestationProvider {}

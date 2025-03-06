@@ -8,25 +8,25 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { formatFullReport } from "../reports";
 import { ServiceTypes, type TokenPerformance, type Transaction } from "../types";
-import type { CommunityInvestorService } from "../tradingService";
+import type { TrustTradingService } from "../tradingService";
 
 export const getPositions: Action = {
-    name: "GET_POSITIONS",
+    name: "TRUST_GET_POSITIONS",
     description:
         "Retrieves and formats position data for the agent's portfolio",
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "{{agentName}} show me my positions",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "<NONE>",
-                    actions: ["GET_POSITIONS"],
+                    action: "TRUST_GET_POSITIONS",
                 },
             },
         ],
@@ -35,7 +35,7 @@ export const getPositions: Action = {
 
     async handler(runtime, message, _state, _options, callback: any) {
         console.log("getPositions is running");
-        const tradingService = runtime.getService<CommunityInvestorService>(ServiceTypes.COMMUNITY_INVESTOR);
+        const tradingService = runtime.getService<TrustTradingService>(ServiceTypes.TRUST_TRADING);
 
         if(!tradingService) {
             throw new Error("No trading service found");
@@ -44,7 +44,7 @@ export const getPositions: Action = {
         try {
             const [positions, user] = await Promise.all([
                 tradingService.getOpenPositionsWithBalance(),
-                runtime.databaseAdapter.getEntityById(message.entityId),
+                runtime.databaseAdapter.getEntityById(message.userId),
             ]);
             // console.log("Positions:", positions);
 
@@ -52,12 +52,6 @@ export const getPositions: Action = {
                 logger.error(
                     "No User Found, no entity score can be generated"
                 );
-                await runtime.getMemoryManager("messages").createMemory({
-                    entityId: runtime.agentId,
-                    agentId: runtime.agentId,
-                    roomId: message.roomId,
-                    content: { thought: "No user found", actions: ["GET_POSITIONS_FAILED"] },
-                });
                 return;
             }
 
@@ -76,9 +70,9 @@ export const getPositions: Action = {
                         inReplyTo: message.id
                             ? message.id
                             : undefined,
-                        actions: ["GET_POSITIONS"],
+                        action: "TRUST_GET_POSITIONS",
                     },
-                    entityId: message.entityId,
+                    userId: message.userId,
                     agentId: message.agentId,
                     metadata: message.metadata,
                     roomId: message.roomId,
@@ -188,9 +182,9 @@ export const getPositions: Action = {
                         inReplyTo: message.id
                             ? message.id
                             : undefined,
-                        actions: ["GET_POSITIONS"]
+                        action: "TRUST_GET_POSITIONS"
                     },
-                    entityId: message.entityId,
+                    userId: message.userId,
                     metadata: message.metadata,
                     agentId: message.agentId,
                     roomId: message.roomId,
@@ -205,7 +199,7 @@ export const getPositions: Action = {
     },
 
     async validate(_runtime: IAgentRuntime, message: Memory) {
-        if (message.agentId === message.entityId) return false;
+        if (message.agentId === message.userId) return false;
         return true;
     },
 };

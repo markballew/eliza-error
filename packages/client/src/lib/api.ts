@@ -69,6 +69,22 @@ const fetcher = async ({
     });
 };
 
+// Add these interfaces near the top with other types
+interface LogEntry {
+  level: number
+  time: number
+  msg: string
+  [key: string]: string | number | boolean | null | undefined
+}
+
+interface LogResponse {
+  logs: LogEntry[]
+  count: number
+  total: number
+  level: string
+  levels: string[]
+}
+
 export const apiClient = {
     sendMessage: (
         agentId: string,
@@ -82,7 +98,7 @@ export const apiClient = {
             // Use FormData only when there's a file
             const formData = new FormData();
             formData.append("text", message);
-            formData.append("name", "Anon");
+            formData.append("user", "user");
             formData.append("file", selectedFile);
             // Add roomId if provided
             if (roomId) {
@@ -103,7 +119,7 @@ export const apiClient = {
                 method: "POST",
                 body: {
                     text: message,
-                    name: "Anon",
+                    user: "user",
                     roomId: roomId || undefined,
                     worldId
                 },
@@ -134,7 +150,7 @@ export const apiClient = {
             body: formData,
         });
     },
-    sendAudioMessage: async (agentId: string, audioBlob: Blob, options?: { roomId?: string; entityId?: string; userName?: string; name?: string }) => {
+    sendAudioMessage: async (agentId: string, audioBlob: Blob, options?: { roomId?: string; userId?: string; userName?: string; name?: string }) => {
         const formData = new FormData();
         formData.append("file", audioBlob, "recording.wav");
         
@@ -151,7 +167,7 @@ export const apiClient = {
             body: formData,
         });
     },
-    speechConversation: async (agentId: string, text: string, options?: { roomId?: string; entityId?: string; userName?: string; name?: string }) => {
+    speechConversation: async (agentId: string, text: string, options?: { roomId?: string; userId?: string; userName?: string; name?: string }) => {
         return fetcher({
             url: `/agents/${agentId}/speech/conversation`,
             method: "POST",
@@ -256,4 +272,10 @@ export const apiClient = {
         });
     },
     
+    // Add this new method
+    getLogs: (level: string): Promise<LogResponse> => 
+        fetcher({ 
+            url: `/logs?level=${level}`,
+            method: "GET"
+        }),
 };

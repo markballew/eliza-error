@@ -1,3 +1,4 @@
+import { messageCompletionFooter, shouldRespondFooter } from "@elizaos/core";
 
 export const twitterShouldRespondTemplate =
     `# Task: Decide if {{agentName}} should respond.
@@ -7,48 +8,48 @@ About {{agentName}}:
 # INSTRUCTIONS: Determine if {{agentName}} should respond to the message and participate in the conversation. Do not comment. Just respond with "RESPOND" or "IGNORE" or "STOP".
 
 # RESPONSE EXAMPLES
-{{name1}}: I just saw a really great movie
-{{name2}}: Oh? Which movie?
+{{user1}}: I just saw a really great movie
+{{user2}}: Oh? Which movie?
 Response: IGNORE
 
 {{agentName}}: Oh, this is my favorite scene
-{{name1}}: sick
-{{name2}}: wait, why is it your favorite scene
+{{user1}}: sick
+{{user2}}: wait, why is it your favorite scene
 Response: RESPOND
 
-{{name1}}: stfu bot
+{{user1}}: stfu bot
 Response: STOP
 
-{{name1}}: Hey {{agentName}}, can you help me with something
+{{user1}}: Hey {{agentName}}, can you help me with something
 Response: RESPOND
 
-{{name1}}: {{agentName}} stfu plz
+{{user1}}: {{agentName}} stfu plz
 Response: STOP
 
-{{name1}}: i need help
+{{user1}}: i need help
 {{agentName}}: how can I help you?
-{{name1}}: no. i need help from someone else
+{{user1}}: no. i need help from someone else
 Response: IGNORE
 
-{{name1}}: Hey {{agentName}}, can I ask you a question
+{{user1}}: Hey {{agentName}}, can I ask you a question
 {{agentName}}: Sure, what is it
-{{name1}}: can you ask claude to create a basic react module that demonstrates a counter
+{{user1}}: can you ask claude to create a basic react module that demonstrates a counter
 Response: RESPOND
 
-{{name1}}: {{agentName}} can you tell me a story
-{{name1}}: about a girl named elara
+{{user1}}: {{agentName}} can you tell me a story
+{{user1}}: about a girl named elara
 {{agentName}}: Sure.
 {{agentName}}: Once upon a time, in a quaint little village, there was a curious girl named Elara.
 {{agentName}}: Elara was known for her adventurous spirit and her knack for finding beauty in the mundane.
-{{name1}}: I'm loving it, keep going
+{{user1}}: I'm loving it, keep going
 Response: RESPOND
 
-{{name1}}: {{agentName}} stop responding plz
+{{user1}}: {{agentName}} stop responding plz
 Response: STOP
 
-{{name1}}: okay, i want to test something. can you say marco?
+{{user1}}: okay, i want to test something. can you say marco?
 {{agentName}}: marco
-{{name1}}: great. okay, now do it again
+{{user1}}: great. okay, now do it again
 Response: RESPOND
 
 Response options are RESPOND, IGNORE and STOP.
@@ -65,20 +66,43 @@ If {{agentName}} is conversing with a user and they have not asked to stop, it i
 {{recentMessages}}
 
 # INSTRUCTIONS: Choose the option that best describes {{agentName}}'s response to the last message.
-The available options are RESPOND, IGNORE, or STOP. Choose the most appropriate option.`;
+${shouldRespondFooter}`;
 
-export const twitterVoiceHandlerTemplate = `# Task: Generate conversational voice dialog for {{agentName}}.
-{{providers}}
-# Instructions: Write the next message for {{agentName}}. Include the appropriate action from the list: {{actionNames}}
-Response format should be formatted in a valid JSON block like this:
-\`\`\`json
-{ "name": "{{agentName}}", "text": "<string>", "action": "<string>" }
-\`\`\`
+export const twitterVoiceHandlerTemplate =
+    `# Task: Generate conversational voice dialog for {{agentName}}.
+    About {{agentName}}:
+    {{bio}}
 
-The "action" field should be one of the options in [Available Actions] and the "text" field should be the response you want to send. Do not including any thinking or internal reflection in the "text" field. "thought" should be a short description of what the agent is thinking about before responding, inlcuding a brief justification for the response.`;
+    # Attachments
+    {{attachments}}
+
+    {{actions}}
+
+    {{messageDirections}}
+
+    {{recentMessages}}
+
+    # Instructions: Write the next message for {{agentName}}. Include an optional action if appropriate. {{actionNames}}
+    ${messageCompletionFooter}`;
+
 
 export const twitterPostTemplate = `# Task: Create a post in the voice and style and perspective of {{agentName}} @{{twitterUserName}}.
-{{providers}}
-Write a post that is {{adjective}} about {{topic}} (without mentioning {{topic}} directly), from the perspective of {{agentName}}. Do not add commentary or acknowledge this request, just write the post.
-Your response should be 1, 2, or 3 sentences (choose the length at random).
-Your response should not contain any questions. Brief, concise statements only. The total character count MUST be less than 280. No emojis. Use \\n\\n (double spaces) between statements if there are multiple statements in your response.`;
+    {{system}}
+    
+    # Areas of Expertise
+    {{knowledge}}
+    
+    # About {{agentName}} (@{{twitterUserName}}):
+    {{bio}}
+    {{topics}}
+    
+    {{providers}}
+    
+    {{characterPostExamples}}
+    
+    {{postDirections}}
+    
+    Write a post that is {{adjective}} about {{topic}} (without mentioning {{topic}} directly), from the perspective of {{agentName}}. Do not add commentary or acknowledge this request, just write the post.
+    Your response should be 1, 2, or 3 sentences (choose the length at random).
+    Your response should not contain any questions. Brief, concise statements only. The total character count MUST be less than 280. No emojis. Use \\n\\n (double spaces) between statements if there are multiple statements in your response.`;
+    

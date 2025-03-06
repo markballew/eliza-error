@@ -143,31 +143,31 @@ export default {
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Hey, let's join the 'Crypto Talk' Twitter Space!",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "On my way",
-                    actions: ["JOIN_TWITTER_SPACE"],
+                    action: "JOIN_TWITTER_SPACE",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
-                    text: "@{{name2}}, jump into the 'AI Revolution' Space!",
+                    text: "@{{user2}}, jump into the 'AI Revolution' Space!",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Joining now!",
-                    actions: ["JOIN_TWITTER_SPACE"],
+                    action: "JOIN_TWITTER_SPACE",
                 },
             },
         ],

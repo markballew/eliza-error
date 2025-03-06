@@ -51,8 +51,8 @@ export type TradingEvent =
 /**
  * Unified Trading Service that centralizes all trading operations
  */
-export class CommunityInvestorService extends Service {
-    static serviceType = ServiceTypes.COMMUNITY_INVESTOR;
+export class TrustTradingService extends Service {
+    static serviceType = ServiceTypes.TRUST_TRADING;
     capabilityDescription = "The agent is able to trade on the Solana blockchain";
 
     // Memory managers
@@ -79,6 +79,13 @@ export class CommunityInvestorService extends Service {
     ) {
         super(runtime);
         
+        // Register memory managers
+        this.tokenMemoryManager = this.registerMemoryManager("tokens");
+        this.positionMemoryManager = this.registerMemoryManager("positions");
+        this.transactionMemoryManager = this.registerMemoryManager("transactions");
+        this.recommendationMemoryManager = this.registerMemoryManager("recommendations");
+        this.recommenderMemoryManager = this.registerMemoryManager("recommenders");
+        
         // Initialize API clients
         this.birdeyeClient = BirdeyeClient.createFromRuntime(runtime);
         this.dexscreenerClient = DexscreenerClient.createFromRuntime(runtime);
@@ -99,8 +106,8 @@ export class CommunityInvestorService extends Service {
         this.tradingConfig = DEFAULT_TRADING_CONFIG;
     }
 
-    static async start(runtime: IAgentRuntime): Promise<CommunityInvestorService> {
-        const tradingService = new CommunityInvestorService(runtime);
+    static async start(runtime: IAgentRuntime): Promise<TrustTradingService> {
+        const tradingService = new TrustTradingService(runtime);
         return tradingService;
     }
 
@@ -113,6 +120,25 @@ export class CommunityInvestorService extends Service {
 
     async stop(): Promise<void> {
         return Promise.resolve();
+    }
+
+    /**
+     * Register a memory manager
+     */
+    private registerMemoryManager(name: string): IMemoryManager {
+        const existingManager = this.runtime.getMemoryManager(name);
+        if (existingManager) {
+            return existingManager;
+        }
+
+        const memoryManager = new MemoryManager({
+            tableName: name,
+            runtime: this.runtime,
+        });
+        
+        
+        this.runtime.registerMemoryManager(memoryManager);
+        return memoryManager;
     }
 
     /**
@@ -1334,9 +1360,9 @@ export class CommunityInvestorService extends Service {
             const recommendations: TokenRecommendation[] = [];
             
             for (const memory of memories) {
-                if (memory.metadata.recommendation && 
-                    (memory.metadata.recommendation as TokenRecommendation).entityId === entityId) {
-                    recommendations.push(memory.metadata.recommendation as TokenRecommendation);
+                if (memory.content.recommendation && 
+                    (memory.content.recommendation as TokenRecommendation).entityId === entityId) {
+                    recommendations.push(memory.content.recommendation as TokenRecommendation);
                 }
             }
             
@@ -1417,7 +1443,7 @@ export class CommunityInvestorService extends Service {
             // Create memory object
             const memory: Memory = {
                 id: uuidv4() as UUID,
-                entityId: this.runtime.agentId,
+                userId: this.runtime.agentId as UUID,
                 roomId: "global" as UUID,
                 content: {
                     text: `Token performance data for ${token.symbol || token.address} on ${token.chain}`,
@@ -1450,7 +1476,7 @@ export class CommunityInvestorService extends Service {
             // Create memory object
             const memory: Memory = {
                 id: uuidv4() as UUID,
-                entityId: this.runtime.agentId,
+                userId: this.runtime.agentId as UUID,
                 roomId: "global" as UUID,
                 content: {
                     text: `Position data for token ${position.tokenAddress} by entity ${position.entityId}`,
@@ -1483,7 +1509,7 @@ export class CommunityInvestorService extends Service {
             // Create memory object
             const memory: Memory = {
                 id: uuidv4() as UUID,
-                entityId: this.runtime.agentId,
+                userId: this.runtime.agentId as UUID,
                 roomId: "global" as UUID,
                 content: {
                     text: `Transaction data for position ${transaction.positionId} token ${transaction.tokenAddress} ${transaction.type}`,
@@ -1524,7 +1550,7 @@ export class CommunityInvestorService extends Service {
             // Create memory object
             const memory: Memory = {
                 id: uuidv4() as UUID,
-                entityId: this.runtime.agentId,
+                userId: this.runtime.agentId as UUID,
                 roomId: "global" as UUID,
                 content: {
                     text: `Token recommendation for ${recommendation.tokenAddress} by entity ${recommendation.entityId}`,
@@ -1557,7 +1583,7 @@ export class CommunityInvestorService extends Service {
             // Create memory object
             const memory: Memory = {
                 id: uuidv4() as UUID,
-                entityId: this.runtime.agentId,
+                userId: this.runtime.agentId as UUID,
                 roomId: "global" as UUID,
                 content: {
                     text: `Recommender metrics for ${metrics.entityId}`,
@@ -1590,7 +1616,7 @@ export class CommunityInvestorService extends Service {
             // Create memory object
             const memory: Memory = {
                 id: uuidv4() as UUID,
-                entityId: this.runtime.agentId,
+                userId: this.runtime.agentId as UUID,
                 roomId: "global" as UUID,
                 content: {
                     text: `Recommender metrics history for ${history.entityId}`,

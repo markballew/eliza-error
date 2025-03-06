@@ -10,7 +10,7 @@ import { generateText } from "ai";
 import { encodingForModel, type TiktokenModel } from "js-tiktoken";
 import { z } from "zod";
 
-async function tokenizeText(model: ModelType, prompt: string) {
+async function tokenizeText(model: ModelType, context: string) {
   const modelName =
     model === ModelTypes.TEXT_SMALL
       ? process.env.OPENAI_SMALL_MODEL ??
@@ -18,7 +18,7 @@ async function tokenizeText(model: ModelType, prompt: string) {
         "gpt-4o-mini"
       : process.env.LARGE_MODEL ?? "gpt-4o";
   const encoding = encodingForModel(modelName as TiktokenModel);
-  const tokens = encoding.encode(prompt);
+  const tokens = encoding.encode(context);
   return tokens;
 }
 
@@ -117,10 +117,10 @@ export const openaiPlugin: Plugin = {
     [ModelTypes.TEXT_TOKENIZER_ENCODE]: async (
       _runtime,
       {
-      prompt,
+      context,
       modelType = ModelTypes.TEXT_LARGE,
     }: TokenizeTextParams) => {
-      return await tokenizeText(modelType ?? ModelTypes.TEXT_LARGE, prompt);
+      return await tokenizeText(modelType ?? ModelTypes.TEXT_LARGE, context);
     },
     [ModelTypes.TEXT_TOKENIZER_DECODE]: async (
       _runtime,
@@ -133,7 +133,7 @@ export const openaiPlugin: Plugin = {
     [ModelTypes.TEXT_SMALL]: async (
       runtime,
       {
-      prompt,
+      context,
       stopSequences = [],
     }: GenerateTextParams) => {
       const temperature = 0.7;
@@ -155,11 +155,11 @@ export const openaiPlugin: Plugin = {
         "gpt-4o-mini";
 
         console.log("generating text")
-        console.log(prompt)
+        console.log(context)
 
       const { text: openaiResponse } = await generateText({
         model: openai.languageModel(model),
-        prompt: prompt,
+        prompt: context,
         system: runtime.character.system ?? undefined,
         temperature: temperature,
         maxTokens: max_response_length,
@@ -173,7 +173,7 @@ export const openaiPlugin: Plugin = {
     [ModelTypes.TEXT_LARGE]: async (
       runtime,
       {
-      prompt,
+      context,
       stopSequences = [],
       maxTokens = 8192,
       temperature = 0.7,
@@ -193,7 +193,7 @@ export const openaiPlugin: Plugin = {
 
       const { text: openaiResponse } = await generateText({
         model: openai.languageModel(model),
-        prompt: prompt,
+        prompt: context,
         system: runtime.character.system ?? undefined,
         temperature: temperature,
         maxTokens: maxTokens,
@@ -336,6 +336,7 @@ export const openaiPlugin: Plugin = {
           fn: async (runtime) => {
             try {
               const text = await runtime.useModel(ModelTypes.TEXT_LARGE, {
+                context: "Debug Mode:",
                 prompt: "What is the nature of reality in 10 words?",
               });
               if (text.length === 0) {
@@ -353,6 +354,7 @@ export const openaiPlugin: Plugin = {
           fn: async (runtime) => {
             try {
               const text = await runtime.useModel(ModelTypes.TEXT_SMALL, {
+                context: "Debug Mode:",
                 prompt: "What is the nature of reality in 10 words?",
               });
               if (text.length === 0) {
@@ -414,8 +416,8 @@ export const openaiPlugin: Plugin = {
         {
           name: 'openai_test_text_tokenizer_encode',
           fn: async (runtime) => {
-            const prompt = "Hello tokenizer encode!";
-            const tokens = await runtime.useModel(ModelTypes.TEXT_TOKENIZER_ENCODE, { prompt });
+            const context = "Hello tokenizer encode!";
+            const tokens = await runtime.useModel(ModelTypes.TEXT_TOKENIZER_ENCODE, { context });
             if (!Array.isArray(tokens) || tokens.length === 0) {
               throw new Error("Failed to tokenize text: expected non-empty array of tokens");
             }
@@ -425,13 +427,13 @@ export const openaiPlugin: Plugin = {
         {
           name: 'openai_test_text_tokenizer_decode',
           fn: async (runtime) => {
-            const prompt = "Hello tokenizer decode!";
+            const context = "Hello tokenizer decode!";
             // Encode the string into tokens first
-            const tokens = await runtime.useModel(ModelTypes.TEXT_TOKENIZER_ENCODE, { prompt });
+            const tokens = await runtime.useModel(ModelTypes.TEXT_TOKENIZER_ENCODE, { context });
             // Now decode tokens back into text
             const decodedText = await runtime.useModel(ModelTypes.TEXT_TOKENIZER_DECODE, { tokens });
-            if (decodedText !== prompt) {
-              throw new Error(`Decoded text does not match original. Expected "${prompt}", got "${decodedText}"`);
+            if (decodedText !== context) {
+              throw new Error(`Decoded text does not match original. Expected "${context}", got "${decodedText}"`);
             }
             console.log("Decoded text:", decodedText);
           }

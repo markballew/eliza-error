@@ -48,7 +48,7 @@ export const anthropicPlugin: Plugin = {
     [ModelTypes.TEXT_SMALL]: async (
       runtime,
       {
-        prompt,
+      context,
       stopSequences = [],
     }: GenerateTextParams) => {
       const temperature = 0.7;
@@ -57,7 +57,7 @@ export const anthropicPlugin: Plugin = {
 
       const { text } = await generateText({
         model: anthropic(smallModel),
-        prompt,
+        prompt: context,
         // Pass along any system prompt if available.
         system: runtime.character.system ?? undefined,
         temperature,
@@ -71,7 +71,7 @@ export const anthropicPlugin: Plugin = {
     [ModelTypes.TEXT_LARGE]: async (
       runtime,
       {
-      prompt,
+      context,
       maxTokens = 8192,
       stopSequences = [],
       temperature = 0.7,
@@ -82,7 +82,7 @@ export const anthropicPlugin: Plugin = {
 
       const { text } = await generateText({
         model: anthropic(largeModel),
-        prompt,
+        prompt: context,
         system: runtime.character.system ?? undefined,
         temperature,
         maxTokens,
@@ -102,6 +102,7 @@ export const anthropicPlugin: Plugin = {
           fn: async (runtime) => {
             try {
               const text = await runtime.useModel(ModelTypes.TEXT_SMALL, {
+                context: "Debug Mode:",
                 prompt: "What is the nature of reality in 10 words?",
               });
               if (text.length === 0) {
@@ -119,6 +120,7 @@ export const anthropicPlugin: Plugin = {
           fn: async (runtime) => {
             try {
               const text = await runtime.useModel(ModelTypes.TEXT_LARGE, {
+                context: "Debug Mode:",
                 prompt: "What is the nature of reality in 10 words?",
               });
               if (text.length === 0) {

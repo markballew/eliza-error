@@ -8,7 +8,7 @@ import {
     type Media,
     type Memory,
     ModelTypes,
-    Role,
+    RoleName,
     type UUID
 } from "@elizaos/core";
 import type { Chat, Message, ReactionType, Update } from "@telegraf/types";
@@ -226,7 +226,7 @@ export class MessageManager {
 
         try {
             // Convert IDs to UUIDs
-            const entityId = createUniqueUuid(this.runtime, ctx.from.id.toString()) as UUID;
+            const userId = createUniqueUuid(this.runtime, ctx.from.id.toString()) as UUID;
             const userName = ctx.from.username || ctx.from.first_name || "Unknown User";
             const chatId = createUniqueUuid(this.runtime, ctx.chat?.id.toString());
             const roomId = chatId;
@@ -252,14 +252,14 @@ export class MessageManager {
             // Create the memory object
             const memory: Memory = {
                 id: messageId,
-                entityId,
+                userId,
                 agentId: this.runtime.agentId,
                 roomId,
                 content: {
                     text: fullText,
                     source: "telegram",
-                    // name: userName,
-                    // userName: userName,
+                    name: userName,
+                    userName: userName,
                     // Safely access reply_to_message with type guard
                     inReplyTo: 'reply_to_message' in message && message.reply_to_message ? 
                     createUniqueUuid(this.runtime, message.reply_to_message.message_id.toString()) : 
@@ -298,10 +298,10 @@ export class MessageManager {
             }
 
             await this.runtime.ensureConnection({
-                entityId,
+                userId,
                 roomId,
                 userName,
-                name: userName,
+                userScreenName: userName,
                 source: "telegram",
                 channelId: ctx.chat.id.toString(),
                 serverId: chat.id.toString(),
@@ -325,7 +325,7 @@ export class MessageManager {
                         ownership: chat.type === 'supergroup' ? { ownerId: chat.id.toString() } : undefined,
                         roles: {
                             // TODO: chat.id is probably wrong key for this
-                            [ownerId]: Role.OWNER,
+                            [ownerId]: RoleName.OWNER,
                         },
                     }
                 });
@@ -348,7 +348,7 @@ export class MessageManager {
 
                         const responseMemory: Memory = {
                             id: createUniqueUuid(this.runtime, sentMessage.message_id.toString()),
-                            entityId: this.runtime.agentId,
+                            userId: this.runtime.agentId,
                             agentId: this.runtime.agentId,
                             roomId,
                             content: {
@@ -359,7 +359,7 @@ export class MessageManager {
                             createdAt: sentMessage.date * 1000
                         };
 
-                        await this.runtime.getMemoryManager("messages").createMemory(responseMemory);
+                        await this.runtime.messageManager.createMemory(responseMemory);
                         memories.push(responseMemory);
                     }
 
@@ -393,7 +393,7 @@ export class MessageManager {
         const reactionEmoji = (reaction.new_reaction[0] as ReactionType).type;
 
         try {
-            const entityId = createUniqueUuid(this.runtime, ctx.from.id.toString()) as UUID;
+            const userId = createUniqueUuid(this.runtime, ctx.from.id.toString()) as UUID;
             const roomId = createUniqueUuid(this.runtime, ctx.chat.id.toString());
 
             const reactionId = createUniqueUuid(this.runtime, `${reaction.message_id}-${ctx.from.id}-${Date.now()}`);
@@ -401,19 +401,19 @@ export class MessageManager {
             // Create reaction memory
             const memory: Memory = {
                 id: reactionId,
-                entityId,
+                userId,
                 agentId: this.runtime.agentId,
                 roomId,
                 content: {
                     text: `Reacted with: ${reactionType === 'emoji' ? reactionEmoji : reactionType}`,
                     source: "telegram",
-                    // name: ctx.from.first_name,
-                    // userName: ctx.from.username,
+                    name: ctx.from.first_name,
+                    userName: ctx.from.username,
                     inReplyTo: createUniqueUuid(this.runtime, reaction.message_id.toString())
                 },
                 createdAt: Date.now()
             };
-            await this.runtime.getMemoryManager("messages").createMemory(memory);
+            await this.runtime.messageManager.createMemory(memory);
 
             // Create callback for handling reaction responses
             const callback: HandlerCallback = async (content: Content) => {
@@ -421,7 +421,7 @@ export class MessageManager {
                     const sentMessage = await ctx.reply(content.text);
                     const responseMemory: Memory = {
                         id: createUniqueUuid(this.runtime, sentMessage.message_id.toString()),
-                        entityId: this.runtime.agentId,
+                        userId: this.runtime.agentId,
                         agentId: this.runtime.agentId,
                         roomId,
                         content: {

@@ -42,15 +42,15 @@ export default class Twitter {
 					const tweetId = createUniqueUuid(this.runtime, item.id);
 					
 					// Check if we already have this tweet
-					const existingTweet = await this.runtime.getMemoryManager("messages").getMemoryById(tweetId);
+					const existingTweet = await this.runtime.messageManager.getMemoryById(tweetId);
 					if (existingTweet) {
 						continue;
 					}
 
 					// Create memory for the tweet
-					await this.runtime.getMemoryManager("messages").createMemory({
+					await this.runtime.messageManager.createMemory({
 						id: tweetId,
-						entityId: this.runtime.agentId,
+						userId: this.runtime.agentId,
 						agentId: this.runtime.agentId,
 						content: {
 							text: item.text,

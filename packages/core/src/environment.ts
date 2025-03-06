@@ -144,7 +144,7 @@ export const settings = isBrowser() ? environmentSettings : loadEnvConfig();
 
 // Helper schemas for nested types
 export const MessageExampleSchema = z.object({
-  name: z.string(),
+    user: z.string(),
     content: z
         .object({
             text: z.string(),

@@ -1,15 +1,16 @@
 import {
-    composePrompt,
-    ModelTypes,
+    composeContext,
     type Evaluator,
     type IAgentRuntime,
     type Memory,
+    MemoryManager,
+    ModelTypes,
     type State,
     type UUID
 } from "@elizaos/core";
 import { v4 as uuid } from "uuid";
 import { z } from "zod";
-import type { CommunityInvestorService } from "../tradingService.js";
+import type { TrustTradingService } from "../tradingService.js";
 import { ServiceTypes, type RecommendationMemory } from "../types.js";
 import {
     extractXMLFromResponse,
@@ -17,6 +18,7 @@ import {
     parseConfirmationResponse,
     parseRecommendationsResponse,
     parseSignalResponse,
+    render,
 } from "../utils.js";
 import { examples } from "./examples.js";
 import { recommendationSchema } from "./schema.js";
@@ -332,12 +334,12 @@ const TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 export const formatRecommendations = (recommendations: Memory[]) => {
     return recommendations
         .reverse()
-        .map((rec: Memory) => `${JSON.stringify(rec.metadata.recommendation)}`)
+        .map((rec: Memory) => `${JSON.stringify(rec.content.recommendation)}`)
         .join("\n");
 };
 
 export const recommendationEvaluator: Evaluator = {
-    name: "EXTRACT_RECOMMENDATIONS",
+    name: "TRUST_EXTRACT_RECOMMENDATIONS",
     similes: [],
     alwaysRun: true,
     validate: async (
@@ -348,14 +350,14 @@ export const recommendationEvaluator: Evaluator = {
             "validating message for recommendation",
             message.content.text.length < 5
                 ? false
-                : message.entityId !== message.agentId
+                : message.userId !== message.agentId
         );
 
         if (message.content.text.length < 5) {
             return false;
         }
 
-        return message.entityId !== message.agentId;
+        return message.userId !== message.agentId;
     },
     description:
         "Extract recommendations to buy or sell memecoins/tokens from the conversation, including details like ticker, contract address, conviction level, and recommender username.",
@@ -380,15 +382,15 @@ async function handler(
     console.log("Running the evaluator");
     if (!state) return;
 
-    const { agentId, roomId } = message;
+    const { agentId, roomId } = state;
 
-    if (!runtime.getService(ServiceTypes.COMMUNITY_INVESTOR)) {
+    if (!runtime.getService(ServiceTypes.TRUST_TRADING)) {
         console.log("no trading service");
         return;
     }
 
-    const tradingService = runtime.getService<CommunityInvestorService>(
-         ServiceTypes.COMMUNITY_INVESTOR
+    const tradingService = runtime.getService<TrustTradingService>(
+         ServiceTypes.TRUST_TRADING
     )!;
 
     if (!tradingService.hasWallet("solana")) {
@@ -396,18 +398,18 @@ async function handler(
         return;
     }
 
-    if (message.entityId === message.agentId) return;
+    if (message.userId === message.agentId) return;
     console.log("evaluating recommendations....");
 
     console.log("message", message.content.text);
 
-    const sentimentPrompt = composePrompt({
+    const sentimentContext = composeContext({
         template: sentimentTemplate,
         state: { message: message.content.text } as unknown as State,
     });
 
     const sentimentText = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-        prompt: sentimentPrompt,
+        context: sentimentContext,
     });
 
     const signal = extractXMLFromResponse(sentimentText, "signal");
@@ -425,7 +427,7 @@ async function handler(
                     : undefined,
                 buttons: [],
             },
-            entityId: message.entityId,
+            userId: message.userId,
             agentId: message.agentId,
             metadata: {
                 ...message.metadata,
@@ -440,6 +442,15 @@ async function handler(
     if (signalInt === 3) {
         console.log("signal is 3, skipping not related to tokens at all");
         return;
+    }
+
+    if (!runtime.getMemoryManager("recommendations")) {
+        runtime.registerMemoryManager(
+            new MemoryManager({
+                runtime,
+                tableName: "recommendations",
+            })
+        );
     }
 
     // Get recent recommendations
@@ -461,15 +472,15 @@ async function handler(
 
     console.log("message", message);
 
-    const prompt = composePrompt({
+    const context = composeContext({
         state: {
             schema: JSON.stringify(getZodJsonSchema(recommendationSchema)),
             message: JSON.stringify({
                 text: message.content.text,
-                entityId: message.entityId,
+                userId: message.userId,
                 agentId: message.agentId,
                 roomId: message.roomId,
-                // TODO: name vs userName is bad
+                // TODO: userScreenName vs userName is bad
                 // This should be handled better, especially cross platform
                 username: message.content.username ?? message.content.userName,
             }),
@@ -480,7 +491,7 @@ async function handler(
     // Only function slowing us down: generateText
     const [text, participants] = await Promise.all([
         runtime.useModel(ModelTypes.TEXT_LARGE, {
-            prompt,
+            context: context,
             stopSequences: [],
         }),
         runtime.databaseAdapter.getParticipantsForRoom(message.roomId),
@@ -512,13 +523,12 @@ async function handler(
 
     const tokenRecommendationsSet = new Set(
         recentRecommendations
-            .filter((r) => r.metadata.recommendation.confirmed)
-            .map((r) => r.metadata.recommendation.tokenAddress)
+            .filter((r) => r.content.recommendation.confirmed)
+            .map((r) => r.content.recommendation.tokenAddress)
     );
 
     const filteredRecommendations = recommendations
-    // TODO: Replace username with entity ID
-        .filter((rec) => rec.username !== runtime.character.name)
+        .filter((rec) => rec.username !== state.agentName)
         .filter((rec) => !tokenRecommendationsSet.has(rec.tokenAddress));
 
     if (filteredRecommendations.length === 0) {
@@ -564,18 +574,18 @@ async function handler(
             return (
                 user.names.map((name) => name.toLowerCase().trim())
                     .includes(recommendation.username.toLowerCase().trim()) ||
-                user.id === message.entityId
+                user.id === message.userId
             );
         });
 
         if (!user) {
-            console.warn("Could not find name: ", recommendation.username);
+            console.warn("Could not find user: ", recommendation.username);
             continue;
         }
 
         if (TELEGRAM_CHANNEL_ID) {
             (async () => {
-                const prompt = composePrompt({
+                const context = composeContext({
                     state: {
                         recommendation: JSON.stringify(recommendation),
                         recipientAgentName: "scarletAgent",
@@ -584,7 +594,7 @@ async function handler(
                 });
 
                 const text = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-                    prompt,
+                    context: context,
                 });
 
                 const extractedXML = extractXMLFromResponse(text, "message");
@@ -601,9 +611,9 @@ async function handler(
                             buttons: [],
                             channelId: TELEGRAM_CHANNEL_ID,
                             source: "telegram",
-                            actions: ["CONFIRM_RECOMMENDATION"],
+                            action: "TRUST_CONFIRM_RECOMMENDATION",
                         },
-                        entityId: message.entityId,
+                        userId: message.userId,
                         agentId: message.agentId,
                         roomId: message.roomId,
                         metadata: message.metadata,
@@ -616,7 +626,7 @@ async function handler(
 
         const recMemory: Memory = {
             id: uuid() as UUID,
-            entityId: message.entityId,
+            userId: user.id,
             agentId,
             content: { text: "", recommendation },
             roomId,
@@ -645,10 +655,10 @@ async function handler(
                             ? message.id
                             : undefined,
                         buttons: [],
-                        actions: ["CONFIRM_RECOMMENDATION"],
+                        action: "TRUST_CONFIRM_RECOMMENDATION",
                         source: "telegram",
                     },
-                    entityId: message.entityId,
+                    userId: user.id,
                     agentId: message.agentId,
                     metadata: message.metadata,
                     roomId: message.roomId,
@@ -665,11 +675,11 @@ async function handler(
                     console.log("message", message.metadata);
                     const actionMemory = {
                         id: message.id,
-                        entityId: message.entityId,
+                        userId: user.id,
                         agentId,
                         content: {
                             text: message.content.text,
-                            actions: ["CONFIRM_RECOMMENDATION"],
+                            action: "TRUST_CONFIRM_RECOMMENDATION",
                         },
                         roomId,
                         createdAt: Date.now(),
@@ -678,7 +688,7 @@ async function handler(
                         {
                             ...message,
                             ...actionMemory,
-                            actions: [""],
+                            action: "",
                         } as Memory,
                         [actionMemory as Memory],
                         state,
@@ -686,20 +696,17 @@ async function handler(
                     );
                     return;
                 }
-                const prompt = composePrompt({
-                    state: {
-                        agentName: runtime.character.name,
-                        msg: message.content.text,
-                        recommendation: JSON.stringify(recommendation),
-                        token: tokenString,
-                    } as unknown as State,
-                    template: recommendationConfirmTemplate,
+                const context = render(recommendationConfirmTemplate, {
+                    agentName: state.agentName!,
+                    msg: message.content.text,
+                    recommendation: JSON.stringify(recommendation),
+                    token: tokenString,
                 });
 
-                console.log("prompt", prompt);
+                console.log("context", context);
 
                 const res = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-                    prompt,
+                    context: context,
                 });
 
                 const agentResponseMsg = extractXMLFromResponse(res, "message");
@@ -715,10 +722,10 @@ async function handler(
                             ? message.id
                             : undefined,
                         buttons: [],
-                        actions: ["CONFIRM_RECOMMENDATION"],
+                        action: "TRUST_CONFIRM_RECOMMENDATION",
                         source: "telegram",
                     },
-                    entityId: message.entityId,
+                    userId: user.id,
                     agentId: message.agentId,
                     roomId: message.roomId,
                     metadata: message.metadata,

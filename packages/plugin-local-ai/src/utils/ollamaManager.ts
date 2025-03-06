@@ -13,7 +13,7 @@ interface OllamaResponse {
   model: string;
   response: string;
   done: boolean;
-  prompt?: number[];
+  context?: number[];
   total_duration?: number;
   load_duration?: number;
   prompt_eval_duration?: number;
@@ -206,7 +206,7 @@ export class OllamaManager {
         currentInitState: this.initialized,
         managerInitState: this.isInitialized(),
         modelType: params.modelType,
-        contextLength: params.prompt?.length,
+        contextLength: params.context?.length,
         timestamp: new Date().toISOString()
       });
 
@@ -219,7 +219,7 @@ export class OllamaManager {
         model: params.modelType === ModelTypes.TEXT_LARGE ? 
                this.configuredModels.medium : 
                this.configuredModels.small,
-        contextLength: params.prompt.length,
+        contextLength: params.context.length,
         timestamp: new Date().toISOString()
       });
 
@@ -227,7 +227,7 @@ export class OllamaManager {
         model: params.modelType === ModelTypes.TEXT_LARGE ? 
                this.configuredModels.medium : 
                this.configuredModels.small,
-        prompt: params.prompt,
+        prompt: params.context,
         stream: false,
         options: {
           temperature: 0.7,

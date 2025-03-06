@@ -25,7 +25,7 @@ export class TeeLogService extends Service implements ITeeLogService {
     private teeType: TeeType;
     private teeMode: TEEMode = TEEMode.OFF; // Only used for plugin-tee with TDX dstack
 
-    private teeLogDAO: TeeLogDAO;
+    private teeLogDAO: TeeLogDAO<Database.Database>;
     private teeLogManager: TeeLogManager;
 
     static serviceType: ServiceType = ServiceTypes.TEE;
@@ -109,7 +109,7 @@ export class TeeLogService extends Service implements ITeeLogService {
     async log(
         agentId: string,
         roomId: string,
-        entityId: string,
+        userId: string,
         type: string,
         content: string,
     ): Promise<boolean> {
@@ -117,7 +117,7 @@ export class TeeLogService extends Service implements ITeeLogService {
             return false;
         }
 
-        return this.teeLogManager.log(agentId, roomId, entityId, type, content);
+        return this.teeLogManager.log(agentId, roomId, userId, type, content);
     }
 
     async getAllAgents(): Promise<TeeAgent[]> {

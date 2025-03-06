@@ -1,9 +1,10 @@
 // action: SEND_MESSAGE
 // send message to a user or room (other than this room we are in)
 
+import { composeContext } from "../context";
 import { findEntityByName } from "../entities";
 import { logger } from "../logger";
-import { composePrompt, parseJSONObjectFromText } from "../prompts";
+import { parseJSONObjectFromText } from "../parsing";
 import {
   type Action,
   type ActionExample,
@@ -11,7 +12,8 @@ import {
   type IAgentRuntime,
   type Memory,
   ModelTypes,
-  type State
+  type State,
+  UUID
 } from "../types";
 
 const targetExtractionTemplate = `# Task: Extract Target and Source Information
@@ -101,20 +103,20 @@ export const sendMessageAction: Action = {
         await callback(response.content);
       }
 
-      const sourceEntityId = message.entityId;
+      const sourceEntityId = message.userId;
       const roomId = message.roomId;
       const _agentId = runtime.agentId;
       const room = await runtime.databaseAdapter.getRoom(roomId);
       const worldId = room.worldId;
 
       // Extract target and source information
-      const targetPrompt = composePrompt({
+      const targetContext = composeContext({
         state,
         template: targetExtractionTemplate,
       });
 
       const targetResult = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-        prompt: targetPrompt,
+        context: targetContext,
         stopSequences: []
       });
 
@@ -122,7 +124,7 @@ export const sendMessageAction: Action = {
       if (!targetData?.targetType || !targetData?.source) {
         await callback({
           text: "I couldn't determine where you want me to send the message. Could you please specify the target (user or room) and platform?",
-          actions: ["SEND_MESSAGE_ERROR"],
+          action: "SEND_MESSAGE_ERROR",
           source: message.content.source,
         });
         return;
@@ -137,7 +139,7 @@ export const sendMessageAction: Action = {
         if (!targetEntity) {
           await callback({
             text: "I couldn't find the user you want me to send a message to. Could you please provide more details about who they are?",
-            actions: ["SEND_MESSAGE_ERROR"],
+            action: "SEND_MESSAGE_ERROR",
             source: message.content.source,
           });
           return;
@@ -154,18 +156,18 @@ export const sendMessageAction: Action = {
         if (!userComponent) {
           await callback({
             text: `I couldn't find ${source} information for that user. Could you please provide their ${source} details?`,
-            actions: ["SEND_MESSAGE_ERROR"],
+            action: "SEND_MESSAGE_ERROR",
             source: message.content.source,
           });
           return;
         }
 
-        const sendDirectMessage = (runtime.getService(source) as any)?.sendDirectMessage;
+        const sendDirectMessage = runtime.getService(source)?.sendDirectMessage;
 
         if (!sendDirectMessage) {
           await callback({
             text: "I couldn't find the user you want me to send a message to. Could you please provide more details about who they are?",
-            actions: ["SEND_MESSAGE_ERROR"],
+            action: "SEND_MESSAGE_ERROR",
             source: message.content.source,
           });
           return;
@@ -182,14 +184,14 @@ export const sendMessageAction: Action = {
 
           await callback({
             text: `Message sent to ${targetEntity.names[0]} on ${source}.`,
-            actions: ["SEND_MESSAGE"],
+            action: "SEND_MESSAGE",
             source: message.content.source,
           });
         } catch (error) {
           logger.error(`Failed to send direct message: ${error.message}`);
           await callback({
             text: "I encountered an error trying to send the message. Please try again.",
-            actions: ["SEND_MESSAGE_ERROR"],
+            action: "SEND_MESSAGE_ERROR",
             source: message.content.source,
           });
         }
@@ -205,18 +207,18 @@ export const sendMessageAction: Action = {
         if (!targetRoom) {
           await callback({
             text: "I couldn't find the room you want me to send a message to. Could you please specify the exact room name?",
-            actions: ["SEND_MESSAGE_ERROR"],
+            action: "SEND_MESSAGE_ERROR",
             source: message.content.source,
           });
           return;
         }
 
-        const sendRoomMessage = (runtime.getService(source) as any)?.sendRoomMessage;
+        const sendRoomMessage = runtime.getService(source)?.sendRoomMessage;
 
         if (!sendRoomMessage) {
           await callback({
             text: "I couldn't find the room you want me to send a message to. Could you please specify the exact room name?",
-            actions: ["SEND_MESSAGE_ERROR"],
+            action: "SEND_MESSAGE_ERROR",
             source: message.content.source,
           });
           return;
@@ -234,14 +236,14 @@ export const sendMessageAction: Action = {
 
           await callback({
             text: `Message sent to ${targetRoom.name} on ${source}.`,
-            actions: ["SEND_MESSAGE"],
+            action: "SEND_MESSAGE",
             source: message.content.source,
           });
         } catch (error) {
           logger.error(`Failed to send room message: ${error.message}`);
           await callback({
             text: "I encountered an error trying to send the message to the room. Please try again.",
-            actions: ["SEND_MESSAGE_ERROR"],
+            action: "SEND_MESSAGE_ERROR",
             source: message.content.source,
           });
         }
@@ -251,7 +253,7 @@ export const sendMessageAction: Action = {
       logger.error(`Error in sendMessage handler: ${error}`);
       await callback({
         text: "There was an error processing your message request.",
-        actions: ["SEND_MESSAGE_ERROR"],
+        action: "SEND_MESSAGE_ERROR",
         source: message.content.source,
       });
     }
@@ -260,46 +262,46 @@ export const sendMessageAction: Action = {
   examples: [
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "Send a message to @dev_guru on telegram saying 'Hello!'",
         },
       },
       {
-        name: "{{name2}}",
+        user: "{{user2}}",
         content: {
           text: "Message sent to dev_guru on telegram.",
-          actions: ["SEND_MESSAGE"],
+          action: "SEND_MESSAGE",
         },
       },
     ],
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "Post 'Important announcement!' in #announcements",
         },
       },
       {
-        name: "{{name2}}",
+        user: "{{user2}}",
         content: {
           text: "Message sent to announcements.",
-          actions: ["SEND_MESSAGE"],
+          action: "SEND_MESSAGE",
         },
       },
     ],
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "DM Jimmy and tell him 'Meeting at 3pm'",
         },
       },
       {
-        name: "{{name2}}",
+        user: "{{user2}}",
         content: {
           text: "Message sent to Jimmy.",
-          actions: ["SEND_MESSAGE"],
+          action: "SEND_MESSAGE",
         },
       },
     ],

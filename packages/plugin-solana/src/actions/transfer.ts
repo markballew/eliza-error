@@ -1,7 +1,7 @@
 import {
     type Action,
     type ActionExample,
-    composePrompt,
+    composeContext,
     type Content,
     type HandlerCallback,
     type IAgentRuntime,
@@ -31,7 +31,7 @@ interface TransferContent extends Content {
     amount: string | number;
 }
 
-function isTransferContent(content: any): content is TransferContent {
+function isTransferContent(content: TransferContent): boolean {
     logger.log('Content for transfer', content);
 
     // Base validation
@@ -98,7 +98,7 @@ export default {
         'PAY_SOLANA',
     ],
     validate: async (_runtime: IAgentRuntime, message: Memory) => {
-        logger.log('Validating transfer from entity:', message.entityId);
+        logger.log('Validating transfer from user:', message.userId);
         return true;
     },
     description: 'Transfer SOL or SPL tokens to another address on Solana.',
@@ -111,13 +111,20 @@ export default {
     ): Promise<boolean> => {
         logger.log('Starting TRANSFER handler...');
 
-        const transferPrompt = composePrompt({
-            state: state,
+        let currentState = state;
+        if (!currentState) {
+            currentState = (await runtime.composeState(message)) as State;
+        } else {
+            currentState = await runtime.updateRecentMessageState(currentState);
+        }
+
+        const transferContext = composeContext({
+            state: currentState,
             template: transferTemplate,
         });
 
         const result = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-            prompt: transferPrompt,
+            context: transferContext,
         });
 
         const content = parseJSONObjectFromText(result);
@@ -180,7 +187,9 @@ export default {
             else {
                 const mintPubkey = new PublicKey(content.tokenAddress);
                 const mintInfo = await connection.getParsedAccountInfo(mintPubkey);
-                const decimals = (mintInfo.value?.data as any)?.parsed?.info?.decimals ?? 9;
+                const decimals =
+                    (mintInfo.value?.data as { parsed: { info: { decimals: number } } })?.parsed
+                        ?.info?.decimals ?? 9;
                 const adjustedAmount = BigInt(Number(content.amount) * 10 ** decimals);
 
                 const senderATA = getAssociatedTokenAddressSync(
@@ -252,31 +261,31 @@ export default {
     examples: [
         [
             {
-                name: '{{name1}}',
+                user: '{{user1}}',
                 content: {
                     text: 'Send 1.5 SOL to 9jW8FPr6BSSsemWPV22UUCzSqkVdTp6HTyPqeqyuBbCa',
                 },
             },
             {
-                name: '{{name2}}',
+                user: '{{user2}}',
                 content: {
                     text: 'Sending SOL now...',
-                    actions: ['TRANSFER_SOLANA'],
+                    action: 'TRANSFER_SOLANA',
                 },
             },
         ],
         [
             {
-                name: '{{name1}}',
+                user: '{{user1}}',
                 content: {
                     text: 'Send 69 $DEGENAI BieefG47jAHCGZBxi2q87RDuHyGZyYC3vAzxpyu8pump to 9jW8FPr6BSSsemWPV22UUCzSqkVdTp6HTyPqeqyuBbCa',
                 },
             },
             {
-                name: '{{name2}}',
+                user: '{{user2}}',
                 content: {
                     text: 'Sending the tokens now...',
-                    actions: ['TRANSFER_SOLANA'],
+                    action: 'TRANSFER_SOLANA',
                 },
             },
         ],

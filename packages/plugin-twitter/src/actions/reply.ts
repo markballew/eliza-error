@@ -45,61 +45,61 @@ const twitterReplyAction = {
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
-                    text: "{{name2}} What do you think about the latest AI developments?",
+                    text: "{{user2}} What do you think about the latest AI developments?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "The rapid progress in AI is fascinating! I'm particularly excited about advances in multimodal models and their practical applications.",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
-                    text: "Hey {{name2}}, can you explain quantum computing?",
+                    text: "Hey {{user2}}, can you explain quantum computing?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Let me explain quantum computing in simple terms! Instead of classical bits that are either 0 or 1, quantum computers use quantum bits that can exist in multiple states simultaneously.",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
-                    text: "{{name2}} What's your favorite programming language?",
+                    text: "{{user2}} What's your favorite programming language?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "I love working with Python! The simplicity and readability make it perfect for both quick scripts and complex AI applications.",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
-                    text: "{{name2}} Have you seen the latest research on transformer models?",
+                    text: "{{user2}} Have you seen the latest research on transformer models?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Yes! The improvements in efficiency and context length are really promising for advancing natural language understanding.",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ]

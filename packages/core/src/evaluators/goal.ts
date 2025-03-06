@@ -1,4 +1,6 @@
-import { composePrompt, parseJsonArrayFromText } from "../prompts";
+import { composeContext } from "../context";
+import { getGoals } from "../goals";
+import { parseJsonArrayFromText } from "../parsing";
 import { type Evaluator, type Goal, type IAgentRuntime, type Memory, ModelTypes, type State } from "../types";
 
 
@@ -45,21 +47,23 @@ async function handler(
     state: State | undefined,
     options: { [key: string]: unknown } = { onlyInProgress: true }
 ): Promise<Goal[]> {
-    const prompt = composePrompt({
+    state = (await runtime.composeState(message)) as State;
+    const context = composeContext({
         state,
         template: runtime.character.templates?.goalsTemplate || goalsTemplate,
     });
 
     const response = await runtime.useModel(ModelTypes.TEXT_LARGE, {
         runtime,
-        prompt,
+        context,
       });
 
     // Parse the JSON response to extract goal updates
     const updates = parseJsonArrayFromText(response);
 
     // get goals
-    const goalsData = await runtime.databaseAdapter.getGoals({
+    const goalsData = await getGoals({
+        runtime,
         roomId: message.roomId,
         onlyInProgress: options.onlyInProgress as boolean,
     });
@@ -107,7 +111,8 @@ export const goalEvaluator: Evaluator = {
         message: Memory
     ): Promise<boolean> => {
         // Check if there are active goals that could potentially be updated
-        const goals = await runtime.databaseAdapter.getGoals({
+        const goals = await getGoals({
+            runtime,
             count: 1,
             onlyInProgress: true,
             roomId: message.roomId,
@@ -119,9 +124,9 @@ export const goalEvaluator: Evaluator = {
     handler,
     examples: [
         {
-            prompt: `People in the scene:
-  {{name1}}: An avid reader and member of a book club.
-  {{name2}}: The organizer of the book club.
+            context: `Actors in the scene:
+  {{user1}}: An avid reader and member of a book club.
+  {{user2}}: The organizer of the book club.
 
   Goals:
   - Name: Finish reading "War and Peace"
@@ -133,19 +138,19 @@ export const goalEvaluator: Evaluator = {
 
             messages: [
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: {
                         text: "I've just finished chapter 20 of 'War and Peace'",
                     },
                 },
                 {
-                    name: "{{name2}}",
+                    user: "{{user2}}",
                     content: {
                         text: "Were you able to grasp the complexities of the characters",
                     },
                 },
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: {
                         text: "Yep. I've prepared some notes for our discussion",
                     },
@@ -165,9 +170,9 @@ export const goalEvaluator: Evaluator = {
         },
 
         {
-            prompt: `People in the scene:
-  {{name1}}: A fitness enthusiast working towards a marathon.
-  {{name2}}: A personal trainer.
+            context: `Actors in the scene:
+  {{user1}}: A fitness enthusiast working towards a marathon.
+  {{user2}}: A personal trainer.
 
   Goals:
   - Name: Complete a marathon
@@ -179,17 +184,17 @@ export const goalEvaluator: Evaluator = {
 
             messages: [
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: { text: "I managed to run 30 miles this week" },
                 },
                 {
-                    name: "{{name2}}",
+                    user: "{{user2}}",
                     content: {
                         text: "Impressive progress! How do you feel about the half-marathon next month?",
                     },
                 },
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: {
                         text: "I feel confident. The training is paying off.",
                     },
@@ -208,9 +213,9 @@ export const goalEvaluator: Evaluator = {
         },
 
         {
-            prompt: `People in the scene:
-  {{name1}}: A student working on a final year project.
-  {{name2}}: The project supervisor.
+            context: `Actors in the scene:
+  {{user1}}: A student working on a final year project.
+  {{user2}}: The project supervisor.
 
   Goals:
   - Name: Finish the final year project
@@ -222,19 +227,19 @@ export const goalEvaluator: Evaluator = {
 
             messages: [
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: {
                         text: "I've submitted the first draft of my thesis.",
                     },
                 },
                 {
-                    name: "{{name2}}",
+                    user: "{{user2}}",
                     content: {
                         text: "Well done. How is the prototype coming along?",
                     },
                 },
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: {
                         text: "It's almost done. I just need to finalize the testing phase.",
                     },
@@ -253,9 +258,9 @@ export const goalEvaluator: Evaluator = {
         },
 
         {
-            prompt: `People in the scene:
-        {{name1}}: A project manager working on a software development project.
-        {{name2}}: A software developer in the project team.
+            context: `Actors in the scene:
+        {{user1}}: A project manager working on a software development project.
+        {{user2}}: A software developer in the project team.
 
         Goals:
         - Name: Launch the new software version
@@ -267,19 +272,19 @@ export const goalEvaluator: Evaluator = {
 
             messages: [
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: {
                         text: "How's the progress on the new features?",
                     },
                 },
                 {
-                    name: "{{name2}}",
+                    user: "{{user2}}",
                     content: {
                         text: "We've encountered some unexpected challenges and are currently troubleshooting.",
                     },
                 },
                 {
-                    name: "{{name1}}",
+                    user: "{{user1}}",
                     content: {
                         text: "Let's move on and cancel the task.",
                     },

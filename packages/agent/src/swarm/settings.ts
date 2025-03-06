@@ -4,11 +4,11 @@ import {
   createUniqueUuid,
   type Evaluator,
   type IAgentRuntime,
-  initializeOnboarding,
+  initializeOnboardingConfig,
   logger,
   type OnboardingConfig,
   type Provider,
-  Role,
+  RoleName,
   type UUID
 } from "@elizaos/core";
 import type { Guild } from "discord.js";
@@ -88,7 +88,7 @@ export async function initializeAllSystems(
         metadata: {
           ownership: server.ownerId ? { ownerId } : undefined,
           roles: {
-            [ownerId]: Role.OWNER,
+            [ownerId]: RoleName.OWNER,
           },
         }
       });
@@ -100,7 +100,7 @@ export async function initializeAllSystems(
       }
 
       // Initialize settings configuration
-      const worldSettings = await initializeOnboarding(
+      const worldSettings = await initializeOnboardingConfig(
         runtime,
         world,
         config
@@ -168,13 +168,13 @@ export async function startOnboardingDM(
       });
     }
     // Create memory of the initial message
-    await runtime.getMemoryManager("messages").createMemory({
-      agentId: runtime.agentId,
-      entityId: runtime.agentId,
+    await runtime.messageManager.createMemory({
+      agentId: runtime.agentId as UUID,
+      userId: runtime.agentId as UUID,
       roomId: roomId,
       content: {
         text: randomMessage,
-        actions: ["BEGIN_ONBOARDING"],
+        action: "BEGIN_ONBOARDING",
       },
       createdAt: Date.now(),
     });

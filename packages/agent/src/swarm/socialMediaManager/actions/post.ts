@@ -6,13 +6,14 @@ import {
   type IAgentRuntime,
   type Memory,
   ModelTypes,
+  RoleName,
   type State,
-  composePrompt,
+  composeContext,
+  createUniqueUuid,
   getUserServerRole,
   getWorldSettings,
   logger
 } from "@elizaos/core";
-import type { TwitterService } from "@elizaos/plugin-twitter";
 
 const tweetGenerationTemplate = `# Task: Create a post in the style and voice of {{agentName}}.
 {{system}}
@@ -88,12 +89,12 @@ async function ensureTwitterClient(
   serverId: string,
   worldSettings: { [key: string]: string | boolean | number | null }
 ) {
-  const manager = runtime.getService("twitter") as TwitterService;
+  const manager = runtime.getService(ServiceTypes.TWITTER);
   if (!manager) {
     throw new Error("Twitter client manager not found");
   }
 
-  let client = manager.getClient(serverId, runtime.agentId);
+  let client = manager.getService(serverId, runtime.agentId);
 
   if (!client) {
     logger.info("Creating new Twitter client for server", serverId);
@@ -168,19 +169,6 @@ const twitterPostAction: Action = {
 
       if (room.type !== ChannelType.GROUP) {
         // only handle in a group scenario for now
-        await runtime.getMemoryManager("messages").createMemory({
-          entityId: message.entityId,
-          agentId: message.agentId,
-          roomId: message.roomId,
-          content: {
-              source: message.content.source,
-              thought: "I tried to post a tweet but I'm not in a group scenario.",
-              actions: ["TWITTER_POST_FAILED"],
-          },
-          metadata: {
-              type: "TWITTER_POST",
-          },
-        });
         return false;
       }
 
@@ -197,13 +185,13 @@ const twitterPostAction: Action = {
       }
 
       // Generate tweet content
-      const prompt = composePrompt({
+      const context = composeContext({
         state,
         template: tweetGenerationTemplate,
       });
 
       const tweetContent = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-        prompt,
+        context,
       });
 
       // Clean up the generated content
@@ -214,14 +202,14 @@ const twitterPostAction: Action = {
 
       const userRole = await getUserServerRole(
         runtime,
-        message.entityId,
+        message.userId,
         serverId
       );
       if (userRole !== "OWNER" && userRole !== "ADMIN") {
         // callback and return
         await callback({
           text: "I'm sorry, but you're not authorized to post tweets on behalf of this org.",
-          actions: ["TWITTER_POST_FAILED"],
+          action: "TWITTER_POST_FAILED",
           source: message.content.source,
         });
         return;
@@ -230,7 +218,7 @@ const twitterPostAction: Action = {
       // Prepare response content
       const responseContent: Content = {
         text: `I'll tweet this:\n\n${cleanTweet}`,
-        actions: ["TWITTER_POST"],
+        action: "TWITTER_POST",
         source: message.content.source,
       };
 
@@ -246,8 +234,8 @@ const twitterPostAction: Action = {
           if (options.option === "cancel") {
             await callback({
               ...responseContent,
-              text: "OK, I won't post it.",
-              actions: ["TWITTER_POST_CANCELLED"]
+              text: "Tweet cancelled. I won't post it.",
+              action: "TWITTER_POST_CANCELLED"
             });
             return;
           }
@@ -255,8 +243,8 @@ const twitterPostAction: Action = {
           if(options.option !== "post") {
             await callback({
               ...responseContent,
-              text: "Bad choice. Should be 'post' or 'cancel'.",
-              actions: ["TWITTER_POST_INVALID_OPTION"]
+              text: "Invalid option. Should be 'post' or 'cancel'.",
+              action: "TWITTER_POST_INVALID_OPTION"
             });
             return;
           }
@@ -297,7 +285,7 @@ const twitterPostAction: Action = {
         ) => {
           const userRole = await getUserServerRole(
             runtime,
-            message.entityId,
+            message.userId,
             serverId
           );
 
@@ -336,7 +324,7 @@ const twitterPostAction: Action = {
 
       await callback({
         ...responseContent,
-        actions: ["TWITTER_POST_TASK_NEEDS_CONFIRM"],
+        action: "TWITTER_POST_TASK_NEEDS_CONFIRM",
       });
 
       logger.info("TWITTER_POST_TASK_NEEDS_CONFIRM", runtime.databaseAdapter.getTasks({roomId: message.roomId, tags: ["TWITTER_POST"]}));
@@ -351,31 +339,31 @@ const twitterPostAction: Action = {
   examples: [
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "That's such a great point about neural networks! You should tweet that",
         },
       },
       {
-        name: "{{name2}}",
+        user: "{{user2}}",
         content: {
           text: "I'll tweet this:\n\nDeep learning isn't just about layers - it's about understanding how neural networks actually learn from patterns. The magic isn't in the math, it's in the emergent behaviors we're just beginning to understand.",
-          actions: ["TWITTER_POST"],
+          action: "TWITTER_POST",
         },
       },
     ],
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "Can you share this insight on Twitter?",
         },
       },
       {
-        name: "{{name2}}",
+        user: "{{user2}}",
         content: {
           text: "Tweet posted!\nhttps://twitter.com/username/status/123456789",
-          actions: ["TWITTER_POST"],
+          action: "TWITTER_POST",
         },
       },
     ],

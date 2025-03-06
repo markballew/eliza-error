@@ -1,5 +1,5 @@
 import {
-    composePrompt,
+    composeContext,
     type IAgentRuntime,
     logger,
     type Memory,
@@ -12,7 +12,7 @@ import {
     parseConfirmationResponse,
     parseTokenResponse
 } from "../utils.js";
-import type { CommunityInvestorService } from "../tradingService.js";
+import type { TrustTradingService } from "../tradingService.js";
 import { ServiceTypes } from "../types.js";
 
 const tokenDetailsTemplate = `You are a crypto expert.
@@ -153,22 +153,22 @@ export const getTokenDetails: any = {
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Are you just looking for details, or are you recommending this token?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "I am just looking for details",
                 },
             },
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Ok, here are the details...",
-                    actions: ["GET_TOKEN_DETAILS"],
+                    action: "GET_TOKEN_DETAILS",
                 },
             },
         ],
@@ -176,26 +176,26 @@ export const getTokenDetails: any = {
     similes: ["TOKEN_DETAILS"],
 
     async handler(runtime: IAgentRuntime, message: Memory, _state: State, _options, callback: any) {
-        if (!runtime.getService(ServiceTypes.COMMUNITY_INVESTOR)) {
+        if (!runtime.getService(ServiceTypes.TRUST_TRADING)) {
             console.log("no trading service");
             return;
         }
 
-        const tradingService = runtime.getService<CommunityInvestorService>(ServiceTypes.COMMUNITY_INVESTOR);
+        const tradingService = runtime.getService<TrustTradingService>(ServiceTypes.TRUST_TRADING);
 
         if(!tradingService) {
             throw new Error("No trading service found");
         }
 
         // Get a users most recent message containing a token
-        const rawMessages = await runtime.getMemoryManager("messages").getMemories({
+        const rawMessages = await runtime.messageManager.getMemories({
             roomId: message.roomId,
             count: 10,
             unique: true,
         });
 
         if (!rawMessages.length) {
-            logger.error(`No messages found for user ${message.entityId}`);
+            logger.error(`No messages found for user ${message.userId}`);
             return;
         }
 
@@ -211,7 +211,7 @@ export const getTokenDetails: any = {
             </message>`;
         });
 
-        const prompt = composePrompt({
+        const context = composeContext({
             state: {
                 messages: messages,
             } as unknown as State,
@@ -220,7 +220,7 @@ export const getTokenDetails: any = {
         
 
         const text = await runtime.useModel(ModelTypes.TEXT_SMALL, {
-            prompt,
+            context,
         });
 
         const extractXML = extractXMLFromResponse(text, "token");
@@ -251,7 +251,7 @@ export const getTokenDetails: any = {
             return v;
         });
 
-        const tokenDetailsPrompt = composePrompt({
+        const tokenDetailsContext = composeContext({
             state: {
                 ticker: results.ticker,
                 tokenOverview: tokenOverviewString,
@@ -260,7 +260,7 @@ export const getTokenDetails: any = {
         });
 
         const tokenDetails = await runtime.useModel(ModelTypes.TEXT_LARGE, {
-            prompt: tokenDetailsPrompt,
+            context: tokenDetailsContext,
         });
 
         // Do we want to store memory here?
@@ -277,9 +277,9 @@ export const getTokenDetails: any = {
                     inReplyTo: message.id
                         ? message.id
                         : undefined,
-                        actions: ["GET_TOKEN_DETAILS"],
+                        action: "GET_TOKEN_DETAILS",
                 },
-                entityId: message.entityId,
+                userId: message.userId,
                 agentId: message.agentId,
                 roomId: message.roomId,
                 metadata: message.metadata,
@@ -291,7 +291,7 @@ export const getTokenDetails: any = {
         return true;
     },
     async validate(_, message) {
-        if (message.agentId === message.entityId) return false;
+        if (message.agentId === message.userId) return false;
         return true;
     },
 };

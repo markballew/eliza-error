@@ -26,7 +26,7 @@ import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 type ExtraContentFields = {
-    name: string;
+    user: string;
     createdAt: number;
     isLoading?: boolean;
 };
@@ -50,9 +50,9 @@ function MessageContent({
         <div className="flex flex-col">
             <ChatBubbleMessage
                 isLoading={message.isLoading}
-                {...(message.name === "Anon" ? { variant: "sent" } : {})}
+                {...(message.user === "user" ? { variant: "sent" } : {})}
             >
-                {message.name === "Anon" ? message.text : <AIWriter>{message.text}</AIWriter>}
+                {message.user === "user" ? message.text : <AIWriter>{message.text}</AIWriter>}
                 {/* Attachments */}
                 <div>
                     {message.attachments?.map((attachment: IAttachment) => (
@@ -91,8 +91,8 @@ function MessageContent({
                     {message.source ? (
                         <Badge variant="outline">{message.source}</Badge>
                     ) : null}
-                    {message.actions ? (
-                        <Badge variant="outline">{message.actions.join(", ")}</Badge>
+                    {message.action ? (
+                        <Badge variant="outline">{message.action}</Badge>
                     ) : null}
                     {message.createdAt ? (
                         <ChatBubbleTimestamp timestamp={moment(message.createdAt).format("LT")} />
@@ -157,14 +157,14 @@ export default function Page({ agentId }: { agentId: UUID }) {
         const newMessages = [
             {
                 text: input,
-                name: "Anon",
+                user: "user",
                 createdAt: Date.now(),
                 attachments,
                 worldId,
             },
             {
                 text: input,
-                name: "system",
+                user: "system",
                 isLoading: true,
                 createdAt: Date.now(),
                 worldId,
@@ -290,7 +290,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
                     {messages.map((message: ContentWithUser) => {
                         return (
                             <div
-                                key={message.name + message.createdAt}
+                                key={message.user + message.createdAt}
                                 style={{
                                     display: "flex",
                                     flexDirection: "column",
@@ -299,10 +299,10 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                 }}
                             >
                                 <ChatBubble
-                                    variant={getMessageVariant(message.name)}
+                                    variant={getMessageVariant(message.user)}
                                     className="flex flex-row items-center gap-2"
                                 >
-                                    {message.name !== "Anon" ? (
+                                    {message.user !== "user" ? (
                                         <>
                                             <Avatar className="size-8 p-1 border rounded-full select-none">
                                                 <AvatarImage src="/elizaos-icon.png" />

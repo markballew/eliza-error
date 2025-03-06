@@ -31,7 +31,7 @@ import {
     type VoiceChannel,
     type VoiceState,
 } from "discord.js";
-import EventEmitter from "node:events";
+import { EventEmitter } from "node:events";
 import { type Readable, pipeline } from "node:stream";
 import prism from "prism-media";
 import type { DiscordService } from "./index.ts";
@@ -318,25 +318,25 @@ export class VoiceManager extends EventEmitter {
                 }
             }
 
-            connection.receiver.speaking.on("start", async (entityId: string) => {
-                let user = channel.members.get(entityId);
+            connection.receiver.speaking.on("start", async (userId: string) => {
+                let user = channel.members.get(userId);
                 if (!user) {
                     try {
-                        user = await channel.guild.members.fetch(entityId);
+                        user = await channel.guild.members.fetch(userId);
                     } catch (error) {
                         console.error("Failed to fetch user:", error);
                     }
                 }
                 if (user && !user?.user.bot) {
                     this.monitorMember(user as GuildMember, channel);
-                    this.streams.get(entityId)?.emit("speakingStarted");
+                    this.streams.get(userId)?.emit("speakingStarted");
                 }
             });
 
-            connection.receiver.speaking.on("end", async (entityId: string) => {
-                const user = channel.members.get(entityId);
+            connection.receiver.speaking.on("end", async (userId: string) => {
+                const user = channel.members.get(userId);
                 if (!user?.user.bot) {
-                    this.streams.get(entityId)?.emit("speakingStopped");
+                    this.streams.get(userId)?.emit("speakingStopped");
                 }
             });
         } catch (error) {
@@ -362,11 +362,11 @@ export class VoiceManager extends EventEmitter {
         member: GuildMember,
         channel: BaseGuildVoiceChannel
     ) {
-        const entityId = member?.id;
+        const userId = member?.id;
         const userName = member?.user?.username;
         const name = member?.user?.displayName;
         const connection = this.getVoiceConnection(member?.guild?.id);
-        const receiveStream = connection?.receiver.subscribe(entityId, {
+        const receiveStream = connection?.receiver.subscribe(userId, {
             autoDestroy: true,
             emitClose: true,
         });
@@ -418,8 +418,8 @@ export class VoiceManager extends EventEmitter {
                 }
             }
         );
-        this.streams.set(entityId, opusDecoder);
-        this.connections.set(entityId, connection as VoiceConnection);
+        this.streams.set(userId, opusDecoder);
+        this.connections.set(userId, connection as VoiceConnection);
         opusDecoder.on("error", (err: any) => {
             console.log(`Opus decoding error: ${err}`);
         });
@@ -428,8 +428,8 @@ export class VoiceManager extends EventEmitter {
         };
         const streamCloseHandler = () => {
             console.log(`voice stream from ${member?.displayName} closed`);
-            this.streams.delete(entityId);
-            this.connections.delete(entityId);
+            this.streams.delete(userId);
+            this.connections.delete(userId);
         };
         const closeHandler = () => {
             console.log(`Opus decoder for ${member?.displayName} closed`);
@@ -443,7 +443,7 @@ export class VoiceManager extends EventEmitter {
 
         this.client.emit(
             "userStream",
-            entityId,
+            userId,
             name,
             userName,
             channel,
@@ -482,7 +482,7 @@ export class VoiceManager extends EventEmitter {
     }
 
     async debouncedProcessTranscription(
-        entityId: UUID,
+        userId: UUID,
         name: string,
         userName: string,
         channel: BaseGuildVoiceChannel
@@ -495,7 +495,7 @@ export class VoiceManager extends EventEmitter {
         }
 
         if (this.activeAudioPlayer || this.processingVoice) {
-            const state = this.userStates.get(entityId);
+            const state = this.userStates.get(userId);
             state.buffers.length = 0;
             state.totalLength = 0;
             return;
@@ -509,7 +509,7 @@ export class VoiceManager extends EventEmitter {
             this.processingVoice = true;
             try {
                 await this.processTranscription(
-                    entityId,
+                    userId,
                     channel.id,
                     channel,
                     name,
@@ -534,10 +534,9 @@ export class VoiceManager extends EventEmitter {
         channel: BaseGuildVoiceChannel,
         audioStream: Readable
     ) {
-        const entityId = createUniqueUuid(this.runtime, userId);
-        console.log(`Starting audio monitor for user: ${entityId}`);
-        if (!this.userStates.has(entityId)) {
-            this.userStates.set(entityId, {
+        console.log(`Starting audio monitor for user: ${userId}`);
+        if (!this.userStates.has(userId)) {
+            this.userStates.set(userId, {
                 buffers: [],
                 totalLength: 0,
                 lastActive: Date.now(),
@@ -545,7 +544,7 @@ export class VoiceManager extends EventEmitter {
             });
         }
 
-        const state = this.userStates.get(entityId);
+        const state = this.userStates.get(userId);
 
         const processBuffer = async (buffer: Buffer) => {
             try {
@@ -553,14 +552,14 @@ export class VoiceManager extends EventEmitter {
                 state!.totalLength += buffer.length;
                 state!.lastActive = Date.now();
                 this.debouncedProcessTranscription(
-                    entityId,
+                    userId,
                     name,
                     userName,
                     channel
                 );
             } catch (error) {
                 console.error(
-                    `Error processing buffer for user ${entityId}:`,
+                    `Error processing buffer for user ${userId}:`,
                     error
                 );
             }
@@ -585,13 +584,13 @@ export class VoiceManager extends EventEmitter {
     }
 
     private async processTranscription(
-        entityId: UUID,
+        userId: UUID,
         channelId: string,
         channel: BaseGuildVoiceChannel,
         name: string,
         userName: string
     ) {
-        const state = this.userStates.get(entityId);
+        const state = this.userStates.get(userId);
         if (!state || state.buffers.length === 0) return;
         try {
             const inputBuffer = Buffer.concat(state.buffers, state.totalLength);
@@ -618,7 +617,7 @@ export class VoiceManager extends EventEmitter {
                 state.transcriptionText = "";
                 await this.handleMessage(
                     finalText,
-                    entityId,
+                    userId,
                     channelId,
                     channel,
                     name,
@@ -627,7 +626,7 @@ export class VoiceManager extends EventEmitter {
             }
         } catch (error) {
             console.error(
-                `Error transcribing audio for user ${entityId}:`,
+                `Error transcribing audio for user ${userId}:`,
                 error
             );
         }
@@ -635,7 +634,7 @@ export class VoiceManager extends EventEmitter {
 
     private async handleMessage(
         message: string,
-        entityId: UUID,
+        userId: UUID,
         channelId: string,
         channel: BaseGuildVoiceChannel,
         name: string,
@@ -643,18 +642,19 @@ export class VoiceManager extends EventEmitter {
     ) {
         try {
             if (!message || message.trim() === "" || message.length < 3) {
-                return { text: "", actions: ["IGNORE"] };
+                return { text: "", action: "IGNORE" };
             }
 
             const roomId = createUniqueUuid(this.runtime, channelId);
+            const userIdUUID = createUniqueUuid(this.runtime, userId);
             const guild = await channel.guild.fetch();
             const type = await this.getChannelType(guild.id);
 
             await this.runtime.ensureConnection({
-                entityId,
+                userId: userIdUUID,
                 roomId,
                 userName,
-                name: name,
+                userScreenName: name,
                 source: "discord",
                 channelId,
                 serverId: channel.guild.id,
@@ -664,7 +664,7 @@ export class VoiceManager extends EventEmitter {
             const memory: Memory = {
                 id: createUniqueUuid(this.runtime, `${channelId}-voice-message-${Date.now()}`),
                 agentId: this.runtime.agentId,
-                entityId,
+                userId: userIdUUID,
                 roomId,
                 content: {
                     text: message,
@@ -681,11 +681,11 @@ export class VoiceManager extends EventEmitter {
                 try {
                     const responseMemory: Memory = {
                         id: createUniqueUuid(this.runtime, `${memory.id}-voice-response-${Date.now()}`),
-                        entityId: this.runtime.agentId,
+                        userId: this.runtime.agentId,
                         agentId: this.runtime.agentId,
                         content: {
                             ...content,
-                            name: this.runtime.character.name,
+                            user: this.runtime.character.name,
                             inReplyTo: memory.id,
                             isVoiceMessage: true
                         },
@@ -694,11 +694,11 @@ export class VoiceManager extends EventEmitter {
                     };
 
                     if (responseMemory.content.text?.trim()) {
-                        await this.runtime.getMemoryManager("messages").createMemory(responseMemory);
+                        await this.runtime.messageManager.createMemory(responseMemory);
 
                         const responseStream = await this.runtime.useModel(ModelTypes.TEXT_TO_SPEECH, content.text);
                         if (responseStream) {
-                            await this.playAudioStream(entityId, responseStream as Readable);
+                            await this.playAudioStream(userId, responseStream as Readable);
                         }
                     }
 
@@ -780,10 +780,10 @@ export class VoiceManager extends EventEmitter {
         }
     }
 
-    async playAudioStream(entityId: UUID, audioStream: Readable) {
-        const connection = this.connections.get(entityId);
+    async playAudioStream(userId: UUID, audioStream: Readable) {
+        const connection = this.connections.get(userId);
         if (connection == null) {
-            console.log(`No connection for user ${entityId}`);
+            console.log(`No connection for user ${userId}`);
             return;
         }
         this.cleanupAudioPlayer(this.activeAudioPlayer);

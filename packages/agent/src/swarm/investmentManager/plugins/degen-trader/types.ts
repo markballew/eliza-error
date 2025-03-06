@@ -116,7 +116,6 @@ export interface SellSignalMessage {
   isSimulation?: boolean;
   reason?: string;
   entityId?: string;
-  confidence?: "low" | "medium" | "high";
 }
 
 export interface QuoteParams {

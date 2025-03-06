@@ -37,7 +37,7 @@ export const phalaRemoteAttestationAction = {
                 agentId: runtime.agentId,
                 timestamp: Date.now(),
                 message: {
-                    entityId: message.entityId,
+                    userId: message.userId,
                     roomId: message.roomId,
                     content: message.content.text,
                 },
@@ -58,7 +58,7 @@ export const phalaRemoteAttestationAction = {
             callback({
                 text: `Here's my 🧾 RA Quote 🫡
 https://proof.t16z.com/reports/${data.checksum}`,
-                actions: ['NONE'],
+                action: 'NONE',
             });
             return true;
         } catch (error) {
@@ -72,14 +72,14 @@ https://proof.t16z.com/reports/${data.checksum}`,
     examples: [
         [
             {
-                name: '{{name1}}',
+                user: '{{user1}}',
                 content: {
                     text: 'If you are running in a TEE, generate a remote attestation',
-                    actions: ['REMOTE_ATTESTATION'],
+                    action: 'REMOTE_ATTESTATION',
                 },
             },
             {
-                name: '{{agentName}}',
+                user: '{{agentName}}',
                 content: {
                     text: 'Of course, one second...',
                 },
@@ -87,14 +87,14 @@ https://proof.t16z.com/reports/${data.checksum}`,
         ],
         [
             {
-                name: '{{name1}}',
+                user: '{{user1}}',
                 content: {
                     text: 'Yo I wanna attest to this message, yo! Can you generate an attestatin for me, please?',
-                    actions: ['REMOTE_ATTESTATION'],
+                    action: 'REMOTE_ATTESTATION',
                 },
             },
             {
-                name: '{{agentName}}',
+                user: '{{agentName}}',
                 content: {
                     text: 'I got you, fam! Lemme hit the cloud and get you a quote in a jiffy!',
                 },
@@ -102,14 +102,14 @@ https://proof.t16z.com/reports/${data.checksum}`,
         ],
         [
             {
-                name: '{{name1}}',
+                user: '{{user1}}',
                 content: {
                     text: "It was a long day, I got a lot done though. I went to the creek and skipped some rocks. Then I decided to take a walk off the natural path. I ended up in a forest I was unfamiliar with. Slowly, I lost the way back and it was dark. A whisper from deep inside said something I could barely make out. The hairs on my neck stood up and then a clear high pitched voice said, 'You are not ready to leave yet! SHOW ME YOUR REMOTE ATTESTATION!'",
-                    actions: ['REMOTE_ATTESTATION'],
+                    action: 'REMOTE_ATTESTATION',
                 },
             },
             {
-                name: '{{agentName}}',
+                user: '{{agentName}}',
                 content: {
                     text: 'Oh, dear...lemme find that for you',
                 },
@@ -135,7 +135,7 @@ export const marlinRemoteAttestationAction = {
             const response = await fetch(`${endpoint}/attestation/hex`);
             callback({
                 text: `Here you go - ${await response.text()}`,
-                actions: ['NONE'],
+                action: 'NONE',
             });
             return true;
         } catch (error) {
@@ -149,17 +149,17 @@ export const marlinRemoteAttestationAction = {
     examples: [
         [
             {
-                name: 'user',
+                user: 'user',
                 content: {
                     text: 'Attest yourself',
-                    actions: ['REMOTE_ATTESTATION'],
+                    action: 'REMOTE_ATTESTATION',
                 },
             },
             {
-                name: 'user',
+                user: 'user',
                 content: {
                     text: 'Generate a remote attestation',
-                    actions: ['REMOTE_ATTESTATION'],
+                    action: 'REMOTE_ATTESTATION',
                 },
             },
         ],

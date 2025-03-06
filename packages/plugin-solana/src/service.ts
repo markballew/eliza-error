@@ -76,7 +76,7 @@ export class SolanaService extends Service {
         }
     }
 
-    private async fetchWithRetry(url: string, options: RequestInit = {}): Promise<any> {
+    private async fetchWithRetry(url: string, options: RequestInit = {}): Promise<unknown> {
         let lastError: Error;
 
         for (let i = 0; i < PROVIDER_CONFIG.MAX_RETRIES; i++) {
@@ -190,7 +190,7 @@ export class SolanaService extends Service {
                         totalSol: totalUsd.div(solPriceInUSD).toFixed(6),
                         prices,
                         lastUpdated: now,
-                        items: data.items.map((item: any) => ({
+                        items: data.items.map((item: Item) => ({
                             ...item,
                             valueSol: new BigNumber(item.valueUsd || 0)
                                 .div(solPriceInUSD)

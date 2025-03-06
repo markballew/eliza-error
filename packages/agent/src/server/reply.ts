@@ -38,61 +38,61 @@ const replyAction = {
     examples: [
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Hello there!",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Hi! How can I help you today?",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "What's your favorite color?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "I really like deep shades of blue. They remind me of the ocean and the night sky.",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Can you explain how neural networks work?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Let me break that down for you in simple terms...",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ],
         [
             {
-                name: "{{name1}}",
+                user: "{{user1}}",
                 content: {
                     text: "Could you help me solve this math problem?",
                 },
             },
             {
-                name: "{{name2}}",
+                user: "{{user2}}",
                 content: {
                     text: "Of course! Let's work through it step by step.",
-                    actions: ["REPLY"],
+                    action: "REPLY",
                 },
             },
         ]

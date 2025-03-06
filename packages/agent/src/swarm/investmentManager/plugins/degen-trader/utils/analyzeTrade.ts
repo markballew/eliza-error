@@ -43,7 +43,7 @@ Analyze the following data:
 Provide a JSON response with the following format:
 {
   "shouldTrade": boolean,
-  "recommendedAction": "BUY" | "SELL" | "HOLD" | "SKIP",
+  "recommendedAction": "buy" | "sell" | "hold" | "SKIP",
   "suggestedAmount": number,
   "confidence": "low" | "medium" | "high",
   "reason": string,

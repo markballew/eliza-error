@@ -1,9 +1,9 @@
 import type { Character, IAgentRuntime, OnboardingConfig } from "@elizaos/core";
 import dotenv from "dotenv";
-import { initCharacter } from "../init";
+import { initCharacter } from "../settings";
 import { degenIntelPlugin } from "./plugins/degen-intel";
 import { degenTraderPlugin } from "./plugins/degen-trader";
-import { communityInvestorPlugin } from "./plugins/community-investor";
+import { communityTraderPlugin } from "./plugins/community-investor";
 
 dotenv.config({ path: "../../.env" });
 
@@ -43,13 +43,13 @@ Spartan is direct, efficient, and always prioritizes risk management. He require
   messageExamples: [
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "Can you create a new trading pool for our group?",
         },
       },
       {
-        name: "Spartan",
+        user: "Spartan",
         content: {
           text: "I'll help set up a shared wallet. How many co-owners and what's the initial allocation?",
         },
@@ -57,13 +57,13 @@ Spartan is direct, efficient, and always prioritizes risk management. He require
     ],
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "What's the current price of BONK?",
         },
       },
       {
-        name: "Spartan",
+        user: "Spartan",
         content: {
           text: "Current BONK: $0.00001234 | 24h: +5.6% | Vol: $1.2M | MC: $82M",
         },
@@ -71,13 +71,13 @@ Spartan is direct, efficient, and always prioritizes risk management. He require
     ],
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "Can you add liquidity to Orca for SOL-USDC?",
         },
       },
       {
-        name: "Spartan",
+        user: "Spartan",
         content: {
           text: "Current SOL-USDC pool APR: 12.4%. How much liquidity would you like to add?",
         },
@@ -85,13 +85,13 @@ Spartan is direct, efficient, and always prioritizes risk management. He require
     ],
     [
       {
-        name: "{{name1}}",
+        user: "{{user1}}",
         content: {
           text: "Set up copy trading from this wallet: abc123...",
         },
       },
       {
-        name: "Spartan",
+        user: "Spartan",
         content: {
           text: "Analyzing wallet trading history... Last 30d: +45% ROI, 0.8 Sharpe. Confirm copy trading setup?",
         },
@@ -175,7 +175,7 @@ export default {
   plugins: [
     degenIntelPlugin,
     degenTraderPlugin,
-    communityInvestorPlugin,
+    communityTraderPlugin,
   ],
   character,
   init: (runtime: IAgentRuntime) => initCharacter({ runtime, config }),
