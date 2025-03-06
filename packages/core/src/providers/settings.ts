@@ -10,16 +10,16 @@ import {
   type Memory,
   type Provider,
   type State,
-  type OnboardingSetting,
+  type Setting,
   type WorldSettings,
-  ProviderResult,
+  type ProviderResult,
 } from "../types";
 
 /**
  * Formats a setting value for display, respecting privacy flags
  */
 const formatSettingValue = (
-  setting: OnboardingSetting,
+  setting: Setting,
   isOnboarding: boolean
 ): string => {
   if (setting.value === null) return "Not set";
@@ -31,7 +31,7 @@ const formatSettingValue = (
  * Generates a status message based on the current settings state
  */
 function generateStatusMessage(
-  _runtime: IAgentRuntime,
+  runtime: IAgentRuntime,
   worldSettings: WorldSettings,
   isOnboarding: boolean,
   state?: State
@@ -70,16 +70,16 @@ function generateStatusMessage(
     if (isOnboarding) {
       if (requiredUnconfigured > 0) {
         return `# PRIORITY TASK: Onboarding with ${state.senderName}\n${
-          state.agentName
+          runtime.character.name
         } still needs to configure ${requiredUnconfigured} required settings:\n\n${formattedSettings
           .filter((s) => s.required && !s.configured)
           .map((s) => `${s.name}: ${s.usageDescription}\nValue: ${s.value}`)
           .join(
             "\n\n"
           )}\n\nIf the user gives any information related to the settings, ${
-          state.agentName
+          runtime.character.name
         } should use the UPDATE_SETTINGS action to update the settings with this new information. ${
-          state.agentName
+          runtime.character.name
         } can update any, some or all settings.`;
       }
       return `All required settings have been configured! Here's the current configuration:\n\n${formattedSettings
@@ -133,7 +133,7 @@ export const settingsProvider: Provider = {
       const isOnboarding = type === ChannelType.DM;
 
       // Find server for the current user
-      let world = await findWorldForOwner(runtime, message.userId);
+      let world = await findWorldForOwner(runtime, message.entityId);
       let serverId;
 
       if (isOnboarding) {
@@ -149,7 +149,7 @@ export const settingsProvider: Provider = {
       // If still no server found after recovery attempts
       if (!serverId) {
         logger.info(
-          `No server ownership found for user ${message.userId} after recovery attempt`
+          `No server ownership found for user ${message.entityId} after recovery attempt`
         );
         return isOnboarding
           ? {

@@ -17,7 +17,7 @@ import BigNumber from 'bignumber.js';
 import { SOLANA_SERVICE_NAME } from '../constants';
 import { getWalletKey } from '../keypairUtils';
 import type { Item } from '../types';
-import { SolanaService } from '../service';
+import type { SolanaService } from '../service';
 
 async function getTokenDecimals(connection: Connection, mintAddress: string): Promise<number> {
     const mintPublicKey = new PublicKey(mintAddress);
@@ -184,19 +184,13 @@ export const executeSwap: Action = {
         callback?: HandlerCallback,
     ): Promise<boolean> => {
         try {
-            if (!state) {
-                state = await runtime.composeState(message);
-            } else {
-                state = await runtime.composeState(message, {}, ["RECENT_MEMORIES"]);
-            }
-
             const solanaClient = runtime.getService(SOLANA_SERVICE_NAME) as SolanaService;
             if (!solanaClient) {
                 throw new Error('SolanaService not initialized');
             }
 
             const walletData = await solanaClient.getCachedData();
-            state.walletInfo = walletData;
+            state.values.walletInfo = walletData;
 
             const swapPrompt = composePrompt({
                 state,
@@ -306,16 +300,16 @@ export const executeSwap: Action = {
     examples: [
         [
             {
-                user: "{{user1}}",
+                name: '{{name1}}',
                 content: {
                     text: 'Swap 0.1 SOL for USDC',
                 },
             },
             {
-                user: "{{user2}}",
+                name: '{{name2}}',
                 content: {
                     text: "I'll help you swap 0.1 SOL for USDC",
-                    actions: ["SWAP_SOLANA"],
+                    actions: ['SWAP_SOLANA'],
                 },
             },
         ],

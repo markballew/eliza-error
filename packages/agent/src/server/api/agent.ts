@@ -430,29 +430,34 @@ export function agentRouter(
       runtime,
       req.body.roomId ?? `default-room-${agentId}`
     );
-    const userId = createUniqueUuid(runtime, req.body.userId ?? "user");
+    const entityId = createUniqueUuid(runtime, req.body.entityId ?? "Anon");
     const worldId = req.body.worldId;
 
     try {
       await runtime.ensureConnection({
-        userId,
+        entityId,
         roomId,
         userName: req.body.userName,
-        userScreenName: req.body.name,
+        name: req.body.name,
         source: "direct",
         type: ChannelType.API,
         worldId,
       });
 
+      console.log("entityId", entityId);
+      console.log("runtime.agentId", runtime.agentId);
+
       const existingRelationship =
         await runtime.databaseAdapter.getRelationship({
-          sourceEntityId: userId,
+          sourceEntityId: entityId,
           targetEntityId: runtime.agentId,
         });
 
-      if (!existingRelationship && userId !== runtime.agentId) {
-        await runtime.databaseAdapter.createRelationship({
-          sourceEntityId: userId,
+      console.log("existingRelationship", existingRelationship);
+
+      if (!existingRelationship && entityId !== runtime.agentId) {
+        const createdRelationship = await runtime.databaseAdapter.createRelationship({
+          sourceEntityId: entityId,
           targetEntityId: runtime.agentId,
           tags: ["message_interaction"],
           metadata: {
@@ -460,7 +465,9 @@ export function agentRouter(
             channel: "direct",
           },
         });
+        console.log("created relationship", createdRelationship);
       }
+
 
       const messageId = createUniqueUuid(runtime, Date.now().toString());
       const attachments: Media[] = [];
@@ -492,7 +499,7 @@ export function agentRouter(
 
       const userMessage = {
         content,
-        userId,
+        entityId,
         roomId,
         agentId: runtime.agentId,
       };
@@ -501,14 +508,16 @@ export function agentRouter(
         id: createUniqueUuid(runtime, messageId),
         ...userMessage,
         agentId: runtime.agentId,
-        userId,
+        entityId,
         roomId,
         content,
         createdAt: Date.now(),
       };
 
       await runtime.getMemoryManager("messages").addEmbeddingToMemory(memory);
+      console.log("added embedding to memory");
       await runtime.getMemoryManager("messages").createMemory(memory);
+      console.log("created memory");
 
       let state = await runtime.composeState(userMessage, {
         agentName: runtime.character.name,
@@ -523,7 +532,11 @@ export function agentRouter(
         prompt,
       });
 
+      console.log("responseText", responseText);
+
       const response = parseJSONObjectFromText(responseText) as Content;
+
+      console.log("response", response);
 
       if (!response) {
         res.status(500).json({
@@ -539,15 +552,20 @@ export function agentRouter(
       const responseMessage: Memory = {
         id: createUniqueUuid(runtime, messageId),
         ...userMessage,
-        userId: runtime.agentId,
+        entityId: runtime.agentId,
         content: response,
         createdAt: Date.now(),
       };
 
       await runtime.getMemoryManager("messages").createMemory(responseMessage);
+
+      console.log("responseMessage", responseMessage);
+
       state = await runtime.composeState(responseMessage, {}, [
         "recentMemories",
       ]);
+
+      console.log("state", state);
 
       const replyHandler = async (message: Content) => {
         res.status(201).json({
@@ -567,7 +585,11 @@ export function agentRouter(
         replyHandler
       );
 
+      console.log("processed actions");
+
       await runtime.evaluate(memory, state);
+
+      console.log("evaluated");
 
       res.status(202).json();
     } catch (error) {
@@ -807,7 +829,7 @@ export function agentRouter(
       return;
     }
 
-    const { text, roomId: rawRoomId, userId: rawUserId } = req.body;
+    const { text, roomId: rawRoomId, entityId: rawUserId } = req.body;
     if (!text) {
       res.status(400).json({
         success: false,
@@ -837,14 +859,14 @@ export function agentRouter(
         runtime,
         rawRoomId ?? `default-room-${agentId}`
       );
-      const userId = createUniqueUuid(runtime, rawUserId ?? "user");
+      const entityId = createUniqueUuid(runtime, rawUserId ?? "Anon");
 
       logger.debug("[SPEECH CONVERSATION] Ensuring connection");
       await runtime.ensureConnection({
-        userId,
+        entityId,
         roomId,
         userName: req.body.userName,
-        userScreenName: req.body.name,
+        name: req.body.name,
         source: "direct",
         type: ChannelType.API,
       });
@@ -859,7 +881,7 @@ export function agentRouter(
 
       const userMessage = {
         content,
-        userId,
+        entityId,
         roomId,
         agentId: runtime.agentId,
       };
@@ -867,7 +889,7 @@ export function agentRouter(
       const memory: Memory = {
         id: messageId,
         agentId: runtime.agentId,
-        userId,
+        entityId,
         roomId,
         content,
         createdAt: Date.now(),
@@ -915,7 +937,7 @@ export function agentRouter(
       logger.debug("[SPEECH CONVERSATION] Creating response memory");
       const responseMessage = {
         ...userMessage,
-        userId: runtime.agentId,
+        entityId: runtime.agentId,
         content: response,
       };
 
@@ -1168,7 +1190,7 @@ export function agentRouter(
     }
 
     try {
-      const { name, worldId, roomId, userId } = req.body;
+      const { name, worldId, roomId, entityId } = req.body;
       const roomName = name || `Chat ${new Date().toLocaleString()}`;
 
       await runtime.ensureRoomExists({
@@ -1180,10 +1202,10 @@ export function agentRouter(
       });
 
       await runtime.databaseAdapter.addParticipant(runtime.agentId, roomName);
-      await runtime.ensureParticipantInRoom(userId, roomId);
+      await runtime.ensureParticipantInRoom(entityId, roomId);
       await runtime.databaseAdapter.setParticipantUserState(
         roomId,
-        userId,
+        entityId,
         "FOLLOWED"
       );
 

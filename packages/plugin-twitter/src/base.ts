@@ -471,21 +471,22 @@ export class ClientBase extends EventEmitter {
         for (const tweet of tweetsToSave) {
           logger.log("Saving Tweet", tweet.id);
 
+          if (tweet.userId === this.profile.id) {
+            continue;
+          }
+          
           const roomId = createUniqueUuid(this.runtime, tweet.conversationId);
 
-          const userId = createUniqueUuid(this.runtime, 
+          const entityId = createUniqueUuid(this.runtime, 
             tweet.userId === this.profile.id
               ? this.runtime.agentId
               : tweet.userId);
 
-          if (tweet.userId === this.profile.id) {
-            continue;
-          }
             await this.runtime.ensureConnection({
-              userId,
+              entityId,
               roomId,
               userName: tweet.username,
-              userScreenName: tweet.name,
+              name: tweet.name,
               source: "twitter",
               type: ChannelType.FEED
             });
@@ -513,7 +514,7 @@ export class ClientBase extends EventEmitter {
 
           await this.runtime.getMemoryManager("messages").createMemory({
             id: createUniqueUuid(this.runtime, tweet.id),
-            userId,
+            entityId,
             content: content,
             agentId: this.runtime.agentId,
             roomId,
@@ -583,21 +584,22 @@ export class ClientBase extends EventEmitter {
     for (const tweet of tweetsToSave) {
       logger.log("Saving Tweet", tweet.id);
 
+      if (tweet.userId === this.profile.id) {
+        continue;
+      }
+
       const roomId = createUniqueUuid(this.runtime, tweet.conversationId);
 
-      const userId =
+      const entityId =
         tweet.userId === this.profile.id
           ? this.runtime.agentId
           : createUniqueUuid(this.runtime, tweet.userId);
 
-      if (tweet.userId === this.profile.id) {
-        continue;
-      }
         await this.runtime.ensureConnection({
-          userId,
+          entityId,
           roomId,
           userName: tweet.username,
-          userScreenName: tweet.name,
+          name: tweet.name,
           source: "twitter",
           type: ChannelType.FEED
         });
@@ -613,7 +615,7 @@ export class ClientBase extends EventEmitter {
 
       await this.runtime.getMemoryManager("messages").createMemory({
         id: createUniqueUuid(this.runtime, tweet.id),
-        userId,
+        entityId,
         content: content,
         agentId: this.runtime.agentId,
         roomId,

@@ -13,7 +13,7 @@ import {
   type Memory,
   type ModelType,
   ModelTypes,
-  type OnboardingSetting,
+  type Setting,
   type State,
   type WorldSettings,
 } from "../types";
@@ -26,10 +26,102 @@ interface SettingUpdate {
 const messageCompletionFooter = `\n# Instructions: Write the next message for {{agentName}}. Include the appropriate action from the list: {{actionNames}}
 Response format should be formatted in a valid JSON block like this:
 \`\`\`json
-{ "user": "{{agentName}}", "text": "<string>", "action": "<string>" }
+{ "name": "{{agentName}}", "text": "<string>", "thought": "<string>", "actions": ["<string>", "<string>", "<string>"] }
 \`\`\`
+Do not including any thinking or internal reflection in the "text" field.
+"thought" should be a short description of what the agent is thinking about before responding, including a brief justification for the response.`;
 
-The "action" field should be one of the options in [Available Actions] and the "text" field should be the response you want to send. Do not including any thinking or internal reflection in the "text" field. "thought" should be a short description of what the agent is thinking about before responding, inlcuding a brief justification for the response.`;
+// Template for success responses when settings are updated
+const successTemplate = `# Task: Generate a response for successful setting updates
+{{providers}}
+
+# Update Information:
+- Updated Settings: {{updateMessages}}
+- Next Required Setting: {{nextSetting.name}}
+- Remaining Required Settings: {{remainingRequired}}
+
+# Instructions:
+1. Acknowledge the successful update of settings
+2. Maintain {{agentName}}'s personality and tone
+3. Provide clear guidance on the next setting that needs to be configured
+4. Explain what the next setting is for and how to set it
+5. If appropriate, mention how many required settings remain
+
+Write a natural, conversational response that {{agentName}} would send about the successful update and next steps.
+Include the actions array ["SETTING_UPDATED"] in your response.
+${messageCompletionFooter}`;
+
+// Template for failure responses when settings couldn't be updated
+const failureTemplate = `# Task: Generate a response for failed setting updates
+
+# About {{agentName}}:
+{{bio}}
+
+# Current Settings Status:
+{{settingsStatus}}
+
+# Next Required Setting:
+- Name: {{nextSetting.name}}
+- Description: {{nextSetting.description}}
+- Required: Yes
+- Remaining Required Settings: {{remainingRequired}}
+
+# Recent Conversation:
+{{recentMessages}}
+
+# Instructions:
+1. Express that you couldn't understand or process the setting update
+2. Maintain {{agentName}}'s personality and tone
+3. Provide clear guidance on what setting needs to be configured next
+4. Explain what the setting is for and how to set it properly
+5. Use a helpful, patient tone
+
+Write a natural, conversational response that {{agentName}} would send about the failed update and how to proceed.
+Include the actions array ["SETTING_UPDATE_FAILED"] in your response.
+${messageCompletionFooter}`;
+
+// Template for error responses when unexpected errors occur
+const errorTemplate = `# Task: Generate a response for an error during setting updates
+
+# About {{agentName}}:
+{{bio}}
+
+# Recent Conversation:
+{{recentMessages}}
+
+# Instructions:
+1. Apologize for the technical difficulty
+2. Maintain {{agentName}}'s personality and tone
+3. Suggest trying again or contacting support if the issue persists
+4. Keep the message concise and helpful
+
+Write a natural, conversational response that {{agentName}} would send about the error.
+Include the actions array ["SETTING_UPDATE_ERROR"] in your response.
+${messageCompletionFooter}`;
+
+// Template for completion responses when all required settings are configured
+const completionTemplate = `# Task: Generate a response for settings completion
+
+# About {{agentName}}:
+{{bio}}
+
+# Settings Status:
+{{settingsStatus}}
+
+# Recent Conversation:
+{{recentMessages}}
+
+# Instructions:
+1. Congratulate the user on completing the settings process
+2. Maintain {{agentName}}'s personality and tone
+3. Summarize the key settings that have been configured
+4. Explain what functionality is now available
+5. Provide guidance on what the user can do next
+6. Express enthusiasm about working together
+
+Write a natural, conversational response that {{agentName}} would send about the successful completion of settings.
+Include the actions array ["ONBOARDING_COMPLETE"] in your response.
+${messageCompletionFooter}`;
 
 // Enhanced extraction template that explicitly handles multiple settings
 const extractionTemplate = `# Task: Extract setting values from the conversation
@@ -93,17 +185,17 @@ const generateObject = async ({
 
     // Clean up the response to extract just the enum value
     const cleanedResponse = response.trim();
-    
+
     // Verify the response is one of the allowed enum values
     if (enumValues.includes(cleanedResponse)) {
       return cleanedResponse;
     }
-    
+
     // If the response includes one of the enum values (case insensitive)
-    const matchedValue = enumValues.find(value => 
+    const matchedValue = enumValues.find((value) =>
       cleanedResponse.toLowerCase().includes(value.toLowerCase())
     );
-    
+
     if (matchedValue) {
       return matchedValue;
     }
@@ -127,10 +219,10 @@ const generateObject = async ({
   // Find appropriate brackets based on expected output type
   const firstChar = output === "array" ? "[" : "{";
   const lastChar = output === "array" ? "]" : "}";
-  
+
   const firstBracket = response.indexOf(firstChar);
   const lastBracket = response.lastIndexOf(lastChar);
-  
+
   if (firstBracket !== -1 && lastBracket !== -1 && firstBracket < lastBracket) {
     jsonString = response.slice(firstBracket, lastBracket + 1);
   }
@@ -143,12 +235,12 @@ const generateObject = async ({
   // Parse the JSON string
   try {
     const json = JSON.parse(jsonString);
-    
+
     // Validate against schema if provided
     if (schema) {
       return schema.parse(json);
     }
-    
+
     return json;
   } catch (_error) {
     logger.error(`Failed to parse JSON ${output}`);
@@ -176,7 +268,7 @@ async function generateObjectArray({
     logger.error("generateObjectArray prompt is empty");
     return [];
   }
-  
+
   const result = await generateObject({
     runtime,
     prompt,
@@ -184,12 +276,12 @@ async function generateObjectArray({
     output: "array",
     schema,
   });
-  
+
   if (!Array.isArray(result)) {
     logger.error("Generated result is not an array");
     return [];
   }
-  
+
   return schema ? schema.parse(result) : result;
 }
 
@@ -270,17 +362,17 @@ function formatSettingsList(worldSettings: WorldSettings): string {
  * Categorizes settings by their configuration status
  */
 function categorizeSettings(worldSettings: WorldSettings): {
-  configured: [string, OnboardingSetting][];
-  requiredUnconfigured: [string, OnboardingSetting][];
-  optionalUnconfigured: [string, OnboardingSetting][];
+  configured: [string, Setting][];
+  requiredUnconfigured: [string, Setting][];
+  optionalUnconfigured: [string, Setting][];
 } {
-  const configured: [string, OnboardingSetting][] = [];
-  const requiredUnconfigured: [string, OnboardingSetting][] = [];
-  const optionalUnconfigured: [string, OnboardingSetting][] = [];
+  const configured: [string, Setting][] = [];
+  const requiredUnconfigured: [string, Setting][] = [];
+  const optionalUnconfigured: [string, Setting][] = [];
 
   for (const [key, setting] of Object.entries(worldSettings) as [
     string,
-    OnboardingSetting
+    Setting
   ][]) {
     // Skip internal settings
     if (key.startsWith("_")) continue;
@@ -413,11 +505,7 @@ async function processSettingUpdates(
     // If any updates were made, save the entire state to world metadata
     if (updatedAny) {
       // Save to world metadata
-      const saved = await updateWorldSettings(
-        runtime,
-        serverId,
-        updatedState
-      );
+      const saved = await updateWorldSettings(runtime, serverId, updatedState);
 
       if (!saved) {
         throw new Error("Failed to save updated state to world metadata");
@@ -439,98 +527,6 @@ async function processSettingUpdates(
     };
   }
 }
-
-// Template for success responses when settings are updated
-const successTemplate = `# Task: Generate a response for successful setting updates
-{{providers}}
-
-# Update Information:
-- Updated Settings: {{updateMessages}}
-- Next Required Setting: {{nextSetting.name}}
-- Remaining Required Settings: {{remainingRequired}}
-
-# Instructions:
-1. Acknowledge the successful update of settings
-2. Maintain {{agentName}}'s personality and tone
-3. Provide clear guidance on the next setting that needs to be configured
-4. Explain what the next setting is for and how to set it
-5. If appropriate, mention how many required settings remain
-
-Write a natural, conversational response that {{agentName}} would send about the successful update and next steps.
-Include the action "SETTING_UPDATED" in your response.
-${messageCompletionFooter}`;
-
-// Template for failure responses when settings couldn't be updated
-const failureTemplate = `# Task: Generate a response for failed setting updates
-
-# About {{agentName}}:
-{{bio}}
-
-# Current Settings Status:
-{{settingsStatus}}
-
-# Next Required Setting:
-- Name: {{nextSetting.name}}
-- Description: {{nextSetting.description}}
-- Required: Yes
-- Remaining Required Settings: {{remainingRequired}}
-
-# Recent Conversation:
-{{recentMessages}}
-
-# Instructions:
-1. Express that you couldn't understand or process the setting update
-2. Maintain {{agentName}}'s personality and tone
-3. Provide clear guidance on what setting needs to be configured next
-4. Explain what the setting is for and how to set it properly
-5. Use a helpful, patient tone
-
-Write a natural, conversational response that {{agentName}} would send about the failed update and how to proceed.
-Include the action "SETTING_UPDATE_FAILED" in your response.
-${messageCompletionFooter}`;
-
-// Template for error responses when unexpected errors occur
-const errorTemplate = `# Task: Generate a response for an error during setting updates
-
-# About {{agentName}}:
-{{bio}}
-
-# Recent Conversation:
-{{recentMessages}}
-
-# Instructions:
-1. Apologize for the technical difficulty
-2. Maintain {{agentName}}'s personality and tone
-3. Suggest trying again or contacting support if the issue persists
-4. Keep the message concise and helpful
-
-Write a natural, conversational response that {{agentName}} would send about the error.
-Include the action "SETTING_UPDATE_ERROR" in your response.
-${messageCompletionFooter}`;
-
-// Template for completion responses when all required settings are configured
-const completionTemplate = `# Task: Generate a response for settings completion
-
-# About {{agentName}}:
-{{bio}}
-
-# Settings Status:
-{{settingsStatus}}
-
-# Recent Conversation:
-{{recentMessages}}
-
-# Instructions:
-1. Congratulate the user on completing the settings process
-2. Maintain {{agentName}}'s personality and tone
-3. Summarize the key settings that have been configured
-4. Explain what functionality is now available
-5. Provide guidance on what the user can do next
-6. Express enthusiasm about working together
-
-Write a natural, conversational response that {{agentName}} would send about the successful completion of settings.
-Include the action "ONBOARDING_COMPLETE" in your response.
-${messageCompletionFooter}`;
 
 /**
  * Handles the completion of settings when all required settings are configured
@@ -724,16 +720,6 @@ const updateSettingsAction: Action = {
     _state: State
   ): Promise<boolean> => {
     try {
-      if (!message.userId) {
-        logger.error("No user ID in message for settings validation");
-        return false;
-      }
-
-      // Log the user ID for debugging
-      logger.info(
-        `Validating settings action for user ${message.userId} (normalized: ${message.userId})`
-      );
-
       // Validate that we're in a DM channel
       const room = await runtime.databaseAdapter.getRoom(message.roomId);
       if (!room) {
@@ -742,17 +728,15 @@ const updateSettingsAction: Action = {
       }
 
       if (room.type !== ChannelType.DM) {
-        logger.info(
-          `Skipping settings in non-DM channel (type: ${room.type})`
-        );
+        logger.info(`Skipping settings in non-DM channel (type: ${room.type})`);
         return false;
       }
 
       // Find the server where this user is the owner
-      logger.info(`Looking for server where user ${message.userId} is owner`);
-      const world = await findWorldForOwner(runtime, message.userId);
+      logger.info(`Looking for server where user ${message.entityId} is owner`);
+      const world = await findWorldForOwner(runtime, message.entityId);
       if (!world) {
-        logger.error(`No server ownership found for user ${message.userId}`);
+        logger.error(`No server ownership found for user ${message.entityId}`);
         return false;
       }
 
@@ -764,9 +748,7 @@ const updateSettingsAction: Action = {
         return false;
       }
 
-      logger.info(
-        `Found valid settings state for server ${world.serverId}`
-      );
+      logger.info(`Found valid settings state for server ${world.serverId}`);
       return true;
     } catch (error) {
       logger.error(`Error validating settings action: ${error}`);
@@ -781,19 +763,15 @@ const updateSettingsAction: Action = {
     _options: any,
     callback: HandlerCallback
   ): Promise<void> => {
-    if (!message.content.source || message.content.source !== "discord") {
-      logger.info(
-        `Skipping non-discord message source: ${message.content.source}`
-      );
-      return;
-    }
-
     try {
       // Find the server where this user is the owner
-      logger.info(`Handler looking for server for user ${message.userId}`);
-      const serverOwnership = await findWorldForOwner(runtime, message.userId);
+      logger.info(`Handler looking for server for user ${message.entityId}`);
+      const serverOwnership = await findWorldForOwner(
+        runtime,
+        message.entityId
+      );
       if (!serverOwnership) {
-        logger.error(`No server found for user ${message.userId} in handler`);
+        logger.error(`No server found for user ${message.entityId} in handler`);
         await generateErrorResponse(runtime, state, callback);
         return;
       }
@@ -816,12 +794,7 @@ const updateSettingsAction: Action = {
       const { requiredUnconfigured } = categorizeSettings(worldSettings);
       if (requiredUnconfigured.length === 0) {
         logger.info("All required settings configured, completing settings");
-        await handleOnboardingComplete(
-          runtime,
-          worldSettings,
-          state,
-          callback
-        );
+        await handleOnboardingComplete(runtime, worldSettings, state, callback);
         return;
       }
 
@@ -850,10 +823,7 @@ const updateSettingsAction: Action = {
         );
 
         // Get updated settings state
-        const updatedWorldSettings = await getWorldSettings(
-          runtime,
-          serverId
-        );
+        const updatedWorldSettings = await getWorldSettings(runtime, serverId);
         if (!updatedWorldSettings) {
           logger.error("Failed to retrieve updated settings state");
           await generateErrorResponse(runtime, state, callback);
@@ -869,12 +839,7 @@ const updateSettingsAction: Action = {
         );
       } else {
         logger.info("No settings were updated");
-        await generateFailureResponse(
-          runtime,
-          worldSettings,
-          state,
-          callback
-        );
+        await generateFailureResponse(runtime, worldSettings, state, callback);
       }
     } catch (error) {
       logger.error(`Error in settings handler: ${error}`);
@@ -884,14 +849,14 @@ const updateSettingsAction: Action = {
   examples: [
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "I want to set up the welcome channel to #general",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Perfect! I've updated your welcome channel to #general. Next, we should configure the automated greeting message that new members will receive.",
           actions: ["SETTING_UPDATED"],
@@ -901,14 +866,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "Let's set the bot prefix to !",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Great choice! I've set the command prefix to '!'. Now you can use commands like !help, !info, etc.",
           actions: ["SETTING_UPDATED"],
@@ -918,14 +883,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "Enable auto-moderation for bad language",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Auto-moderation for inappropriate language has been enabled. I'll now filter messages containing offensive content.",
           actions: ["SETTING_UPDATED"],
@@ -935,14 +900,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "For server logs, use the #server-logs channel",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "I've configured #server-logs as your logging channel. All server events like joins, leaves, and moderation actions will be recorded there.",
           actions: ["SETTING_UPDATED"],
@@ -952,14 +917,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "I'd like to have role self-assignment in the #roles channel",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Role self-assignment has been set up in the #roles channel. Members can now assign themselves roles by interacting with messages there.",
           actions: ["SETTING_UPDATED"],
@@ -969,14 +934,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "Make music commands available in voice-text channels only",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "I've updated your music command settings - they'll now only work in voice-text channels. This helps keep other channels clear of music spam.",
           actions: ["SETTING_UPDATED"],
@@ -986,14 +951,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "For server timezone, set it to EST",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Server timezone has been set to Eastern Standard Time (EST). All scheduled events and timestamps will now display in this timezone.",
           actions: ["SETTING_UPDATED"],
@@ -1003,14 +968,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "Set verification level to email verified users only",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "I've updated the verification requirement to email verified accounts only. This adds an extra layer of security to your server.",
           actions: ["SETTING_UPDATED"],
@@ -1020,14 +985,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "I want to turn off level-up notifications",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Level-up notifications have been disabled. Members will still earn experience and level up, but there won't be any automatic announcements. You can still view levels with the appropriate commands.",
           actions: ["SETTING_UPDATED"],
@@ -1037,14 +1002,14 @@ const updateSettingsAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "My server name is 'Gaming Lounge'",
           source: "discord",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Great! I've saved 'Gaming Lounge' as your server name. This helps me personalize responses and know how to refer to your community. We've completed all the required settings! Your server is now fully configured and ready to use. You can always adjust these settings later if needed.",
           actions: ["ONBOARDING_COMPLETE"],

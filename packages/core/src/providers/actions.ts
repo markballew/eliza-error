@@ -1,10 +1,11 @@
 import { formatActionNames, formatActions } from "../actions";
 import { addHeader } from "../prompts";
-import { Action, IAgentRuntime, Memory, Provider, State } from "../types";
+import { type Action, type IAgentRuntime, type Memory, type Provider, State } from "../types";
 
 export const actionsProvider: Provider = {
   name: "ACTIONS",
   description: "List of actions that can be called",
+  position: 99,
   // Get actions that validate for this message
   get: async (runtime: IAgentRuntime, message: Memory) => {
     const actionPromises = runtime.actions.map(async (action: Action) => {

@@ -1,8 +1,8 @@
 import type { IAgentRuntime, Memory, Provider, State } from "../types";
 
-const timeProvider: Provider = {
-    name: "time",
-    get: async (_runtime: IAgentRuntime, _message: Memory, _state?: State) => {
+export const timeProvider: Provider = {
+    name: "TIME",
+    get: async (_runtime: IAgentRuntime, _message: Memory) => {
         const currentDate = new Date();
 
         // Get UTC time since bots will be communicating with users around the global
@@ -25,4 +25,3 @@ const timeProvider: Provider = {
         };
     },
 };
-export { timeProvider };

@@ -60,13 +60,13 @@ export async function buildConversationThread(
         );
         if (!memory) {
             const roomId = createUniqueUuid(this.runtime, currentTweet.conversationId);
-            const userId = createUniqueUuid(this.runtime, currentTweet.userId);
+            const entityId = createUniqueUuid(this.runtime, currentTweet.userId);
 
             await client.runtime.ensureConnection({
-                userId,
+                entityId,
                 roomId,
                 userName: currentTweet.username,
-                userScreenName: currentTweet.name,
+                name: currentTweet.name,
                 source: "twitter",
                 type: ChannelType.GROUP
             });
@@ -85,7 +85,7 @@ export async function buildConversationThread(
                 },
                 createdAt: currentTweet.timestamp * 1000,
                 roomId,
-                userId:
+                entityId:
                     currentTweet.userId === client.profile.id
                         ? client.runtime.agentId
                         : createUniqueUuid(this.runtime, currentTweet.userId),
@@ -261,7 +261,7 @@ export async function sendTweet(
     const memories: Memory[] = sentTweets.map((tweet) => ({
         id: createUniqueUuid(client.runtime, tweet.id),
         agentId: client.runtime.agentId,
-        userId: client.runtime.agentId,
+        entityId: client.runtime.agentId,
         content: {
             tweetId: tweet.id,
             text: tweet.text,

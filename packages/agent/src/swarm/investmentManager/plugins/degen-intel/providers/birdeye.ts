@@ -104,7 +104,7 @@ export default class Birdeye {
 
 		await this.runtime.databaseAdapter.setCache<TransactionHistory[]>("transaction_history", transactions);
 
-		logger.info(`Updated transaction history with ${data.length} transactions`);
+		logger.debug(`Updated transaction history with ${data.length} transactions`);
 	}
 
 	private async syncWalletPortfolio() {
@@ -185,7 +185,7 @@ export default class Birdeye {
 
 		await this.runtime.databaseAdapter.setCache<IToken[]>(`tokens_${chain}`, tokens);
 
-		logger.info(`Updated ${chain} tokens cache with ${tokens.length} tokens`);
+		logger.debug(`Updated ${chain} tokens cache with ${tokens.length} tokens`);
 
 		return true;
 	}
@@ -227,7 +227,7 @@ export default class Birdeye {
 				// Create memory for this timeslot
 				await this.runtime.getMemoryManager("messages").createMemory({
 					id: createUniqueUuid(this.runtime, `sentiment-${timeslot.toISOString()}`),
-					userId: this.runtime.agentId,
+					entityId: this.runtime.agentId,
 					agentId: this.runtime.agentId,
 					content: {
 						text: "",
@@ -263,7 +263,7 @@ export default class Birdeye {
 		const sentiment = (memories as Array<Memory & { content: SentimentContent }>).find(m => !m.content.metadata.processed);
 
 		if (!sentiment) {
-			logger.info("No unprocessed timeslots available.");
+			logger.debug("No unprocessed timeslots available.");
 			return true;
 		}
 
@@ -286,7 +286,7 @@ export default class Birdeye {
 			// Mark as processed even if no tweets
 			await this.runtime.getMemoryManager("messages").createMemory({
 				id: sentiment.id,
-				userId: sentiment.userId,
+				entityId: sentiment.entityId,
 				agentId: sentiment.agentId,
 				content: {
 					...sentiment.content,
@@ -323,7 +323,7 @@ export default class Birdeye {
 		// Update the sentiment analysis
 		await this.runtime.getMemoryManager("messages").createMemory({
 			id: sentiment.id,
-			userId: sentiment.userId,
+			entityId: sentiment.entityId,
 			agentId: sentiment.agentId,
 			content: {
 				text: json.text,

@@ -9,7 +9,7 @@ import {
 } from "@elizaos/core";
 import { v4 as uuid } from "uuid";
 import { z } from "zod";
-import type { TrustTradingService } from "../tradingService.js";
+import type { CommunityInvestorService } from "../tradingService.js";
 import { ServiceTypes, type RecommendationMemory } from "../types.js";
 import {
     extractXMLFromResponse,
@@ -332,12 +332,12 @@ const TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 export const formatRecommendations = (recommendations: Memory[]) => {
     return recommendations
         .reverse()
-        .map((rec: Memory) => `${JSON.stringify(rec.content.recommendation)}`)
+        .map((rec: Memory) => `${JSON.stringify(rec.metadata.recommendation)}`)
         .join("\n");
 };
 
 export const recommendationEvaluator: Evaluator = {
-    name: "TRUST_EXTRACT_RECOMMENDATIONS",
+    name: "EXTRACT_RECOMMENDATIONS",
     similes: [],
     alwaysRun: true,
     validate: async (
@@ -348,14 +348,14 @@ export const recommendationEvaluator: Evaluator = {
             "validating message for recommendation",
             message.content.text.length < 5
                 ? false
-                : message.userId !== message.agentId
+                : message.entityId !== message.agentId
         );
 
         if (message.content.text.length < 5) {
             return false;
         }
 
-        return message.userId !== message.agentId;
+        return message.entityId !== message.agentId;
     },
     description:
         "Extract recommendations to buy or sell memecoins/tokens from the conversation, including details like ticker, contract address, conviction level, and recommender username.",
@@ -380,15 +380,15 @@ async function handler(
     console.log("Running the evaluator");
     if (!state) return;
 
-    const { agentId, roomId } = state;
+    const { agentId, roomId } = message;
 
-    if (!runtime.getService(ServiceTypes.TRUST_TRADING)) {
+    if (!runtime.getService(ServiceTypes.COMMUNITY_INVESTOR)) {
         console.log("no trading service");
         return;
     }
 
-    const tradingService = runtime.getService<TrustTradingService>(
-         ServiceTypes.TRUST_TRADING
+    const tradingService = runtime.getService<CommunityInvestorService>(
+         ServiceTypes.COMMUNITY_INVESTOR
     )!;
 
     if (!tradingService.hasWallet("solana")) {
@@ -396,7 +396,7 @@ async function handler(
         return;
     }
 
-    if (message.userId === message.agentId) return;
+    if (message.entityId === message.agentId) return;
     console.log("evaluating recommendations....");
 
     console.log("message", message.content.text);
@@ -425,7 +425,7 @@ async function handler(
                     : undefined,
                 buttons: [],
             },
-            userId: message.userId,
+            entityId: message.entityId,
             agentId: message.agentId,
             metadata: {
                 ...message.metadata,
@@ -466,10 +466,10 @@ async function handler(
             schema: JSON.stringify(getZodJsonSchema(recommendationSchema)),
             message: JSON.stringify({
                 text: message.content.text,
-                userId: message.userId,
+                entityId: message.entityId,
                 agentId: message.agentId,
                 roomId: message.roomId,
-                // TODO: userScreenName vs userName is bad
+                // TODO: name vs userName is bad
                 // This should be handled better, especially cross platform
                 username: message.content.username ?? message.content.userName,
             }),
@@ -512,12 +512,13 @@ async function handler(
 
     const tokenRecommendationsSet = new Set(
         recentRecommendations
-            .filter((r) => r.content.recommendation.confirmed)
-            .map((r) => r.content.recommendation.tokenAddress)
+            .filter((r) => r.metadata.recommendation.confirmed)
+            .map((r) => r.metadata.recommendation.tokenAddress)
     );
 
     const filteredRecommendations = recommendations
-        .filter((rec) => rec.username !== state.agentName)
+    // TODO: Replace username with entity ID
+        .filter((rec) => rec.username !== runtime.character.name)
         .filter((rec) => !tokenRecommendationsSet.has(rec.tokenAddress));
 
     if (filteredRecommendations.length === 0) {
@@ -563,12 +564,12 @@ async function handler(
             return (
                 user.names.map((name) => name.toLowerCase().trim())
                     .includes(recommendation.username.toLowerCase().trim()) ||
-                user.id === message.userId
+                user.id === message.entityId
             );
         });
 
         if (!user) {
-            console.warn("Could not find user: ", recommendation.username);
+            console.warn("Could not find name: ", recommendation.username);
             continue;
         }
 
@@ -600,9 +601,9 @@ async function handler(
                             buttons: [],
                             channelId: TELEGRAM_CHANNEL_ID,
                             source: "telegram",
-                            actions: ["TRUST_CONFIRM_RECOMMENDATION"],
+                            actions: ["CONFIRM_RECOMMENDATION"],
                         },
-                        userId: message.userId,
+                        entityId: message.entityId,
                         agentId: message.agentId,
                         roomId: message.roomId,
                         metadata: message.metadata,
@@ -615,7 +616,7 @@ async function handler(
 
         const recMemory: Memory = {
             id: uuid() as UUID,
-            userId: user.id,
+            entityId: message.entityId,
             agentId,
             content: { text: "", recommendation },
             roomId,
@@ -644,10 +645,10 @@ async function handler(
                             ? message.id
                             : undefined,
                         buttons: [],
-                        actions: ["TRUST_CONFIRM_RECOMMENDATION"],
+                        actions: ["CONFIRM_RECOMMENDATION"],
                         source: "telegram",
                     },
-                    userId: user.id,
+                    entityId: message.entityId,
                     agentId: message.agentId,
                     metadata: message.metadata,
                     roomId: message.roomId,
@@ -664,11 +665,11 @@ async function handler(
                     console.log("message", message.metadata);
                     const actionMemory = {
                         id: message.id,
-                        userId: user.id,
+                        entityId: message.entityId,
                         agentId,
                         content: {
                             text: message.content.text,
-                            actions: ["TRUST_CONFIRM_RECOMMENDATION"],
+                            actions: ["CONFIRM_RECOMMENDATION"],
                         },
                         roomId,
                         createdAt: Date.now(),
@@ -687,7 +688,7 @@ async function handler(
                 }
                 const prompt = composePrompt({
                     state: {
-                        agentName: state.agentName!,
+                        agentName: runtime.character.name,
                         msg: message.content.text,
                         recommendation: JSON.stringify(recommendation),
                         token: tokenString,
@@ -714,10 +715,10 @@ async function handler(
                             ? message.id
                             : undefined,
                         buttons: [],
-                        actions: ["TRUST_CONFIRM_RECOMMENDATION"],
+                        actions: ["CONFIRM_RECOMMENDATION"],
                         source: "telegram",
                     },
-                    userId: user.id,
+                    entityId: message.entityId,
                     agentId: message.agentId,
                     roomId: message.roomId,
                     metadata: message.metadata,

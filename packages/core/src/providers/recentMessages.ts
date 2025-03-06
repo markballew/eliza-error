@@ -1,10 +1,11 @@
 import { getEntityDetails } from "../entities";
 import { addHeader, formatMessages, formatPosts } from "../prompts";
-import { ChannelType, Entity, IAgentRuntime, Memory, Provider, UUID } from "../types";
+import { ChannelType, type Entity, type IAgentRuntime, type Memory, type Provider, type UUID } from "../types";
 
-export const recentMemoriesProvider: Provider = {
-  name: "RECENT_MEMORIES",
+export const recentMessagesProvider: Provider = {
+  name: "RECENT_MESSAGES",
   description: "Recent messages, interactions and other memories",
+  position: 100,
   get: async (
     runtime: IAgentRuntime,
     message: Memory,
@@ -69,8 +70,8 @@ export const recentMemoriesProvider: Provider = {
     };
 
     const recentInteractionsData =
-      message.userId !== runtime.agentId
-        ? await getRecentInteractions(message.userId, runtime.agentId)
+      message.entityId !== runtime.agentId
+        ? await getRecentInteractions(message.entityId, runtime.agentId)
         : [];
 
     // Format recent message interactions
@@ -80,16 +81,16 @@ export const recentMemoriesProvider: Provider = {
       // Format the recent messages
       const formattedInteractions = await Promise.all(
         recentInteractionsData.map(async (message) => {
-          const isSelf = message.userId === runtime.agentId;
+          const isSelf = message.entityId === runtime.agentId;
           let sender: string;
           if (isSelf) {
             sender = runtime.character.name;
           } else {
             // Lookup by tenant-specific ID since that's what's stored in the memory
-            const accountId = await runtime.databaseAdapter.getEntityById(
-              message.userId
+            const entityId = await runtime.databaseAdapter.getEntityById(
+              message.entityId
             );
-            sender = accountId?.metadata?.username || "unknown";
+            sender = entityId?.metadata?.username || "unknown";
           }
           return `${sender}: ${message.content.text}`;
         })

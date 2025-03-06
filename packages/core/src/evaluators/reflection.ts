@@ -8,6 +8,7 @@ import {
   type IAgentRuntime,
   type Memory,
   ModelTypes,
+  State,
   type UUID,
 } from "../types";
 
@@ -38,12 +39,10 @@ const reflectionSchema = z.object({
 
 const reflectionTemplate = `# Task: Generate Agent Reflection, Extract Facts and Relationships
 
+{{providers}}
+
 # Examples:
 {{evaluationExamples}}
-
-{{entities}}
-
-{{bio}}
 
 # Entities in Room
 {{entitiesInRoom}}
@@ -62,27 +61,32 @@ Message Sender: {{senderName}} (ID: {{senderId}})
 {{knownFacts}}
 
 # Instructions:
-1. Extract new facts from the conversation
-2. Identify and describe relationships between entities. The sourceEntityId is the UUID of the entity initiating the interaction. The targetEntityId is the UUID of the entity being interacted with. Relationships are one-direction, so a friendship would be two entity relationships where each entity is both the source and the target of the other.
+1. Generate a self-reflective thought on the conversation. How are you doing? You're not being annoying, are you?
+2. Extract new facts from the conversation.
+3. Identify and describe relationships between entities.
+  - The sourceEntityId is the UUID of the entity initiating the interaction.
+  - The targetEntityId is the UUID of the entity being interacted with.
+  - Relationships are one-direction, so a friendship would be two entity relationships where each entity is both the source and the target of the other.
 
 Generate a response in the following format:
 \`\`\`json
 {
-    "facts": [
-        {
-            "claim": "factual statement",
-            "type": "fact|opinion|status",
-            "in_bio": false,
-            "already_known": false
-        }
-    ],
-    "relationships": [
-        {
-            "sourceEntityId": "entity_initiating_interaction",
-            "targetEntityId": "entity_being_interacted_with",
-            "tags": ["group_interaction|voice_interaction|dm_interaction", "additional_tag1", "additional_tag2"]
-        }
-    ]
+  "thought": "a self-reflective thought on the conversation",
+  "facts": [
+      {
+          "claim": "factual statement",
+          "type": "fact|opinion|status",
+          "in_bio": false,
+          "already_known": false
+      }
+  ],
+  "relationships": [
+      {
+          "sourceEntityId": "entity_initiating_interaction",
+          "targetEntityId": "entity_being_interacted_with",
+          "tags": ["group_interaction|voice_interaction|dm_interaction", "additional_tag1", "additional_tag2"]
+      }
+  ]
 }
 \`\`\``;
 
@@ -178,43 +182,39 @@ const generateObject = async ({
   }
 };
 
-async function handler(runtime: IAgentRuntime, message: Memory) {
-  const state = await runtime.composeState(message);
-  const { agentId, roomId } = state;
+async function handler(runtime: IAgentRuntime, message: Memory, state?: State) {
+  const { agentId, roomId } = message;
+  
+    // Get known facts
+    const factsManager = new MemoryManager({
+      runtime,
+      tableName: "facts",
+    });
 
-  // Get existing relationships for the room
-  const existingRelationships = await runtime.databaseAdapter.getRelationships({
-    userId: message.userId,
-  });
-
-  // Get actors in the room for name resolution
-  const actors = await getEntityDetails({ runtime, roomId });
-
-  const entitiesInRoom = await runtime.databaseAdapter.getEntitiesForRoom(
-    roomId
-  );
-
-  // Get known facts
-  const factsManager = new MemoryManager({
-    runtime,
-    tableName: "facts",
-  });
-
-  const knownFacts = await factsManager.getMemories({
-    roomId,
-    agentId,
-    count: 30,
-    unique: true,
-  });
+  // Run all queries in parallel
+  const [existingRelationships, actors, entitiesInRoom, knownFacts, room] = await Promise.all([
+    runtime.databaseAdapter.getRelationships({
+      entityId: message.entityId,
+    }),
+    getEntityDetails({ runtime, roomId }),
+    runtime.databaseAdapter.getEntitiesForRoom(roomId),
+    factsManager.getMemories({
+      roomId,
+      agentId, 
+      count: 30,
+      unique: true,
+    }),
+    runtime.databaseAdapter.getRoom(roomId)
+  ]);
 
   const prompt = composePrompt({
     state: {
       ...state,
       knownFacts: formatFacts(knownFacts),
-      roomType: state.roomType || "group", // Can be "group", "voice", or "dm"
+      roomType: room.type || "group", // Can be "group", "voice", or "dm"
       entitiesInRoom: JSON.stringify(entitiesInRoom),
       existingRelationships: JSON.stringify(existingRelationships),
-      senderId: message.userId,
+      senderId: message.entityId,
     },
     template:
       runtime.character.templates?.reflectionTemplate || reflectionTemplate,
@@ -243,7 +243,7 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
 
   for (const fact of newFacts) {
     const factMemory = await factsManager.addEmbeddingToMemory({
-      userId: agentId,
+      entityId: agentId,
       agentId,
       content: { text: fact.claim },
       roomId,
@@ -265,6 +265,9 @@ async function handler(runtime: IAgentRuntime, message: Memory) {
       console.warn("relationship:\n", relationship);
       continue; // Skip this relationship if we can't resolve the IDs
     }
+
+    console.log("**** existingRelationships")
+    console.log(existingRelationships)
 
     const existingRelationship = existingRelationships.find(
       (r) => r.sourceEntityId === sourceId && r.targetEntityId === targetId
@@ -343,7 +346,7 @@ export const reflectionEvaluator: Evaluator = {
     return messages.length > reflectionInterval;
   },
   description:
-    "Generate self-reflection, extract facts, and track relationships between entities in the conversation.",
+    "Generate a self-reflective thought on the conversation, then extract facts and relationships between entities in the conversation.",
   handler,
   examples: [
     {
@@ -354,20 +357,20 @@ Current Room: general-chat
 Message Sender: John (user-123)`,
       messages: [
         {
-          user: "John",
+          name: "John",
           content: { text: "Hey everyone, I'm new here!" },
         },
         {
-          user: "Sarah",
+          name: "Sarah",
           content: { text: "Welcome John! How did you find our community?" },
         },
         {
-          user: "John",
+          name: "John",
           content: { text: "Through a friend who's really into AI" },
         },
       ],
       outcome: `{
-    "reflection": "I'm engaging appropriately with a new community member, maintaining a welcoming and professional tone. My questions are helping to learn more about John and make him feel welcome.",
+    "thought": "I'm engaging appropriately with a new community member, maintaining a welcoming and professional tone. My questions are helping to learn more about John and make him feel welcome.",
     "facts": [
         {
             "claim": "John is new to the community",
@@ -396,6 +399,108 @@ Message Sender: John (user-123)`,
     ]
 }`,
     },
+    {
+      prompt: `Agent Name: Alex
+Agent Role: Tech Support
+Room Type: group
+Current Room: tech-help
+Message Sender: Emma (user-456)`, 
+      messages: [
+        {
+          name: "Emma",
+          content: { text: "My app keeps crashing when I try to upload files" },
+        },
+        {
+          name: "Alex",
+          content: { text: "Have you tried clearing your cache?" },
+        },
+        {
+          name: "Emma",
+          content: { text: "No response..." },
+        },
+        {
+          name: "Alex", 
+          content: { text: "Emma, are you still there? We can try some other troubleshooting steps." },
+        }
+      ],
+      outcome: `{
+    "thought": "I'm not sure if I'm being helpful or if Emma is frustrated with my suggestions. The lack of response is concerning - maybe I should have asked for more details about the issue first before jumping to solutions.",
+    "facts": [
+        {
+            "claim": "Emma is having technical issues with file uploads",
+            "type": "fact",
+            "in_bio": false,
+            "already_known": false
+        },
+        {
+            "claim": "Emma stopped responding after the first troubleshooting suggestion",
+            "type": "fact",
+            "in_bio": false,
+            "already_known": false
+        }
+    ],
+    "relationships": [
+        {
+            "sourceEntityId": "alex-agent",
+            "targetEntityId": "user-456",
+            "tags": ["group_interaction", "support_interaction", "incomplete_interaction"]
+        }
+    ]
+}`,
+    },
+    {
+      prompt: `Agent Name: Max
+Agent Role: Discussion Facilitator 
+Room Type: group
+Current Room: book-club
+Message Sender: Lisa (user-789)`,
+      messages: [
+        {
+          name: "Lisa",
+          content: { text: "What did everyone think about chapter 5?" },
+        },
+        {
+          name: "Max",
+          content: { text: "The symbolism was fascinating! The red door clearly represents danger." },
+        },
+        {
+          name: "Max",
+          content: { text: "And did anyone notice how the author used weather to reflect the protagonist's mood?" },
+        },
+        {
+          name: "Max",
+          content: { text: "Plus the foreshadowing in the first paragraph was brilliant!" },
+        },
+        {
+          name: "Max",
+          content: { text: "I also have thoughts about the character development..." },
+        }
+      ],
+      outcome: `{
+    "thought": "I'm dominating the conversation and not giving others a chance to share their perspectives. I've sent multiple messages in a row without waiting for responses. I need to step back and create space for other members to participate.",
+    "facts": [
+        {
+            "claim": "The discussion is about chapter 5 of a book",
+            "type": "fact",
+            "in_bio": false,
+            "already_known": false
+        },
+        {
+            "claim": "Max has sent 4 consecutive messages without user responses",
+            "type": "fact",
+            "in_bio": false,
+            "already_known": false
+        }
+    ],
+    "relationships": [
+        {
+            "sourceEntityId": "max-agent",
+            "targetEntityId": "user-789",
+            "tags": ["group_interaction", "excessive_interaction"]
+        }
+    ]
+}`,
+    }
   ],
 };
 

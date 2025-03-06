@@ -12,7 +12,7 @@ import {
   getWorldSettings,
   logger
 } from "@elizaos/core";
-import { TwitterService } from "@elizaos/plugin-twitter";
+import type { TwitterService } from "@elizaos/plugin-twitter";
 
 const tweetGenerationTemplate = `# Task: Create a post in the style and voice of {{agentName}}.
 {{system}}
@@ -168,6 +168,19 @@ const twitterPostAction: Action = {
 
       if (room.type !== ChannelType.GROUP) {
         // only handle in a group scenario for now
+        await runtime.getMemoryManager("messages").createMemory({
+          entityId: message.entityId,
+          agentId: message.agentId,
+          roomId: message.roomId,
+          content: {
+              source: message.content.source,
+              thought: "I tried to post a tweet but I'm not in a group scenario.",
+              actions: ["TWITTER_POST_FAILED"],
+          },
+          metadata: {
+              type: "TWITTER_POST",
+          },
+        });
         return false;
       }
 
@@ -201,7 +214,7 @@ const twitterPostAction: Action = {
 
       const userRole = await getUserServerRole(
         runtime,
-        message.userId,
+        message.entityId,
         serverId
       );
       if (userRole !== "OWNER" && userRole !== "ADMIN") {
@@ -233,7 +246,7 @@ const twitterPostAction: Action = {
           if (options.option === "cancel") {
             await callback({
               ...responseContent,
-              text: "Tweet cancelled. I won't post it.",
+              text: "OK, I won't post it.",
               actions: ["TWITTER_POST_CANCELLED"]
             });
             return;
@@ -242,7 +255,7 @@ const twitterPostAction: Action = {
           if(options.option !== "post") {
             await callback({
               ...responseContent,
-              text: "Invalid option. Should be 'post' or 'cancel'.",
+              text: "Bad choice. Should be 'post' or 'cancel'.",
               actions: ["TWITTER_POST_INVALID_OPTION"]
             });
             return;
@@ -284,7 +297,7 @@ const twitterPostAction: Action = {
         ) => {
           const userRole = await getUserServerRole(
             runtime,
-            message.userId,
+            message.entityId,
             serverId
           );
 
@@ -338,13 +351,13 @@ const twitterPostAction: Action = {
   examples: [
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "That's such a great point about neural networks! You should tweet that",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "I'll tweet this:\n\nDeep learning isn't just about layers - it's about understanding how neural networks actually learn from patterns. The magic isn't in the math, it's in the emergent behaviors we're just beginning to understand.",
           actions: ["TWITTER_POST"],
@@ -353,13 +366,13 @@ const twitterPostAction: Action = {
     ],
     [
       {
-        user: "{{user1}}",
+        name: "{{name1}}",
         content: {
           text: "Can you share this insight on Twitter?",
         },
       },
       {
-        user: "{{user2}}",
+        name: "{{name2}}",
         content: {
           text: "Tweet posted!\nhttps://twitter.com/username/status/123456789",
           actions: ["TWITTER_POST"],

@@ -41,8 +41,6 @@ const getDateRange = async (
     message: Memory,
     state: State
 ) => {
-    state = (await runtime.composeState(message)) as State;
-
     const prompt = composePrompt({
         state,
         template: dateRangeTemplate,
@@ -186,15 +184,7 @@ const summarizeAction = {
         state: State,
         _options: any,
         callback: HandlerCallback,
-        responses: Memory[]
     ) => {
-
-        for (const response of responses) {
-            await callback(response.content);
-        }
-
-        state = (await runtime.composeState(message)) as State;
-
         const callbackData: Content = {
             text: "", // fill in later
             actions: ["SUMMARIZATION_RESPONSE"],
@@ -207,6 +197,19 @@ const summarizeAction = {
         const dateRange = await getDateRange(runtime, message, state);
         if (!dateRange) {
             console.error("Couldn't get date range from message");
+            await runtime.getMemoryManager("messages").createMemory({
+                entityId: message.entityId,
+                agentId: message.agentId,
+                roomId: message.roomId,
+                content: {
+                    source: "discord",
+                    thought: `I couldn't get the date range from the message`,
+                    actions: ["SUMMARIZE_CONVERSATION_FAILED"],
+                },
+                metadata: {
+                    type: "SUMMARIZE_CONVERSATION",
+                },
+            });
             return;
         }
 
@@ -236,7 +239,7 @@ const summarizeAction = {
                         return `---\nAttachment: ${attachment.id}\n${attachment.description}\n${attachment.text}\n---`;
                     })
                     .join("\n");
-                return `${actorMap.get(memory.userId)?.name ?? "Unknown User"} (${actorMap.get(memory.userId)?.username ?? ""}): ${memory.content.text}\n${attachments}`;
+                return `${actorMap.get(memory.entityId)?.name ?? "Unknown User"} (${actorMap.get(memory.entityId)?.username ?? ""}): ${memory.content.text}\n${attachments}`;
             })
             .join("\n");
 
@@ -248,13 +251,13 @@ const summarizeAction = {
 
         const _datestr = new Date().toUTCString().replace(/:/g, "-");
 
-        state.memoriesWithAttachments = formattedMemories;
-        state.objective = objective;
+        state.values.memoriesWithAttachments = formattedMemories;
+        state.values.objective = objective;
 
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
-            state.currentSummary = currentSummary;
-            state.currentChunk = chunk;
+            state.values.currentSummary = currentSummary;
+            state.values.currentChunk = chunk;
             const template = await trimTokens(
                 summarizationTemplate,
                 chunkSize + 500,
@@ -275,6 +278,19 @@ const summarizeAction = {
 
         if (!currentSummary) {
             console.error("No summary found, that's not good!");
+            await runtime.getMemoryManager("messages").createMemory({
+                entityId: message.entityId,
+                agentId: message.agentId,
+                roomId: message.roomId,
+                content: {
+                    source: "discord",
+                    thought: `I couldn't summarize the conversation`,
+                    actions: ["SUMMARIZE_CONVERSATION_FAILED"],
+                },
+                metadata: {
+                    type: "SUMMARIZE_CONVERSATION",
+                },
+            });
             return;
         }
 
@@ -320,19 +336,19 @@ ${currentSummary.trim()}
     examples: [
         [
             {
-                user: "{{user1}}",
+                name: "{{name1}}",
                 content: {
                     text: "```js\nconst x = 10\n```",
                 },
             },
             {
-                user: "{{user1}}",
+                name: "{{name1}}",
                 content: {
                     text: "can you give me a detailed report on what we're talking about?",
                 },
             },
             {
-                user: "{{user2}}",
+                name: "{{name2}}",
                 content: {
                     text: "sure, no problem, give me a minute to get that together for you",
                     actions: ["SUMMARIZE"],
@@ -341,13 +357,13 @@ ${currentSummary.trim()}
         ],
         [
             {
-                user: "{{user1}}",
+                name: "{{name1}}",
                 content: {
                     text: "please summarize the conversation we just had and include this blogpost i'm linking (Attachment: b3e12)",
                 },
             },
             {
-                user: "{{user2}}",
+                name: "{{name2}}",
                 content: {
                     text: "sure, give me a sec",
                     actions: ["SUMMARIZE"],
@@ -356,13 +372,13 @@ ${currentSummary.trim()}
         ],
         [
             {
-                user: "{{user1}}",
+                name: "{{name1}}",
                 content: {
                     text: "Can you summarize what moon and avf are talking about?",
                 },
             },
             {
-                user: "{{user2}}",
+                name: "{{name2}}",
                 content: {
                     text: "Yeah, just hold on a second while I get that together for you...",
                     actions: ["SUMMARIZE"],
@@ -371,13 +387,13 @@ ${currentSummary.trim()}
         ],
         [
             {
-                user: "{{user1}}",
+                name: "{{name1}}",
                 content: {
                     text: "i need to write a blog post about farming, can you summarize the discussion from a few hours ago?",
                 },
             },
             {
-                user: "{{user2}}",
+                name: "{{name2}}",
                 content: {
                     text: "no problem, give me a few minutes to read through everything",
                     actions: ["SUMMARIZE"],
