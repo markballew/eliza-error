@@ -1,5 +1,5 @@
 export const CLI_VERSION = "0.1.0";
-export const CLOUD_API_URL = "https://cloud-api.phala.network";
+export const PHALA_CLOUD_API_URL = "https://cloud-api.phala.network";
 export const CLOUD_URL = "https://cloud.phala.network";
 export const TEE_SIMULATOR = "phalanetwork/tappd-simulator:latest";
 export const COMPOSE_FILES_DIR = ".tee-cloud/compose-files";
@@ -12,7 +12,7 @@ services:
     command: >
       bash -c "turbo run build --filter=./packages/core 
       && turbo run build --filter=./packages/*
-      && turbo run start --env-mode=loose --filter=@elizaos/agent"
+      && turbo run start --env-mode=loose --filter=@elizaos/the-org"
     stdin_open: true
     tty: true
     volumes:
