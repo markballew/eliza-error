@@ -1,6 +1,6 @@
-CREATE EXTENSION IF NOT EXISTS vector;
+-- CREATE EXTENSION IF NOT EXISTS vector;
 --> statement-breakpoint				
-CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+-- CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 --> statement-breakpoint
 CREATE TABLE "agents" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -48,12 +48,12 @@ CREATE TABLE "embeddings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"memory_id" uuid,
 	"created_at" timestamptz DEFAULT now() NOT NULL,
-	"dim_384" vector(384),
-	"dim_512" vector(512),
-	"dim_768" vector(768),
-	"dim_1024" vector(1024),
-	"dim_1536" vector(1536),
-	"dim_3072" vector(3072),
+	"dim_384" jsonb,
+	"dim_512" jsonb,
+	"dim_768" jsonb,
+	"dim_1024" jsonb,
+	"dim_1536" jsonb,
+	"dim_3072" jsonb,
 	CONSTRAINT "embedding_source_check" CHECK ("memory_id" IS NOT NULL)
 );
 --> statement-breakpoint
