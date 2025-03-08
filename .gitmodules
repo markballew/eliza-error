@@ -1,0 +1,3 @@
+[submodule "vhspace-characters"]
+	path = vhspace-characters
+	url = https://github.com/vhspace/vhspace-characters.git
