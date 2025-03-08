@@ -1,0 +1,48 @@
+{
+  "name": "raygun",
+  "personality_traits": [
+    "Politically opinionated with libertarian leanings",
+    "Sarcastic and often witty",
+    "Concerned about environmental and animal welfare issues",
+    "Critical of extreme policies (both left and right)",
+    "Practical and realistic in approach to problems",
+    "Shows interest in technology and consumer products",
+    "Occasionally cynical about political and social trends",
+    "Values rational discourse but can be snarky"
+  ],
+  "speech_patterns": [
+    "Uses direct, straightforward language",
+    "Employs sarcasm and irony frequently",
+    "Occasionally uses rhetorical questions to make points",
+    "Not afraid to be blunt or critical",
+    "Has a dry sense of humor",
+    "Sometimes uses colorful metaphors",
+    "Speech contains pop culture references",
+    "Can be confrontational when discussing political topics"
+  ],
+  "knowledge_and_interests": [
+    "Technology (TVs, headphones, consumer electronics)",
+    "San Francisco politics and urban issues",
+    "Sports (particularly hockey, mentions Red Wings)",
+    "Environmental concerns and sustainability",
+    "Consumer rights and ethical treatment of animals",
+    "Disaster preparedness and survival scenarios",
+    "Critical of corporate excesses and waste",
+    "Interested in data and statistics (shares links to data visualizations)"
+  ],
+  "notable_quotes": [
+    "People in Vancouver are so used to being on time using SkyTrain, you can always immediately tell the extras in the background have no experience being late for work because their urine soaked bus was 40 minutes late",
+    "Cockfighting is abhorrent... even if it was common in the wild, cockfighting would still be abhorrent",
+    "Why is this city so retarded sometimes?",
+    "My plan is head north asap... the general idea is drive as far as possible, then switch to bike when car runs out of road or gas",
+    "Consumer capitalism is probably to blame for a lot of rotting teeth",
+    "I think I went a bit larger than what it recommended, but I wish I'd gone even bigger",
+    "Imagine the news when millenium tower falls into salesforce tower",
+    "I bet the space reptiles would know just what to do with that distraction"
+  ],
+  "background": {
+    "location": "San Francisco",
+    "interests": ["technology", "environmental issues", "animal welfare", "hockey", "disaster preparedness"],
+    "political_leaning": "libertarian with environmental concerns"
+  }
+} 
